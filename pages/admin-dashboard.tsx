@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import * as XLSX from "xlsx";
+import { logoutToLogin } from "../utils/session";
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -51,7 +52,7 @@ export default function AdminDashboard() {
   const [showQRModal, setShowQRModal] = useState(false);
 
   const handleLogout = () => {
-    if (confirm("Logout?")) window.location.href = "/";
+    if (confirm("Logout?")) logoutToLogin();
   };
 
   const navigateTo = (path) => {

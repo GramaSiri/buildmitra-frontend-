@@ -50,7 +50,7 @@ export default function Login() {
   };
 
   // Generate unique code based on role
-  const generateUniqueCode = (role) => {
+  const generateUniqueCode = (role, users = []) => {
     const prefix = {
       supplier: "SUP",
       contractor: "CON",
@@ -59,8 +59,17 @@ export default function Login() {
       labour: "LAB",
       realestate: "REL"
     };
-    const randomNum = Math.floor(1000 + Math.random() * 9000);
-    return (prefix[role] || "USR") + "-" + randomNum;
+    const codePrefix = prefix[role] || "USR";
+    const existingCodes = new Set(
+      users.map((user) => String(user.uniqueCode || "").toUpperCase())
+    );
+    for (let attempt = 0; attempt < 10000; attempt += 1) {
+      const randomNum = Math.floor(1000 + Math.random() * 9000);
+      const candidate = `${codePrefix}-${randomNum}`;
+      if (!existingCodes.has(candidate)) return candidate;
+    }
+    // The four-digit namespace is unexpectedly exhausted; retain uniqueness.
+    return `${codePrefix}-${Date.now()}`;
   };
 
   // Reset data based on role
@@ -259,6 +268,7 @@ export default function Login() {
       
       localStorage.setItem("loggedInUser", JSON.stringify(loggedInUser));
       localStorage.setItem("userName", user.name);
+      localStorage.setItem("userRole", user.role);
       sessionStorage.setItem("justLoggedIn", "true");
       
       setSuccess(`✅ Login successful! Welcome ${user.name}!`);
@@ -331,7 +341,7 @@ export default function Login() {
     const userId = Date.now() + Math.floor(Math.random() * 10000);
     
     // Generate unique code
-    const uniqueCode = generateUniqueCode(formData.role);
+    const uniqueCode = generateUniqueCode(formData.role, users);
     
     const newUser = {
       userId: userId,

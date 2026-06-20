@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import * as XLSX from "xlsx";
+import { logoutToLogin } from "../utils/session";
 
 export default function LabourSupplyDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -54,7 +55,7 @@ export default function LabourSupplyDashboard() {
   ]);
 
   const handleLogout = () => {
-    if (confirm("Logout?")) window.location.href = "/";
+    if (confirm("Logout?")) logoutToLogin();
   };
 
   const navigateTo = (path) => {
