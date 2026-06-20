@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { logoutToLogin } from "../utils/session";
 
 export default function RealEstateDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -535,7 +536,7 @@ export default function RealEstateDashboard() {
         React.createElement("div", { style: styles.welcomeText }, "👋 Welcome, ", userName),
         React.createElement("p", { style: styles.headerSub }, "Manage properties, track enquiries, and close deals")
       ),
-      React.createElement("button", { onClick: () => window.location.href = "/", style: { backgroundColor: "#dc3545", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer" } }, "🚪 Logout")
+        React.createElement("button", { onClick: logoutToLogin, style: { backgroundColor: "#dc3545", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer" } }, "🚪 Logout")
     ),
     React.createElement("div", { style: styles.tabContainer },
       tabs.map(tab => React.createElement("div", { key: tab.id, onClick: () => setActiveTab(tab.id), style: { ...styles.tab, ...(activeTab === tab.id ? styles.activeTab : {}) } }, tab.icon, " ", tab.name))

@@ -1,6 +1,7 @@
 import DashboardHeader from "../components/DashboardHeader";
 import React, { useState } from "react";
 import * as XLSX from "xlsx";
+import { logoutToLogin } from "../utils/session";
 
 export default function VendorDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -59,7 +60,7 @@ export default function VendorDashboard() {
   const [mediaData, setMediaData] = useState({ type: "photo", title: "" });
 
   const handleLogout = () => {
-    if (confirm("Logout?")) window.location.href = "/";
+    if (confirm("Logout?")) logoutToLogin();
   };
 
   const navigateTo = (path) => {

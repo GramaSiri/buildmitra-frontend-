@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
+import { clearBuildMitraSession } from "../utils/session";
 
 const styles = {
   sidebar: {
@@ -429,7 +430,7 @@ return (
             onMouseEnter={() => setHoveredLogout(true)}
             onMouseLeave={() => setHoveredLogout(false)}
             onClick={() => {
-              localStorage.clear();
+              clearBuildMitraSession();
               router.push("/login");
             }}
           >

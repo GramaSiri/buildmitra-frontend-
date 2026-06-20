@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import * as XLSX from "xlsx";
+import { logoutToLogin } from "../utils/session";
 
 export default function SupplierDashboard() {
   const [userName, setUserName] = useState("Supplier");
@@ -501,7 +502,7 @@ export default function SupplierDashboard() {
         React.createElement("div", { style: styles.welcomeText }, "👋 Welcome, ", userName),
         React.createElement("p", { style: styles.headerSub }, "Manage products, offers, orders, and enquiries")
       ),
-      React.createElement("button", { onClick: () => window.location.href = "/", style: { ...styles.buttonDanger } }, "🚪 Logout")
+        React.createElement("button", { onClick: logoutToLogin, style: { ...styles.buttonDanger } }, "🚪 Logout")
     ),
     React.createElement("div", { style: styles.tabContainer },
       tabs.map(tab => React.createElement("div", { key: tab.id, onClick: () => setActiveTab(tab.id), style: { ...styles.tab, ...(activeTab === tab.id ? styles.activeTab : {}) } }, tab.icon, " ", tab.name))

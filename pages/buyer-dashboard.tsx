@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from "react";
 import * as XLSX from "xlsx";
+import { getLoggedInUser, migrateLegacyProjects, saveProjectsForBuyer } from "../utils/projectStorage";
+import { logoutToLogin } from "../utils/session";
 
 export default function BuyerDashboard() {
+  const isReadOnly = true;
+  const denyContractorEdit = () => {
+    alert("Buyer access is read-only. Project records can only be updated by the assigned contractor.");
+  };
   const [activeTab, setActiveTab] = useState("dashboard");
   const [selectedProject, setSelectedProject] = useState(null);
   const [showAddProject, setShowAddProject] = useState(false);
@@ -122,54 +128,39 @@ export default function BuyerDashboard() {
     });
   };
 
-  const [projects, setProjects] = useState([
-    { 
-      id: 1, 
-      name: "Sunrise Villa", 
-      plotLength: 50, 
-      plotWidth: 40, 
-      floors: 2, 
-      bua: 0, 
-      ratePerSft: 1800, 
-      totalAmount: 0, 
-      contractorName: "Sharma Construction", 
-      contractorMobile: "+919876511111", 
-      contractorAddress: "Andheri, Mumbai",
-      agreementFile: null,
-      agreementUrl: null,
-      startDate: "2024-01-01", 
-      endDate: "2024-12-31", 
-      progress: 0, 
-      status: "Planning", 
-      milestones: [], 
-      payments: [], 
-      inventory: [], 
-      media: [],
-      extraWorks: [],
-      labour: []
-    }
-  ]);
+  const [projects, setProjects] = useState<any[]>([]);
 
-  // Load contractor shared projects
-useEffect(() => {
-  try {
-    const shared = localStorage.getItem("sharedProjects");
+  const persistBuyerUpdates = (updatedProjects: any[]) => {
+    const user = getLoggedInUser();
+    if (!user || user.role !== "buyer" || !user.uniqueCode) return;
+    setProjects(updatedProjects);
+    saveProjectsForBuyer(user.uniqueCode, updatedProjects);
+  };
 
-    if (shared) {
-      const parsedProjects = JSON.parse(shared);
-
-      if (parsedProjects && parsedProjects.length > 0) {
-        setProjects(parsedProjects);
-
-        if (!selectedProject) {
-          setSelectedProject(parsedProjects[0].id);
-        }
+  // Buyers only receive projects explicitly assigned to their unique code.
+  useEffect(() => {
+    const loadAssignedProjects = () => {
+      const user = getLoggedInUser();
+      if (!user || user.role !== "buyer") {
+        setProjects([]);
+        setSelectedProject(null);
+        return;
       }
-    }
-  } catch (err) {
-    console.log("Error loading shared projects", err);
-  }
-}, []);
+      const assigned = migrateLegacyProjects(user).filter(
+        (project) => String(project.buyerCode || "").toUpperCase() === String(user.uniqueCode || "").toUpperCase()
+      );
+      setProjects(assigned);
+      setSelectedProject((current) => assigned.some((project) => project.id === current) ? current : assigned[0]?.id ?? null);
+    };
+
+    loadAssignedProjects();
+    window.addEventListener("storage", loadAssignedProjects);
+    window.addEventListener("buildmitraProjectsUpdated", loadAssignedProjects);
+    return () => {
+      window.removeEventListener("storage", loadAssignedProjects);
+      window.removeEventListener("buildmitraProjectsUpdated", loadAssignedProjects);
+    };
+  }, []);
 
   const [newProject, setNewProject] = useState({ 
     name: "", plotLength: 0, plotWidth: 0, floors: 1, ratePerSft: 1800, 
@@ -181,49 +172,40 @@ useEffect(() => {
   const [newMaterial, setNewMaterial] = useState({ material: "", unit: "bags", supplier: "", receivedQty: "", invoiceNo: "" });
   const [siteMedia, setSiteMedia] = useState([]);
   
-  useEffect(() => {
-  const interval = setInterval(() => {
-    try {
-      const shared = localStorage.getItem("sharedProjects");
-
-      if (shared) {
-        const parsedProjects = JSON.parse(shared);
-        setProjects(parsedProjects);
-      }
-    } catch (err) {}
-  }, 3000);
-
-  return () => clearInterval(interval);
-}, []);
-  React.useEffect(() => {
-    if (projects[0] && projects[0].milestones.length === 0) {
-      const bua = calculateBUA(projects[0].plotLength, projects[0].plotWidth, projects[0].floors);
-      const totalAmount = bua * projects[0].ratePerSft;
-      const milestones = generateMilestones(projects[0].startDate, projects[0].endDate, totalAmount, projects[0].floors);
-      setProjects([{ ...projects[0], bua, totalAmount, milestones }]);
-    }
-  }, []);
 
   const selectedProjectData =
-  projects.find(p => p.id === selectedProject) || projects[0];
+  projects.find(p => String(p.id) === String(selectedProject)) || projects[0];
   const projectMilestones = selectedProjectData?.milestones || [];
-  const projectPayments = selectedProjectData?.payments || [];
-  const projectInventory = inventory.filter(i => i.projectId === selectedProject);
-  const projectMedia = siteMedia.filter(m => m.projectId === selectedProject);
+  const projectPayments = projectMilestones
+    .filter((milestone: any) => milestone.invoiceRaised)
+    .map((milestone: any) => ({
+      id: milestone.id,
+      milestoneId: milestone.id,
+      milestoneName: milestone.name,
+      amount: Number(milestone.invoiceAmount || milestone.amount || 0),
+      date: milestone.invoiceDate,
+      status: milestone.paymentStatus,
+      paidDate: milestone.paidDate,
+      chequeNo: milestone.chequeNo,
+      utrNo: milestone.utrNo
+    }));
+  const projectInventory = selectedProjectData?.inventory || [];
+  const projectMedia = selectedProjectData?.siteMedia || selectedProjectData?.media || [];
   const projectExtraWorks = selectedProjectData?.extraWorks || [];
   const projectLabour = selectedProjectData?.labour || [];
   console.log("Selected Project", selectedProjectData);
   console.log("Labour Data", projectLabour);
   
-  const completedMilestones = projectMilestones.filter((m: any) => m.status === "Completed").length;
+  const completedMilestones = projectMilestones.filter((m: any) => m.contractorCompleted || m.ownerApproved).length;
   const progressPercent = projectMilestones.length ? (completedMilestones / projectMilestones.length) * 100 : 0;
-  const totalPaid = projectPayments.reduce((sum: number, p: any) => sum + p.amount, 0);
+  const totalPaid = projectPayments.filter((p: any) => p.status === "Paid").reduce((sum: number, p: any) => sum + p.amount, 0);
   const totalContractAmount = selectedProjectData?.totalAmount || 0;
   const totalExtraWorkAmount = projectExtraWorks.reduce((sum: number, w: any) => sum + (w.amount || 0), 0);
   const grandTotalAmount = totalContractAmount + totalExtraWorkAmount;
   const balanceAmount = grandTotalAmount - totalPaid;
 
   const addProject = () => {
+    if (isReadOnly) return denyContractorEdit();
     if (!newProject.name || !newProject.plotLength || !newProject.plotWidth) { 
       alert("Please fill all required fields"); 
       return; 
@@ -269,6 +251,7 @@ useEffect(() => {
   };
 
   const updateMilestoneStatus = (milestoneId: number, newStatus: string) => {
+    if (isReadOnly) return denyContractorEdit();
     setProjects(projects.map(p => p.id === selectedProject ? {
       ...p,
       milestones: p.milestones.map((m: any) => 
@@ -279,19 +262,52 @@ useEffect(() => {
   };
 
   const approveMilestone = (milestone: any) => {
+    if (!milestone.contractorCompleted || milestone.status !== "Completed") {
+      alert("Only contractor-completed milestones can be approved.");
+      return;
+    }
     if (!milestone.ownerApproved) {
-      setProjects(projects.map(p => p.id === selectedProject ? {
+      const today = new Date().toISOString().split("T")[0];
+      const updatedProjects = projects.map(p => String(p.id) === String(selectedProject) ? {
         ...p,
         milestones: p.milestones.map((m: any) => 
-          m.id === milestone.id ? { ...m, ownerApproved: true, status: "Completed" } : m
-        ),
-        progress: Math.round((p.milestones.filter((m: any) => m.id === milestone.id ? true : m.status === "Completed").length) / p.milestones.length * 100)
-      } : p));
+          m.id === milestone.id ? {
+            ...m,
+            ownerApproved: true,
+            ownerRejected: false,
+            ownerApprovalDate: today,
+            ownerRejectionDate: null,
+            status: "Approved",
+            remarks: ""
+          } : m
+        )
+      } : p);
+      persistBuyerUpdates(updatedProjects);
       alert("Milestone approved! Contractor can now raise invoice.");
     }
   };
 
+  const rejectMilestone = (milestone: any) => {
+    if (!milestone.contractorCompleted || milestone.invoiceRaised) return;
+    const remarks = window.prompt("Enter rejection reason:", milestone.remarks || "") || "Rejected by buyer";
+    const today = new Date().toISOString().split("T")[0];
+    const updatedProjects = projects.map(p => String(p.id) === String(selectedProject) ? {
+      ...p,
+      milestones: p.milestones.map((m: any) => m.id === milestone.id ? {
+        ...m,
+        ownerApproved: false,
+        ownerRejected: true,
+        ownerApprovalDate: null,
+        ownerRejectionDate: today,
+        status: "Completed",
+        remarks
+      } : m)
+    } : p);
+    persistBuyerUpdates(updatedProjects);
+  };
+
   const raiseInvoice = (milestone: any) => {
+    if (isReadOnly) return denyContractorEdit();
     if (milestone.ownerApproved && !milestone.invoiceRaised) {
       setProjects(projects.map(p => p.id === selectedProject ? {
         ...p,
@@ -305,15 +321,19 @@ useEffect(() => {
   };
 
   const releasePayment = () => {
+    if (!selectedMilestone?.ownerApproved || !selectedMilestone?.invoiceRaised || selectedMilestone?.paymentStatus !== "Due") {
+      alert("Only an approved invoice with payment Due can be marked Paid.");
+      return;
+    }
     if (!chequeNo && !utrNo) { 
       alert("Please enter Cheque Number or UTR Number"); 
       return; 
     }
     
-    const paymentAmountValue = actualPaymentAmount ? parseFloat(actualPaymentAmount) : (selectedMilestone?.amount || 0);
+    const paymentAmountValue = actualPaymentAmount ? parseFloat(actualPaymentAmount) : Number(selectedMilestone?.invoiceAmount || 0);
     
-    if (paymentAmountValue > (selectedMilestone?.amount || 0)) {
-      alert("Payment amount cannot exceed milestone amount");
+    if (paymentAmountValue !== Number(selectedMilestone?.invoiceAmount || 0)) {
+      alert("Paid amount must equal the approved invoice amount.");
       return;
     }
     
@@ -322,29 +342,30 @@ useEffect(() => {
       milestoneId: selectedMilestone?.id, 
       milestoneName: selectedMilestone?.name, 
       amount: paymentAmountValue,
-      originalAmount: selectedMilestone?.amount,
+      originalAmount: selectedMilestone?.invoiceAmount,
       date: new Date().toISOString().split("T")[0], 
-      status: paymentAmountValue >= (selectedMilestone?.amount || 0) ? "Fully Paid" : "Partially Paid",
+      status: "Paid",
       chequeNo: chequeNo, 
       utrNo: utrNo 
     };
     
-    setProjects(projects.map(p => p.id === selectedProject ? {
+    const updatedProjects = projects.map(p => String(p.id) === String(selectedProject) ? {
       ...p,
       milestones: p.milestones.map((m: any) => 
         m.id === selectedMilestone?.id ? { 
           ...m, 
-          paymentReleased: true, 
-          paymentDate: new Date().toISOString().split("T")[0],
+          paymentReleased: true,
+          paidDate: new Date().toISOString().split("T")[0],
           chequeNo, 
           utrNo,
           actualPaymentAmount: paymentAmountValue,
-          remainingAmount: (selectedMilestone?.amount || 0) - paymentAmountValue,
-          paymentStatus: paymentAmountValue >= (selectedMilestone?.amount || 0) ? "Fully Paid" : "Partially Paid"
+          remainingAmount: 0,
+          paymentStatus: "Paid"
         } : m
       ),
-      payments: [...p.payments, payment]
-    } : p));
+      payments: [...(p.payments || []), payment]
+    } : p);
+    persistBuyerUpdates(updatedProjects);
     
     setChequeNo(""); 
     setUtrNo(""); 
@@ -362,6 +383,7 @@ useEffect(() => {
   };
 
   const addMaterial = () => {
+    if (isReadOnly) return denyContractorEdit();
     if (!newMaterial.material || !newMaterial.receivedQty) { 
       alert("Enter material name and received quantity"); 
       return; 
@@ -386,6 +408,7 @@ useEffect(() => {
   };
 
   const updateConsumed = (id: number, consumed: string) => {
+    if (isReadOnly) return denyContractorEdit();
     const item = inventory.find(i => i.id === id);
     const consumedQty = parseFloat(consumed);
     if (item && !isNaN(consumedQty) && consumedQty >= 0 && consumedQty <= item.receivedQty) {
@@ -398,6 +421,7 @@ useEffect(() => {
   };
 
   const uploadMedia = () => {
+    if (isReadOnly) return denyContractorEdit();
     if (!mediaTitle) { alert("Enter title"); return; }
     const mediaUrl = mediaFile ? URL.createObjectURL(mediaFile) : null;
     setSiteMedia([...siteMedia, { 
@@ -417,6 +441,7 @@ useEffect(() => {
   };
 
   const addExtraWork = () => {
+    if (isReadOnly) return denyContractorEdit();
     if (!extraWork.description || !extraWork.quantity || !extraWork.rate) {
       alert("Please fill all extra work details");
       return;
@@ -444,6 +469,7 @@ useEffect(() => {
   };
 
   const approveExtraWork = (workId: number) => {
+    if (isReadOnly) return denyContractorEdit();
     setProjects(projects.map(p => p.id === selectedProject ? {
       ...p,
       extraWorks: p.extraWorks?.map((w: any) => 
@@ -454,6 +480,7 @@ useEffect(() => {
   };
 
   const addLabour = () => {
+    if (isReadOnly) return denyContractorEdit();
     if (!newLabour.name || !newLabour.role || !newLabour.dailyWage) {
       alert("Please fill labour name, role and daily wage");
       return;
@@ -481,6 +508,7 @@ useEffect(() => {
   };
 
   const updateLabourAttendance = (labourId: number, daysPresent: string) => {
+    if (isReadOnly) return denyContractorEdit();
     setProjects(projects.map(p => p.id === selectedProject ? {
       ...p,
       labour: p.labour?.map((l: any) => l.id === labourId ? {
@@ -492,6 +520,7 @@ useEffect(() => {
   };
 
   const makeLabourPayment = () => {
+    if (isReadOnly) return denyContractorEdit();
     if (!selectedLabour) return;
     if (!chequeNo && !utrNo) {
       alert("Please enter Cheque or UTR number");
@@ -522,26 +551,32 @@ useEffect(() => {
     let data: any[] = [];
     if (reportType === "milestones") {
       data = projectMilestones.filter((m: any) => {
-        if (reportFilters.startDate && m.plannedEndDate < reportFilters.startDate) return false;
-        if (reportFilters.endDate && m.plannedEndDate > reportFilters.endDate) return false;
+        if (reportFilters.startDate && m.endDate < reportFilters.startDate) return false;
+        if (reportFilters.endDate && m.endDate > reportFilters.endDate) return false;
         return true;
       }).map((m: any) => ({ 
-        Milestone: m.name, 
-        Phase: m.phase,
-        Amount: m.amount, 
-        ContractorStatus: m.contractorStatus,
-        OwnerApproved: m.ownerApproved ? "Yes" : "No",
+        Milestone: m.name,
+        Category: m.category,
+        StartDate: m.startDate,
+        EndDate: m.endDate,
+        DurationDays: m.durationDays,
+        PaymentPercent: m.paymentPercent,
+        Amount: m.amount,
+        Status: m.status,
+        Approval: m.ownerApproved ? "Approved" : m.ownerRejected ? "Rejected" : "Pending",
         InvoiceRaised: m.invoiceRaised ? "Yes" : "No",
-        PaymentReleased: m.paymentReleased ? "Yes" : "No",
-        DueDate: m.plannedEndDate 
+        InvoiceAmount: m.invoiceAmount,
+        PaymentStatus: m.paymentStatus
       }));
-    } else if (reportType === "payments") {
+    } else if (reportType === "payments" || reportType === "pendingpayments") {
       data = projectPayments.map((p: any) => ({ 
         Milestone: p.milestoneName, 
         Amount: p.amount, 
-        Date: p.date, 
+        InvoiceDate: p.date,
+        PaymentStatus: p.status,
+        PaidDate: p.paidDate,
         Reference: p.chequeNo || p.utrNo 
-      }));
+      })).filter((p: any) => reportType !== "pendingpayments" || p.PaymentStatus === "Due");
     } else if (reportType === "inventory") {
       data = projectInventory.filter((i: any) => {
         if (reportFilters.supplier && i.supplier !== reportFilters.supplier) return false;
@@ -742,13 +777,12 @@ useEffect(() => {
         )
       )
     ) : React.createElement("div", { style: styles.card }, 
-      React.createElement("p", null, "Please select or create a project to get started."),
-      React.createElement("button", { onClick: () => setShowAddProject(true), style: styles.button }, "+ Create New Project")
+      React.createElement("p", null, "No projects are assigned to your Buyer Unique Code yet. Ask your contractor to create and assign one.")
     );
   };
 
   const renderProjects = () => React.createElement("div", null,
-    React.createElement("button", { onClick: () => setShowAddProject(true), style: styles.button }, "+ Create New Project"),
+    React.createElement("div", { style: { ...styles.card, backgroundColor: "#eef7f2", color: "#2d6a4f" } }, "Assigned projects are view-only. Updates are managed by the contractor."),
     React.createElement("div", { style: { marginTop: "20px" } },
       projects.map((p: any) =>
         React.createElement("div", { key: p.id, style: { ...styles.card, cursor: "pointer" }, onClick: () => { setSelectedProject(p.id); setActiveTab("dashboard"); } },
@@ -769,45 +803,41 @@ useEffect(() => {
   );
 
   const renderMilestones = () => React.createElement("div", { style: styles.card },
-    React.createElement("div", { style: styles.cardTitle }, "🎯 Project Milestones"),
+    React.createElement("div", { style: styles.cardTitle }, "🎯 Civil Milestone Timeline & Payment Linkage"),
+    React.createElement("div", { style: { marginBottom: "12px", color: "#666" } }, "Total payment weight: ", projectMilestones.reduce((sum: number, milestone: any) => sum + Number(milestone.paymentPercent || 0), 0), "%"),
     React.createElement("div", { style: { overflowX: "auto" } },
       React.createElement("table", { style: styles.table },
         React.createElement("thead", null,
           React.createElement("tr", null,
-            React.createElement("th", { style: styles.th }, "#"), React.createElement("th", { style: styles.th }, "Milestone"), React.createElement("th", { style: styles.th }, "Phase"),
-            React.createElement("th", { style: styles.th }, "Amount"), React.createElement("th", { style: styles.th }, "Due Date"),
-            React.createElement("th", { style: styles.th }, "Contractor Status"), React.createElement("th", { style: styles.th }, "Owner Approval"),
-            React.createElement("th", { style: styles.th }, "Invoice"), React.createElement("th", { style: styles.th }, "Payment"), React.createElement("th", { style: styles.th }, "Action")
+            React.createElement("th", { style: styles.th }, "#"), React.createElement("th", { style: styles.th }, "Milestone"), React.createElement("th", { style: styles.th }, "Timeline"),
+            React.createElement("th", { style: styles.th }, "Weight / Amount"), React.createElement("th", { style: styles.th }, "Contractor Status"),
+            React.createElement("th", { style: styles.th }, "Owner Decision"), React.createElement("th", { style: styles.th }, "Invoice"),
+            React.createElement("th", { style: styles.th }, "Payment"), React.createElement("th", { style: styles.th }, "Action")
           )
         ),
         React.createElement("tbody", null,
-          projectMilestones.map((m: any) =>
+          projectMilestones.map((m: any, index: number) =>
             React.createElement("tr", { key: m.id },
-              React.createElement("td", { style: styles.td }, m.id),
-              React.createElement("td", { style: styles.td }, m.name),
-              React.createElement("td", { style: styles.td }, m.phase),
-              React.createElement("td", { style: styles.td }, "₹", (m.amount/1000).toFixed(0), "K"),
-              React.createElement("td", { style: styles.td }, m.plannedEndDate),
+              React.createElement("td", { style: styles.td }, index + 1),
+              React.createElement("td", { style: styles.td }, React.createElement("strong", null, m.name), React.createElement("br", null), React.createElement("small", { style: { color: "#666" } }, m.category), React.createElement("br", null), React.createElement("small", null, m.description)),
+              React.createElement("td", { style: styles.td }, m.startDate, " to ", m.endDate, React.createElement("br", null), m.durationDays, " days"),
+              React.createElement("td", { style: styles.td }, m.paymentPercent, "%", React.createElement("br", null), "₹", Number(m.amount).toLocaleString()),
+              React.createElement("td", { style: styles.td }, m.status || "Pending"),
               React.createElement("td", { style: styles.td },
-                React.createElement("select", { value: m.contractorStatus, onChange: (e) => updateMilestoneStatus(m.id, e.target.value), style: { padding: "4px", borderRadius: "4px" } },
-                  React.createElement("option", null, "Pending"),
-                  React.createElement("option", null, "In Progress"),
-                  React.createElement("option", null, "Completed")
-                )
+                React.createElement("span", null, m.ownerApproved ? "✅ Approved" : m.ownerRejected ? "❌ Rejected" : "⏳ Pending"),
+                m.remarks && React.createElement("div", { style: { fontSize: "11px", color: "#666" } }, m.remarks)
               ),
               React.createElement("td", { style: styles.td },
-                !m.ownerApproved && m.contractorStatus === "Completed" && React.createElement("button", { onClick: () => approveMilestone(m), style: styles.buttonSuccess }, "Approve"),
-                m.ownerApproved && React.createElement("span", { style: { color: "green" } }, "✅ Approved")
+                React.createElement("span", null, m.invoiceRaised ? `📄 ₹${Number(m.invoiceAmount).toLocaleString()}` : "Not raised")
               ),
+              React.createElement("td", { style: styles.td }, m.paymentStatus || "Not Due", m.paidDate && React.createElement("div", { style: { fontSize: "11px" } }, m.paidDate)),
               React.createElement("td", { style: styles.td },
-                m.ownerApproved && !m.invoiceRaised && React.createElement("button", { onClick: () => raiseInvoice(m), style: styles.buttonWarning }, "Raise Invoice"),
-                m.invoiceRaised && React.createElement("span", { style: { color: "orange" } }, "📄 Raised")
-              ),
-              React.createElement("td", { style: styles.td },
-                m.invoiceRaised && !m.paymentReleased && React.createElement("button", { onClick: () => { setSelectedMilestone(m); setShowPaymentModal(true); }, style: styles.buttonInfo }, "Release Payment"),
-                m.paymentReleased && React.createElement("span", { style: { color: "green" } }, "✅ Paid")
-              ),
-              React.createElement("td", { style: styles.td }, m.paymentReleased && React.createElement("span", null, "UTR: ", m.utrNo || m.chequeNo))
+                m.contractorCompleted && !m.ownerApproved && !m.invoiceRaised && React.createElement(React.Fragment, null,
+                  React.createElement("button", { onClick: () => approveMilestone(m), style: styles.buttonSuccess }, "Approve"),
+                  React.createElement("button", { onClick: () => rejectMilestone(m), style: { ...styles.buttonDanger, marginLeft: "6px" } }, "Reject")
+                ),
+                m.ownerApproved && m.invoiceRaised && m.paymentStatus === "Due" && React.createElement("button", { onClick: () => { setSelectedMilestone(m); setActualPaymentAmount(String(m.invoiceAmount)); setShowPaymentModal(true); }, style: styles.buttonInfo }, "Mark Paid")
+              )
             )
           )
         )
@@ -834,15 +864,15 @@ useEffect(() => {
         ),
         React.createElement("tbody", null,
           projectPayments.map((p: any) => {
-            cumulative += p.amount;
+            if (p.status === "Paid") cumulative += p.amount;
             const remaining = grandTotalAmount - cumulative;
             return React.createElement("tr", { key: p.id },
-              React.createElement("td", { style: styles.td }, p.date),
+              React.createElement("td", { style: styles.td }, p.paidDate || p.date),
               React.createElement("td", { style: styles.td }, p.milestoneName),
               React.createElement("td", { style: styles.td }, "₹", (p.amount/1000).toFixed(0), "K"),
               React.createElement("td", { style: styles.td }, "₹", (cumulative/100000).toFixed(2), "L"),
               React.createElement("td", { style: styles.td }, "₹", (remaining/100000).toFixed(2), "L"),
-              React.createElement("td", { style: styles.td }, p.chequeNo || p.utrNo)
+              React.createElement("td", { style: styles.td }, p.status, p.chequeNo || p.utrNo ? ` / ${p.chequeNo || p.utrNo}` : "")
             );
           }),
           projectPayments.length === 0 && React.createElement("tr", null, React.createElement("td", { colSpan: 6, style: { textAlign: "center", padding: "40px" } }, "No payments recorded yet"))
@@ -852,7 +882,7 @@ useEffect(() => {
   };
 
   const renderInventory = () => React.createElement("div", null,
-    React.createElement("button", { onClick: () => setShowMaterialModal(true), style: styles.button }, "+ Receive Material"),
+    React.createElement("div", { style: { marginBottom: "12px", color: "#666" } }, "Inventory recorded by the contractor"),
     React.createElement("div", { style: styles.card },
       React.createElement("div", { style: styles.cardTitle }, "📦 Material Inventory"),
       React.createElement("table", { style: styles.table },
@@ -869,7 +899,7 @@ useEffect(() => {
               React.createElement("td", { style: styles.td }, i.materialCode),
               React.createElement("td", { style: styles.td }, i.material),
               React.createElement("td", { style: styles.td }, i.receivedQty, " ", i.unit),
-              React.createElement("td", { style: styles.td }, React.createElement("input", { type: "number", value: i.consumed, onChange: (e) => updateConsumed(i.id, e.target.value), style: { width: "70px", padding: "4px", borderRadius: "4px", border: "1px solid #ddd" } })),
+              React.createElement("td", { style: styles.td }, i.consumed),
               React.createElement("td", { style: styles.td }, i.balance, " ", i.unit),
               React.createElement("td", { style: styles.td }, i.supplier),
               React.createElement("td", { style: styles.td }, i.invoiceNo)
@@ -881,13 +911,15 @@ useEffect(() => {
   );
 
   const renderProgress = () => React.createElement("div", null,
-    React.createElement("button", { onClick: () => setShowMediaModal(true), style: styles.button }, "+ Upload Photo/Video"),
+    React.createElement("div", { style: { marginBottom: "12px", color: "#666" } }, "Site photos, videos, and documents uploaded by the contractor"),
     React.createElement("div", { style: styles.card },
       React.createElement("div", { style: styles.cardTitle }, "📸 Site Progress Gallery"),
       React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "16px" } },
         projectMedia.map((m: any) =>
-          React.createElement("div", { key: m.id, style: { border: "1px solid #ddd", borderRadius: "8px", overflow: "hidden", cursor: "pointer" }, onClick: () => setSelectedMedia(m) },
-            React.createElement("img", { src: m.url, style: { width: "100%", height: "140px", objectFit: "cover" } }),
+          React.createElement("div", { key: m.id, style: { border: "1px solid #ddd", borderRadius: "8px", overflow: "hidden", cursor: "pointer" }, onClick: () => { setSelectedMedia(m); setShowMediaViewer(true); } },
+            m.type === "photo" && m.url
+              ? React.createElement("img", { src: m.url, alt: m.title, style: { width: "100%", height: "140px", objectFit: "cover" } })
+              : React.createElement("div", { style: { height: "140px", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#f4f4f4", fontSize: "44px" } }, m.type === "video" ? "🎥" : "📄"),
             React.createElement("div", { style: { padding: "10px", fontSize: "12px", fontWeight: "500" } }, m.title),
             React.createElement("div", { style: { padding: "0 10px 10px", fontSize: "10px", color: "#666" } }, m.date)
           )
@@ -897,7 +929,7 @@ useEffect(() => {
   );
 
   const renderExtraWorks = () => React.createElement("div", null,
-    React.createElement("button", { onClick: () => setShowExtraWorkModal(true), style: styles.button }, "+ Add Extra Work"),
+    React.createElement("div", { style: { marginBottom: "12px", color: "#666" } }, "Extra work details supplied by the contractor"),
     React.createElement("div", { style: styles.card },
       React.createElement("div", { style: styles.cardTitle }, "🔧 Extra Works / Alterations"),
       React.createElement("table", { style: styles.table },
@@ -920,7 +952,7 @@ useEffect(() => {
               React.createElement("td", { style: styles.td }, "₹", w.amount.toLocaleString()),
               React.createElement("td", { style: styles.td }, w.status),
               React.createElement("td", { style: styles.td },
-                w.status === "Pending Owner Approval" && React.createElement("button", { onClick: () => approveExtraWork(w.id), style: styles.buttonSuccess }, "Approve")
+                React.createElement("span", { style: { color: "#666" } }, "View only")
               )
             )
           )
@@ -932,7 +964,7 @@ useEffect(() => {
   const renderLabour = () => {
     const totalLabourPayment = projectLabour.reduce((sum: number, l: any) => sum + (l.totalPayment || 0), 0);
     return React.createElement("div", null,
-      React.createElement("button", { onClick: () => setShowLabourModal(true), style: styles.button }, "+ Add Labour"),
+      React.createElement("div", { style: { marginBottom: "12px", color: "#666" } }, "Labour and attendance recorded by the contractor"),
       React.createElement("div", { style: styles.card },
         React.createElement("div", { style: styles.cardTitle }, "👷 Labour Management"),
         React.createElement("div", { style: styles.grid3 },
@@ -954,11 +986,11 @@ useEffect(() => {
                 React.createElement("td", { style: styles.td }, l.name),
                 React.createElement("td", { style: styles.td }, l.role),
                 React.createElement("td", { style: styles.td }, "₹", l.dailyWage),
-                React.createElement("td", { style: styles.td }, React.createElement("input", { type: "number", value: l.daysPresent, onChange: (e) => updateLabourAttendance(l.id, e.target.value), style: { width: "70px", padding: "4px", borderRadius: "4px", border: "1px solid #ddd" } })),
+                React.createElement("td", { style: styles.td }, selectedProjectData?.labourAttendance?.filter((attendance: any) => attendance.labourId === l.id && attendance.status === "Present").length ?? l.daysPresent ?? 0),
                 React.createElement("td", { style: styles.td }, "₹", l.totalPayment?.toLocaleString()),
                 React.createElement("td", { style: styles.td }, l.status),
                 React.createElement("td", { style: styles.td },
-                  React.createElement("button", { onClick: () => { setSelectedLabour(l); setShowLabourPaymentModal(true); }, style: styles.buttonInfo }, "Make Payment")
+                  React.createElement("span", { style: { color: "#666" } }, "View only")
                 )
               )
             )
@@ -998,6 +1030,7 @@ useEffect(() => {
         React.createElement("select", { value: reportType, onChange: (e) => setReportType(e.target.value), style: styles.select },
           React.createElement("option", { value: "milestones" }, "Milestones Report"),
           React.createElement("option", { value: "payments" }, "Payments Report"),
+          React.createElement("option", { value: "pendingpayments" }, "Pending Invoice Payments"),
           React.createElement("option", { value: "inventory" }, "Inventory Report"),
           React.createElement("option", { value: "extrawork" }, "Extra Works Report"),
           React.createElement("option", { value: "labour" }, "Labour Report")
@@ -1064,19 +1097,19 @@ useEffect(() => {
       ),
       React.createElement("div", null,
         React.createElement("button", { onClick: shareWhatsApp, style: styles.buttonSuccess }, "📱 Share Update"),
-        React.createElement("button", { onClick: () => window.location.href = "/", style: { ...styles.button, backgroundColor: "#dc3545", marginLeft: "8px" } }, "🚪 Logout")
+        React.createElement("button", { onClick: logoutToLogin, style: { ...styles.button, backgroundColor: "#dc3545", marginLeft: "8px" } }, "🚪 Logout")
       )
     ),
     React.createElement("div", { style: styles.card },
       React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" } },
         React.createElement("div", { style: { flex: 1 } },
           React.createElement("label", { style: styles.label }, "Select Project"),
-          React.createElement("select", { value: selectedProject || "", onChange: (e) => setSelectedProject(parseInt(e.target.value)), style: styles.select },
+          React.createElement("select", { value: selectedProject || "", onChange: (e) => setSelectedProject(e.target.value), style: styles.select },
             React.createElement("option", { value: "" }, "-- Select Project --"),
             projects.map((p: any) => React.createElement("option", { key: p.id, value: p.id }, p.name, " - ", p.status, " (", p.progress, "%)"))
           )
         ),
-        React.createElement("button", { onClick: () => setShowAddProject(true), style: { ...styles.button, marginTop: "24px" } }, "+ New Project")
+        React.createElement("div", { style: { marginTop: "24px", color: "#666" } }, "View-only access")
       )
     ),
     React.createElement("div", { style: styles.tabContainer },
@@ -1148,17 +1181,17 @@ useEffect(() => {
     
     showPaymentModal && selectedMilestone && React.createElement("div", { style: styles.modal, onClick: () => setShowPaymentModal(false) },
       React.createElement("div", { style: styles.modalContent, onClick: (e) => e.stopPropagation() },
-        React.createElement("h3", null, "Release Payment for ", selectedMilestone.name),
-        React.createElement("p", null, React.createElement("strong", null, "Milestone Amount:"), " ₹", (selectedMilestone.amount/1000).toFixed(0), "K"),
+        React.createElement("h3", null, "Mark Invoice Paid - ", selectedMilestone.name),
+        React.createElement("p", null, React.createElement("strong", null, "Invoice Amount:"), " ₹", (Number(selectedMilestone.invoiceAmount)/1000).toFixed(0), "K"),
         React.createElement("div", null,
           React.createElement("label", { style: styles.label }, "Payment Amount (₹)"),
-          React.createElement("input", { type: "number", placeholder: "Enter payment amount", value: actualPaymentAmount, onChange: (e) => setActualPaymentAmount(e.target.value), style: styles.input })
+          React.createElement("input", { type: "number", readOnly: true, value: actualPaymentAmount, style: styles.input })
         ),
         React.createElement("div", { style: styles.row2 },
           React.createElement("input", { type: "text", placeholder: "Cheque Number", value: chequeNo, onChange: (e) => setChequeNo(e.target.value), style: styles.input }),
           React.createElement("input", { type: "text", placeholder: "UTR Number", value: utrNo, onChange: (e) => setUtrNo(e.target.value), style: styles.input })
         ),
-        React.createElement("button", { onClick: releasePayment, style: styles.buttonSuccess }, "Release Payment")
+        React.createElement("button", { onClick: releasePayment, style: styles.buttonSuccess }, "Confirm Paid")
       )
     ),
     
@@ -1239,8 +1272,16 @@ useEffect(() => {
     ),
     
     showMediaViewer && selectedMedia && React.createElement("div", { style: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.9)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000 }, onClick: () => setShowMediaViewer(false) },
-      React.createElement("div", null,
-        React.createElement("img", { src: selectedMedia.url, style: { maxWidth: "90vw", maxHeight: "90vh", borderRadius: "12px" } }),
+      React.createElement("div", { style: { color: "white", textAlign: "center" } },
+        selectedMedia.type === "photo" && selectedMedia.url
+          ? React.createElement("img", { src: selectedMedia.url, alt: selectedMedia.title, style: { maxWidth: "90vw", maxHeight: "80vh", borderRadius: "12px" } })
+          : selectedMedia.type === "video" && selectedMedia.url
+            ? React.createElement("video", { src: selectedMedia.url, controls: true, style: { maxWidth: "90vw", maxHeight: "80vh", borderRadius: "12px" } })
+            : React.createElement("div", null,
+              React.createElement("div", { style: { fontSize: "72px" } }, "📄"),
+              React.createElement("h3", null, selectedMedia.title),
+              selectedMedia.url && React.createElement("a", { href: selectedMedia.url, target: "_blank", rel: "noreferrer", style: { color: "white" } }, "Open document")
+            ),
         React.createElement("button", { onClick: () => setShowMediaViewer(false), style: { position: "absolute", top: 20, right: 30, color: "white", fontSize: 30, background: "none", border: "none", cursor: "pointer" } }, "×")
       )
     )
