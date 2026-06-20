@@ -211,18 +211,18 @@ export default function TilesPage() {
       if (isToilet) {
         toiletWallArea = calculateToiletArea(room.length, room.width, 7, 20);
         floorArea = room.length * room.width * room.nos;
-        totalToiletArea += floorArea + toiletWallArea;
-        const toiletTiles = (floorArea + toiletWallArea) * tilesPerSqft * (1 + wastage/100);
-        roomTileCost = toiletTiles * tileRate;
+        totalToiletArea += toiletWallArea;
+        const toiletTileArea = floorArea + toiletWallArea;
+        roomTileCost = toiletTileArea * tileRate * (1 + wastage / 100);
       } else {
-        const floorTiles = floorArea * tilesPerSqft * (1 + wastage/100);
+        roomTileCost = floorArea * tileRate * (1 + wastage / 100);
         roomTileCost = floorTiles * tileRate;
         
         if (room.includeSkirting) {
           const perimeter = 2 * (room.length + room.width);
           const skirtingLength = (perimeter - 3) * room.nos;
           skirtingArea = (skirtingLength * 4) / 12;
-          const skirtingTiles = skirtingArea * tilesPerSqft * (1 + wastage/100);
+          roomTileCost += skirtingArea * tileRate * (1 + wastage / 100);
           roomTileCost += skirtingTiles * tileRate * 0.8;
           totalSkirtingArea += skirtingArea;
         }
@@ -251,7 +251,7 @@ export default function TilesPage() {
       const tileRate = getTileRate(clad.type);
       const tilesPerSqft = getTilesPerSqft(clad.tileSize);
       const tilesRequired = clad.area * tilesPerSqft * (1 + wastage/100);
-      const claddingCost = tilesRequired * tileRate;
+      const claddingCost = clad.area * tileRate * (1 + wastage / 100);
       totalCladdingArea += clad.area;
       totalTileCost += claddingCost;
       claddingDetails.push({
@@ -428,7 +428,7 @@ export default function TilesPage() {
             React.createElement('td', { style: styles.td }, clad.width > 0 ? `${clad.length}' x ${clad.width}' x ${clad.height}'` : `${clad.length}' x ${clad.height}'`),
             React.createElement('td', { style: styles.td }, formatNumber(clad.area)),
             React.createElement('td', { style: styles.td }, clad.type),
-            React.createElement('td', { style: styles.td }, `₹${formatNumber(clad.area * getTileRate(clad.type))}`),
+            React.createElement('td', { style: styles.td }, `₹${formatNumber(clad.area * getTileRate(clad.type) * (1 + wastage / 100))}`),
             React.createElement('td', { style: styles.td }, React.createElement('button', { onClick: () => removeCladding(clad.id), style: { ...styles.buttonSmall, backgroundColor: '#dc3545' } }, 'X'))))
         )
       )
@@ -496,3 +496,4 @@ export default function TilesPage() {
     )
   );
 }
+
