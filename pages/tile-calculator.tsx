@@ -183,11 +183,10 @@ export default function TilesPage() {
     setCladdings(claddings.filter(c => c.id !== id));
   };
 
-  const calculateToiletArea = (length, width, height, doorDeduction = 20) => {
-    const floorArea = length * width;
-    const wallArea = 2 * (length + width) * height;
-    const totalArea = floorArea + wallArea - doorDeduction;
-    return Math.max(0, totalArea);
+  const calculateToiletWallArea = (length, width, height, nos, doorDeduction = 20) => {
+    const wallAreaPerToilet = 2 * (length + width) * height;
+    const netWallAreaPerToilet = Math.max(0, wallAreaPerToilet - doorDeduction);
+    return netWallAreaPerToilet * nos;
   };
 
   const calculateResults = () => {
@@ -209,7 +208,7 @@ export default function TilesPage() {
       const tilesPerSqft = getTilesPerSqft(room.tileSize);
       
       if (isToilet) {
-        toiletWallArea = calculateToiletArea(room.length, room.width, 7, 20);
+        toiletWallArea = calculateToiletWallArea(room.length, room.width, 7, room.nos, 20);
         floorArea = room.length * room.width * room.nos;
         totalToiletArea += toiletWallArea;
         const toiletTileArea = floorArea + toiletWallArea;
@@ -265,7 +264,7 @@ export default function TilesPage() {
     });
     
     // Mortar Calculation for total area
-    const totalAreaForMortar = totalFloorArea + totalSkirtingArea + totalCladdingArea;
+    const totalAreaForMortar = totalFloorArea + totalSkirtingArea + totalCladdingArea + totalToiletArea;
     const mortarVolumeCft = totalAreaForMortar * (mortarThickness / 12);
     const mortarVolumeCum = mortarVolumeCft / 35.315;
     
@@ -496,4 +495,5 @@ export default function TilesPage() {
     )
   );
 }
+
 
