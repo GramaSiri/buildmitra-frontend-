@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import * as XLSX from "xlsx";
+import { exportProjectReport } from "../utils/reporting";
 import {
+  DEFAULT_PROJECT_PERMISSIONS,
   findBuyerByCode,
   getLoggedInUser,
   migrateLegacyProjects,
@@ -20,6 +21,7 @@ export default function ContractorDashboard() {
   const [showInventoryModal, setShowInventoryModal] = useState(false);
   const [showPaymentEntryModal, setShowPaymentEntryModal] = useState(false);
   const [showMilestoneModal, setShowMilestoneModal] = useState(false);
+  const [showProjectQuoteModal, setShowProjectQuoteModal] = useState(false);
   const [selectedProject, setSelectedProject] = useState(1);
   const [activeTab, setActiveTab] = useState("overview");
   const [selectedMilestone, setSelectedMilestone] = useState(null);
@@ -30,7 +32,7 @@ export default function ContractorDashboard() {
   const [quoteResponse, setQuoteResponse] = useState({ amount: "", message: "", deliveryDate: "" });
   const [invoiceAmount, setInvoiceAmount] = useState("");
   const [reportType, setReportType] = useState("payments");
-  const [reportFilters, setReportFilters] = useState({ startDate: "", endDate: "", projectId: "" });
+  const [reportFilters, setReportFilters] = useState({ startDate: "", endDate: "", projectId: "", material: "", supplier: "", labour: "", payment: "", milestone: "", extraWork: "" });
   
   // Media upload states
   const [mediaFile, setMediaFile] = useState(null);
@@ -44,13 +46,14 @@ export default function ContractorDashboard() {
   const [editPortfolioId, setEditPortfolioId] = useState(null);
   const [storageReady, setStorageReady] = useState(false);
   const [loggedInUser, setLoggedInUser] = useState<any>(null);
-  const [newInventoryItem, setNewInventoryItem] = useState({ material: "", unit: "bags", receivedQty: "", consumed: "", supplier: "", invoiceNo: "" });
+  const [newInventoryItem, setNewInventoryItem] = useState({ material: "", supplier: "", invoiceNo: "", invoiceDate: "", orderedQty: "", receivedQty: "", consumedQty: "", unit: "bags", rate: "" });
+  const [newProjectQuote, setNewProjectQuote] = useState({ quoteNo: "", date: new Date().toISOString().split("T")[0], description: "", amount: "", status: "Draft", remarks: "" });
   const [newPayment, setNewPayment] = useState({ milestoneName: "", amount: "", date: new Date().toISOString().split("T")[0], status: "Received", reference: "" });
   const [newMilestone, setNewMilestone] = useState({ name: "", amount: "", plannedEndDate: "", status: "Pending" });
 
   const [newProject, setNewProject] = useState({
     name: "", buyerCode: "", clientName: "", clientMobile: "", clientEmail: "",
-    plotLength: "", plotWidth: "", floors: "", bua: "", totalAmount: "", startDate: "", endDate: "", agreementUrl: null
+    plotLength: "", plotWidth: "", floors: "", ratePerSft: "", startDate: "", endDate: "", agreementUrl: null
   });
 
  const [contractorInfo, setContractorInfo] = useState({
@@ -310,6 +313,11 @@ useEffect(() => {
     }
   };
 
+  const plotArea = Number(newProject.plotLength || 0) * Number(newProject.plotWidth || 0);
+  const calculatedFloors = Math.max(1, Number(newProject.floors) || 0);
+  const calculatedBua = Number((plotArea * 0.9 * calculatedFloors).toFixed(2));
+  const calculatedTotalAmount = Number((calculatedBua * Number(newProject.ratePerSft || 0)).toFixed(2));
+
   const addProject = () => {
     if (!newProject.name.trim() || !newProject.buyerCode.trim() || !newProject.startDate || !newProject.endDate) {
       alert("Project name, Buyer Unique Code, start date, and end date are required.");
@@ -319,11 +327,11 @@ useEffect(() => {
       alert("End date cannot be before start date.");
       return;
     }
-    const bua = Number(newProject.bua);
-    const floors = Math.max(1, Number(newProject.floors) || 1);
-    const totalAmount = Number(newProject.totalAmount);
-    if (!bua || bua <= 0 || !totalAmount || totalAmount <= 0) {
-      alert("Built-up area and total project amount must be greater than zero.");
+    const bua = calculatedBua;
+    const floors = calculatedFloors;
+    const totalAmount = calculatedTotalAmount;
+    if (!Number(newProject.plotLength) || !Number(newProject.plotWidth) || !Number(newProject.floors) || !Number(newProject.ratePerSft) || bua <= 0 || totalAmount <= 0) {
+      alert("Plot length, plot width, number of floors, and rate per sqft must all be greater than zero.");
       return;
     }
     const buyer = findBuyerByCode(newProject.buyerCode);
@@ -357,7 +365,9 @@ useEffect(() => {
       contractorCode: loggedInUser.uniqueCode || contractorInfo.uniqueCode,
       plotLength: parseFloat(newProject.plotLength) || 0,
       plotWidth: parseFloat(newProject.plotWidth) || 0,
+      plotArea,
       floors,
+      ratePerSft: Number(newProject.ratePerSft),
       bua,
       totalAmount,
       progress: 0,
@@ -370,13 +380,34 @@ useEffect(() => {
       siteMedia: [],
       inventory: [],
       suppliers: [],
-      extraWorks: []
+      extraWorks: [],
+      quotations: [],
+      permissions: { ...DEFAULT_PROJECT_PERMISSIONS }
     };
     setProjects([...projects, newProjectObj]);
     setSelectedProject(projectId);
-    setNewProject({ name: "", buyerCode: "", clientName: "", clientMobile: "", clientEmail: "", plotLength: "", plotWidth: "", floors: "", bua: "", totalAmount: "", startDate: "", endDate: "", agreementUrl: null });
+    setNewProject({ name: "", buyerCode: "", clientName: "", clientMobile: "", clientEmail: "", plotLength: "", plotWidth: "", floors: "", ratePerSft: "", startDate: "", endDate: "", agreementUrl: null });
     setShowProjectModal(false);
     alert(`Project created with ${milestones.length} civil milestones and assigned to ${buyer.name} (${buyer.uniqueCode}).`);
+  };
+
+  const updatePermission = (permission: string, enabled: boolean, projectId = selectedProject) => {
+    setProjects(projects.map((project) => project.id === projectId ? {
+      ...project,
+      permissions: { ...DEFAULT_PROJECT_PERMISSIONS, ...(project.permissions || {}), [permission]: enabled }
+    } : project));
+  };
+
+  const addProjectQuotation = () => {
+    const amount = Number(newProjectQuote.amount);
+    if (!selectedProjectData || !newProjectQuote.quoteNo.trim() || !newProjectQuote.date || !newProjectQuote.description.trim() || amount <= 0 || !newProjectQuote.status) {
+      alert("Quote number, project, date, description, amount, and status are required.");
+      return;
+    }
+    const quote = { id: `QUOTE-${Date.now()}`, ...newProjectQuote, amount, projectId: selectedProjectData.id, projectName: selectedProjectData.name };
+    setProjects(projects.map((project) => project.id === selectedProject ? { ...project, quotations: [...(project.quotations || []), quote] } : project));
+    setNewProjectQuote({ quoteNo: "", date: new Date().toISOString().split("T")[0], description: "", amount: "", status: "Draft", remarks: "" });
+    setShowProjectQuoteModal(false);
   };
 
   const addPayment = () => {
@@ -400,13 +431,15 @@ useEffect(() => {
   };
 
   const addInventoryItem = () => {
-    if (!newInventoryItem.material || !newInventoryItem.receivedQty) {
-      alert("Enter a material name and received quantity");
+    if (!newInventoryItem.material || !newInventoryItem.invoiceDate || !newInventoryItem.orderedQty || !newInventoryItem.receivedQty) {
+      alert("Material, invoice date, ordered quantity, and received quantity are required.");
       return;
     }
     const receivedQty = Number(newInventoryItem.receivedQty);
-    const consumed = Number(newInventoryItem.consumed || 0);
-    if (receivedQty < 0 || consumed < 0 || consumed > receivedQty) {
+    const orderedQty = Number(newInventoryItem.orderedQty);
+    const consumedQty = Number(newInventoryItem.consumedQty || 0);
+    const rate = Number(newInventoryItem.rate || 0);
+    if (orderedQty < 0 || receivedQty < 0 || consumedQty < 0 || receivedQty > orderedQty || consumedQty > receivedQty || rate < 0) {
       alert("Consumed quantity must be between zero and received quantity");
       return;
     }
@@ -415,13 +448,18 @@ useEffect(() => {
       inventory: [...(project.inventory || []), {
         id: `INV-${Date.now()}`,
         ...newInventoryItem,
+        orderedQty,
         receivedQty,
-        consumed,
-        balance: receivedQty - consumed,
-        receivedDate: new Date().toISOString().split("T")[0]
+        consumedQty,
+        consumed: consumedQty,
+        balanceQty: receivedQty - consumedQty,
+        balance: receivedQty - consumedQty,
+        rate,
+        amount: receivedQty * rate,
+        receivedDate: newInventoryItem.invoiceDate
       }]
     } : project));
-    setNewInventoryItem({ material: "", unit: "bags", receivedQty: "", consumed: "", supplier: "", invoiceNo: "" });
+    setNewInventoryItem({ material: "", supplier: "", invoiceNo: "", invoiceDate: "", orderedQty: "", receivedQty: "", consumedQty: "", unit: "bags", rate: "" });
     setShowInventoryModal(false);
   };
 
@@ -472,7 +510,7 @@ useEffect(() => {
       ...project,
       inventory: (project.inventory || []).map((item) =>
         item.id === inventoryId && consumed >= 0 && consumed <= Number(item.receivedQty)
-          ? { ...item, consumed, balance: Number(item.receivedQty) - consumed }
+          ? { ...item, consumedQty: consumed, consumed, balanceQty: Number(item.receivedQty) - consumed, balance: Number(item.receivedQty) - consumed, amount: Number(item.receivedQty) * Number(item.rate || 0) }
           : item
       )
     } : project));
@@ -616,10 +654,13 @@ useEffect(() => {
 
   const generateReport = () => {
     let data = [];
-    const selectedProjectData = projects.find(p => String(p.id) === String(reportFilters.projectId));
+    const selectedProjectData = projects.find(p => String(p.id) === String(reportFilters.projectId || selectedProject));
     
     if (reportType === "milestones") {
-      data = (selectedProjectData?.milestones || []).map(m => ({
+      data = (selectedProjectData?.milestones || []).filter((m) =>
+        (!reportFilters.milestone || String(m.name || "").toLowerCase().includes(reportFilters.milestone.toLowerCase())) &&
+        (!reportFilters.startDate || m.endDate >= reportFilters.startDate) && (!reportFilters.endDate || m.endDate <= reportFilters.endDate)
+      ).map(m => ({
         "Project ID": selectedProjectData?.projectUniqueId,
         "Milestone": m.name,
         "Category": m.category,
@@ -640,6 +681,7 @@ useEffect(() => {
         .filter(m => {
           if (reportFilters.startDate && m.invoiceDate < reportFilters.startDate) return false;
           if (reportFilters.endDate && m.invoiceDate > reportFilters.endDate) return false;
+          if (reportFilters.payment && !String(m.paymentStatus || "").toLowerCase().includes(reportFilters.payment.toLowerCase())) return false;
           return true;
         })
         .map(m => ({
@@ -664,8 +706,22 @@ useEffect(() => {
           "Payment Status": m.paymentStatus
         }));
       data = pendingMilestones;
-    } else if (reportType === "labour") {
-      const labourData = (selectedProjectData?.labour || []).map(l => {
+    } else if (reportType === "inventory" || reportType === "supplier") {
+      data = (selectedProjectData?.inventory || []).filter((item) =>
+        (!reportFilters.material || String(item.material || "").toLowerCase().includes(reportFilters.material.toLowerCase())) &&
+        (!reportFilters.supplier || String(item.supplier || "").toLowerCase().includes(reportFilters.supplier.toLowerCase()))
+      ).map((item) => ({ Material: item.material, Supplier: item.supplier, InvoiceNo: item.invoiceNo, InvoiceDate: item.invoiceDate, Ordered: item.orderedQty, Received: item.receivedQty, Consumed: item.consumedQty ?? item.consumed, Balance: item.balanceQty ?? item.balance, Unit: item.unit, Rate: item.rate, Amount: item.amount }));
+    } else if (reportType === "attendance") {
+      data = (selectedProjectData?.labourAttendance || []).map((entry) => {
+        const labour = (selectedProjectData?.labour || []).find((item) => String(item.id) === String(entry.labourId));
+        return { Date: entry.date, Labour: labour?.name || entry.labourId, Category: labour?.role || "General", Status: entry.status };
+      }).filter((entry) => !reportFilters.labour || String(entry.Labour || "").toLowerCase().includes(reportFilters.labour.toLowerCase()));
+    } else if (reportType === "quotations") {
+      data = (selectedProjectData?.quotations || []).map((quote) => ({ QuoteNo: quote.quoteNo, Project: quote.projectName, Date: quote.date, Description: quote.description, Amount: quote.amount, Status: quote.status, Remarks: quote.remarks }));
+    } else if (reportType === "extrawork") {
+      data = (selectedProjectData?.extraWorks || []).filter((work) => !reportFilters.extraWork || String(work.description || work.type || "").toLowerCase().includes(reportFilters.extraWork.toLowerCase())).map((work) => ({ Date: work.date, Description: work.description, Type: work.type, Quantity: work.quantity, Unit: work.unit, Amount: work.amount, Status: work.status }));
+    } else if (reportType === "labour" || reportType === "labourpayment") {
+      const labourData = (selectedProjectData?.labour || []).filter((l) => !reportFilters.labour || String(l.name || l.role || "").toLowerCase().includes(reportFilters.labour.toLowerCase())).map(l => {
         const { daysPresent, totalPayment } = calculateWeeklyPayment(l);
         return {
           "Project ID": selectedProjectData?.projectUniqueId,
@@ -680,10 +736,7 @@ useEffect(() => {
       });
       data = labourData;
     }
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, reportType);
-    XLSX.writeFile(wb, `${reportType}_report_${new Date().toISOString().split("T")[0]}.xlsx`);
+    exportProjectReport(reportType, selectedProjectData, data);
     alert("Report downloaded!");
   };
 
@@ -874,7 +927,9 @@ useEffect(() => {
                 React.createElement("th", { style: styles.th }, "Date"),
                 React.createElement("th", { style: styles.th }, "Milestone"),
                 React.createElement("th", { style: styles.th }, "Amount"),
-                React.createElement("th", { style: styles.th }, "Status")
+                React.createElement("th", { style: styles.th }, "Status"),
+                React.createElement("th", { style: styles.th }, "Mode / Reference"),
+                React.createElement("th", { style: styles.th }, "Remarks")
               )
             ),
             React.createElement("tbody", null,
@@ -883,7 +938,9 @@ useEffect(() => {
                   React.createElement("td", { style: styles.td }, p.invoiceDate),
                   React.createElement("td", { style: styles.td }, p.name),
                   React.createElement("td", { style: styles.td }, "₹", (Number(p.invoiceAmount)/1000).toFixed(0), "K"),
-                  React.createElement("td", { style: styles.td }, React.createElement("span", { style: { ...styles.statusBadge, backgroundColor: p.paymentStatus === "Paid" ? "#d1fae5" : "#fff3cd", color: p.paymentStatus === "Paid" ? "#065f46" : "#856404" } }, p.paymentStatus))
+                  React.createElement("td", { style: styles.td }, React.createElement("span", { style: { ...styles.statusBadge, backgroundColor: p.paymentStatus === "Paid" ? "#d1fae5" : "#fff3cd", color: p.paymentStatus === "Paid" ? "#065f46" : "#856404" } }, p.paymentStatus), p.paidDate ? ` (${p.paidDate})` : ""),
+                  React.createElement("td", { style: styles.td }, p.paymentMode || "-", p.paymentReference ? ` / ${p.paymentReference}` : ""),
+                  React.createElement("td", { style: styles.td }, p.paymentRemarks || "-")
                 )
               )
             )
@@ -903,7 +960,12 @@ useEffect(() => {
             React.createElement("option", { value: "milestones" }, "Milestone Progress Report"),
             React.createElement("option", { value: "payments" }, "Payments Received Report"),
             React.createElement("option", { value: "pending" }, "Pending Payments Report"),
-            React.createElement("option", { value: "labour" }, "Labour Payment Report")
+            React.createElement("option", { value: "inventory" }, "Inventory Report"),
+            React.createElement("option", { value: "supplier" }, "Supplier Report"),
+            React.createElement("option", { value: "attendance" }, "Labour Attendance Report"),
+            React.createElement("option", { value: "labourpayment" }, "Labour Payment Report"),
+            React.createElement("option", { value: "extrawork" }, "Extra / Correction Works Report"),
+            React.createElement("option", { value: "quotations" }, "Quotation Report")
           )
         ),
         React.createElement("div", null,
@@ -1078,6 +1140,16 @@ useEffect(() => {
               )
             ),
             React.createElement("div", { style: styles.progressBar }, React.createElement("div", { style: { ...styles.progressFill, width: p.progress + "%" } })),
+            React.createElement("div", { style: { marginTop: "14px", padding: "12px", backgroundColor: "#f8f9fa", borderRadius: "8px" }, onClick: (e) => e.stopPropagation() },
+              React.createElement("strong", null, "Buyer permissions"),
+              React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: "12px", marginTop: "10px" } },
+                Object.entries({ milestones: "Milestones", inventory: "Inventory", labour: "Labour", siteMedia: "Site media/photos", payments: "Payments", reports: "Reports", quotations: "Quotations" }).map(([key, label]) =>
+                  React.createElement("label", { key, style: { display: "flex", gap: "6px", alignItems: "center" } },
+                    React.createElement("input", { type: "checkbox", checked: p.permissions?.[key] !== false, onChange: (e) => { setSelectedProject(p.id); updatePermission(key, e.target.checked, p.id); } }), label
+                  )
+                )
+              )
+            ),
             React.createElement("div", { style: { marginTop: "12px", display: "flex", gap: "12px", flexWrap: "wrap" } },
               React.createElement("button", { onClick: () => { setSelectedProject(p.id); setActiveTab("milestones"); }, style: styles.buttonInfo }, "🎯 Milestones"),
               React.createElement("button", { onClick: () => { setSelectedProject(p.id); setActiveTab("siteprogress"); }, style: styles.buttonInfo }, "📷 Media"),
@@ -1096,7 +1168,7 @@ useEffect(() => {
     return React.createElement("div", { style: styles.card },
       React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } },
         React.createElement("div", { style: styles.cardTitle }, "📦 Inventory - ", selectedProjectData?.name || "Select a project"),
-        selectedProjectData && React.createElement("button", { onClick: () => setShowInventoryModal(true), style: styles.button }, "+ Record Material")
+        selectedProjectData && React.createElement("button", { onClick: () => setShowInventoryModal(true), style: styles.button }, "+ Add Material")
       ),
       inventory.length === 0
         ? React.createElement("p", { style: { color: "#666" } }, "No inventory entries yet.")
@@ -1104,16 +1176,22 @@ useEffect(() => {
           React.createElement("table", { style: styles.table },
             React.createElement("thead", null, React.createElement("tr", null,
               React.createElement("th", { style: styles.th }, "Material"),
+              React.createElement("th", { style: styles.th }, "Invoice Date"),
+              React.createElement("th", { style: styles.th }, "Ordered"),
               React.createElement("th", { style: styles.th }, "Received"),
               React.createElement("th", { style: styles.th }, "Consumed"),
               React.createElement("th", { style: styles.th }, "Balance"),
+              React.createElement("th", { style: styles.th }, "Rate / Amount"),
               React.createElement("th", { style: styles.th }, "Supplier / Invoice")
             )),
             React.createElement("tbody", null, inventory.map((item) => React.createElement("tr", { key: item.id },
               React.createElement("td", { style: styles.td }, item.material),
+              React.createElement("td", { style: styles.td }, item.invoiceDate || item.receivedDate || "-"),
+              React.createElement("td", { style: styles.td }, item.orderedQty ?? item.receivedQty, " ", item.unit),
               React.createElement("td", { style: styles.td }, item.receivedQty, " ", item.unit),
-              React.createElement("td", { style: styles.td }, React.createElement("input", { type: "number", min: 0, max: item.receivedQty, value: item.consumed, onChange: (e) => updateInventoryConsumed(item.id, e.target.value), style: { ...styles.input, margin: 0, width: "100px" } })),
-              React.createElement("td", { style: styles.td }, item.balance, " ", item.unit),
+              React.createElement("td", { style: styles.td }, React.createElement("input", { type: "number", min: 0, max: item.receivedQty, value: item.consumedQty ?? item.consumed ?? 0, onChange: (e) => updateInventoryConsumed(item.id, e.target.value), style: { ...styles.input, margin: 0, width: "100px" } })),
+              React.createElement("td", { style: styles.td }, item.balanceQty ?? item.balance, " ", item.unit),
+              React.createElement("td", { style: styles.td }, "₹", Number(item.rate || 0).toLocaleString(), " / ₹", Number(item.amount || 0).toLocaleString()),
               React.createElement("td", { style: styles.td }, item.supplier || "-", item.invoiceNo ? ` / ${item.invoiceNo}` : "")
             )))
           )
@@ -1159,8 +1237,37 @@ useEffect(() => {
   };
 
   const renderQuotes = () => {
-    return React.createElement("div", { style: styles.card },
-      React.createElement("div", { style: styles.cardTitle }, "📋 My Quotes (Displayed in Marketplace)"),
+    const projectQuotes = selectedProjectData?.quotations || [];
+    return React.createElement("div", null,
+      React.createElement("div", { style: styles.card },
+      React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } },
+        React.createElement("div", { style: styles.cardTitle }, "📋 Project Quotations - ", selectedProjectData?.name || "Select a project"),
+        selectedProjectData && React.createElement("button", { onClick: () => setShowProjectQuoteModal(true), style: styles.button }, "+ Add Quotation")
+      ),
+      React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: "10px" } },
+        React.createElement("input", { placeholder: "Material", value: reportFilters.material, onChange: (e) => setReportFilters({...reportFilters, material: e.target.value}), style: styles.input }),
+        React.createElement("input", { placeholder: "Supplier", value: reportFilters.supplier, onChange: (e) => setReportFilters({...reportFilters, supplier: e.target.value}), style: styles.input }),
+        React.createElement("input", { placeholder: "Labour", value: reportFilters.labour, onChange: (e) => setReportFilters({...reportFilters, labour: e.target.value}), style: styles.input }),
+        React.createElement("input", { placeholder: "Payment status", value: reportFilters.payment, onChange: (e) => setReportFilters({...reportFilters, payment: e.target.value}), style: styles.input }),
+        React.createElement("input", { placeholder: "Milestone", value: reportFilters.milestone, onChange: (e) => setReportFilters({...reportFilters, milestone: e.target.value}), style: styles.input }),
+        React.createElement("input", { placeholder: "Extra / correction work", value: reportFilters.extraWork, onChange: (e) => setReportFilters({...reportFilters, extraWork: e.target.value}), style: styles.input })
+      ),
+      React.createElement("div", { style: { overflowX: "auto" } },
+        React.createElement("table", { style: styles.table },
+          React.createElement("thead", null, React.createElement("tr", null,
+            ["Quote No", "Project", "Date", "Description", "Amount", "Status", "Remarks"].map((label) => React.createElement("th", { key: label, style: styles.th }, label))
+          )),
+          React.createElement("tbody", null,
+            projectQuotes.map((q) => React.createElement("tr", { key: q.id },
+              React.createElement("td", { style: styles.td }, q.quoteNo), React.createElement("td", { style: styles.td }, q.projectName), React.createElement("td", { style: styles.td }, q.date),
+              React.createElement("td", { style: styles.td }, q.description), React.createElement("td", { style: styles.td }, "₹", Number(q.amount).toLocaleString()), React.createElement("td", { style: styles.td }, q.status), React.createElement("td", { style: styles.td }, q.remarks || "-")
+            )),
+            projectQuotes.length === 0 && React.createElement("tr", null, React.createElement("td", { colSpan: 7, style: { ...styles.td, textAlign: "center" } }, "No project quotations yet."))
+          )
+        )
+      )),
+      React.createElement("div", { style: styles.card },
+      React.createElement("div", { style: styles.cardTitle }, "Marketplace Quotes"),
       React.createElement("div", { style: { overflowX: "auto" } },
         React.createElement("table", { style: styles.table },
           React.createElement("thead", null,
@@ -1184,7 +1291,7 @@ useEffect(() => {
             )
           )
         )
-      )
+      ))
     );
   };
 
@@ -1209,7 +1316,9 @@ useEffect(() => {
     React.createElement("div", { style: styles.header },
       React.createElement("div", null,
         React.createElement("h1", { style: styles.headerTitle }, "🏗️ Contractor Dashboard"),
-        React.createElement("p", { style: styles.headerSub }, "Manage projects, upload media, track labour, and share with buyers")
+        React.createElement("p", { style: styles.headerSub }, "Contractor Code: ", loggedInUser?.uniqueCode || contractorInfo.uniqueCode || "Not assigned", " | ", loggedInUser?.name || contractorInfo.ownerName || contractorInfo.companyName, " ",
+          (loggedInUser?.uniqueCode || contractorInfo.uniqueCode) && React.createElement("button", { onClick: () => navigator.clipboard?.writeText(loggedInUser?.uniqueCode || contractorInfo.uniqueCode), style: { marginLeft: "8px", padding: "3px 8px", border: 0, borderRadius: "4px", cursor: "pointer" } }, "Copy Code")
+        )
       ),
       React.createElement("div", null,
         React.createElement("button", { onClick: () => window.open("https://wa.me/919876543210", "_blank"), style: styles.buttonSuccess }, "📱 Share"),
@@ -1239,8 +1348,12 @@ useEffect(() => {
           React.createElement("input", { type: "number", placeholder: "No of Floors", value: newProject.floors, onChange: (e) => setNewProject({...newProject, floors: e.target.value}), style: styles.input })
         ),
         React.createElement("div", { style: styles.row2 },
-          React.createElement("input", { type: "number", min: 1, placeholder: "Built-up Area / BUA (sq.ft)", value: newProject.bua, onChange: (e) => setNewProject({...newProject, bua: e.target.value}), style: styles.input }),
-          React.createElement("input", { type: "number", min: 1, placeholder: "Total Project Amount (₹)", value: newProject.totalAmount, onChange: (e) => setNewProject({...newProject, totalAmount: e.target.value}), style: styles.input })
+          React.createElement("input", { type: "number", min: 1, placeholder: "Rate per sqft (₹)", value: newProject.ratePerSft, onChange: (e) => setNewProject({...newProject, ratePerSft: e.target.value}), style: styles.input }),
+          React.createElement("div", { style: { backgroundColor: "#e8f5e9", padding: "10px", borderRadius: "8px", marginBottom: "12px" } },
+            React.createElement("div", null, "Plot Area: ", plotArea.toLocaleString(), " sq.ft"),
+            React.createElement("div", null, "BUA (90% × floors): ", calculatedBua.toLocaleString(), " sq.ft"),
+            React.createElement("strong", null, "Total Amount: ₹", calculatedTotalAmount.toLocaleString())
+          )
         ),
         React.createElement("div", { style: styles.row2 },
           React.createElement("input", { type: "date", placeholder: "Start Date", value: newProject.startDate, onChange: (e) => setNewProject({...newProject, startDate: e.target.value}), style: styles.input }),
@@ -1271,14 +1384,40 @@ useEffect(() => {
           )
         ),
         React.createElement("div", { style: styles.row2 },
-          React.createElement("input", { type: "number", min: 0, placeholder: "Received Quantity", value: newInventoryItem.receivedQty, onChange: (e) => setNewInventoryItem({...newInventoryItem, receivedQty: e.target.value}), style: styles.input }),
-          React.createElement("input", { type: "number", min: 0, placeholder: "Consumed Quantity", value: newInventoryItem.consumed, onChange: (e) => setNewInventoryItem({...newInventoryItem, consumed: e.target.value}), style: styles.input })
+          React.createElement("input", { type: "number", min: 0, placeholder: "Ordered Quantity", value: newInventoryItem.orderedQty, onChange: (e) => setNewInventoryItem({...newInventoryItem, orderedQty: e.target.value}), style: styles.input }),
+          React.createElement("input", { type: "number", min: 0, placeholder: "Received Quantity", value: newInventoryItem.receivedQty, onChange: (e) => setNewInventoryItem({...newInventoryItem, receivedQty: e.target.value}), style: styles.input })
+        ),
+        React.createElement("div", { style: styles.row2 },
+          React.createElement("input", { type: "number", min: 0, placeholder: "Consumed Quantity", value: newInventoryItem.consumedQty, onChange: (e) => setNewInventoryItem({...newInventoryItem, consumedQty: e.target.value}), style: styles.input }),
+          React.createElement("input", { type: "number", min: 0, placeholder: "Rate", value: newInventoryItem.rate, onChange: (e) => setNewInventoryItem({...newInventoryItem, rate: e.target.value}), style: styles.input })
         ),
         React.createElement("div", { style: styles.row2 },
           React.createElement("input", { placeholder: "Supplier", value: newInventoryItem.supplier, onChange: (e) => setNewInventoryItem({...newInventoryItem, supplier: e.target.value}), style: styles.input }),
           React.createElement("input", { placeholder: "Invoice Number", value: newInventoryItem.invoiceNo, onChange: (e) => setNewInventoryItem({...newInventoryItem, invoiceNo: e.target.value}), style: styles.input })
         ),
+        React.createElement("input", { type: "date", value: newInventoryItem.invoiceDate, onChange: (e) => setNewInventoryItem({...newInventoryItem, invoiceDate: e.target.value}), style: styles.input }),
+        React.createElement("div", { style: { marginBottom: "12px" } }, "Balance: ", Math.max(0, Number(newInventoryItem.receivedQty || 0) - Number(newInventoryItem.consumedQty || 0)), " ", newInventoryItem.unit, " | Amount: ₹", (Number(newInventoryItem.receivedQty || 0) * Number(newInventoryItem.rate || 0)).toLocaleString()),
         React.createElement("button", { onClick: addInventoryItem, style: { ...styles.buttonSuccess, width: "100%" } }, "Save Inventory")
+      )
+    ),
+
+    showProjectQuoteModal && React.createElement("div", { style: styles.modal, onClick: () => setShowProjectQuoteModal(false) },
+      React.createElement("div", { style: styles.modalContent, onClick: (e) => e.stopPropagation() },
+        React.createElement("h2", { style: { color: "#2d6a4f" } }, "Add Quotation - ", selectedProjectData?.name),
+        React.createElement("div", { style: styles.row2 },
+          React.createElement("input", { placeholder: "Quote No", value: newProjectQuote.quoteNo, onChange: (e) => setNewProjectQuote({...newProjectQuote, quoteNo: e.target.value}), style: styles.input }),
+          React.createElement("input", { value: selectedProjectData?.name || "", readOnly: true, style: styles.input })
+        ),
+        React.createElement("input", { type: "date", value: newProjectQuote.date, onChange: (e) => setNewProjectQuote({...newProjectQuote, date: e.target.value}), style: styles.input }),
+        React.createElement("textarea", { placeholder: "Description", value: newProjectQuote.description, onChange: (e) => setNewProjectQuote({...newProjectQuote, description: e.target.value}), style: styles.input }),
+        React.createElement("div", { style: styles.row2 },
+          React.createElement("input", { type: "number", min: 0, placeholder: "Amount", value: newProjectQuote.amount, onChange: (e) => setNewProjectQuote({...newProjectQuote, amount: e.target.value}), style: styles.input }),
+          React.createElement("select", { value: newProjectQuote.status, onChange: (e) => setNewProjectQuote({...newProjectQuote, status: e.target.value}), style: styles.select },
+            React.createElement("option", { value: "Draft" }, "Draft"), React.createElement("option", { value: "Sent" }, "Sent"), React.createElement("option", { value: "Accepted" }, "Accepted"), React.createElement("option", { value: "Rejected" }, "Rejected")
+          )
+        ),
+        React.createElement("textarea", { placeholder: "Remarks", value: newProjectQuote.remarks, onChange: (e) => setNewProjectQuote({...newProjectQuote, remarks: e.target.value}), style: styles.input }),
+        React.createElement("button", { onClick: addProjectQuotation, style: { ...styles.buttonSuccess, width: "100%" } }, "Save Quotation")
       )
     ),
 

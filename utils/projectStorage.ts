@@ -17,8 +17,19 @@ const PROJECT_ARRAY_FIELDS = [
   "labourAttendance",
   "payments",
   "siteMedia",
-  "extraWorks"
+  "extraWorks",
+  "quotations"
 ];
+
+export const DEFAULT_PROJECT_PERMISSIONS = {
+  milestones: true,
+  inventory: true,
+  labour: true,
+  siteMedia: true,
+  payments: true,
+  reports: true,
+  quotations: true
+};
 
 const readArray = (key: string): any[] => {
   if (typeof window === "undefined") return [];
@@ -39,6 +50,10 @@ export const normalizeProjectRecord = (project: any) => {
       normalized[field] = [];
     }
   });
+  normalized.permissions = {
+    ...DEFAULT_PROJECT_PERMISSIONS,
+    ...(normalized.permissions || {})
+  };
   return normalized;
 };
 

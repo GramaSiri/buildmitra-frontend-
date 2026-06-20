@@ -18,6 +18,7 @@ export default function Login() {
   });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [registeredCode, setRegisteredCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [agreePolicy, setAgreePolicy] = useState(false);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
@@ -63,13 +64,13 @@ export default function Login() {
     const existingCodes = new Set(
       users.map((user) => String(user.uniqueCode || "").toUpperCase())
     );
-    for (let attempt = 0; attempt < 10000; attempt += 1) {
-      const randomNum = Math.floor(1000 + Math.random() * 9000);
+    const start = Math.floor(Math.random() * 9000);
+    for (let attempt = 0; attempt < 9000; attempt += 1) {
+      const randomNum = 1000 + ((start + attempt) % 9000);
       const candidate = `${codePrefix}-${randomNum}`;
       if (!existingCodes.has(candidate)) return candidate;
     }
-    // The four-digit namespace is unexpectedly exhausted; retain uniqueness.
-    return `${codePrefix}-${Date.now()}`;
+    throw new Error(`No ${codePrefix}-xxxx codes are available. Contact BuildMitra support.`);
   };
 
   // Reset data based on role
@@ -362,12 +363,12 @@ export default function Login() {
     resetUserData(userId, formData.name.trim(), formData.phone.trim(), uniqueCode, formData.role);
     
     setSuccess(`✅ Registration successful! Welcome ${formData.name}! (Code: ${uniqueCode}) Please login to continue.`);
+    setRegisteredCode(uniqueCode);
     setLoading(false);
     
     setTimeout(() => {
       setIsLogin(true);
       setFormData({ ...formData, password: "", confirmPassword: "", phone: "", email: "" });
-      setSuccess("");
     }, 2500);
   };
 
@@ -547,7 +548,13 @@ export default function Login() {
       ),
       
       error && React.createElement("div", { style: styles.error }, error),
-      success && React.createElement("div", { style: styles.success }, success),
+      success && React.createElement("div", { style: styles.success },
+        React.createElement("div", null, success),
+        registeredCode && React.createElement("div", { style: { marginTop: "10px", fontSize: "18px", fontWeight: "bold" } },
+          "Your Unique Code: ", registeredCode,
+          React.createElement("button", { type: "button", onClick: () => navigator.clipboard?.writeText(registeredCode), style: { marginLeft: "10px", padding: "5px 10px", border: "1px solid currentColor", borderRadius: "6px", cursor: "pointer" } }, "Copy Code")
+        )
+      ),
       
       isLogin ? 
         React.createElement("form", { onSubmit: handleLogin },
