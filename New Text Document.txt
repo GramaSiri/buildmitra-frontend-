@@ -1,0 +1,225 @@
+import React, { useState } from 'react';
+import { PenTool, Download, Printer, Maximize, Map } from 'lucide-react';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
+
+export default function FloorPlanGenerator() {
+  // --- STATE: Inputs ---
+  const [plotL, setPlotL] = useState(40); // Length (Depth)
+  const [plotW, setPlotW] = useState(30); // Width (Frontage)
+  const [facing, setFacing] = useState('East');
+  
+  // Setbacks in feet
+  const [sbFront, setSbFront] = useState(5);
+  const [sbBack, setSbBack] = useState(3);
+  const [sbLeft, setSbLeft] = useState(3);
+  const [sbRight, setSbRight] = useState(3);
+
+  // --- MATH: Areas ---
+  const plotArea = plotL * plotW;
+  const buildableL = Math.max(0, plotL - sbFront - sbBack);
+  const buildableW = Math.max(0, plotW - sbLeft - sbRight);
+  const buildableArea = buildableL * buildableW;
+  const coveragePercent = plotArea > 0 ? ((buildableArea / plotArea) * 100).toFixed(1) : 0;
+
+  // --- SVG DRAWING LOGIC ---
+  // We use a scale multiplier to make the SVG look good
+  const scale = 10; 
+  const svgWidth = plotW * scale;
+  const svgHeight = plotL * scale;
+
+  // Calculate coordinates for the buildable area rectangle
+  // Assuming North is UP. 
+  // If Facing East, the road is on the Right.
+  let bX, bY, bW, bH;
+  bX = sbLeft * scale;
+  bY = sbBack * scale; // Assuming back is top for now, front is bottom.
+  bW = buildableW * scale;
+  bH = buildableL * scale;
+
+  // Vastu Zones Coordinates inside the buildable area
+  const zoneW = bW / 3;
+  const zoneH = bH / 3;
+
+  // --- EXPORT FUNCTION ---
+  const handleDownloadPDF = async () => {
+    const element = document.getElementById('drawing-canvas');
+    if (!element) return;
+    const canvas = await html2canvas(element, { scale: 2 });
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+    pdf.save(`BuildMitra_2D_Layout_${plotW}x${plotL}.pdf`);
+  };
+
+  const handlePrint = () => window.print();
+
+  return (
+    <div className="p-6 bg-slate-50 min-h-screen font-sans">
+      <div className="flex items-center mb-6">
+        <h1 className="text-2xl font-bold text-slate-800 flex items-center">
+          <PenTool className="mr-3 text-indigo-600" /> 2D Layout & Vastu Generator
+        </h1>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        {/* LEFT PANEL: Parameters */}
+        <div className="lg:col-span-4 space-y-6">
+          <div className="bg-white p-6 rounded-xl shadow-md border border-slate-200">
+            <h2 className="text-sm font-bold text-slate-700 uppercase tracking-widest mb-4 border-b pb-2">Plot Dimensions</h2>
+            
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div>
+                <label className="text-xs font-bold text-slate-500">Frontage / Width (ft)</label>
+                <input type="number" value={plotW} onChange={e => setPlotW(Number(e.target.value))} className="w-full p-2 bg-slate-50 border rounded mt-1 font-semibold text-slate-700" />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-500">Depth / Length (ft)</label>
+                <input type="number" value={plotL} onChange={e => setPlotL(Number(e.target.value))} className="w-full p-2 bg-slate-50 border rounded mt-1 font-semibold text-slate-700" />
+              </div>
+              <div className="col-span-2">
+                <label className="text-xs font-bold text-slate-500">Road Facing</label>
+                <select value={facing} onChange={e => setFacing(e.target.value)} className="w-full p-2 bg-slate-50 border rounded mt-1 font-semibold text-slate-700">
+                  <option>East Facing</option>
+                  <option>West Facing</option>
+                  <option>North Facing</option>
+                  <option>South Facing</option>
+                </select>
+              </div>
+            </div>
+
+            <h2 className="text-sm font-bold text-slate-700 uppercase tracking-widest mb-4 border-b pb-2 flex justify-between">
+              <span>Setbacks (Clearances)</span>
+            </h2>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-bold text-slate-500">Front (ft)</label>
+                <input type="number" value={sbFront} onChange={e => setSbFront(Number(e.target.value))} className="w-full p-2 bg-slate-50 border rounded mt-1 font-semibold text-slate-700" />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-500">Back (ft)</label>
+                <input type="number" value={sbBack} onChange={e => setSbBack(Number(e.target.value))} className="w-full p-2 bg-slate-50 border rounded mt-1 font-semibold text-slate-700" />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-500">Left (ft)</label>
+                <input type="number" value={sbLeft} onChange={e => setSbLeft(Number(e.target.value))} className="w-full p-2 bg-slate-50 border rounded mt-1 font-semibold text-slate-700" />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-500">Right (ft)</label>
+                <input type="number" value={sbRight} onChange={e => setSbRight(Number(e.target.value))} className="w-full p-2 bg-slate-50 border rounded mt-1 font-semibold text-slate-700" />
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-slate-900 text-white p-4 rounded-xl shadow-md border border-slate-800 text-center">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Total Plot Area</p>
+              <p className="text-2xl font-black">{plotArea} <span className="text-xs font-normal">SFT</span></p>
+            </div>
+            <div className="bg-indigo-600 text-white p-4 rounded-xl shadow-md text-center">
+              <p className="text-xs font-bold text-indigo-200 uppercase tracking-wide mb-1">Buildable Area</p>
+              <p className="text-2xl font-black">{buildableArea} <span className="text-xs font-normal">SFT</span></p>
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT PANEL: Interactive Canvas */}
+        <div className="lg:col-span-8 space-y-6">
+          <div className="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden flex flex-col min-h-[600px]">
+            
+            {/* Canvas Header */}
+            <div className="bg-slate-100 p-4 border-b flex justify-between items-center">
+              <div>
+                <h3 className="font-bold text-slate-800 flex items-center"><Map size={18} className="mr-2 text-slate-500"/> Site Generation Engine</h3>
+                <p className="text-xs text-slate-500">Ground Coverage: <span className="font-bold text-slate-700">{coveragePercent}%</span> (Checking Bylaws...)</p>
+              </div>
+              <div className="flex space-x-2">
+                <button onClick={handleDownloadPDF} className="px-3 py-2 bg-slate-800 text-white rounded font-bold text-xs flex items-center hover:bg-slate-900 transition"><Download size={14} className="mr-2"/> Export Drawing</button>
+                <button onClick={handlePrint} className="px-3 py-2 bg-indigo-100 text-indigo-700 rounded font-bold text-xs flex items-center hover:bg-indigo-200 transition"><Printer size={14} className="mr-2"/> Print</button>
+              </div>
+            </div>
+
+            {/* SVG Drawing Canvas */}
+            <div id="drawing-canvas" className="flex-1 bg-[url('https://www.transparenttextures.com/patterns/graphy.png')] bg-slate-50 flex items-center justify-center p-8 relative">
+              
+              {/* Compass Overlay */}
+              <div className="absolute top-6 left-6 flex flex-col items-center opacity-50">
+                <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-b-[12px] border-transparent border-b-red-500"></div>
+                <span className="font-black text-xs text-slate-700 mt-1">N</span>
+              </div>
+
+              {plotArea <= 0 ? (
+                <div className="text-slate-400 flex flex-col items-center"><Maximize size={48} className="mb-4 opacity-30"/><p>Invalid Dimensions</p></div>
+              ) : (
+                <svg 
+                  viewBox={`-20 -20 ${svgWidth + 40} ${svgHeight + 60}`} 
+                  className="w-full max-h-[500px] drop-shadow-xl"
+                  style={{ maxWidth: '100%', transition: 'all 0.3s ease' }}
+                >
+                  {/* Outer Plot Boundary */}
+                  <rect x="0" y="0" width={svgWidth} height={svgHeight} fill="#e2e8f0" stroke="#64748b" strokeWidth="2" strokeDasharray="5,5" />
+                  
+                  {/* Buildable Area Box */}
+                  <rect x={bX} y={bY} width={bW} height={bH} fill="#ffffff" stroke="#1e293b" strokeWidth="4" />
+                  
+                  {/* Vastu Grid Lines (Subdividing the buildable area into 9 zones) */}
+                  <line x1={bX + zoneW} y1={bY} x2={bX + zoneW} y2={bY + bH} stroke="#cbd5e1" strokeWidth="1" strokeDasharray="4" />
+                  <line x1={bX + zoneW * 2} y1={bY} x2={bX + zoneW * 2} y2={bY + bH} stroke="#cbd5e1" strokeWidth="1" strokeDasharray="4" />
+                  <line x1={bX} y1={bY + zoneH} x2={bX + bW} y2={bY + zoneH} stroke="#cbd5e1" strokeWidth="1" strokeDasharray="4" />
+                  <line x1={bX} y1={bY + zoneH * 2} x2={bX + bW} y2={bY + zoneH * 2} stroke="#cbd5e1" strokeWidth="1" strokeDasharray="4" />
+
+                  {/* Vastu Zone Highlight - North East (Pooja / Water) */}
+                  <rect x={bX + zoneW * 2} y={bY} width={zoneW} height={zoneH} fill="#dbeafe" opacity="0.7" />
+                  <text x={bX + zoneW * 2 + zoneW/2} y={bY + zoneH/2} fontSize="8" fill="#1e40af" fontWeight="bold" textAnchor="middle" dominantBaseline="middle">NE / POOJA</text>
+
+                  {/* Vastu Zone Highlight - South East (Kitchen / Fire) */}
+                  <rect x={bX + zoneW * 2} y={bY + zoneH * 2} width={zoneW} height={zoneH} fill="#ffedd5" opacity="0.7" />
+                  <text x={bX + zoneW * 2 + zoneW/2} y={bY + zoneH * 2 + zoneH/2} fontSize="8" fill="#c2410c" fontWeight="bold" textAnchor="middle" dominantBaseline="middle">SE / KITCHEN</text>
+
+                  {/* Vastu Zone Highlight - South West (Master Bed / Earth) */}
+                  <rect x={bX} y={bY + zoneH * 2} width={zoneW} height={zoneH} fill="#f3f4f6" opacity="0.9" />
+                  <text x={bX + zoneW/2} y={bY + zoneH * 2 + zoneH/2} fontSize="8" fill="#374151" fontWeight="bold" textAnchor="middle" dominantBaseline="middle">SW / MASTER BED</text>
+
+                  {/* Dimension Text - Plot */}
+                  <text x={svgWidth / 2} y={-5} fontSize="10" fill="#64748b" fontWeight="bold" textAnchor="middle">{plotW}' WIDTH</text>
+                  <text x={-5} y={svgHeight / 2} fontSize="10" fill="#64748b" fontWeight="bold" textAnchor="middle" transform={`rotate(-90 -5 ${svgHeight/2})`}>{plotL}' DEPTH</text>
+
+                  {/* Road Indicator based on Facing */}
+                  {facing === 'East Facing' && (
+                    <g transform={`translate(${svgWidth + 10}, 0)`}>
+                      <rect x="0" y="0" width="15" height={svgHeight} fill="#94a3b8" />
+                      <text x="7" y={svgHeight / 2} fontSize="8" fill="white" fontWeight="bold" textAnchor="middle" transform={`rotate(90 7 ${svgHeight/2})`}>EAST ROAD</text>
+                    </g>
+                  )}
+                  {facing === 'North Facing' && (
+                    <g transform={`translate(0, -15)`}>
+                      <rect x="0" y="0" width={svgWidth} height="10" fill="#94a3b8" />
+                      <text x={svgWidth/2} y="7" fontSize="8" fill="white" fontWeight="bold" textAnchor="middle">NORTH ROAD</text>
+                    </g>
+                  )}
+                  {facing === 'West Facing' && (
+                    <g transform={`translate(-20, 0)`}>
+                      <rect x="0" y="0" width="15" height={svgHeight} fill="#94a3b8" />
+                      <text x="7" y={svgHeight / 2} fontSize="8" fill="white" fontWeight="bold" textAnchor="middle" transform={`rotate(-90 7 ${svgHeight/2})`}>WEST ROAD</text>
+                    </g>
+                  )}
+                  {facing === 'South Facing' && (
+                    <g transform={`translate(0, ${svgHeight + 5})`}>
+                      <rect x="0" y="0" width={svgWidth} height="10" fill="#94a3b8" />
+                      <text x={svgWidth/2} y="7" fontSize="8" fill="white" fontWeight="bold" textAnchor="middle">SOUTH ROAD</text>
+                    </g>
+                  )}
+
+                </svg>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

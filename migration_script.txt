@@ -1,0 +1,57 @@
+// MIGRATION SCRIPT - Run this in browser console (F12) once
+
+console.log("🔄 Starting migration...");
+
+// 1. Get the undefined products
+const undefinedProducts = localStorage.getItem("supplierProducts_undefined");
+if (undefinedProducts) {
+  const products = JSON.parse(undefinedProducts);
+  console.log("📦 Found", products.length, "products with undefined userId");
+  
+  // 2. Get current logged in user
+  const user = JSON.parse(localStorage.getItem("loggedInUser") || "{}");
+  const userId = user.userId;
+  
+  if (userId) {
+    console.log("👤 Current userId:", userId);
+    
+    // 3. Get existing products for this user
+    const existingProducts = localStorage.getItem("supplierProducts_" + userId);
+    let userProducts = existingProducts ? JSON.parse(existingProducts) : [];
+    
+    // 4. Add undefined products to user's products
+    products.forEach(p => {
+      p.userId = userId;
+      p.ownerName = user.name || "Unknown";
+      userProducts.push(p);
+    });
+    
+    // 5. Save back
+    localStorage.setItem("supplierProducts_" + userId, JSON.stringify(userProducts));
+    console.log("✅ Migrated", products.length, "products to user", userId);
+    
+    // 6. Remove the old undefined key
+    localStorage.removeItem("supplierProducts_undefined");
+    console.log("🗑️ Removed supplierProducts_undefined");
+    
+    // 7. Also update supplierProducts (for backward compatibility)
+    localStorage.setItem("supplierProducts", JSON.stringify(userProducts));
+    console.log("✅ Updated supplierProducts");
+    
+  } else {
+    console.log("❌ No logged in user found. Please login first.");
+  }
+} else {
+  console.log("ℹ️ No supplierProducts_undefined found.");
+}
+
+// Check migration result
+console.log("🔍 After migration:");
+const keys = Object.keys(localStorage).filter(k => k.startsWith("supplierProducts_"));
+console.log("Product keys:", keys);
+keys.forEach(k => {
+  const data = JSON.parse(localStorage.getItem(k) || "[]");
+  console.log(k + ":", data.length, "products");
+});
+
+console.log("✅ Migration complete! Refresh the marketplace.");

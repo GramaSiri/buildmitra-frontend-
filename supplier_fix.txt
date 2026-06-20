@@ -1,0 +1,10 @@
+// Add this check at the beginning of addProduct function
+const addProduct = () => {
+  // Check if userId exists
+  const user = JSON.parse(localStorage.getItem("loggedInUser") || "{}");
+  if (!user.userId) {
+    alert("Please logout and login again to fix userId issue");
+    return;
+  }
+  // ... rest of the function uses user.userId
+};

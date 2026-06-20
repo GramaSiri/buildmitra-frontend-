@@ -1,0 +1,744 @@
+import React, { useState } from "react";
+import * as XLSX from "xlsx";
+
+export default function BuyerDashboard() {
+  const [activeTab, setActiveTab] = useState("dashboard");
+  const [selectedProject, setSelectedProject] = useState(1);
+  const [showAddProject, setShowAddProject] = useState(false);
+  const [showMaterialModal, setShowMaterialModal] = useState(false);
+  const [showMediaModal, setShowMediaModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedMilestone, setSelectedMilestone] = useState(null);
+  const [chequeNo, setChequeNo] = useState("");
+  const [utrNo, setUtrNo] = useState("");
+  const [reportType, setReportType] = useState("milestones");
+  const [reportFilters, setReportFilters] = useState({ startDate: "", endDate: "", supplier: "", milestoneName: "" });
+  const [mediaFile, setMediaFile] = useState(null);
+  const [mediaTitle, setMediaTitle] = useState("");
+  const [mediaType, setMediaType] = useState("photo");
+  const [mediaPreview, setMediaPreview] = useState(null);
+  const [showMediaViewer, setShowMediaViewer] = useState(false);
+  const [selectedMedia, setSelectedMedia] = useState(null);
+
+  // Calculate BUA with setback (10% of avg dimension)
+  const calculateBUA = (length, width, floors) => {
+    const setback = (length + width) / 2 * 0.1;
+    const effectiveLength = length - setback;
+    const effectiveWidth = width - setback;
+    return Math.round(effectiveLength * effectiveWidth * floors);
+  };
+
+  // Pre-built 30 milestones
+  const generateMilestones = (startDate, endDate, totalAmount) => {
+    const milestoneTemplates = [
+      { name: "Site Clearance & Leveling", percentage: 0.5, duration: 3 },
+      { name: "Soil Testing & Geotechnical Report", percentage: 0.3, duration: 5 },
+      { name: "Marking & Layout", percentage: 0.2, duration: 2 },
+      { name: "Excavation for Foundation", percentage: 2.5, duration: 7 },
+      { name: "Foundation PCC Work", percentage: 1.5, duration: 3 },
+      { name: "Foundation Reinforcement", percentage: 2.0, duration: 4 },
+      { name: "Foundation Concreting", percentage: 2.5, duration: 3 },
+      { name: "Backfilling & Compaction", percentage: 1.0, duration: 5 },
+      { name: "Plinth Beam Shuttering", percentage: 1.5, duration: 4 },
+      { name: "Plinth Beam Reinforcement", percentage: 1.5, duration: 3 },
+      { name: "Plinth Beam Concreting", percentage: 1.5, duration: 2 },
+      { name: "Ground Floor Column Casting", percentage: 2.5, duration: 5 },
+      { name: "Ground Floor Slab Shuttering", percentage: 2.0, duration: 5 },
+      { name: "Ground Floor Slab Reinforcement", percentage: 2.0, duration: 4 },
+      { name: "Ground Floor Slab Concreting", percentage: 2.5, duration: 3 },
+      { name: "First Floor Column Casting", percentage: 2.5, duration: 5 },
+      { name: "First Floor Slab Shuttering", percentage: 2.0, duration: 5 },
+      { name: "First Floor Slab Reinforcement", percentage: 2.0, duration: 4 },
+      { name: "First Floor Slab Concreting", percentage: 2.5, duration: 3 },
+      { name: "Brick Masonry Work", percentage: 6.0, duration: 15 },
+      { name: "Plastering Work", percentage: 5.0, duration: 10 },
+      { name: "Flooring & Tiling", percentage: 6.0, duration: 12 },
+      { name: "Plumbing & Electrical Rough-in", percentage: 4.0, duration: 10 },
+      { name: "Woodwork & Carpentry", percentage: 5.0, duration: 12 },
+      { name: "Painting & Finishing", percentage: 6.0, duration: 12 },
+      { name: "Electrical Fittings & Fixtures", percentage: 3.0, duration: 6 },
+      { name: "Plumbing Fixtures & Sanitary", percentage: 2.5, duration: 5 },
+      { name: "External Works & Landscaping", percentage: 4.0, duration: 10 },
+      { name: "Final Cleaning & Inspection", percentage: 1.5, duration: 3 },
+      { name: "Handover & Possession", percentage: 1.0, duration: 1 }
+    ];
+    
+    let cumulativeDays = 0;
+    const start = new Date(startDate);
+    return milestoneTemplates.map((template, idx) => {
+      const plannedStart = new Date(start);
+      plannedStart.setDate(start.getDate() + cumulativeDays);
+      const plannedEnd = new Date(plannedStart);
+      plannedEnd.setDate(plannedEnd.getDate() + template.duration);
+      cumulativeDays += template.duration;
+      
+      return {
+        id: idx + 1,
+        name: template.name,
+        percentage: template.percentage,
+        amount: (totalAmount * template.percentage) / 100,
+        plannedStartDate: plannedStart.toISOString().split("T")[0],
+        plannedEndDate: plannedEnd.toISOString().split("T")[0],
+        actualDate: null,
+        status: "Pending",
+        billRaised: false,
+        paymentReleased: false,
+        paymentDate: null,
+        chequeNo: null,
+        utrNo: null
+      };
+    });
+  };
+
+  // Projects State
+  const [projects, setProjects] = useState([
+    { 
+      id: 1, name: "Sunrise Villa", 
+      plotLength: 50, plotWidth: 40, floors: 2, bua: 0,
+      ratePerSft: 1800, totalAmount: 0,
+      contractorName: "Sharma Construction", contractorMobile: "+919876511111", contractorAddress: "Andheri, Mumbai",
+      startDate: "2024-01-01", endDate: "2024-06-30",
+      progress: 65, status: "In Progress",
+      milestones: [],
+      payments: [],
+      inventory: [],
+      media: []
+    }
+  ]);
+
+  const [newProject, setNewProject] = useState({
+    name: "", plotLength: 0, plotWidth: 0, floors: 1,
+    ratePerSft: 1800, bua: 0, totalAmount: 0,
+    contractorName: "", contractorMobile: "", contractorAddress: "",
+    startDate: "", endDate: ""
+  });
+
+  const [inventory, setInventory] = useState([]);
+  const [newMaterial, setNewMaterial] = useState({ materialCode: "", material: "", unit: "bags", supplier: "", invoiceNo: "", receiverName: "", receivedQty: "" });
+  const [siteMedia, setSiteMedia] = useState([]);
+
+  const selectedProjectData = projects.find(p => p.id === selectedProject);
+  const projectMilestones = selectedProjectData?.milestones || [];
+  const projectPayments = selectedProjectData?.payments || [];
+  const projectInventory = inventory.filter(i => i.projectId === selectedProject);
+  const projectMedia = siteMedia.filter(m => m.projectId === selectedProject);
+  
+  const completedMilestones = projectMilestones.filter(m => m.status === "Completed").length;
+  const progressPercent = projectMilestones.length ? (completedMilestones / projectMilestones.length) * 100 : 0;
+  const totalPaid = projectPayments.reduce((sum, p) => sum + p.amount, 0);
+  const totalContractAmount = selectedProjectData?.totalAmount || 0;
+
+  const addProject = () => {
+    if (!newProject.name || !newProject.plotLength || !newProject.plotWidth) {
+      alert("Please fill all required fields");
+      return;
+    }
+    if (!newProject.startDate || !newProject.endDate) {
+      alert("Please select start date and end date");
+      return;
+    }
+    const bua = calculateBUA(newProject.plotLength, newProject.plotWidth, newProject.floors);
+    const totalAmount = bua * newProject.ratePerSft;
+    const milestones = generateMilestones(newProject.startDate, newProject.endDate, totalAmount);
+    
+    setProjects([...projects, {
+      id: projects.length + 1,
+      ...newProject,
+      bua, totalAmount,
+      progress: 0, status: "Planning",
+      milestones, payments: [], inventory: [], media: []
+    }]);
+    setNewProject({ name: "", plotLength: 0, plotWidth: 0, floors: 1, ratePerSft: 1800, bua: 0, totalAmount: 0, contractorName: "", contractorMobile: "", contractorAddress: "", startDate: "", endDate: "" });
+    setShowAddProject(false);
+    alert("Project created with " + milestones.length + " milestones!");
+  };
+
+  const releasePayment = (milestone) => {
+    if (!chequeNo && !utrNo) {
+      alert("Please enter Cheque Number or UTR Number");
+      return;
+    }
+    const payment = {
+      id: projectPayments.length + 1,
+      milestoneId: milestone.id,
+      milestoneName: milestone.name,
+      amount: milestone.amount,
+      date: new Date().toISOString().split("T")[0],
+      status: "Paid",
+      chequeNo: chequeNo,
+      utrNo: utrNo
+    };
+    setProjects(projects.map(p => p.id === selectedProject ? {
+      ...p,
+      milestones: p.milestones.map(m => m.id === milestone.id ? { ...m, paymentReleased: true, paymentDate: new Date().toISOString().split("T")[0], chequeNo, utrNo } : m),
+      payments: [...p.payments, payment]
+    } : p));
+    setChequeNo("");
+    setUtrNo("");
+    setShowPaymentModal(false);
+    alert("Payment released for " + milestone.name);
+  };
+
+  const sharePayment = (payment) => {
+    const mobile = selectedProjectData?.contractorMobile;
+    if (!mobile) return;
+    const message = `*PAYMENT DETAILS - ${selectedProjectData?.name}*%0A%0AMilestone: ${payment.milestoneName}%0AAmount: ₹${(payment.amount/1000).toFixed(0)}K%0ADate: ${payment.date}%0AReference: ${payment.chequeNo || payment.utrNo}`;
+    window.open(`https://wa.me/${mobile}?text=${message}`, "_blank");
+  };
+
+  const addMaterial = () => {
+    if (!newMaterial.material || !newMaterial.receivedQty) {
+      alert("Enter material name and received quantity");
+      return;
+    }
+    const receivedQty = parseFloat(newMaterial.receivedQty);
+    setInventory([...inventory, {
+      id: inventory.length + 1,
+      projectId: selectedProject,
+      materialCode: newMaterial.materialCode || `MAT-${String(inventory.length + 1).padStart(3, "0")}`,
+      material: newMaterial.material,
+      receivedQty: receivedQty,
+      consumed: 0,
+      balance: receivedQty,
+      unit: newMaterial.unit,
+      supplier: newMaterial.supplier,
+      invoiceNo: newMaterial.invoiceNo,
+      receiverName: newMaterial.receiverName,
+      receivedDate: new Date().toISOString().split("T")[0]
+    }]);
+    setNewMaterial({ materialCode: "", material: "", unit: "bags", supplier: "", invoiceNo: "", receiverName: "", receivedQty: "" });
+    setShowMaterialModal(false);
+    alert("Material recorded!");
+  };
+
+  const updateConsumed = (id, consumed) => {
+    const item = inventory.find(i => i.id === id);
+    const consumedQty = parseFloat(consumed);
+    setInventory(inventory.map(i => i.id === id ? { ...i, consumed: consumedQty, balance: item.receivedQty - consumedQty } : i));
+  };
+
+  const uploadMedia = () => {
+    if (!mediaTitle) {
+      alert("Enter title");
+      return;
+    }
+    const mediaUrl = mediaFile ? URL.createObjectURL(mediaFile) : null;
+    setSiteMedia([...siteMedia, {
+      id: siteMedia.length + 1,
+      projectId: selectedProject,
+      type: mediaType,
+      title: mediaTitle,
+      url: mediaUrl,
+      file: mediaFile,
+      date: new Date().toISOString().split("T")[0]
+    }]);
+    setMediaTitle("");
+    setMediaFile(null);
+    setMediaPreview(null);
+    setMediaType("photo");
+    setShowMediaModal(false);
+    alert("Media uploaded!");
+  };
+
+  const viewMedia = (media) => {
+    setSelectedMedia(media);
+    setShowMediaViewer(true);
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setMediaFile(file);
+      const previewUrl = URL.createObjectURL(file);
+      setMediaPreview(previewUrl);
+    }
+  };
+
+  // Generate Report with Filters
+  const generateReport = () => {
+    let data = [];
+    if (reportType === "milestones") {
+      data = projectMilestones.filter(m => {
+        if (reportFilters.startDate && m.plannedEndDate < reportFilters.startDate) return false;
+        if (reportFilters.endDate && m.plannedEndDate > reportFilters.endDate) return false;
+        if (reportFilters.milestoneName && !m.name.toLowerCase().includes(reportFilters.milestoneName.toLowerCase())) return false;
+        return true;
+      }).map(m => ({ Milestone: m.name, Percentage: m.percentage + "%", Amount: m.amount, Status: m.status, PlannedDate: m.plannedEndDate }));
+    } else if (reportType === "payments") {
+      data = projectPayments.filter(p => {
+        if (reportFilters.startDate && p.date < reportFilters.startDate) return false;
+        if (reportFilters.endDate && p.date > reportFilters.endDate) return false;
+        return true;
+      }).map(p => ({ Milestone: p.milestoneName, Amount: p.amount, Date: p.date, Reference: p.chequeNo || p.utrNo }));
+    } else if (reportType === "inventory") {
+      data = projectInventory.filter(i => {
+        if (reportFilters.supplier && i.supplier !== reportFilters.supplier) return false;
+        return true;
+      }).map(i => ({ Code: i.materialCode, Material: i.material, Received: i.receivedQty, Consumed: i.consumed, Balance: i.balance, Supplier: i.supplier }));
+    }
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, reportType);
+    XLSX.writeFile(wb, `${reportType}_report_${new Date().toISOString().split("T")[0]}.xlsx`);
+    setShowReportModal(false);
+    alert("Report downloaded!");
+  };
+
+  const exportMediaReport = () => {
+    const data = projectMedia.map(m => ({ Title: m.title, Type: m.type, Date: m.date }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Media");
+    XLSX.writeFile(wb, `media_report_${new Date().toISOString().split("T")[0]}.xlsx`);
+    alert("Media report exported!");
+  };
+
+  const shareWhatsApp = () => {
+    const mobile = selectedProjectData?.contractorMobile;
+    if (!mobile) return;
+    const message = `*PROJECT UPDATE - ${selectedProjectData?.name}*%0A%0AProgress: ${progressPercent}%0APaid: ₹${(totalPaid/100000).toFixed(1)}L%0ABalance: ₹${((totalContractAmount - totalPaid)/100000).toFixed(1)}L`;
+    window.open(`https://wa.me/${mobile}?text=${message}`, "_blank");
+  };
+
+  const styles = {
+    container: { padding: "16px", backgroundColor: "#f0f2f5", minHeight: "100vh" },
+    header: { backgroundColor: "#800020", color: "white", padding: "16px", borderRadius: "12px", marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" },
+    headerTitle: { margin: 0, fontSize: "20px" },
+    headerSub: { margin: "5px 0 0", fontSize: "12px", opacity: 0.9 },
+    grid2: { display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: "16px", marginBottom: "20px" },
+    grid3: { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "16px", marginBottom: "20px" },
+    grid4: { display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "16px", marginBottom: "20px" },
+    card: { backgroundColor: "white", borderRadius: "12px", padding: "16px", marginBottom: "16px", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" },
+    cardTitle: { fontSize: "16px", fontWeight: "bold", marginBottom: "12px", borderBottom: "2px solid #800020", paddingBottom: "8px" },
+    button: { backgroundColor: "#800020", color: "white", padding: "10px 16px", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" },
+    buttonSuccess: { backgroundColor: "#28a745", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer" },
+    buttonInfo: { backgroundColor: "#17a2b8", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer" },
+    table: { width: "100%", borderCollapse: "collapse", marginTop: "12px", fontSize: "12px" },
+    th: { textAlign: "left", padding: "8px", borderBottom: "1px solid #eee" },
+    td: { padding: "8px", borderBottom: "1px solid #eee" },
+    modal: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 },
+    modalContent: { backgroundColor: "white", borderRadius: "16px", padding: "24px", width: "90%", maxWidth: "650px", maxHeight: "80vh", overflow: "auto" },
+    tabContainer: { display: "flex", gap: "10px", marginBottom: "20px", borderBottom: "1px solid #eee", flexWrap: "wrap" },
+    tab: { padding: "8px 16px", cursor: "pointer", borderBottom: "2px solid transparent" },
+    activeTab: { borderBottomColor: "#800020", color: "#800020", fontWeight: "bold" },
+    input: { width: "100%", padding: "10px", border: "1px solid #ddd", borderRadius: "8px", marginBottom: "12px" },
+    label: { display: "block", marginBottom: "6px", fontWeight: "600", fontSize: "12px", color: "#333" },
+    select: { width: "100%", padding: "10px", border: "1px solid #ddd", borderRadius: "8px", marginBottom: "12px" },
+    row2: { display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: "16px", marginBottom: "16px" },
+    row3: { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "16px", marginBottom: "16px" },
+    progressBar: { height: "8px", backgroundColor: "#e0e0e0", borderRadius: "4px", overflow: "hidden", marginTop: "8px" },
+    progressFill: { height: "100%", backgroundColor: "#800020", borderRadius: "4px" },
+    statValue: { fontSize: "24px", fontWeight: "bold", color: "#800020" },
+    statLabel: { fontSize: "12px", color: "#666", marginTop: "4px" },
+    mediaPreview: { width: "100px", height: "100px", objectFit: "cover", borderRadius: "8px", margin: "4px", cursor: "pointer" },
+    mediaViewerOverlay: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.9)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000 },
+    mediaViewerContent: { maxWidth: "90%", maxHeight: "90%", position: "relative" },
+    mediaViewerImage: { maxWidth: "100%", maxHeight: "90vh", objectFit: "contain" },
+    mediaViewerVideo: { maxWidth: "100%", maxHeight: "90vh" },
+    closeBtn: { position: "absolute", top: "20px", right: "30px", color: "white", fontSize: "40px", cursor: "pointer", background: "none", border: "none" }
+  };
+
+  const tabs = [
+    { id: "dashboard", name: "Dashboard" },
+    { id: "projects", name: "Projects" },
+    { id: "milestones", name: "Milestones" },
+    { id: "payments", name: "Payments" },
+    { id: "inventory", name: "Inventory" },
+    { id: "progress", name: "Site Progress" },
+    { id: "reports", name: "Reports" }
+  ];
+
+  return (
+    <div style={styles.container}>
+      <div style={styles.header}>
+        <div>
+          <h1 style={styles.headerTitle}>Buyer Dashboard</h1>
+          <p style={styles.headerSub}>Track your construction projects</p>
+        </div>
+        <div style={{ display: "flex", gap: "10px" }}>
+          <button onClick={shareWhatsApp} style={styles.buttonSuccess}> Share Update</button>
+          <button onClick={() => window.location.href = "/marketplace"} style={{ backgroundColor: "#17a2b8", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer" }}>Marketplace</button>
+          <button onClick={() => window.location.href = "/"} style={{ backgroundColor: "#dc3545", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer" }}>Logout</button>
+        </div>
+      </div>
+
+      <div style={styles.card}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+          <div style={{ flex: 1 }}>
+            <label style={styles.label}>Select Project</label>
+            <select value={selectedProject} onChange={(e) => setSelectedProject(parseInt(e.target.value))} style={styles.select}>
+              {projects.map(p => <option key={p.id} value={p.id}>{p.name} - {p.status} ({p.progress}%)</option>)}
+            </select>
+          </div>
+          <button onClick={() => setShowAddProject(true)} style={{ ...styles.button, marginTop: "24px" }}>+ New Project</button>
+        </div>
+      </div>
+
+      <div style={styles.tabContainer}>
+        {tabs.map(tab => <div key={tab.id} onClick={() => setActiveTab(tab.id)} style={{ ...styles.tab, ...(activeTab === tab.id ? styles.activeTab : {}) }}>{tab.name}</div>)}
+      </div>
+
+      {/* DASHBOARD TAB */}
+      {activeTab === "dashboard" && selectedProjectData && (
+        <div>
+          <div style={styles.grid4}>
+            <div style={styles.card}>
+              <div style={styles.statValue}>{progressPercent.toFixed(0)}%</div>
+              <div style={styles.statLabel}>Progress</div>
+              <div style={styles.progressBar}><div style={{ ...styles.progressFill, width: `${progressPercent}%` }}></div></div>
+            </div>
+            <div style={styles.card}>
+              <div style={styles.statValue}>{completedMilestones}/{projectMilestones.length}</div>
+              <div style={styles.statLabel}>Milestones</div>
+            </div>
+            <div style={styles.card}>
+              <div style={styles.statValue}>₹{(totalPaid/100000).toFixed(1)}L</div>
+              <div style={styles.statLabel}>Paid</div>
+            </div>
+            <div style={styles.card}>
+              <div style={styles.statValue}>₹{((totalContractAmount - totalPaid)/100000).toFixed(1)}L</div>
+              <div style={styles.statLabel}>Balance</div>
+            </div>
+          </div>
+          <div style={styles.card}>
+            <div style={styles.cardTitle}>Project Details</div>
+            <div style={styles.grid2}>
+              <div>
+                <p><strong>Project:</strong> {selectedProjectData.name}</p>
+                <p><strong>Plot:</strong> {selectedProjectData.plotLength}' x {selectedProjectData.plotWidth}'</p>
+                <p><strong>Floors:</strong> {selectedProjectData.floors}</p>
+                <p><strong>BUA:</strong> {selectedProjectData.bua} sqft</p>
+              </div>
+              <div>
+                <p><strong>Contractor:</strong> {selectedProjectData.contractorName}</p>
+                <p><strong>Mobile:</strong> {selectedProjectData.contractorMobile}</p>
+                <p><strong>Rate:</strong> ₹{selectedProjectData.ratePerSft}/sqft</p>
+                <p><strong>Total:</strong> ₹{(selectedProjectData.totalAmount/100000).toFixed(2)}L</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PROJECTS TAB */}
+      {activeTab === "projects" && (
+        <div>
+          <button onClick={() => setShowAddProject(true)} style={styles.button}>+ Add New Project</button>
+          <div style={styles.card}>
+            <div style={styles.cardTitle}>My Projects</div>
+            {projects.map(p => (
+              <div key={p.id} style={{ border: "1px solid #eee", borderRadius: "8px", padding: "12px", marginBottom: "12px", cursor: "pointer" }} onClick={() => { setSelectedProject(p.id); setActiveTab("dashboard"); }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" }}>
+                  <div><h4 style={{ margin: 0 }}>{p.name}</h4><p style={{ margin: "4px 0", fontSize: "12px", color: "#666" }}>{p.contractorName} | {p.bua} sqft</p></div>
+                  <div><div style={{ fontSize: "20px", fontWeight: "bold", color: "#800020" }}>{p.progress}%</div><div>{p.status}</div></div>
+                </div>
+                <div style={styles.progressBar}><div style={{ ...styles.progressFill, width: `${p.progress}%` }}></div></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* MILESTONES TAB */}
+      {activeTab === "milestones" && (
+        <div style={styles.card}>
+          <div style={styles.cardTitle}>Project Milestones ({projectMilestones.length} Milestones)</div>
+          <div style={{ overflowX: "auto", maxHeight: "500px", overflowY: "auto" }}>
+            <table style={styles.table}>
+              <thead>
+                <tr><th style={styles.th}>#</th><th style={styles.th}>Milestone</th><th style={styles.th}>%</th><th style={styles.th}>Amount</th><th style={styles.th}>Planned Date</th><th style={styles.th}>Status</th><th style={styles.th}>Payment</th><th style={styles.th}>Action</th></tr>
+              </thead>
+              <tbody>
+                {projectMilestones.map(m => (
+                  <tr key={m.id}>
+                    <td style={styles.td}>{m.id}</td>
+                    <td style={styles.td}>{m.name}</td>
+                    <td style={styles.td}>{m.percentage}%</td>
+                    <td style={styles.td}>₹{(m.amount/1000).toFixed(0)}K</td>
+                    <td style={styles.td}>{m.plannedEndDate}</td>
+                    <td style={styles.td}>
+                      <select value={m.status} onChange={(e) => {
+                        setProjects(projects.map(p => p.id === selectedProject ? {
+                          ...p, milestones: p.milestones.map(m2 => m2.id === m.id ? { ...m2, status: e.target.value, actualDate: e.target.value === "Completed" ? new Date().toISOString().split("T")[0] : m2.actualDate } : m2)
+                        } : p));
+                      }} style={{ padding: "4px", borderRadius: "4px" }}>
+                        <option>Pending</option><option>In Progress</option><option>Completed</option>
+                      </select>
+                    </td>
+                    <td style={styles.td}>{m.paymentReleased ? "✅" : "⏳"}</td>
+                    <td style={styles.td}>
+                      {m.status === "Completed" && !m.paymentReleased && (
+                        <button onClick={() => { setSelectedMilestone(m); setShowPaymentModal(true); }} style={styles.buttonSuccess}>Release Payment</button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* PAYMENTS TAB */}
+      {activeTab === "payments" && (
+        <div style={styles.card}>
+          <div style={styles.cardTitle}>Payment Ledger</div>
+          <div style={styles.grid2}>
+            <div><strong>Total Contract:</strong> ₹{(totalContractAmount/100000).toFixed(2)}L</div>
+            <div><strong>Total Paid:</strong> ₹{(totalPaid/100000).toFixed(2)}L</div>
+            <div><strong>Balance:</strong> ₹{((totalContractAmount - totalPaid)/100000).toFixed(2)}L</div>
+          </div>
+          <table style={styles.table}>
+            <thead><tr><th style={styles.th}>Milestone</th><th style={styles.th}>Amount</th><th style={styles.th}>Date</th><th style={styles.th}>Cheque/UTR</th><th style={styles.th}>Status</th><th style={styles.th}>Action</th></tr></thead>
+            <tbody>
+              {projectPayments.map(p => (
+                <tr key={p.id}>
+                  <td style={styles.td}>{p.milestoneName}</td>
+                  <td style={styles.td}>₹{(p.amount/1000).toFixed(0)}K</td>
+                  <td style={styles.td}>{p.date}</td>
+                  <td style={styles.td}>{p.chequeNo || p.utrNo || "-"}</td>
+                  <td style={styles.td}>{p.status}<td>
+                  <td style={styles.td}><button onClick={() => sharePayment(p)} style={styles.buttonSuccess}>Share</button></td>
+                </td>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* INVENTORY TAB */}
+      {activeTab === "inventory" && (
+        <div>
+          <button onClick={() => setShowMaterialModal(true)} style={styles.button}>+ Receive Material</button>
+          <div style={styles.card}>
+            <div style={styles.cardTitle}>Material Inventory</div>
+            <table style={styles.table}>
+              <thead><tr><th style={styles.th}>Code</th><th style={styles.th}>Material</th><th style={styles.th}>Received</th><th style={styles.th}>Consumed</th><th style={styles.th}>Balance</th><th style={styles.th}>Supplier</th><th style={styles.th}>Invoice</th><th style={styles.th}>Action</th></tr></thead>
+              <tbody>
+                {projectInventory.map(item => (
+                  <tr key={item.id}>
+                    <td style={styles.td}>{item.materialCode}</td>
+                    <td style={styles.td}>{item.material}</td>
+                    <td style={styles.td}>{item.receivedQty} {item.unit}</td>
+                    <td style={styles.td}><input type="number" value={item.consumed} onChange={(e) => updateConsumed(item.id, e.target.value)} style={{ width: "80px", padding: "4px" }} /></td>
+                    <td style={styles.td}>{item.balance} {item.unit}</td>
+                    <td style={styles.td}>{item.supplier}</td>
+                    <td style={styles.td}>{item.invoiceNo}</td>
+                    <td style={styles.td}><button onClick={() => updateConsumed(item.id, item.receivedQty)} style={styles.buttonInfo}>Use All</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* SITE PROGRESS TAB - with clickable images/videos */}
+      {activeTab === "progress" && (
+        <div>
+          <button onClick={() => setShowMediaModal(true)} style={styles.button}>+ Upload Photo/Video</button>
+          <div style={styles.card}>
+            <div style={styles.cardTitle}>Site Gallery</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: "12px" }}>
+              {projectMedia.map(m => (
+                <div key={m.id} style={{ border: "1px solid #ddd", borderRadius: "8px", padding: "8px", textAlign: "center", cursor: "pointer" }} onClick={() => viewMedia(m)}>
+                  {m.type === "photo" ? (
+                    <img src={m.url} alt={m.title} style={{ width: "100%", height: "120px", objectFit: "cover", borderRadius: "4px" }} />
+                  ) : (
+                    <video src={m.url} style={{ width: "100%", height: "120px", objectFit: "cover", borderRadius: "4px" }} />
+                  )}
+                  <div style={{ marginTop: "8px", fontWeight: "bold" }}>{m.title}</div>
+                  <div style={{ fontSize: "10px", color: "#666" }}>{m.date}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          {projectMedia.length > 0 && <button onClick={exportMediaReport} style={{ ...styles.buttonInfo, marginTop: "8px" }}> Export Media Report</button>}
+        </div>
+      )}
+
+      {/* REPORTS TAB - with filters */}
+      {activeTab === "reports" && (
+        <div style={styles.card}>
+          <div style={styles.cardTitle}>Generate Reports</div>
+          <div style={styles.grid2}>
+
+            <button onClick={() => { setReportType("milestones"); setShowReportModal(true); }} style={styles.buttonInfo}>Milestone Report</button>
+            <button onClick={() => { setReportType("payments"); setShowReportModal(true); }} style={styles.buttonInfo}>Payment Report</button>
+            <button onClick={() => { setReportType("inventory"); setShowReportModal(true); }} style={styles.buttonInfo}>Inventory Report</button>
+          </div>
+        </div>
+      )}
+
+      {/* ADD PROJECT MODAL */}
+      {showAddProject && (
+        <div style={styles.modal} onClick={() => setShowAddProject(false)}>
+          <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <h2 style={{ color: "#800020" }}>➕ Add New Project</h2>
+            
+            <label style={styles.label}>Project Name</label>
+            <input type="text" placeholder="Enter project name" value={newProject.name} onChange={(e) => setNewProject({...newProject, name: e.target.value})} style={styles.input} />
+            
+            <label style={styles.label}>Plot Details</label>
+            <div style={styles.row3}>
+              <div><label style={{ fontSize: "11px", color: "#666" }}>Length (ft)</label><input type="number" placeholder="Length" value={newProject.plotLength} onChange={(e) => { const val = parseFloat(e.target.value); setNewProject({...newProject, plotLength: val}); const bua = calculateBUA(val, newProject.plotWidth, newProject.floors); setNewProject(prev => ({...prev, bua, totalAmount: bua * prev.ratePerSft})); }} style={styles.input} /></div>
+              <div><label style={{ fontSize: "11px", color: "#666" }}>Width (ft)</label><input type="number" placeholder="Width" value={newProject.plotWidth} onChange={(e) => { const val = parseFloat(e.target.value); setNewProject({...newProject, plotWidth: val}); const bua = calculateBUA(newProject.plotLength, val, newProject.floors); setNewProject(prev => ({...prev, bua, totalAmount: bua * prev.ratePerSft})); }} style={styles.input} /></div>
+              <div><label style={{ fontSize: "11px", color: "#666" }}>No of Floors</label><input type="number" placeholder="Floors" value={newProject.floors} onChange={(e) => { const val = parseFloat(e.target.value); setNewProject({...newProject, floors: val}); const bua = calculateBUA(newProject.plotLength, newProject.plotWidth, val); setNewProject(prev => ({...prev, bua, totalAmount: bua * prev.ratePerSft})); }} style={styles.input} /></div>
+            </div>
+            
+            <div style={{ backgroundColor: "#e8f5e9", padding: "12px", borderRadius: "8px", marginBottom: "16px" }}>
+              <div>📐 Calculated BUA: {newProject.bua} sqft</div>
+              <div>💰 Total Contract Value: ₹{(newProject.totalAmount/100000).toFixed(2)}L</div>
+            </div>
+            
+            <label style={styles.label}>Rate & Dates</label>
+            <div style={styles.row2}>
+              <div><label style={{ fontSize: "11px", color: "#666" }}>Rate per sqft (₹)</label><input type="number" placeholder="Rate/sqft" value={newProject.ratePerSft} onChange={(e) => { const val = parseFloat(e.target.value); setNewProject({...newProject, ratePerSft: val, totalAmount: newProject.bua * val}); }} style={styles.input} /></div>
+              <div><label style={{ fontSize: "11px", color: "#666" }}>Start Date</label><input type="date" value={newProject.startDate} onChange={(e) => setNewProject({...newProject, startDate: e.target.value})} style={styles.input} /></div>
+              <div><label style={{ fontSize: "11px", color: "#666" }}>End Date</label><input type="date" value={newProject.endDate} onChange={(e) => setNewProject({...newProject, endDate: e.target.value})} style={styles.input} /></div>
+            </div>
+            
+            <label style={styles.label}>Contractor Details</label>
+            <input type="text" placeholder="Contractor Name" value={newProject.contractorName} onChange={(e) => setNewProject({...newProject, contractorName: e.target.value})} style={styles.input} />
+            <div style={styles.row2}>
+              <input type="text" placeholder="Contractor Mobile" value={newProject.contractorMobile} onChange={(e) => setNewProject({...newProject, contractorMobile: e.target.value})} style={styles.input} />
+              <input type="text" placeholder="Contractor Address" value={newProject.contractorAddress} onChange={(e) => setNewProject({...newProject, contractorAddress: e.target.value})} style={styles.input} />
+            </div>
+            
+            <button onClick={addProject} style={{ ...styles.buttonSuccess, width: "100%", marginTop: "16px" }}>Create Project</button>
+          </div>
+        </div>
+      )}
+
+      {/* MATERIAL MODAL */}
+      {showMaterialModal && (
+        <div style={styles.modal} onClick={() => setShowMaterialModal(false)}>
+          <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <h3>📦 Receive Material</h3>
+            <label style={styles.label}>Material Code</label>
+            <input type="text" placeholder="e.g., CEM-001" value={newMaterial.materialCode} onChange={(e) => setNewMaterial({...newMaterial, materialCode: e.target.value})} style={styles.input} />
+            <label style={styles.label}>Material Name</label>
+            <input type="text" placeholder="Material Name" value={newMaterial.material} onChange={(e) => setNewMaterial({...newMaterial, material: e.target.value})} style={styles.input} />
+            <div style={styles.row2}>
+              <div><label style={{ fontSize: "11px" }}>Received Quantity</label><input type="number" placeholder="Quantity" value={newMaterial.receivedQty} onChange={(e) => setNewMaterial({...newMaterial, receivedQty: e.target.value})} style={styles.input} /></div>
+              <div><label style={{ fontSize: "11px" }}>Unit</label><select value={newMaterial.unit} onChange={(e) => setNewMaterial({...newMaterial, unit: e.target.value})} style={styles.select}><option>bags</option><option>kg</option><option>tons</option></select></div>
+            </div>
+            <label style={styles.label}>Supplier Name</label>
+            <input type="text" placeholder="Supplier" value={newMaterial.supplier} onChange={(e) => setNewMaterial({...newMaterial, supplier: e.target.value})} style={styles.input} />
+            <label style={styles.label}>Invoice Number</label>
+            <input type="text" placeholder="Invoice No" value={newMaterial.invoiceNo} onChange={(e) => setNewMaterial({...newMaterial, invoiceNo: e.target.value})} style={styles.input} />
+            <label style={styles.label}>Receiver Name</label>
+            <input type="text" placeholder="Receiver Name" value={newMaterial.receiverName} onChange={(e) => setNewMaterial({...newMaterial, receiverName: e.target.value})} style={styles.input} />
+            <button onClick={addMaterial} style={{ ...styles.buttonSuccess, width: "100%", marginTop: "16px" }}>Record Material</button>
+          </div>
+        </div>
+      )}
+
+      {/* MEDIA UPLOAD MODAL */}
+      {showMediaModal && (
+        <div style={styles.modal} onClick={() => setShowMediaModal(false)}>
+          <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <h3>📸 Upload Media</h3>
+            <label style={styles.label}>Media Type</label>
+            <select value={mediaType} onChange={(e) => setMediaType(e.target.value)} style={styles.select}><option>photo</option><option>video</option></select>
+            <label style={styles.label}>Title</label>
+            <input type="text" placeholder="Title" value={mediaTitle} onChange={(e) => setMediaTitle(e.target.value)} style={styles.input} />
+            <label style={styles.label}>File</label>
+            <input type="file" accept={mediaType === "photo" ? "image/*" : "video/*"} onChange={handleFileSelect} style={styles.input} />
+            {mediaPreview && (
+              <div style={{ marginTop: "12px", textAlign: "center" }}>
+                {mediaType === "photo" ? (
+                  <img src={mediaPreview} alt="Preview" style={{ maxWidth: "100%", maxHeight: "150px", borderRadius: "8px" }} />
+                ) : (
+                  <video src={mediaPreview} controls style={{ maxWidth: "100%", maxHeight: "150px", borderRadius: "8px" }} />
+                )}
+              </div>
+            )}
+            <button onClick={uploadMedia} style={{ ...styles.buttonSuccess, width: "100%", marginTop: "16px" }}>Upload</button>
+          </div>
+        </div>
+      )}
+
+      {/* PAYMENT MODAL */}
+      {showPaymentModal && selectedMilestone && (
+        <div style={styles.modal} onClick={() => setShowPaymentModal(false)}>
+          <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <h3>Release Payment for {selectedMilestone.name}</h3>
+            <label style={styles.label}>Cheque Number (Optional)</label>
+            <input type="text" placeholder="Cheque Number" value={chequeNo} onChange={(e) => setChequeNo(e.target.value)} style={styles.input} />
+            <label style={styles.label}>UTR Number (Optional)</label>
+            <input type="text" placeholder="UTR Number" value={utrNo} onChange={(e) => setUtrNo(e.target.value)} style={styles.input} />
+            <button onClick={() => releasePayment(selectedMilestone)} style={{ ...styles.buttonSuccess, width: "100%", marginTop: "16px" }}>Release Payment</button>
+          </div>
+        </div>
+      )}
+
+      {/* REPORT MODAL WITH FILTERS */}
+      {showReportModal && (
+        <div style={styles.modal} onClick={() => setShowReportModal(false)}>
+          <div style={{ ...styles.modalContent, maxWidth: "90%", width: "90%" }} onClick={(e) => e.stopPropagation()}>
+            <h3>{reportType.toUpperCase()} Report - Filter Options</h3>
+            
+            {reportType === "milestones" && (
+              <div style={styles.row3}>
+                <div>
+                  <label style={styles.label}>From Date</label>
+                  <input type="date" value={reportFilters.startDate} onChange={(e) => setReportFilters({...reportFilters, startDate: e.target.value})} style={styles.input} />
+                </div>
+                <div>
+                  <label style={styles.label}>To Date</label>
+                  <input type="date" value={reportFilters.endDate} onChange={(e) => setReportFilters({...reportFilters, endDate: e.target.value})} style={styles.input} />
+                </div>
+                <div>
+                  <label style={styles.label}>Milestone Name</label>
+                  <input type="text" placeholder="Search milestone" value={reportFilters.milestoneName} onChange={(e) => setReportFilters({...reportFilters, milestoneName: e.target.value})} style={styles.input} />
+                </div>
+              </div>
+            )}
+
+            {reportType === "payments" && (
+              <div style={styles.row2}>
+                <div>
+                  <label style={styles.label}>From Date</label>
+                  <input type="date" value={reportFilters.startDate} onChange={(e) => setReportFilters({...reportFilters, startDate: e.target.value})} style={styles.input} />
+                </div>
+                <div>
+                  <label style={styles.label}>To Date</label>
+                  <input type="date" value={reportFilters.endDate} onChange={(e) => setReportFilters({...reportFilters, endDate: e.target.value})} style={styles.input} />
+                </div>
+              </div>
+            )}
+
+            {reportType === "inventory" && (
+              <div>
+                <label style={styles.label}>Supplier Name</label>
+                <input type="text" placeholder="Filter by supplier" value={reportFilters.supplier} onChange={(e) => setReportFilters({...reportFilters, supplier: e.target.value})} style={styles.input} />
+              </div>
+            )}
+
+            <button onClick={generateReport} style={{ ...styles.buttonSuccess, width: "100%", marginTop: "16px" }}>Download Report</button>
+          </div>
+        </div>
+      )}
+
+      {/* MEDIA VIEWER MODAL - for viewing uploaded images/videos */}
+      {showMediaViewer && selectedMedia && (
+        <div style={styles.mediaViewerOverlay} onClick={() => setShowMediaViewer(false)}>
+          <div style={styles.mediaViewerContent} onClick={(e) => e.stopPropagation()}>
+            <button style={styles.closeBtn} onClick={() => setShowMediaViewer(false)}>×</button>
+            {selectedMedia.type === "photo" ? (
+              <img src={selectedMedia.url} alt={selectedMedia.title} style={styles.mediaViewerImage} />
+            ) : (
+              <video src={selectedMedia.url} controls autoPlay style={styles.mediaViewerVideo} />
+            )}
+            <div style={{ color: "white", textAlign: "center", marginTop: "16px" }}>
+              <h3>{selectedMedia.title}</h3>
+              <p>Uploaded on: {selectedMedia.date}</p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

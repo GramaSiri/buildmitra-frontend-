@@ -1,0 +1,19 @@
+// Add this useEffect after state declarations
+useEffect(() => {
+  // Get logged in user's exact name
+  const user = localStorage.getItem("loggedInUser");
+  if (user) {
+    const userData = JSON.parse(user);
+    const userName = userData.name;
+    
+    // Update supplier info with exact name
+    setSupplierInfo(prev => ({
+      ...prev,
+      shopName: userName,
+      ownerName: userName
+    }));
+    
+    // Update userName state
+    setUserName(userName);
+  }
+}, []);

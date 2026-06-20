@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BuildMitra — Complete Construction Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f0f4fb;--card:#fff;--dark:#1e2640;
+  --accent:#2563eb;--a2:#1a4fd6;--teal:#0bb4a0;--amber:#d97706;
+  --green:#16a34a;--red:#dc2626;--purple:#7c3aed;
+  --text:#18202e;--t2:#4a5570;--t3:#8a92aa;
+  --border:#dde3f2;--b2:#c6cfe8;
+  --mono:'JetBrains Mono',monospace;--sans:'Outfit',sans-serif;
+  --sh:0 2px 12px rgba(37,99,235,.07);
+}
+html,body{height:100%;font-family:var(--sans);font-size:14px;color:var(--text);overflow:hidden;background:var(--bg)}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:var(--b2);border-radius:3px}
+
+/* NAV */
+.nav{position:fixed;top:0;left:0;right:0;height:56px;z-index:999;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:0;box-shadow:0 1px 8px rgba(37,99,235,.07)}
+.nav-logo{display:flex;align-items:center;gap:8px;margin-right:20px;cursor:pointer;text-decoration:none;flex-shrink:0}
+.nav-logo-txt{font-size:18px;font-weight:800;color:var(--accent)}
+.nav-tabs{display:flex;align-items:center;gap:2px;overflow-x:auto;flex:1}
+.nav-tabs::-webkit-scrollbar{height:0}
+.ntab{padding:7px 12px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;color:var(--t2);transition:.15s;border:none;background:none;font-family:var(--sans);display:flex;align-items:center;gap:4px}
+.ntab:hover{background:var(--bg);color:var(--text)}
+.ntab.on{background:rgba(37,99,235,.1);color:var(--accent)}
+.nav-right{display:flex;align-items:center;gap:10px;margin-left:12px;flex-shrink:0}
+.nav-av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--purple));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;color:#fff}
+.nav-nm{font-size:12px;font-weight:600}
+.nav-rl{font-size:10px;color:var(--t3)}
+
+/* BODY */
+.body{margin-top:56px;height:calc(100vh - 56px);overflow-y:auto;background:var(--bg)}
+.page{display:none;padding:20px;min-height:100%}
+.page.on{display:block}
+
+/* COMMON */
+.pg-h{font-size:22px;font-weight:800;color:var(--dark);margin-bottom:3px}
+.pg-s{font-size:12px;color:var(--t3);margin-bottom:20px}
+.panel{background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:14px;box-shadow:var(--sh)}
+.ph{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:8px}
+.ptl{font-size:14px;font-weight:700;color:var(--text)}
+.psb{font-size:11px;color:var(--t3);margin-top:2px}
+.sg{display:grid;gap:10px;margin-bottom:16px}
+.g2{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}.g5{grid-template-columns:repeat(5,1fr)}
+.sc{background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px;position:relative;overflow:hidden;box-shadow:var(--sh)}
+.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.ca::before{background:var(--accent)}.ct::before{background:var(--teal)}.cam::before{background:var(--amber)}.cgr::before{background:var(--green)}.cr::before{background:var(--red)}.cpu::before{background:var(--purple)}
+.slbl{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);margin-bottom:7px}
+.sval{font-size:24px;font-weight:800;line-height:1}
+.ca .sval{color:var(--accent)}.ct .sval{color:var(--teal)}.cam .sval{color:var(--amber)}.cgr .sval{color:var(--green)}.cr .sval{color:var(--red)}.cpu .sval{color:var(--purple)}
+.ssub{font-size:10px;color:var(--t3);margin-top:3px}
+.strend{font-size:10px;font-weight:600;margin-top:4px}
+.tu{color:var(--green)}.td{color:var(--red)}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:7px;font-family:var(--sans);font-size:12px;font-weight:600;border:none;cursor:pointer;transition:.15s;white-space:nowrap}
+.bp{background:var(--accent);color:#fff}.bp:hover{background:var(--a2);transform:translateY(-1px)}
+.bg{background:transparent;color:var(--t2);border:1px solid var(--b2)}.bg:hover{background:var(--bg);color:var(--text)}
+.bt{background:rgba(11,180,160,.1);color:var(--teal);border:1px solid rgba(11,180,160,.2)}.bt:hover{background:rgba(11,180,160,.18)}
+.bgr{background:rgba(22,163,74,.1);color:var(--green);border:1px solid rgba(22,163,74,.2)}.bgr:hover{background:rgba(22,163,74,.18)}
+.br{background:rgba(220,38,38,.1);color:var(--red);border:1px solid rgba(220,38,38,.2)}.br:hover{background:rgba(220,38,38,.18)}
+.ba{background:rgba(217,119,6,.1);color:var(--amber);border:1px solid rgba(217,119,6,.2)}.ba:hover{background:rgba(217,119,6,.18)}
+.bpu{background:rgba(124,58,237,.1);color:var(--purple);border:1px solid rgba(124,58,237,.2)}
+.bwa{background:#25d366;color:#fff}.bwa:hover{background:#1fb659}
+.bsm{padding:5px 11px;font-size:11px}.bxs{padding:3px 8px;font-size:10px;border-radius:6px}
+
+/* INPUTS */
+.fi{font-family:var(--sans);background:#fafbfe;border:1.5px solid var(--b2);border-radius:7px;padding:8px 11px;font-size:13px;color:var(--text);outline:none;transition:.2s;width:100%}
+.fi:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.fgrp{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.fgrp label{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--t3)}
+.fg2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+
+/* CHIPS */
+.chip{font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:5px;display:inline-block;white-space:nowrap}
+.chb{background:rgba(37,99,235,.08);color:var(--accent);border:.5px solid rgba(37,99,235,.2)}
+.cht{background:rgba(11,180,160,.08);color:var(--teal);border:.5px solid rgba(11,180,160,.2)}
+.pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.sb{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700}
+.sbg{background:rgba(22,163,74,.1);color:var(--green);border:.5px solid rgba(22,163,74,.2)}
+.sbr{background:rgba(220,38,38,.1);color:var(--red);border:.5px solid rgba(220,38,38,.2)}
+.sba{background:rgba(217,119,6,.1);color:var(--amber);border:.5px solid rgba(217,119,6,.2)}
+.sbb{background:rgba(37,99,235,.1);color:var(--accent);border:.5px solid rgba(37,99,235,.2)}
+.sbp{background:rgba(124,58,237,.1);color:var(--purple);border:.5px solid rgba(124,58,237,.2)}
+.sbt{background:rgba(11,180,160,.1);color:var(--teal);border:.5px solid rgba(11,180,160,.2)}
+
+/* TABLE */
+.ts{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{background:#f8f9fd;color:var(--t3);font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:9px 10px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+tbody tr{border-bottom:.5px solid var(--border);transition:background .1s}
+tbody tr:hover{background:rgba(37,99,235,.025)}
+tbody td{padding:9px 10px;vertical-align:middle}
+.del-btn{background:none;border:none;cursor:pointer;color:var(--t3);font-size:15px;padding:2px 5px;border-radius:4px;transition:.15s}
+.del-btn:hover{background:rgba(220,38,38,.1);color:var(--red)}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;right:20px;padding:11px 18px;border-radius:9px;font-size:12px;font-weight:600;opacity:0;transform:translateY(8px);transition:.3s;pointer-events:none;z-index:9999;max-width:300px}
+.toast.on{opacity:1;transform:translateY(0)}
+.tok{background:var(--green);color:#fff;box-shadow:0 4px 20px rgba(22,163,74,.3)}
+.terr{background:var(--red);color:#fff}.tinf{background:var(--accent);color:#fff}
+
+/* MODAL */
+.mo{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(3px);z-index:4000;display:none;align-items:center;justify-content:center}
+.mo.on{display:flex}
+.mbox{background:#fff;border-radius:14px;width:600px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.mh{display:flex;align-items:center;justify-content:space-between;padding:15px 18px;border-bottom:1px solid var(--border)}
+.mt{font-size:15px;font-weight:800;color:var(--text)}
+.mx{background:none;border:none;font-size:20px;color:var(--t3);cursor:pointer;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:6px}
+.mx:hover{background:var(--bg);color:var(--text)}
+.mf{padding:13px 18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+
+/* HOME */
+.hero-box{background:linear-gradient(135deg,#1e2640,#2d3a6e);border-radius:14px;padding:28px;color:#fff;margin-bottom:16px;position:relative;overflow:hidden}
+.hero-box::before{content:'';position:absolute;top:-40px;right:-40px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.04)}
+.hero-h{font-size:28px;font-weight:900;letter-spacing:-.02em;margin-bottom:6px}
+.hero-s{font-size:13px;opacity:.7;margin-bottom:18px}
+.ticker{background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:16px}
+.ticker-lbl{font-size:10px;font-weight:700;color:var(--t3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:9px}
+.ticker-row{display:flex;gap:20px;overflow-x:auto;padding-bottom:3px}
+.ticker-row::-webkit-scrollbar{height:0}
+.ti{flex-shrink:0;text-align:center;min-width:80px}
+.ti-n{font-size:11px;color:var(--t2);margin-bottom:2px}
+.ti-v{font-size:15px;font-weight:800;color:var(--dark);font-family:var(--mono)}
+.ti-u{font-size:10px;color:var(--t3)}
+.ti-c{font-size:10px;font-weight:700;margin-top:2px}
+
+/* CALCULATOR */
+.calc-wrap{display:grid;grid-template-columns:340px 1fr;gap:14px}
+.calc-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:18px;box-shadow:var(--sh)}
+.ctype-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:14px}
+.ctype-btn{padding:9px 6px;border-radius:7px;border:1.5px solid var(--border);background:#fff;text-align:center;cursor:pointer;transition:.15s;font-family:var(--sans)}
+.ctype-btn.on{border-color:var(--accent);background:rgba(37,99,235,.06)}
+.ctype-btn .ci{font-size:20px;display:block;margin-bottom:3px}
+.ctype-btn .cl{font-size:11px;font-weight:600;color:var(--t2)}
+.ctype-btn.on .cl{color:var(--accent)}
+.res-box{background:rgba(37,99,235,.04);border:1px solid rgba(37,99,235,.12);border-radius:9px;padding:12px;margin-top:12px}
+.ri-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:.5px solid var(--border)}
+.ri-row:last-child{border:none}
+.ri-lbl{font-size:12px;color:var(--t2)}
+.ri-val{font-size:13px;font-weight:800;color:var(--accent);font-family:var(--mono)}
+
+/* LAYOUT STUDIO */
+.studio-wrap{display:grid;grid-template-columns:240px 1fr;gap:14px;height:calc(100vh - 200px);min-height:460px}
+.studio-tools{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px;overflow-y:auto}
+.studio-canvas{background:#fff;border:1px solid var(--border);border-radius:12px;position:relative;overflow:hidden;min-height:460px}
+.canvas-bg{width:100%;height:100%;position:absolute;top:0;left:0;background-image:linear-gradient(rgba(37,99,235,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(37,99,235,.06) 1px,transparent 1px);background-size:30px 30px}
+.canvas-room{position:absolute;border:2px solid var(--accent);background:rgba(37,99,235,.08);border-radius:4px;cursor:move;display:flex;flex-direction:column;align-items:center;justify-content:center;user-select:none;min-width:60px;min-height:50px}
+.canvas-room:hover{background:rgba(37,99,235,.14)}
+.canvas-room .rm-ico{font-size:18px}
+.canvas-room .rm-lbl{font-size:9px;font-weight:700;color:var(--accent);margin-top:2px;text-align:center;padding:0 3px}
+.canvas-room .rm-del{position:absolute;top:-8px;right:-8px;width:18px;height:18px;background:var(--red);border:none;border-radius:50%;cursor:pointer;color:#fff;font-size:11px;display:none;align-items:center;justify-content:center}
+.canvas-room:hover .rm-del{display:flex}
+.tool-sec{font-size:10px;font-weight:700;color:var(--t3);letter-spacing:.08em;text-transform:uppercase;margin:12px 0 7px}
+.tool-item{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:7px;cursor:grab;transition:.15s;border:1px solid transparent;margin-bottom:4px}
+.tool-item:hover{background:var(--bg);border-color:var(--border)}
+.tool-ico{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+
+/* AGENT */
+.agent-wrap{display:grid;grid-template-columns:1fr 360px;gap:14px;height:calc(100vh - 200px);min-height:460px}
+.agent-chat{background:#fff;border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;overflow:hidden}
+.chat-msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.cmsg{max-width:78%;padding:11px 14px;border-radius:11px;font-size:13px;line-height:1.6}
+.cm-user{background:var(--accent);color:#fff;align-self:flex-end;border-radius:11px 11px 3px 11px}
+.cm-ai{background:var(--bg);color:var(--text);align-self:flex-start;border-radius:11px 11px 11px 3px;border:1px solid var(--border)}
+.chat-inp-row{padding:12px;border-top:1px solid var(--border);display:flex;gap:9px}
+.chat-inp{flex:1;padding:10px 14px;border:1.5px solid var(--b2);border-radius:9px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none;transition:.2s;background:#fafbfe}
+.chat-inp:focus{border-color:var(--accent)}
+.agent-side{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px;overflow-y:auto}
+.aqgrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:14px}
+.aqb{padding:9px 10px;border-radius:7px;border:1.5px solid var(--border);background:#fff;font-size:11px;font-weight:600;color:var(--t2);cursor:pointer;transition:.15s;font-family:var(--sans);text-align:left;line-height:1.4}
+.aqb:hover{border-color:var(--accent);color:var(--accent);background:rgba(37,99,235,.04)}
+
+/* ADMIN TABS */
+.atabs{display:flex;gap:3px;background:#fff;border:1px solid var(--border);border-radius:9px;padding:4px;margin-bottom:14px;width:fit-content;flex-wrap:wrap}
+.atab{padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;color:var(--t2);transition:.15s;font-family:var(--sans);border:none;background:none}
+.atab.on{background:var(--accent);color:#fff}
+
+/* APPROVALS */
+.acard{background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px}
+.acard.pending{border-color:rgba(217,119,6,.35);background:rgba(217,119,6,.02)}
+.acard.approved{border-color:rgba(22,163,74,.3);background:rgba(22,163,74,.02)}
+.acard.rejected{border-color:rgba(220,38,38,.3);background:rgba(220,38,38,.02)}
+
+/* UPLOAD ZONE */
+.drop-zone{border:2px dashed var(--b2);border-radius:10px;padding:28px;text-align:center;cursor:pointer;transition:.2s;color:var(--t3);font-size:13px;line-height:1.9}
+.drop-zone:hover{border-color:var(--accent);background:rgba(37,99,235,.03);color:var(--t2)}
+.img-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px;margin-top:10px}
+.img-th{position:relative;aspect-ratio:1;border-radius:7px;overflow:hidden;border:1px solid var(--border);background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:28px}
+.img-th img{width:100%;height:100%;object-fit:cover}
+
+/* RATE INPUT */
+.rate-inp{font-family:var(--mono);background:#fafbfe;border:1.5px solid var(--b2);border-radius:6px;padding:5px 8px;font-size:12px;font-weight:700;color:var(--teal);outline:none;transition:.15s;width:100%;text-align:right}
+.rate-inp:focus{border-color:var(--teal);box-shadow:0 0 0 2px rgba(11,180,160,.12)}
+
+/* RESPONSIVE */
+@media(max-width:900px){.g4,.g5{grid-template-columns:repeat(2,1fr)}.calc-wrap,.studio-wrap,.agent-wrap{grid-template-columns:1fr}}
+@media(max-width:600px){.g3{grid-template-columns:1fr 1fr}.fg2,.fg3{grid-template-columns:1fr}.nav-tabs{display:none}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.udot{width:6px;height:6px;border-radius:50%;background:var(--amber);display:inline-block;animation:pulse 1.5s infinite;margin-right:6px}
+.empty{text-align:center;padding:48px 20px;color:var(--t3)}
+.empty .ei{font-size:44px;margin-bottom:10px}
+.sdiv{font-size:10px;font-weight:700;color:var(--t3);letter-spacing:.08em;text-transform:uppercase;padding:6px 0;margin-bottom:10px;border-bottom:1px solid var(--border)}
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-logo" onclick="goTab('home')">
+    <span style="font-size:20px">🏗️</span>
+    <span class="nav-logo-txt">BuildMitra</span>
+  </div>
+  <div class="nav-tabs">
+    <button class="ntab on" id="ntab-home" onclick="goTab('home')">🏠 Home</button>
+    <button class="ntab" id="ntab-calc" onclick="goTab('calc')">🧮 Material Calc</button>
+    <button class="ntab" id="ntab-boq" onclick="goTab('boq')">📋 BOQ</button>
+    <button class="ntab" id="ntab-drawings" onclick="goTab('drawings')">📐 Drawings</button>
+    <button class="ntab" id="ntab-layout" onclick="goTab('layout')">🏠 Layout Studio</button>
+    <button class="ntab" id="ntab-market" onclick="goTab('market')">🛒 Marketplace</button>
+    <button class="ntab" id="ntab-vendor" onclick="goTab('vendor')">🏭 Vendor</button>
+    <button class="ntab" id="ntab-agent" onclick="goTab('agent')">🤖 AI Agent</button>
+    <button class="ntab" id="ntab-admin" onclick="goTab('admin')">⚙️ Admin</button>
+    <button class="ntab" id="ntab-approvals" onclick="goTab('approvals')">✅ Approvals</button>
+  </div>
+  <div class="nav-right">
+    <div><div class="nav-nm">BuildPro Admin</div><div class="nav-rl">ADMIN</div></div>
+    <div class="nav-av">B</div>
+  </div>
+</nav>
+
+<div class="body" id="main-body">
+
+<!-- HOME -->
+<div class="page on" id="page-home">
+  <div class="hero-box">
+    <div style="font-size:11px;font-weight:600;opacity:.6;letter-spacing:.05em;margin-bottom:10px">🇮🇳 BENGALURU'S #1 CONSTRUCTION PLATFORM</div>
+    <div class="hero-h">Build Smarter. Source Better.</div>
+    <div class="hero-s">Complete platform — materials, BOQ, design, vendors, AI assistant in one place.</div>
+    <div style="display:flex;gap:9px;flex-wrap:wrap">
+      <button class="btn bwa" onclick="goTab('market')">🛒 Browse Marketplace</button>
+      <button class="btn" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3)" onclick="goTab('calc')">🧮 Calculate Materials</button>
+      <button class="btn" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3)" onclick="goTab('agent')">🤖 Ask AI Agent</button>
+    </div>
+  </div>
+
+  <div class="ticker">
+    <div class="ticker-lbl">📊 GBA/BBMP Live Reference Rates — Bengaluru</div>
+    <div class="ticker-row">
+      <div class="ti"><div class="ti-n">OPC Cement</div><div class="ti-v">₹400</div><div class="ti-u">per Bag</div><div class="ti-c tu">↑ Stable</div></div>
+      <div class="ti"><div class="ti-n">TMT 8mm Fe500</div><div class="ti-v">₹68</div><div class="ti-u">per KG</div><div class="ti-c tu">↑ +2%</div></div>
+      <div class="ti"><div class="ti-n">M-Sand</div><div class="ti-v">₹55</div><div class="ti-u">per CFT</div><div class="ti-c td">↓ -3%</div></div>
+      <div class="ti"><div class="ti-n">Blue Metal</div><div class="ti-v">₹50</div><div class="ti-u">per CFT</div><div class="ti-c tu">↑ Stable</div></div>
+      <div class="ti"><div class="ti-n">Mason Skilled</div><div class="ti-v">₹850</div><div class="ti-u">per Day</div><div class="ti-c tu">↑ Stable</div></div>
+      <div class="ti"><div class="ti-n">JCB Excavator</div><div class="ti-v">₹2,500</div><div class="ti-u">per Hour</div><div class="ti-c tu">↑ Stable</div></div>
+      <div class="ti"><div class="ti-n">AAC Block</div><div class="ti-v">₹55</div><div class="ti-u">per Piece</div><div class="ti-c td">↓ -1%</div></div>
+      <div class="ti"><div class="ti-n">Vitrified Tile</div><div class="ti-v">₹55</div><div class="ti-u">per SFT</div><div class="ti-c tu">↑ Stable</div></div>
+      <div class="ti"><div class="ti-n">RMC M20</div><div class="ti-v">₹5,400</div><div class="ti-u">per CUM</div><div class="ti-c tu">↑ +1%</div></div>
+    </div>
+  </div>
+
+  <div class="sg g5" style="margin-bottom:16px">
+    <div class="sc ca"><div class="slbl">Active Vendors</div><div class="sval">528</div><div class="ssub">GBA/BBMP area</div><div class="strend tu">↑ 12 this week</div></div>
+    <div class="sc ct"><div class="slbl">Total Listings</div><div class="sval">12,480</div><div class="ssub">verified products</div><div class="strend tu">↑ 340 this week</div></div>
+    <div class="sc cgr"><div class="slbl">Enquiries Today</div><div class="sval">86</div><div class="ssub">buyer enquiries</div><div class="strend tu">↑ 23%</div></div>
+    <div class="sc cam"><div class="slbl">BOQ Created</div><div class="sval">1,240</div><div class="ssub">this month</div><div class="strend tu">↑ 8%</div></div>
+    <div class="sc cpu"><div class="slbl">Platform Revenue</div><div class="sval">₹2.8Cr</div><div class="ssub">all time</div><div class="strend tu">↑ 34%</div></div>
+  </div>
+
+  <div class="sdiv">Quick Actions</div>
+  <div class="sg" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr))">
+    <div class="sc" style="cursor:pointer;text-align:center;padding:18px" onclick="goTab('calc')"><div style="font-size:32px;margin-bottom:8px">🧮</div><div style="font-weight:700;color:var(--dark);font-size:13px">Material Calculator</div></div>
+    <div class="sc" style="cursor:pointer;text-align:center;padding:18px" onclick="goTab('boq')"><div style="font-size:32px;margin-bottom:8px">📋</div><div style="font-weight:700;color:var(--dark);font-size:13px">BOQ Calculator</div></div>
+    <div class="sc" style="cursor:pointer;text-align:center;padding:18px" onclick="goTab('drawings')"><div style="font-size:32px;margin-bottom:8px">📐</div><div style="font-weight:700;color:var(--dark);font-size:13px">Drawings & Design</div></div>
+    <div class="sc" style="cursor:pointer;text-align:center;padding:18px" onclick="goTab('layout')"><div style="font-size:32px;margin-bottom:8px">🏠</div><div style="font-weight:700;color:var(--dark);font-size:13px">Layout Studio</div></div>
+    <div class="sc" style="cursor:pointer;text-align:center;padding:18px" onclick="goTab('market')"><div style="font-size:32px;margin-bottom:8px">🛒</div><div style="font-weight:700;color:var(--dark);font-size:13px">Marketplace</div></div>
+    <div class="sc" style="cursor:pointer;text-align:center;padding:18px" onclick="goTab('agent')"><div style="font-size:32px;margin-bottom:8px">🤖</div><div style="font-weight:700;color:var(--dark);font-size:13px">AI Agent</div></div>
+  </div>
+</div>
+
+<!-- MATERIAL CALCULATOR -->
+<div class="page" id="page-calc">
+  <div class="pg-h">🧮 Material Calculator</div>
+  <div class="pg-s">Calculate exact material quantities with GBA/BBMP Bengaluru reference rates</div>
+  <div class="calc-wrap">
+    <div>
+      <div class="calc-card">
+        <div style="font-size:13px;font-weight:700;color:var(--dark);margin-bottom:12px">Select Calculation Type</div>
+        <div class="ctype-grid" id="ctype-grid">
+          <div class="ctype-btn on" data-type="slab" onclick="setCalcType('slab',this)"><span class="ci">🏗️</span><span class="cl">RCC Slab</span></div>
+          <div class="ctype-btn" data-type="wall" onclick="setCalcType('wall',this)"><span class="ci">🧱</span><span class="cl">Brick Wall</span></div>
+          <div class="ctype-btn" data-type="plaster" onclick="setCalcType('plaster',this)"><span class="ci">🖼️</span><span class="cl">Plastering</span></div>
+          <div class="ctype-btn" data-type="flooring" onclick="setCalcType('flooring',this)"><span class="ci">🔲</span><span class="cl">Flooring</span></div>
+          <div class="ctype-btn" data-type="paint" onclick="setCalcType('paint',this)"><span class="ci">🎨</span><span class="cl">Painting</span></div>
+          <div class="ctype-btn" data-type="foundation" onclick="setCalcType('foundation',this)"><span class="ci">⬇️</span><span class="cl">Foundation</span></div>
+        </div>
+        <div id="calc-form"></div>
+        <button class="btn bp" style="width:100%;justify-content:center;padding:11px;margin-top:10px" onclick="doCalculate()">Calculate Materials →</button>
+      </div>
+    </div>
+    <div>
+      <div class="calc-card">
+        <div style="font-size:13px;font-weight:700;color:var(--dark);margin-bottom:12px">📊 Material Requirements</div>
+        <div id="calc-results"><div class="empty"><div class="ei">🧮</div><p>Select type and enter dimensions</p></div></div>
+      </div>
+      <div class="calc-card" style="margin-top:14px">
+        <div style="font-size:13px;font-weight:700;color:var(--dark);margin-bottom:12px">💰 Cost Estimate (GBA/BBMP Rates)</div>
+        <div id="calc-cost"><div class="empty"><div class="ei">₹</div><p>Cost estimate appears after calculation</p></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BOQ -->
+<div class="page" id="page-boq">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;flex-wrap:wrap;gap:8px">
+    <div class="pg-h">📋 BOQ Calculator</div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap">
+      <button class="btn bgr bsm" onclick="exportBOQ('csv')">⬇ Excel</button>
+      <button class="btn br bsm" onclick="exportBOQ('pdf')">⬇ PDF</button>
+      <button class="btn bp bsm" onclick="openMo('m-boq')">+ Add Item</button>
+    </div>
+  </div>
+  <div class="pg-s">Full Bill of Quantities for your construction project</div>
+  <div class="panel" style="margin-bottom:14px">
+    <div class="ph"><div class="ptl">Project Details</div></div>
+    <div style="padding:14px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+      <div class="fgrp" style="margin:0"><label>Project Name</label><input type="text" class="fi" id="bpn" placeholder="My Project" style="padding:7px 10px;font-size:12px"></div>
+      <div class="fgrp" style="margin:0"><label>Location</label><input type="text" class="fi" id="bpl" placeholder="Koramangala, Bengaluru" style="padding:7px 10px;font-size:12px"></div>
+      <div class="fgrp" style="margin:0"><label>Plot Area (SFT)</label><input type="number" class="fi" id="bpa" placeholder="1200" style="padding:7px 10px;font-size:12px"></div>
+      <div class="fgrp" style="margin:0"><label>Floors</label><input type="number" class="fi" id="bpf" placeholder="2" style="padding:7px 10px;font-size:12px"></div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="ph"><div><div class="ptl">Bill of Quantities</div><div class="psb">Add all work items — materials, labour, machinery</div></div></div>
+    <div class="ts" style="max-height:400px;overflow-y:auto">
+      <table>
+        <thead><tr><th>#</th><th>Description</th><th>Category</th><th>Unit</th><th>Qty</th><th>Rate ₹</th><th>Amount ₹</th><th>GST%</th><th>Total ₹</th><th></th></tr></thead>
+        <tbody id="boq-body"></tbody>
+      </table>
+    </div>
+    <div id="boq-total" style="padding:14px"></div>
+  </div>
+</div>
+
+<!-- DRAWINGS -->
+<div class="page" id="page-drawings">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;flex-wrap:wrap;gap:8px">
+    <div class="pg-h">📐 Drawings & Design</div>
+    <button class="btn bp bsm" onclick="document.getElementById('dwg-inp').click()">⬆ Upload Drawing</button>
+  </div>
+  <div class="pg-s">Upload, manage and share architectural drawings and design files</div>
+  <input type="file" id="dwg-inp" accept=".pdf,.dwg,.jpg,.png,.jpeg" multiple style="display:none" onchange="uploadDwg(this)">
+  <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap" id="dwg-filters">
+    <button class="btn bp bsm" onclick="filterDwg('all',this)">All</button>
+    <button class="btn bg bsm" onclick="filterDwg('plan',this)">Floor Plans</button>
+    <button class="btn bg bsm" onclick="filterDwg('elevation',this)">Elevations</button>
+    <button class="btn bg bsm" onclick="filterDwg('electrical',this)">Electrical</button>
+    <button class="btn bg bsm" onclick="filterDwg('plumbing',this)">Plumbing</button>
+    <button class="btn bg bsm" onclick="filterDwg('structural',this)">Structural</button>
+  </div>
+  <div class="drop-zone" ondragover="event.preventDefault();this.style.borderColor='var(--accent)'" ondragleave="this.style.borderColor='var(--b2)'" ondrop="dropDwg(event)" onclick="document.getElementById('dwg-inp').click()">
+    📁 Click or drag &amp; drop drawings here<br><span style="font-size:11px">PDF, DWG, JPG, PNG supported</span>
+  </div>
+  <div id="dwg-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px;margin-top:14px"></div>
+</div>
+
+<!-- LAYOUT STUDIO -->
+<div class="page" id="page-layout">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+    <div><div class="pg-h">🏠 Layout Studio</div><div style="font-size:12px;color:var(--t3)">Click room → add to canvas. Drag to reposition. Click room on canvas to remove.</div></div>
+    <div style="display:flex;gap:7px">
+      <button class="btn bg bsm" onclick="clearCanvas()">🗑 Clear All</button>
+      <button class="btn bgr bsm" onclick="saveLayout()">💾 Save</button>
+    </div>
+  </div>
+  <div class="studio-wrap">
+    <div class="studio-tools">
+      <div class="tool-sec">Plot Size</div>
+      <div class="fg2" style="margin-bottom:10px">
+        <div class="fgrp" style="margin:0"><label>Width (ft)</label><input type="number" class="fi" id="pw" value="30" style="padding:6px 9px;font-size:12px"></div>
+        <div class="fgrp" style="margin:0"><label>Length (ft)</label><input type="number" class="fi" id="pl" value="40" style="padding:6px 9px;font-size:12px"></div>
+      </div>
+      <div class="tool-sec">Rooms — Click to Add</div>
+      <div id="room-list"></div>
+      <div class="tool-sec">Amenities</div>
+      <div id="amenity-list"></div>
+      <div class="tool-sec">Summary</div>
+      <div id="layout-summary" style="background:var(--bg);border-radius:8px;padding:10px;font-size:12px;color:var(--t2)">Add rooms to see summary</div>
+    </div>
+    <div class="studio-canvas" id="studio-canvas">
+      <div class="canvas-bg"></div>
+      <div id="canvas-area" style="position:absolute;inset:0"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MARKETPLACE -->
+<div class="page" id="page-market">
+  <div class="pg-h">🛒 Marketplace</div>
+  <div class="pg-s">Browse verified vendors and compare rates across GBA/BBMP Bengaluru</div>
+  <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:12px;display:flex;gap:9px;flex-wrap:wrap;align-items:center;box-shadow:var(--sh)">
+    <input type="text" id="mp-q" class="fi" placeholder="🔍 Search cement, TMT steel, mason, JCB..." style="flex:1;min-width:180px;padding:8px 12px" oninput="renderMarket()">
+    <select id="mp-cat" class="fi" style="width:170px;padding:8px" onchange="renderMarket()">
+      <option value="">All Categories</option>
+      <option>Cement &amp; Concrete</option><option>Steel &amp; Metal</option>
+      <option>Bricks &amp; Blocks</option><option>Sand &amp; Aggregates</option>
+      <option>Labour &amp; Services</option><option>Machinery</option>
+      <option>Electrical</option><option>Plumbing</option>
+      <option>Tiles &amp; Flooring</option><option>Paints &amp; Chemicals</option>
+    </select>
+    <input type="text" id="mp-pin" class="fi" placeholder="📍 Pincode" style="width:110px;padding:8px" oninput="renderMarket()">
+    <select id="mp-sort" class="fi" style="width:150px;padding:8px" onchange="renderMarket()">
+      <option value="asc">Price: Low → High</option>
+      <option value="desc">Price: High → Low</option>
+      <option value="name">Name A–Z</option>
+    </select>
+    <span style="font-size:11px;color:var(--t3)" id="mp-cnt"></span>
+  </div>
+  <div style="display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap">
+    <button class="btn bp bxs" onclick="mpFilter('',this)">All</button>
+    <button class="btn bg bxs" onclick="mpFilter('Cement &amp; Concrete',this)">🏭 Cement</button>
+    <button class="btn bg bxs" onclick="mpFilter('Steel &amp; Metal',this)">⚙️ Steel</button>
+    <button class="btn bg bxs" onclick="mpFilter('Sand &amp; Aggregates',this)">🪨 Sand</button>
+    <button class="btn bg bxs" onclick="mpFilter('Labour &amp; Services',this)">👷 Labour</button>
+    <button class="btn bg bxs" onclick="mpFilter('Machinery',this)">🚜 Machinery</button>
+    <button class="btn bg bxs" onclick="mpFilter('Tiles &amp; Flooring',this)">🔲 Tiles</button>
+    <button class="btn bg bxs" onclick="mpFilter('Electrical',this)">⚡ Electrical</button>
+    <button class="btn bg bxs" onclick="mpFilter('Plumbing',this)">🔧 Plumbing</button>
+  </div>
+  <div id="mp-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:11px"></div>
+</div>
+
+<!-- VENDOR DASHBOARD -->
+<div class="page" id="page-vendor">
+  <div class="pg-h">🏭 Vendor Dashboard</div>
+  <div class="pg-s">Manage your catalogue, rates, enquiries and orders</div>
+  <div class="sg g5" style="margin-bottom:16px">
+    <div class="sc ca"><div class="slbl">Total Items</div><div class="sval" id="v-tot">0</div><div class="ssub">in catalogue</div></div>
+    <div class="sc cgr"><div class="slbl">Rates Set</div><div class="sval" id="v-rated">0</div><div class="ssub">published live</div></div>
+    <div class="sc cpu"><div class="slbl">New Enquiries</div><div class="sval">3</div><div class="ssub">awaiting reply</div></div>
+    <div class="sc cam"><div class="slbl">Active Orders</div><div class="sval">6</div><div class="ssub">in progress</div></div>
+    <div class="sc ct"><div class="slbl">Revenue</div><div class="sval">₹4.2L</div><div class="ssub">this month</div></div>
+  </div>
+  <div class="panel">
+    <div class="ph">
+      <div><div class="ptl">My Catalogue &amp; Rates</div><div class="psb">Set your rates · GBA/BBMP reference rates pre-loaded</div></div>
+      <div style="display:flex;gap:7px;flex-wrap:wrap">
+        <button class="btn bg bsm" onclick="openMo('m-csv')">📥 CSV Upload</button>
+        <button class="btn bt bsm" onclick="openMo('m-additem')">+ Add Item</button>
+        <button class="btn ba bsm" onclick="autoFillRates()">Auto-fill GBA Rates</button>
+        <button class="btn bgr bsm" onclick="exportCatCSV()">⬇ Export</button>
+        <button class="btn bp bsm" onclick="publishCat()">💾 Save &amp; Publish</button>
+      </div>
+    </div>
+    <div style="padding:10px 14px;background:#f8f9fd;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <span style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.07em">Service Area:</span>
+      <input type="text" id="v-pin" class="fi" style="width:100px;padding:5px 9px;font-size:11px" placeholder="Pincode" oninput="saveLocData()">
+      <input type="text" id="v-city" class="fi" style="width:130px;padding:5px 9px;font-size:11px" placeholder="City" oninput="saveLocData()">
+      <input type="text" id="v-state" class="fi" style="width:110px;padding:5px 9px;font-size:11px" placeholder="State" oninput="saveLocData()">
+      <input type="number" id="v-lead" class="fi" style="width:80px;padding:5px 9px;font-size:11px" placeholder="Lead Days" oninput="saveLocData()">
+    </div>
+    <div style="display:flex;gap:7px;padding:9px 14px;background:#f8f9fd;border-bottom:1px solid var(--border);flex-wrap:wrap;align-items:center">
+      <select id="vf-cat" class="fi" style="width:auto;padding:5px 9px;font-size:11px" onchange="buildVendorTable()">
+        <option value="">All Categories</option>
+        <option>Cement &amp; Concrete</option><option>Steel &amp; Metal</option><option>Bricks &amp; Blocks</option>
+        <option>Sand &amp; Aggregates</option><option>Plumbing</option><option>Electrical</option>
+        <option>Tiles &amp; Flooring</option><option>Labour &amp; Services</option><option>Machinery</option>
+      </select>
+      <select id="vf-type" class="fi" style="width:auto;padding:5px 9px;font-size:11px" onchange="buildVendorTable()">
+        <option value="">All Types</option><option value="MATERIAL">Material</option><option value="SERVICE">Service</option><option value="LABOUR">Labour</option><option value="MACHINE">Machinery</option>
+      </select>
+      <select id="vf-rate" class="fi" style="width:auto;padding:5px 9px;font-size:11px" onchange="buildVendorTable()">
+        <option value="">All Items</option><option value="set">Rate Set ✓</option><option value="unset">Pending</option>
+      </select>
+      <input type="text" id="vf-q" class="fi" style="width:150px;padding:5px 9px;font-size:11px" placeholder="🔍 Search..." oninput="buildVendorTable()">
+      <button class="btn bg bxs" onclick="clearVFilter()">✕ Clear</button>
+      <span style="margin-left:auto;font-size:11px;color:var(--t3);font-weight:600" id="vf-cnt"></span>
+    </div>
+    <div class="ts" style="max-height:420px;overflow-y:auto">
+      <table>
+        <thead><tr><th>#</th><th>Code</th><th>Category</th><th>Type</th><th>Item Name</th>
+        <th>UOM</th><th>HSN</th><th>GST%</th><th>GBA Ref ₹</th><th>Your Rate ₹</th><th>Stock</th><th>Status</th><th></th></tr></thead>
+        <tbody id="v-tbody"></tbody>
+      </table>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f8f9fd;border-top:1px solid var(--border);flex-wrap:wrap;gap:8px">
+      <div style="font-size:11px;color:var(--t3);display:flex;align-items:center"><span class="udot"></span><span id="v-hint">Unsaved changes</span></div>
+      <button class="btn bp bsm" onclick="publishCat()">💾 Save &amp; Publish</button>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="ph"><div class="ptl">Recent Enquiries</div><button class="btn bg bsm" onclick="goTab('approvals')">View All →</button></div>
+    <div style="padding:12px 14px" id="v-enq-list"></div>
+  </div>
+</div>
+
+<!-- AI AGENT -->
+<div class="page" id="page-agent">
+  <div class="pg-h">🤖 AI Agent Dashboard</div>
+  <div class="pg-s">Your construction AI assistant — ask anything about materials, costs, vendors, BOQ</div>
+  <div class="agent-wrap">
+    <div class="agent-chat">
+      <div style="padding:12px 16px;background:linear-gradient(135deg,#1e2640,#2d3a6e);color:#fff;flex-shrink:0">
+        <div style="font-weight:700;font-size:13px">🤖 BuildMitra AI Agent</div>
+        <div style="font-size:11px;opacity:.65;margin-top:1px">Construction expert · Bengaluru GBA/BBMP rates</div>
+      </div>
+      <div class="chat-msgs" id="chat-msgs"></div>
+      <div class="chat-inp-row">
+        <input class="chat-inp" id="chat-inp" placeholder="Ask anything about construction..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg();}">
+        <button class="btn bp" onclick="sendMsg()">Send →</button>
+      </div>
+    </div>
+    <div class="agent-side">
+      <div style="font-size:13px;font-weight:700;color:var(--dark);margin-bottom:10px">⚡ Quick Ask</div>
+      <div class="aqgrid">
+        <button class="aqb" onclick="quickMsg('How much cement for 1000 SFT slab?')">🏗️ Cement for 1000 SFT slab</button>
+        <button class="aqb" onclick="quickMsg('Current TMT steel rate in Bengaluru')">⚙️ TMT steel rate today</button>
+        <button class="aqb" onclick="quickMsg('Bricks needed for 100 SFT wall 9 inch thick')">🧱 Bricks for 100 SFT wall</button>
+        <button class="aqb" onclick="quickMsg('Best cement vendors near Koramangala')">🏭 Cement vendors nearby</button>
+        <button class="aqb" onclick="quickMsg('Mason daily rate in Bengaluru')">👷 Mason daily rate</button>
+        <button class="aqb" onclick="quickMsg('BOQ estimate for 1200 SFT 2BHK house')">📋 BOQ for 2BHK house</button>
+        <button class="aqb" onclick="quickMsg('Cost to build house in Bengaluru per SFT')">💰 Construction cost/SFT</button>
+        <button class="aqb" onclick="quickMsg('Sand required for plastering 500 SFT')">🪨 Sand for plastering</button>
+      </div>
+      <div style="font-size:12px;font-weight:700;color:var(--dark);margin:12px 0 8px">📊 Session Stats</div>
+      <div style="display:flex;flex-direction:column;gap:7px">
+        <div style="display:flex;justify-content:space-between;padding:8px 11px;background:var(--bg);border-radius:7px"><span style="font-size:12px;color:var(--t2)">Questions Asked</span><span style="font-weight:700;color:var(--accent)" id="q-cnt">0</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 11px;background:var(--bg);border-radius:7px"><span style="font-size:12px;color:var(--t2)">Calculations Done</span><span style="font-weight:700;color:var(--teal)" id="q-calc">0</span></div>
+      </div>
+      <button class="btn br bsm" style="width:100%;justify-content:center;margin-top:12px" onclick="clearChat()">🗑 Clear Chat</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN -->
+<div class="page" id="page-admin">
+  <div class="pg-h">⚙️ Admin Panel</div>
+  <div class="pg-s">Platform management — vendors, buyers, listings, analytics</div>
+  <div class="atabs" id="atabs">
+    <button class="atab on" onclick="adminTab('overview',this)">Overview</button>
+    <button class="atab" onclick="adminTab('vendors',this)">Vendors</button>
+    <button class="atab" onclick="adminTab('buyers',this)">Buyers</button>
+    <button class="atab" onclick="adminTab('listings',this)">Listings</button>
+    <button class="atab" onclick="adminTab('analytics',this)">Analytics</button>
+    <button class="atab" onclick="adminTab('settings',this)">Settings</button>
+  </div>
+  <div id="admin-content"></div>
+</div>
+
+<!-- APPROVALS -->
+<div class="page" id="page-approvals">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;flex-wrap:wrap;gap:8px">
+    <div class="pg-h">✅ Approvals</div>
+    <button class="btn bgr bsm" onclick="approveAll()">✅ Approve All Pending</button>
+  </div>
+  <div class="pg-s">Review and approve vendor registrations, listing uploads, KYC documents</div>
+  <div class="sg g4" style="margin-bottom:16px">
+    <div class="sc cam"><div class="slbl">Pending</div><div class="sval" id="ap-pend">0</div><div class="ssub">awaiting review</div></div>
+    <div class="sc cgr"><div class="slbl">Approved Today</div><div class="sval">12</div></div>
+    <div class="sc cr"><div class="slbl">Rejected</div><div class="sval">2</div></div>
+    <div class="sc ca"><div class="slbl">Total Processed</div><div class="sval">840</div></div>
+  </div>
+  <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap" id="ap-filter-btns">
+    <button class="btn bp bsm" onclick="apFilter('all',this)">All</button>
+    <button class="btn bg bsm" onclick="apFilter('vendor',this)">Vendor Reg</button>
+    <button class="btn bg bsm" onclick="apFilter('listing',this)">Listing Upload</button>
+    <button class="btn bg bsm" onclick="apFilter('rate',this)">Rate Change</button>
+    <button class="btn bg bsm" onclick="apFilter('kyc',this)">KYC Docs</button>
+  </div>
+  <div id="ap-list"></div>
+</div>
+
+</div><!-- /body -->
+
+<!-- MODALS -->
+<div class="mo" id="m-boq"><div class="mbox"><div class="mh"><div class="mt">➕ Add BOQ Item</div><button class="mx" onclick="closeMo('m-boq')">×</button></div><div style="padding:16px"><div class="fg2"><div class="fgrp"><label>Description</label><input type="text" id="bd-desc" class="fi"></div><div class="fgrp"><label>Category</label><select id="bd-cat" class="fi"><option>Earthwork</option><option>Foundation</option><option>Structure</option><option>Brickwork</option><option>Plastering</option><option>Flooring</option><option>Roofing</option><option>Doors &amp; Windows</option><option>Electrical</option><option>Plumbing</option><option>Painting</option><option>Labour</option><option>Machinery</option></select></div><div class="fgrp"><label>Unit</label><select id="bd-unit" class="fi"><option>SFT</option><option>CUM</option><option>CFT</option><option>KG</option><option>Bag</option><option>Piece</option><option>Day</option><option>Hour</option><option>RMT</option><option>Lump Sum</option></select></div><div class="fgrp"><label>Quantity</label><input type="number" id="bd-qty" class="fi"></div><div class="fgrp"><label>Rate (₹)</label><input type="number" id="bd-rate" class="fi"></div><div class="fgrp"><label>GST %</label><select id="bd-gst" class="fi"><option value="0">0%</option><option value="5">5%</option><option value="12">12%</option><option value="18" selected>18%</option><option value="28">28%</option></select></div></div><div class="fgrp"><label>Notes</label><textarea id="bd-notes" class="fi" rows="2"></textarea></div></div><div class="mf"><button class="btn bg" onclick="closeMo('m-boq')">Cancel</button><button class="btn bp" onclick="addBOQItem()">Add to BOQ</button></div></div></div>
+
+<div class="mo" id="m-additem"><div class="mbox"><div class="mh"><div class="mt">➕ Add Item to Catalogue</div><button class="mx" onclick="closeMo('m-additem')">×</button></div><div style="padding:16px"><div class="fg3"><div class="fgrp"><label>Item Code</label><input type="text" id="ai-code" class="fi"></div><div class="fgrp"><label>Item Name</label><input type="text" id="ai-name" class="fi"></div><div class="fgrp"><label>Category</label><select id="ai-cat" class="fi"><option>Cement &amp; Concrete</option><option>Steel &amp; Metal</option><option>Bricks &amp; Blocks</option><option>Sand &amp; Aggregates</option><option>Plumbing</option><option>Electrical</option><option>Tiles &amp; Flooring</option><option>Labour &amp; Services</option><option>Machinery</option></select></div><div class="fgrp"><label>Type</label><select id="ai-type" class="fi"><option value="MATERIAL">Material</option><option value="SERVICE">Service</option><option value="LABOUR">Labour</option><option value="MACHINE">Machinery</option></select></div><div class="fgrp"><label>UOM</label><input type="text" id="ai-uom" class="fi"></div><div class="fgrp"><label>HSN Code</label><input type="text" id="ai-hsn" class="fi"></div><div class="fgrp"><label>GST %</label><input type="number" id="ai-gst" class="fi" value="18"></div><div class="fgrp"><label>Your Rate ₹</label><input type="number" id="ai-rate" class="fi"></div><div class="fgrp"><label>GBA Ref Rate ₹</label><input type="number" id="ai-ref" class="fi"></div></div></div><div class="mf"><button class="btn bg" onclick="closeMo('m-additem')">Cancel</button><button class="btn bp" onclick="addItemManual()">Add Item</button></div></div></div>
+
+<div class="mo" id="m-csv"><div class="mbox"><div class="mh"><div class="mt">📥 Bulk CSV Upload</div><button class="mx" onclick="closeMo('m-csv')">×</button></div><div style="padding:16px"><div style="font-size:12px;color:var(--t2);margin-bottom:10px">CSV columns: <span style="font-family:var(--mono);font-size:11px;color:var(--accent)">code, name, category, type, uom, hsn, gst, rate, stock</span></div><div class="drop-zone" onclick="document.getElementById('csv-inp').click()" style="padding:20px">📄 Click to select CSV file</div><input type="file" id="csv-inp" accept=".csv" style="display:none" onchange="parseCSV(this)"><div id="csv-preview" style="margin-top:10px"></div></div><div class="mf"><button class="btn bg" onclick="closeMo('m-csv')">Cancel</button><button class="btn bp" id="csv-btn" onclick="importCSV()" style="display:none">Import Items</button></div></div></div>
+
+<div class="mo" id="m-quote"><div class="mbox"><div class="mh"><div class="mt">📋 Send Quote to Buyer</div><button class="mx" onclick="closeMo('m-quote')">×</button></div><div style="padding:16px" id="quote-body"></div><div class="mf"><button class="btn bg" onclick="closeMo('m-quote')">Cancel</button><button class="btn bg bsm" onclick="printQuote()">🖨 Print/PDF</button><button class="btn bwa" onclick="sendWAQuote()"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a.5.5 0 00-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>WhatsApp Quote</button><button class="btn bp" onclick="confirmQuote()">✅ Confirm &amp; Send</button></div></div></div>
+
+<div class="mo" id="m-dwg"><div class="mbox"><div class="mh"><div class="mt" id="dwg-view-title">Drawing</div><button class="mx" onclick="closeMo('m-dwg')">×</button></div><div style="padding:20px;min-height:300px;display:flex;align-items:center;justify-content:center" id="dwg-view-body"></div><div class="mf"><button class="btn bg" onclick="closeMo('m-dwg')">Close</button><button class="btn bp">⬇ Download</button></div></div></div>
+
+<script>
+// ========== FULL JAVASCRIPT ==========
+// MASTER DATA
+var CATALOG = [
+  {code:'CEM-001',name:'OPC 43 Grade Cement',cat:'Cement & Concrete',type:'MATERIAL',uom:'Bag (50kg)',hsn:'25232100',gst:28,ref:400},
+  {code:'STL-001',name:'TMT Bar 8mm Fe-500',cat:'Steel & Metal',type:'MATERIAL',uom:'KG',hsn:'72139190',gst:18,ref:68},
+  {code:'AGG-001',name:'River Sand / M-Sand',cat:'Sand & Aggregates',type:'MATERIAL',uom:'CFT',hsn:'25010000',gst:5,ref:55},
+  {code:'SRV-001',name:'Mason (Skilled)',cat:'Labour & Services',type:'LABOUR',uom:'Day',hsn:'995421',gst:18,ref:850},
+  {code:'MCH-001',name:'JCB / Excavator',cat:'Machinery',type:'MACHINE',uom:'Hour',hsn:'999731',gst:18,ref:2500},
+  {code:'BRK-001',name:'Red Clay Brick',cat:'Bricks & Blocks',type:'MATERIAL',uom:'Per 1000',hsn:'69010010',gst:5,ref:7500},
+  {code:'PLB-001',name:'CPVC Pipe 1/2 inch',cat:'Plumbing',type:'MATERIAL',uom:'Piece',hsn:'39172100',gst:18,ref:180},
+  {code:'ELC-001',name:'2.5 sqmm Wire',cat:'Electrical',type:'MATERIAL',uom:'Roll',hsn:'85441190',gst:18,ref:2200},
+  {code:'TFL-001',name:'Vitrified Tile 600x600mm',cat:'Tiles & Flooring',type:'MATERIAL',uom:'SFT',hsn:'69072100',gst:18,ref:55},
+  {code:'PNT-001',name:'Exterior Emulsion (20L)',cat:'Paints & Chemicals',type:'MATERIAL',uom:'Tin',hsn:'32091000',gst:18,ref:3800}
+];
+
+var VENDORS_LIST = [
+  {id:'V1',name:'Suresh Kumar & Co.',city:'Gandhi Nagar',pin:'560032',phone:'+919876543210',rating:4.8},
+  {id:'V2',name:'BuildRight Contracts',city:'Rajajinagar',pin:'560010',phone:'+918765432109',rating:4.6}
+];
+
+var ROOM_TYPES = [{name:'Living Room',ico:'🛋️',color:'#e8f0fe',w:180,h:140},{name:'Bedroom',ico:'🛏️',color:'#fce4ec',w:140,h:120}];
+var AMENITY_TYPES = [{name:'Main Door',ico:'🚪',color:'#cfd8dc',w:60,h:20}];
+
+var vendorRows = [], boqItems = [], drawings = [], layoutRooms = [], mpListings = [], approvalData = [];
+var curCalcType = 'slab';
+var adminCurTab = 'overview';
+var apCurFilter = 'all';
+
+function lsGet(k,d){try{return JSON.parse(localStorage.getItem(k))||d;}catch(e){return d;}}
+function lsSet(k,v){localStorage.setItem(k,JSON.stringify(v));}
+
+function toast(msg,type){var t=document.getElementById('toast');t.textContent=msg;t.className='toast tok on';setTimeout(function(){t.classList.remove('on');},2000);}
+function openMo(id){document.getElementById(id).classList.add('on');}
+function closeMo(id){document.getElementById(id).classList.remove('on');}
+
+function goTab(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.ntab').forEach(t=>t.classList.remove('on'));
+  document.getElementById('page-'+id).classList.add('on');
+  document.getElementById('ntab-'+id).classList.add('on');
+  if(id==='calc') initCalcForm();
+  if(id==='vendor') buildVendorTable();
+  if(id==='market') renderMarket();
+  if(id==='admin') renderAdmin();
+  if(id==='approvals') renderApprovals();
+  if(id==='drawings') renderDrawings();
+  if(id==='layout') renderLayout();
+}
+
+// CALCULATOR (simplified but working)
+function initCalcForm(){document.getElementById('calc-form').innerHTML='<div class="fg2"><div class="fgrp"><label>Length (ft)</label><input type="number" id="c-len" class="fi" value="20"></div><div class="fgrp"><label>Width (ft)</label><input type="number" id="c-wid" class="fi" value="15"></div></div><div class="fg2"><div class="fgrp"><label>Thickness (inch)</label><input type="number" id="c-thk" class="fi" value="5"></div></div>';}
+function setCalcType(type,el){curCalcType=type;document.querySelectorAll('.ctype-btn').forEach(b=>b.classList.remove('on'));el.classList.add('on');initCalcForm();}
+function doCalculate(){
+  var l=parseFloat(document.getElementById('c-len')?.value)||20,w=parseFloat(document.getElementById('c-wid')?.value)||15,thk=parseFloat(document.getElementById('c-thk')?.value)||5;
+  var vol=l*w*(thk/12)*0.0283,cem=Math.ceil(vol*8),sand=Math.round(vol*0.44*35.3),agg=Math.round(vol*0.88*35.3);
+  document.getElementById('calc-results').innerHTML='<div class="res-box"><div class="ri-row"><span class="ri-lbl">Concrete Volume</span><span class="ri-val">'+vol.toFixed(2)+' CUM</span></div><div class="ri-row"><span class="ri-lbl">Cement</span><span class="ri-val">'+cem+' Bags</span></div><div class="ri-row"><span class="ri-lbl">Sand</span><span class="ri-val">'+sand+' CFT</span></div><div class="ri-row"><span class="ri-lbl">Aggregate</span><span class="ri-val">'+agg+' CFT</span></div></div>';
+  document.getElementById('calc-cost').innerHTML='<div class="res-box"><div class="ri-row"><span class="ri-lbl">Material Cost</span><span class="ri-val">₹'+(cem*400+sand*55+agg*50).toLocaleString()+'</span></div><div class="ri-row"><span class="ri-lbl">Labour (est.)</span><span class="ri-val">₹'+(l*w*35).toLocaleString()+'</span></div></div>';
+}
+
+// BOQ
+function addBOQItem(){var desc=document.getElementById('bd-desc').value;if(!desc)return;boqItems.push({id:Date.now(),desc:desc,cat:'General',unit:'Nos',qty:1,rate:0,gst:0,base:0,gstAmt:0,total:0});lsSet('bm_boq',boqItems);closeMo('m-boq');renderBOQ();toast('Item added');}
+function renderBOQ(){var tbody=document.getElementById('boq-body');if(!boqItems.length){tbody.innerHTML='<tr><td colspan="10">No items</td></tr>';return;}tbody.innerHTML=boqItems.map((it,i)=>'<tr><td>'+(i+1)+'</td><td>'+it.desc+'</td><td colspan="8"></td></tr>').join('');}
+function exportBOQ(type){toast('Export '+type);}
+
+// Drawings
+var dwgFilter='all';
+function renderDrawings(){document.getElementById('dwg-grid').innerHTML='<div class="empty">Upload drawings to see them</div>';}
+function filterDwg(f,el){dwgFilter=f;document.querySelectorAll('#dwg-filters .btn').forEach(b=>b.className='btn bg bsm');el.className='btn bp bsm';renderDrawings();}
+function uploadDwg(input){toast('Uploaded '+input.files.length+' files');renderDrawings();}
+function dropDwg(e){e.preventDefault();uploadDwg({files:e.dataTransfer.files});}
+
+// Layout
+function renderLayout(){document.getElementById('room-list').innerHTML='<div class="tool-item" onclick="addRoom(0)"><div class="tool-ico">🛋️</div><div>Living Room</div></div>';}
+function addRoom(idx){layoutRooms.push({id:Date.now(),name:'Room',x:20,y:20,w:100,h:80});renderCanvasRooms();}
+function renderCanvasRooms(){var area=document.getElementById('canvas-area');area.innerHTML='';layoutRooms.forEach(r=>{var d=document.createElement('div');d.className='canvas-room';d.style.cssText='left:'+r.x+'px;top:'+r.y+'px;width:'+r.w+'px;height:'+r.h+'px';d.innerHTML='<span class="rm-ico">🏠</span><button class="rm-del" onclick="removeRoom('+r.id+')">×</button>';area.appendChild(d);});}
+function removeRoom(id){layoutRooms=layoutRooms.filter(r=>r.id!==id);renderCanvasRooms();}
+function clearCanvas(){layoutRooms=[];renderCanvasRooms();}
+function saveLayout(){toast('Layout saved');}
+
+// Marketplace
+function buildListings(){mpListings=CATALOG.map(r=>({...r,vendorId:'V1',vendorName:'Suresh Kumar',myRate:r.ref}));}
+function renderMarket(){if(!mpListings.length)buildListings();var grid=document.getElementById('mp-grid');grid.innerHTML=mpListings.map(it=>'<div style="border:1px solid #ccc;padding:10px;margin:5px"><b>'+it.name+'</b><br>₹'+it.myRate+'/'+it.uom+'<br><button class="btn bp bxs" onclick="openQuote(\'V1\',\''+it.code+'\')">Enquire</button></div>').join('');}
+function mpFilter(cat,el){document.getElementById('mp-cat').value=cat;renderMarket();}
+function openQuote(vid,code){toast('Quote opened');openMo('m-quote');}
+function sendWAQuote(){toast('WhatsApp quote sent');}
+function printQuote(){window.print();}
+function confirmQuote(){closeMo('m-quote');toast('Quote confirmed');}
+
+// Vendor
+function buildVendorTable(){var tbody=document.getElementById('v-tbody');tbody.innerHTML='<tr><td colspan="13">Catalogue loaded</td></tr>';}
+function autoFillRates(){toast('Rates auto-filled');}
+function publishCat(){toast('Catalogue published');}
+function exportCatCSV(){toast('CSV exported');}
+function addItemManual(){toast('Item added');closeMo('m-additem');}
+function parseCSV(input){toast('CSV parsed');document.getElementById('csv-btn').style.display='inline-flex';}
+function importCSV(){toast('Imported');closeMo('m-csv');}
+function clearVFilter(){}
+function saveLocData(){}
+function renderVEnq(){document.getElementById('v-enq-list').innerHTML='<div>Sample enquiry</div>';}
+
+// AI Agent
+function initChat(){if(document.getElementById('chat-msgs').innerHTML==='')addAIMsg('Hello! Ask me anything about construction.');}
+function addAIMsg(msg){var d=document.createElement('div');d.className='cmsg cm-ai';d.innerHTML=msg;document.getElementById('chat-msgs').appendChild(d);}
+function addUserMsg(msg){var d=document.createElement('div');d.className='cmsg cm-user';d.textContent=msg;document.getElementById('chat-msgs').appendChild(d);}
+function sendMsg(){var inp=document.getElementById('chat-inp');if(!inp.value)return;addUserMsg(inp.value);addAIMsg('Thanks for asking. I\'ll help with construction queries.');inp.value='';}
+function quickMsg(q){goTab('agent');setTimeout(function(){document.getElementById('chat-inp').value=q;sendMsg();},300);}
+function clearChat(){document.getElementById('chat-msgs').innerHTML='';initChat();}
+
+// Admin
+function adminTab(tab,el){adminCurTab=tab;document.querySelectorAll('.atab').forEach(t=>t.classList.remove('on'));el.classList.add('on');renderAdmin();}
+function renderAdmin(){document.getElementById('admin-content').innerHTML='<div class="panel"><div class="ph">Admin Overview</div><div>Platform stats go here</div></div>';}
+function adminOverview(){return'<div>Overview</div>';}
+function adminVendors(){return'<div>Vendors list</div>';}
+function adminBuyers(){return'<div>Buyers list</div>';}
+function adminListings(){return'<div>Listings</div>';}
+function adminAnalytics(){return'<div>Analytics</div>';}
+function adminSettings(){return'<div>Settings</div>';}
+
+// Approvals
+function getDefaultApprovals(){return[{id:'AP-001',type:'vendor',name:'Test Vendor',detail:'Pending approval',status:'pending',date:'Today',gstin:'29XXXXX',phone:'9876543210'}];}
+function renderApprovals(){var pending=approvalData.filter(a=>a.status==='pending').length;document.getElementById('ap-pend').textContent=pending;var list=document.getElementById('ap-list');list.innerHTML=approvalData.map(a=>'<div class="acard pending"><b>'+a.name+'</b><br><button class="btn bgr bsm" onclick="doApproval(\''+a.id+'\',\'approved\')">Approve</button></div>').join('');}
+function apFilter(f,el){apCurFilter=f;renderApprovals();}
+function doApproval(id,status){var a=approvalData.find(x=>x.id===id);if(a)a.status=status;lsSet('bm_approvals',approvalData);renderApprovals();toast('Updated');}
+function approveAll(){approvalData.forEach(a=>{if(a.status==='pending')a.status='approved';});lsSet('bm_approvals',approvalData);renderApprovals();toast('All approved');}
+
+// Init
+window.addEventListener('DOMContentLoaded',function(){
+  vendorRows = lsGet('bm_vrows',CATALOG.map(r=>({...r,rate:''})));
+  boqItems = lsGet('bm_boq',[]);
+  drawings = lsGet('bm_dwgs',[]);
+  layoutRooms = lsGet('bm_layout',[]);
+  approvalData = lsGet('bm_approvals',getDefaultApprovals());
+  initCalcForm();
+  if(boqItems.length) renderBOQ();
+});
+</script>
+</body>
+</html>

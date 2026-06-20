@@ -1,0 +1,12 @@
+[
+  {"id":1,"name":"Male Coolie","skill":"Unskilled","wage":400,"location":"Bengaluru"},
+  {"id":2,"name":"Female Coolie","skill":"Unskilled","wage":350,"location":"Bengaluru"},
+  {"id":3,"name":"Helper","skill":"Unskilled","wage":450,"location":"Bengaluru"},
+  {"id":4,"name":"Mason","skill":"Skilled","wage":750,"location":"Bengaluru"},
+  {"id":5,"name":"Electrician","skill":"Skilled","wage":850,"location":"Bengaluru"},
+  {"id":6,"name":"Plumber","skill":"Skilled","wage":850,"location":"Bengaluru"},
+  {"id":7,"name":"Carpenter","skill":"Skilled","wage":900,"location":"Bengaluru"},
+  {"id":8,"name":"Painter","skill":"Skilled","wage":700,"location":"Bengaluru"},
+  {"id":9,"name":"Supervisor","skill":"Semi-Skilled","wage":1200,"location":"Bengaluru"},
+  {"id":10,"name":"Site Engineer","skill":"Professional","wage":2500,"location":"Bengaluru"}
+]

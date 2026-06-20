@@ -1,0 +1,36 @@
+// Add this function inside the loadAllMarketplaceData function
+// After getting the product keys, add this:
+
+// FIX: If supplierProducts_undefined exists, migrate it to current user
+const undefinedKey = "supplierProducts_undefined";
+if (localStorage.getItem(undefinedKey)) {
+  const undefinedProducts = JSON.parse(localStorage.getItem(undefinedKey) || "[]");
+  console.log("🔧 Found undefined products, fixing...");
+  
+  // Get current user
+  const userData = localStorage.getItem("loggedInUser");
+  if (userData) {
+    const user = JSON.parse(userData);
+    if (user.userId) {
+      // Get existing products for this user
+      const userKey = "supplierProducts_" + user.userId;
+      const existingData = localStorage.getItem(userKey);
+      let userProducts = existingData ? JSON.parse(existingData) : [];
+      
+      // Fix each product
+      const fixedProducts = undefinedProducts.map(p => ({
+        ...p,
+        userId: user.userId,
+        ownerName: user.name,
+        businessName: user.name,
+        shopName: user.name
+      }));
+      
+      // Merge and save
+      const allProducts = [...userProducts, ...fixedProducts];
+      localStorage.setItem(userKey, JSON.stringify(allProducts));
+      localStorage.removeItem(undefinedKey);
+      console.log("✅ Fixed", fixedProducts.length, "products");
+    }
+  }
+}

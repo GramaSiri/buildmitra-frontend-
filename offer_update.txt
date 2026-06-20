@@ -1,0 +1,83 @@
+// Replace the addOffer function in supplier-dashboard.tsx
+const addOffer = () => {
+  if (!newOffer.offerName || !newOffer.discount) {
+    alert("Please fill offer name and discount");
+    return;
+  }
+  
+  const offer = {
+    id: offers.length + 1,
+    offerName: newOffer.offerName,
+    productName: newOffer.productName || "All Products",
+    bulkQuantity: newOffer.bulkQuantity || "N/A",
+    bulkValue: newOffer.bulkValue || "N/A",
+    discount: parseFloat(newOffer.discount),
+    freeDelivery: newOffer.freeDelivery || "No",
+    validFrom: newOffer.validFrom,
+    validTo: newOffer.validTo,
+    status: "Active",
+    ordersReceived: 0
+  };
+  
+  setOffers([...offers, offer]);
+  setSupplierInfo({ ...supplierInfo, activeOffers: supplierInfo.activeOffers + 1 });
+  setNewOffer({ 
+    offerName: "", 
+    productName: "", 
+    bulkQuantity: "", 
+    bulkValue: "", 
+    discount: "", 
+    freeDelivery: "No", 
+    validFrom: "", 
+    validTo: "" 
+  });
+  setShowOfferModal(false);
+  alert("Offer created successfully!");
+};
+
+// Update the Offer Modal JSX
+showOfferModal && React.createElement("div", { style: styles.modal, onClick: () => setShowOfferModal(false) },
+  React.createElement("div", { style: styles.modalContent, onClick: (e) => e.stopPropagation() },
+    React.createElement("h2", { style: { color: "#1a5f7a" } }, "Create Special Offer"),
+    React.createElement("div", null,
+      React.createElement("label", { style: styles.label }, "Offer Name *"),
+      React.createElement("input", { type: "text", placeholder: "e.g., Summer Sale 2024", value: newOffer.offerName, onChange: (e) => setNewOffer({...newOffer, offerName: e.target.value}), style: styles.input })
+    ),
+    React.createElement("div", null,
+      React.createElement("label", { style: styles.label }, "Product/Item Name"),
+      React.createElement("input", { type: "text", placeholder: "e.g., UltraTech Cement (or 'All Products')", value: newOffer.productName, onChange: (e) => setNewOffer({...newOffer, productName: e.target.value}), style: styles.input })
+    ),
+    React.createElement("div", { style: styles.row2 },
+      React.createElement("div", null,
+        React.createElement("label", { style: styles.label }, "Bulk Quantity"),
+        React.createElement("input", { type: "text", placeholder: "e.g., 500 bags, 1000 kg", value: newOffer.bulkQuantity, onChange: (e) => setNewOffer({...newOffer, bulkQuantity: e.target.value}), style: styles.input })
+      ),
+      React.createElement("div", null,
+        React.createElement("label", { style: styles.label }, "Bulk Value (₹)"),
+        React.createElement("input", { type: "number", placeholder: "e.g., 50000", value: newOffer.bulkValue, onChange: (e) => setNewOffer({...newOffer, bulkValue: e.target.value}), style: styles.input })
+      )
+    ),
+    React.createElement("div", null,
+      React.createElement("label", { style: styles.label }, "Discount (%) *"),
+      React.createElement("input", { type: "number", placeholder: "e.g., 10", value: newOffer.discount, onChange: (e) => setNewOffer({...newOffer, discount: e.target.value}), style: styles.input })
+    ),
+    React.createElement("div", null,
+      React.createElement("label", { style: styles.label }, "Free Delivery"),
+      React.createElement("select", { value: newOffer.freeDelivery, onChange: (e) => setNewOffer({...newOffer, freeDelivery: e.target.value}), style: styles.select },
+        React.createElement("option", { value: "Yes" }, "Yes"),
+        React.createElement("option", { value: "No" }, "No")
+      )
+    ),
+    React.createElement("div", { style: styles.row2 },
+      React.createElement("div", null,
+        React.createElement("label", { style: styles.label }, "Valid From"),
+        React.createElement("input", { type: "date", value: newOffer.validFrom, onChange: (e) => setNewOffer({...newOffer, validFrom: e.target.value}), style: styles.input })
+      ),
+      React.createElement("div", null,
+        React.createElement("label", { style: styles.label }, "Valid To"),
+        React.createElement("input", { type: "date", value: newOffer.validTo, onChange: (e) => setNewOffer({...newOffer, validTo: e.target.value}), style: styles.input })
+      )
+    ),
+    React.createElement("button", { onClick: addOffer, style: { ...styles.buttonSuccess, width: "100%" } }, "Publish Offer")
+  )
+);

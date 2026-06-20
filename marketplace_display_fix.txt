@@ -1,0 +1,11 @@
+// In marketplace.tsx, update the product card display:
+
+// Find this section where business name is displayed
+// Change from:
+"🏢 ", item.businessName || item.shopName || item.name,
+
+// To this:
+"🏢 ", item.ownerName || item.businessName || item.shopName || "Unknown Supplier",
+
+// Also in profile modal:
+"Business: ", item.ownerName || item.businessName || item.shopName || item.name,

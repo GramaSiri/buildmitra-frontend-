@@ -1,0 +1,148 @@
+// Add this import at the top of Supplier Dashboard
+import dataService from "../src/services/DataService";
+
+// Replace the addProduct function
+const addProduct = () => {
+  if (!newProduct.name || !newProduct.price) {
+    alert("Please fill product name and price");
+    return;
+  }
+  const product = {
+    businessName: newProduct.name,
+    ownerName: supplierInfo.ownerName,
+    phone: supplierInfo.phone,
+    email: supplierInfo.email,
+    location: supplierInfo.address.split(",")[0],
+    city: "Mumbai",
+    pincode: "400001",
+    products: [newProduct.name],
+    priceRange: `₹${newProduct.price} per ${newProduct.unit}`,
+    price: newProduct.price,
+    unit: newProduct.unit,
+    stock: newProduct.stock,
+    minOrder: newProduct.minOrder,
+    description: newProduct.description,
+    availablePincodes: ["400001", "400002", "400003", "560062", "560108"],
+    isVerified: true
+  };
+  
+  const saved = dataService.addProduct(product);
+  alert(`Product "${newProduct.name}" added successfully! It will appear in Marketplace.`);
+  setNewProduct({ name: "", category: "", unit: "kg", price: "", stock: "", minOrder: "", description: "" });
+  setShowProductModal(false);
+  
+  // Refresh products list from central service
+  const allProducts = dataService.getProducts();
+  const supplierProducts = allProducts.map(p => ({
+    id: p.id,
+    name: p.businessName,
+    category: p.products?.[0]?.split(" ")[0] || "Others",
+    unit: p.unit || "piece",
+    price: p.price,
+    stock: p.stock,
+    minOrder: p.minOrder,
+    soldCount: 0,
+    status: "Active"
+  }));
+  setProducts(supplierProducts);
+};
+
+// Replace the handleBulkUpload function
+const handleBulkUpload = (e) => {
+  const file = e.target.files[0];
+  if (!file) {
+    alert("Please select a file to upload");
+    return;
+  }
+  
+  const reader = new FileReader();
+  reader.onload = (evt) => {
+    try {
+      const data = new Uint8Array(evt.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+      
+      let uploadedCount = 0;
+      for (let i = 0; i < jsonData.length; i++) {
+        const row = jsonData[i];
+        const productName = row["Product Name"] || row["ProductName"] || row["name"];
+        
+        if (productName && row["Price"]) {
+          const product = {
+            businessName: productName,
+            ownerName: supplierInfo.ownerName,
+            phone: supplierInfo.phone,
+            email: supplierInfo.email,
+            location: supplierInfo.address.split(",")[0],
+            city: "Mumbai",
+            pincode: "400001",
+            products: [productName],
+            priceRange: `₹${row["Price"]} per ${row["Unit"] || "piece"}`,
+            price: parseFloat(row["Price"]),
+            unit: row["Unit"] || "piece",
+            stock: parseInt(row["Stock"]) || 0,
+            minOrder: parseInt(row["Min Order"]) || 1,
+            description: row["Description"] || "",
+            availablePincodes: ["400001", "400002", "400003", "560062", "560108"],
+            isVerified: true
+          };
+          dataService.addProduct(product);
+          uploadedCount++;
+        }
+      }
+      
+      if (uploadedCount > 0) {
+        alert(`✅ ${uploadedCount} products uploaded successfully! They will appear in Marketplace.`);
+        // Refresh products list
+        const allProducts = dataService.getProducts();
+        const supplierProducts = allProducts.map(p => ({
+          id: p.id,
+          name: p.businessName,
+          category: p.products?.[0]?.split(" ")[0] || "Others",
+          unit: p.unit || "piece",
+          price: p.price,
+          stock: p.stock,
+          minOrder: p.minOrder,
+          soldCount: 0,
+          status: "Active"
+        }));
+        setProducts(supplierProducts);
+        setSupplierInfo({ ...supplierInfo, totalProducts: supplierProducts.length });
+        setShowBulkUploadModal(false);
+        e.target.value = '';
+      } else {
+        alert("No valid products found. Please check the file format.");
+      }
+    } catch (error) {
+      alert("Error reading file. Please use the template format.");
+    }
+  };
+  reader.readAsArrayBuffer(file);
+};
+
+// Add useEffect to load products from central service on mount
+useEffect(() => {
+  const loadProducts = () => {
+    const allProducts = dataService.getProducts();
+    const supplierProducts = allProducts.map(p => ({
+      id: p.id,
+      name: p.businessName,
+      category: p.products?.[0]?.split(" ")[0] || "Others",
+      unit: p.unit || "piece",
+      price: p.price,
+      stock: p.stock,
+      minOrder: p.minOrder,
+      soldCount: 0,
+      status: "Active"
+    }));
+    setProducts(supplierProducts);
+    setSupplierInfo(prev => ({ ...prev, totalProducts: supplierProducts.length }));
+  };
+  
+  loadProducts();
+  
+  // Subscribe to data updates
+  const unsubscribe = dataService.subscribe(loadProducts);
+  return () => unsubscribe();
+}, []);

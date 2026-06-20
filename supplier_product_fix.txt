@@ -1,0 +1,37 @@
+// Add this to the addProduct function
+const addProduct = () => {
+  if (!newProduct.name || !newProduct.price) {
+    alert("Please fill product name and price");
+    return;
+  }
+  
+  // Get current user info
+  const user = JSON.parse(localStorage.getItem("loggedInUser") || "{}");
+  const supplierInfo = JSON.parse(localStorage.getItem("supplierInfo") || "{}");
+  
+  // Use the name from supplierInfo or loggedInUser
+  const ownerName = supplierInfo.shopName || user.name || "Unknown";
+  
+  const product = {
+    id: Date.now(),
+    userId: userId,
+    ownerName: ownerName,  // CRITICAL: Store the name directly
+    ownerPhone: supplierInfo.phone || user.phone || "",
+    name: newProduct.name,
+    category: newProduct.category,
+    unit: newProduct.unit,
+    price: parseFloat(newProduct.price),
+    stock: parseInt(newProduct.stock) || 0,
+    minOrder: parseInt(newProduct.minOrder) || 1,
+    description: newProduct.description || "",
+    rating: 0,
+    soldCount: 0,
+    status: "Active",
+    createdAt: new Date().toISOString()
+  };
+  
+  const updatedProducts = [...products, product];
+  setProducts(updatedProducts);
+  localStorage.setItem("supplierProducts_" + userId, JSON.stringify(updatedProducts));
+  // ... rest of function
+};

@@ -1,0 +1,58 @@
+// Add this import at the top of Marketplace
+import dataService from "../src/services/DataService";
+
+// Replace the listings state with dynamic loading
+const [listings, setListings] = useState({
+  suppliers: [],
+  contractors: [],
+  machinery: [],
+  labours: []
+});
+
+// Add useEffect to load listings from central service
+useEffect(() => {
+  const loadListings = () => {
+    const allProducts = dataService.getProducts();
+    const allSuppliers = dataService.getSuppliers();
+    const allContractors = dataService.getContractors();
+    const allMachinery = dataService.getMachinery();
+    const allLabours = dataService.getLabours();
+    
+    // Convert products to supplier format
+    const productSuppliers = allProducts.map(p => ({
+      id: p.id,
+      category: "supplier",
+      businessName: p.businessName,
+      ownerName: p.ownerName || "Supplier",
+      phone: p.phone || "+919876543210",
+      email: p.email || "supplier@buildtrack.com",
+      location: p.location || "Mumbai",
+      city: p.city || "Mumbai",
+      pincode: p.pincode || "400001",
+      rating: p.rating || 4.0,
+      totalReviews: p.totalReviews || 0,
+      since: "2024",
+      products: p.products || [p.businessName],
+      priceRange: p.priceRange,
+      price: p.price,
+      unit: p.unit,
+      offer: p.offer || "New arrival",
+      isVerified: p.isVerified || true,
+      description: p.description,
+      availablePincodes: p.availablePincodes || ["400001", "400002", "400003", "560062", "560108"]
+    }));
+    
+    setListings({
+      suppliers: [...allSuppliers, ...productSuppliers],
+      contractors: allContractors,
+      machinery: allMachinery,
+      labours: allLabours
+    });
+  };
+  
+  loadListings();
+  
+  // Subscribe to data updates
+  const unsubscribe = dataService.subscribe(loadListings);
+  return () => unsubscribe();
+}, []);

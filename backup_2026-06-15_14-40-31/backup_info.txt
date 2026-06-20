@@ -1,0 +1,27 @@
+BACKUP CREATED: 2026-06-15 14:40:35
+PROJECT: BMFrontend - Buyer Dashboard
+
+FILES BACKED UP:
+- buyer-dashboard.tsx (Complete working version)
+- All calculator files from pages folder
+- All backup files from src_backup
+- BOQ calculator files
+
+FEATURES IN THIS BACKUP:
+✅ Horizontal tabs navigation
+✅ Project creation with BUA calculation (10% setback)
+✅ 30 pre-loaded milestones as per civil standards
+✅ Milestone workflow (Contractor → Owner → Invoice → Payment)
+✅ Partial payment with actual payment amount
+✅ Payment register with cumulative balance
+✅ Inventory tracking (Received, Consumed, Balance)
+✅ Progress media upload (photos/videos)
+✅ Extra works with unit field
+✅ Labour management with attendance and payment
+✅ Reports with multiple filters
+✅ Agreement copy upload and view
+✅ Days left counter with overdue alerts
+✅ WhatsApp share integration
+✅ Excel report export
+
+This is a STABLE WORKING VERSION.

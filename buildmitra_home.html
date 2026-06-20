@@ -1,0 +1,1571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BuildMitra — Complete Construction Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f0f4fb;--card:#fff;--dark:#1e2640;
+  --accent:#2563eb;--a2:#1a4fd6;--teal:#0bb4a0;--amber:#d97706;
+  --green:#16a34a;--red:#dc2626;--purple:#7c3aed;
+  --text:#18202e;--t2:#4a5570;--t3:#8a92aa;
+  --border:#dde3f2;--b2:#c6cfe8;
+  --mono:'JetBrains Mono',monospace;--sans:'Outfit',sans-serif;
+  --sh:0 2px 12px rgba(37,99,235,.07);
+}
+html,body{height:100%;font-family:var(--sans);font-size:14px;color:var(--text);overflow:hidden;background:var(--bg)}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:var(--b2);border-radius:3px}
+
+/* NAV */
+.nav{position:fixed;top:0;left:0;right:0;height:56px;z-index:999;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:0;box-shadow:0 1px 8px rgba(37,99,235,.07)}
+.nav-logo{display:flex;align-items:center;gap:8px;margin-right:20px;cursor:pointer;text-decoration:none;flex-shrink:0}
+.nav-logo-txt{font-size:18px;font-weight:800;color:var(--accent)}
+.nav-tabs{display:flex;align-items:center;gap:2px;overflow-x:auto;flex:1}
+.nav-tabs::-webkit-scrollbar{height:0}
+.ntab{padding:7px 12px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;color:var(--t2);transition:.15s;border:none;background:none;font-family:var(--sans);display:flex;align-items:center;gap:4px}
+.ntab:hover{background:var(--bg);color:var(--text)}
+.ntab.on{background:rgba(37,99,235,.1);color:var(--accent)}
+.nav-right{display:flex;align-items:center;gap:10px;margin-left:12px;flex-shrink:0}
+.nav-av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--purple));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;color:#fff}
+.nav-nm{font-size:12px;font-weight:600}
+.nav-rl{font-size:10px;color:var(--t3)}
+
+/* BODY */
+.body{margin-top:56px;height:calc(100vh - 56px);overflow-y:auto;background:var(--bg)}
+.page{display:none;padding:20px;min-height:100%}
+.page.on{display:block}
+
+/* COMMON */
+.pg-h{font-size:22px;font-weight:800;color:var(--dark);margin-bottom:3px}
+.pg-s{font-size:12px;color:var(--t3);margin-bottom:20px}
+.panel{background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:14px;box-shadow:var(--sh)}
+.ph{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:8px}
+.ptl{font-size:14px;font-weight:700;color:var(--text)}
+.psb{font-size:11px;color:var(--t3);margin-top:2px}
+.sg{display:grid;gap:10px;margin-bottom:16px}
+.g2{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}.g5{grid-template-columns:repeat(5,1fr)}
+.sc{background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px;position:relative;overflow:hidden;box-shadow:var(--sh)}
+.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.ca::before{background:var(--accent)}.ct::before{background:var(--teal)}.cam::before{background:var(--amber)}.cgr::before{background:var(--green)}.cr::before{background:var(--red)}.cpu::before{background:var(--purple)}
+.slbl{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);margin-bottom:7px}
+.sval{font-size:24px;font-weight:800;line-height:1}
+.ca .sval{color:var(--accent)}.ct .sval{color:var(--teal)}.cam .sval{color:var(--amber)}.cgr .sval{color:var(--green)}.cr .sval{color:var(--red)}.cpu .sval{color:var(--purple)}
+.ssub{font-size:10px;color:var(--t3);margin-top:3px}
+.strend{font-size:10px;font-weight:600;margin-top:4px}
+.tu{color:var(--green)}.td{color:var(--red)}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:7px;font-family:var(--sans);font-size:12px;font-weight:600;border:none;cursor:pointer;transition:.15s;white-space:nowrap}
+.bp{background:var(--accent);color:#fff}.bp:hover{background:var(--a2);transform:translateY(-1px)}
+.bg{background:transparent;color:var(--t2);border:1px solid var(--b2)}.bg:hover{background:var(--bg);color:var(--text)}
+.bt{background:rgba(11,180,160,.1);color:var(--teal);border:1px solid rgba(11,180,160,.2)}.bt:hover{background:rgba(11,180,160,.18)}
+.bgr{background:rgba(22,163,74,.1);color:var(--green);border:1px solid rgba(22,163,74,.2)}.bgr:hover{background:rgba(22,163,74,.18)}
+.br{background:rgba(220,38,38,.1);color:var(--red);border:1px solid rgba(220,38,38,.2)}.br:hover{background:rgba(220,38,38,.18)}
+.ba{background:rgba(217,119,6,.1);color:var(--amber);border:1px solid rgba(217,119,6,.2)}.ba:hover{background:rgba(217,119,6,.18)}
+.bpu{background:rgba(124,58,237,.1);color:var(--purple);border:1px solid rgba(124,58,237,.2)}
+.bwa{background:#25d366;color:#fff}.bwa:hover{background:#1fb659}
+.bsm{padding:5px 11px;font-size:11px}.bxs{padding:3px 8px;font-size:10px;border-radius:6px}
+
+/* INPUTS */
+.fi{font-family:var(--sans);background:#fafbfe;border:1.5px solid var(--b2);border-radius:7px;padding:8px 11px;font-size:13px;color:var(--text);outline:none;transition:.2s;width:100%}
+.fi:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.fgrp{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.fgrp label{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--t3)}
+.fg2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+
+/* CHIPS */
+.chip{font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:5px;display:inline-block;white-space:nowrap}
+.chb{background:rgba(37,99,235,.08);color:var(--accent);border:.5px solid rgba(37,99,235,.2)}
+.cht{background:rgba(11,180,160,.08);color:var(--teal);border:.5px solid rgba(11,180,160,.2)}
+.pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.sb{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700}
+.sbg{background:rgba(22,163,74,.1);color:var(--green);border:.5px solid rgba(22,163,74,.2)}
+.sbr{background:rgba(220,38,38,.1);color:var(--red);border:.5px solid rgba(220,38,38,.2)}
+.sba{background:rgba(217,119,6,.1);color:var(--amber);border:.5px solid rgba(217,119,6,.2)}
+.sbb{background:rgba(37,99,235,.1);color:var(--accent);border:.5px solid rgba(37,99,235,.2)}
+.sbp{background:rgba(124,58,237,.1);color:var(--purple);border:.5px solid rgba(124,58,237,.2)}
+.sbt{background:rgba(11,180,160,.1);color:var(--teal);border:.5px solid rgba(11,180,160,.2)}
+
+/* TABLE */
+.ts{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{background:#f8f9fd;color:var(--t3);font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:9px 10px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+tbody tr{border-bottom:.5px solid var(--border);transition:background .1s}
+tbody tr:hover{background:rgba(37,99,235,.025)}
+tbody td{padding:9px 10px;vertical-align:middle}
+.del-btn{background:none;border:none;cursor:pointer;color:var(--t3);font-size:15px;padding:2px 5px;border-radius:4px;transition:.15s}
+.del-btn:hover{background:rgba(220,38,38,.1);color:var(--red)}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;right:20px;padding:11px 18px;border-radius:9px;font-size:12px;font-weight:600;opacity:0;transform:translateY(8px);transition:.3s;pointer-events:none;z-index:9999;max-width:300px}
+.toast.on{opacity:1;transform:translateY(0)}
+.tok{background:var(--green);color:#fff;box-shadow:0 4px 20px rgba(22,163,74,.3)}
+.terr{background:var(--red);color:#fff}.tinf{background:var(--accent);color:#fff}
+
+/* MODAL */
+.mo{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(3px);z-index:4000;display:none;align-items:center;justify-content:center}
+.mo.on{display:flex}
+.mbox{background:#fff;border-radius:14px;width:600px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.mh{display:flex;align-items:center;justify-content:space-between;padding:15px 18px;border-bottom:1px solid var(--border)}
+.mt{font-size:15px;font-weight:800;color:var(--text)}
+.mx{background:none;border:none;font-size:20px;color:var(--t3);cursor:pointer;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:6px}
+.mx:hover{background:var(--bg);color:var(--text)}
+.mf{padding:13px 18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+
+/* HOME */
+.hero-box{background:linear-gradient(135deg,#1e2640,#2d3a6e);border-radius:14px;padding:28px;color:#fff;margin-bottom:16px;position:relative;overflow:hidden}
+.hero-box::before{content:'';position:absolute;top:-40px;right:-40px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.04)}
+.hero-h{font-size:28px;font-weight:900;letter-spacing:-.02em;margin-bottom:6px}
+.hero-s{font-size:13px;opacity:.7;margin-bottom:18px}
+.ticker{background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:16px}
+.ticker-lbl{font-size:10px;font-weight:700;color:var(--t3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:9px}
+.ticker-row{display:flex;gap:20px;overflow-x:auto;padding-bottom:3px}
+.ticker-row::-webkit-scrollbar{height:0}
+.ti{flex-shrink:0;text-align:center;min-width:80px}
+.ti-n{font-size:11px;color:var(--t2);margin-bottom:2px}
+.ti-v{font-size:15px;font-weight:800;color:var(--dark);font-family:var(--mono)}
+.ti-u{font-size:10px;color:var(--t3)}
+.ti-c{font-size:10px;font-weight:700;margin-top:2px}
+
+/* CALCULATOR */
+.calc-wrap{display:grid;grid-template-columns:340px 1fr;gap:14px}
+.calc-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:18px;box-shadow:var(--sh)}
+.ctype-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:14px}
+.ctype-btn{padding:9px 6px;border-radius:7px;border:1.5px solid var(--border);background:#fff;text-align:center;cursor:pointer;transition:.15s;font-family:var(--sans)}
+.ctype-btn.on{border-color:var(--accent);background:rgba(37,99,235,.06)}
+.ctype-btn .ci{font-size:20px;display:block;margin-bottom:3px}
+.ctype-btn .cl{font-size:11px;font-weight:600;color:var(--t2)}
+.ctype-btn.on .cl{color:var(--accent)}
+.res-box{background:rgba(37,99,235,.04);border:1px solid rgba(37,99,235,.12);border-radius:9px;padding:12px;margin-top:12px}
+.ri-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:.5px solid var(--border)}
+.ri-row:last-child{border:none}
+.ri-lbl{font-size:12px;color:var(--t2)}
+.ri-val{font-size:13px;font-weight:800;color:var(--accent);font-family:var(--mono)}
+
+/* LAYOUT STUDIO */
+.studio-wrap{display:grid;grid-template-columns:240px 1fr;gap:14px;height:calc(100vh - 200px);min-height:460px}
+.studio-tools{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px;overflow-y:auto}
+.studio-canvas{background:#fff;border:1px solid var(--border);border-radius:12px;position:relative;overflow:hidden;min-height:460px}
+.canvas-bg{width:100%;height:100%;position:absolute;top:0;left:0;background-image:linear-gradient(rgba(37,99,235,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(37,99,235,.06) 1px,transparent 1px);background-size:30px 30px}
+.canvas-room{position:absolute;border:2px solid var(--accent);background:rgba(37,99,235,.08);border-radius:4px;cursor:move;display:flex;flex-direction:column;align-items:center;justify-content:center;user-select:none;min-width:60px;min-height:50px}
+.canvas-room:hover{background:rgba(37,99,235,.14)}
+.canvas-room .rm-ico{font-size:18px}
+.canvas-room .rm-lbl{font-size:9px;font-weight:700;color:var(--accent);margin-top:2px;text-align:center;padding:0 3px}
+.canvas-room .rm-del{position:absolute;top:-8px;right:-8px;width:18px;height:18px;background:var(--red);border:none;border-radius:50%;cursor:pointer;color:#fff;font-size:11px;display:none;align-items:center;justify-content:center}
+.canvas-room:hover .rm-del{display:flex}
+.tool-sec{font-size:10px;font-weight:700;color:var(--t3);letter-spacing:.08em;text-transform:uppercase;margin:12px 0 7px}
+.tool-item{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:7px;cursor:grab;transition:.15s;border:1px solid transparent;margin-bottom:4px}
+.tool-item:hover{background:var(--bg);border-color:var(--border)}
+.tool-ico{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+
+/* AGENT */
+.agent-wrap{display:grid;grid-template-columns:1fr 360px;gap:14px;height:calc(100vh - 200px);min-height:460px}
+.agent-chat{background:#fff;border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;overflow:hidden}
+.chat-msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.cmsg{max-width:78%;padding:11px 14px;border-radius:11px;font-size:13px;line-height:1.6}
+.cm-user{background:var(--accent);color:#fff;align-self:flex-end;border-radius:11px 11px 3px 11px}
+.cm-ai{background:var(--bg);color:var(--text);align-self:flex-start;border-radius:11px 11px 11px 3px;border:1px solid var(--border)}
+.chat-inp-row{padding:12px;border-top:1px solid var(--border);display:flex;gap:9px}
+.chat-inp{flex:1;padding:10px 14px;border:1.5px solid var(--b2);border-radius:9px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none;transition:.2s;background:#fafbfe}
+.chat-inp:focus{border-color:var(--accent)}
+.agent-side{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px;overflow-y:auto}
+.aqgrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:14px}
+.aqb{padding:9px 10px;border-radius:7px;border:1.5px solid var(--border);background:#fff;font-size:11px;font-weight:600;color:var(--t2);cursor:pointer;transition:.15s;font-family:var(--sans);text-align:left;line-height:1.4}
+.aqb:hover{border-color:var(--accent);color:var(--accent);background:rgba(37,99,235,.04)}
+
+/* ADMIN TABS */
+.atabs{display:flex;gap:3px;background:#fff;border:1px solid var(--border);border-radius:9px;padding:4px;margin-bottom:14px;width:fit-content;flex-wrap:wrap}
+.atab{padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;color:var(--t2);transition:.15s;font-family:var(--sans);border:none;background:none}
+.atab.on{background:var(--accent);color:#fff}
+
+/* APPROVALS */
+.acard{background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px}
+.acard.pending{border-color:rgba(217,119,6,.35);background:rgba(217,119,6,.02)}
+.acard.approved{border-color:rgba(22,163,74,.3);background:rgba(22,163,74,.02)}
+.acard.rejected{border-color:rgba(220,38,38,.3);background:rgba(220,38,38,.02)}
+
+/* UPLOAD ZONE */
+.drop-zone{border:2px dashed var(--b2);border-radius:10px;padding:28px;text-align:center;cursor:pointer;transition:.2s;color:var(--t3);font-size:13px;line-height:1.9}
+.drop-zone:hover{border-color:var(--accent);background:rgba(37,99,235,.03);color:var(--t2)}
+.img-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px;margin-top:10px}
+.img-th{position:relative;aspect-ratio:1;border-radius:7px;overflow:hidden;border:1px solid var(--border);background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:28px}
+.img-th img{width:100%;height:100%;object-fit:cover}
+
+/* RATE INPUT */
+.rate-inp{font-family:var(--mono);background:#fafbfe;border:1.5px solid var(--b2);border-radius:6px;padding:5px 8px;font-size:12px;font-weight:700;color:var(--teal);outline:none;transition:.15s;width:100%;text-align:right}
+.rate-inp:focus{border-color:var(--teal);box-shadow:0 0 0 2px rgba(11,180,160,.12)}
+
+/* RESPONSIVE */
+@media(max-width:900px){.g4,.g5{grid-template-columns:repeat(2,1fr)}.calc-wrap,.studio-wrap,.agent-wrap{grid-template-columns:1fr}}
+@media(max-width:600px){.g3{grid-template-columns:1fr 1fr}.fg2,.fg3{grid-template-columns:1fr}.nav-tabs{display:none}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.udot{width:6px;height:6px;border-radius:50%;background:var(--amber);display:inline-block;animation:pulse 1.5s infinite;margin-right:6px}
+.empty{text-align:center;padding:48px 20px;color:var(--t3)}
+.empty .ei{font-size:44px;margin-bottom:10px}
+.sdiv{font-size:10px;font-weight:700;color:var(--t3);letter-spacing:.08em;text-transform:uppercase;padding:6px 0;margin-bottom:10px;border-bottom:1px solid var(--border)}
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-logo" onclick="goTab('home')">
+    <span style="font-size:20px">🏗️</span>
+    <span class="nav-logo-txt">BuildMitra</span>
+  </div>
+  <div class="nav-tabs">
+    <button class="ntab on" id="ntab-home" onclick="goTab('home')">🏠 Home</button>
+    <button class="ntab" id="ntab-calc" onclick="goTab('calc')">🧮 Material Calc</button>
+    <button class="ntab" id="ntab-boq" onclick="goTab('boq')">📋 BOQ</button>
+    <button class="ntab" id="ntab-drawings" onclick="goTab('drawings')">📐 Drawings</button>
+    <button class="ntab" id="ntab-layout" onclick="goTab('layout')">🏠 Layout Studio</button>
+    <button class="ntab" id="ntab-market" onclick="goTab('market')">🛒 Marketplace</button>
+    <button class="ntab" id="ntab-vendor" onclick="goTab('vendor')">🏭 Vendor</button>
+    <button class="ntab" id="ntab-agent" onclick="goTab('agent')">🤖 AI Agent</button>
+    <button class="ntab" id="ntab-admin" onclick="goTab('admin')">⚙️ Admin</button>
+    <button class="ntab" id="ntab-approvals" onclick="goTab('approvals')">✅ Approvals</button>
+  </div>
+  <div class="nav-right">
+    <div><div class="nav-nm">BuildPro Admin</div><div class="nav-rl">ADMIN</div></div>
+    <div class="nav-av">B</div>
+  </div>
+</nav>
+
+<div class="body" id="main-body">
+
+<!-- HOME -->
+<div class="page on" id="page-home">
+  <div class="hero-box">
+    <div style="font-size:11px;font-weight:600;opacity:.6;letter-spacing:.05em;margin-bottom:10px">🇮🇳 BENGALURU'S #1 CONSTRUCTION PLATFORM</div>
+    <div class="hero-h">Build Smarter. Source Better.</div>
+    <div class="hero-s">Complete platform — materials, BOQ, design, vendors, AI assistant in one place.</div>
+    <div style="display:flex;gap:9px;flex-wrap:wrap">
+      <button class="btn bwa" onclick="goTab('market')">🛒 Browse Marketplace</button>
+      <button class="btn" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3)" onclick="goTab('calc')">🧮 Calculate Materials</button>
+      <button class="btn" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3)" onclick="goTab('agent')">🤖 Ask AI Agent</button>
+    </div>
+  </div>
+
+  <div class="ticker">
+    <div class="ticker-lbl">📊 GBA/BBMP Live Reference Rates — Bengaluru</div>
+    <div class="ticker-row">
+      <div class="ti"><div class="ti-n">OPC Cement</div><div class="ti-v">₹400</div><div class="ti-u">per Bag</div><div class="ti-c tu">↑ Stable</div></div>
+      <div class="ti"><div class="ti-n">TMT 8mm Fe500</div><div class="ti-v">₹68</div><div class="ti-u">per KG</div><div class="ti-c tu">↑ +2%</div></div>
+      <div class="ti"><div class="ti-n">M-Sand</div><div class="ti-v">₹55</div><div class="ti-u">per CFT</div><div class="ti-c td">↓ -3%</div></div>
+      <div class="ti"><div class="ti-n">Blue Metal</div><div class="ti-v">₹50</div><div class="ti-u">per CFT</div><div class="ti-c tu">↑ Stable</div></div>
+      <div class="ti"><div class="ti-n">Mason Skilled</div><div class="ti-v">₹850</div><div class="ti-u">per Day</div><div class="ti-c tu">↑ Stable</div></div>
+      <div class="ti"><div class="ti-n">JCB Excavator</div><div class="ti-v">₹2,500</div><div class="ti-u">per Hour</div><div class="ti-c tu">↑ Stable</div></div>
+      <div class="ti"><div class="ti-n">AAC Block</div><div class="ti-v">₹55</div><div class="ti-u">per Piece</div><div class="ti-c td">↓ -1%</div></div>
+      <div class="ti"><div class="ti-n">Vitrified Tile</div><div class="ti-v">₹55</div><div class="ti-u">per SFT</div><div class="ti-c tu">↑ Stable</div></div>
+      <div class="ti"><div class="ti-n">RMC M20</div><div class="ti-v">₹5,400</div><div class="ti-u">per CUM</div><div class="ti-c tu">↑ +1%</div></div>
+    </div>
+  </div>
+
+  <div class="sg g5" style="margin-bottom:16px">
+    <div class="sc ca"><div class="slbl">Active Vendors</div><div class="sval">528</div><div class="ssub">GBA/BBMP area</div><div class="strend tu">↑ 12 this week</div></div>
+    <div class="sc ct"><div class="slbl">Total Listings</div><div class="sval">12,480</div><div class="ssub">verified products</div><div class="strend tu">↑ 340 this week</div></div>
+    <div class="sc cgr"><div class="slbl">Enquiries Today</div><div class="sval">86</div><div class="ssub">buyer enquiries</div><div class="strend tu">↑ 23%</div></div>
+    <div class="sc cam"><div class="slbl">BOQ Created</div><div class="sval">1,240</div><div class="ssub">this month</div><div class="strend tu">↑ 8%</div></div>
+    <div class="sc cpu"><div class="slbl">Platform Revenue</div><div class="sval">₹2.8Cr</div><div class="ssub">all time</div><div class="strend tu">↑ 34%</div></div>
+  </div>
+
+  <div class="sdiv">Quick Actions</div>
+  <div class="sg" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr))">
+    <div class="sc" style="cursor:pointer;text-align:center;padding:18px" onclick="goTab('calc')"><div style="font-size:32px;margin-bottom:8px">🧮</div><div style="font-weight:700;color:var(--dark);font-size:13px">Material Calculator</div></div>
+    <div class="sc" style="cursor:pointer;text-align:center;padding:18px" onclick="goTab('boq')"><div style="font-size:32px;margin-bottom:8px">📋</div><div style="font-weight:700;color:var(--dark);font-size:13px">BOQ Calculator</div></div>
+    <div class="sc" style="cursor:pointer;text-align:center;padding:18px" onclick="goTab('drawings')"><div style="font-size:32px;margin-bottom:8px">📐</div><div style="font-weight:700;color:var(--dark);font-size:13px">Drawings & Design</div></div>
+    <div class="sc" style="cursor:pointer;text-align:center;padding:18px" onclick="goTab('layout')"><div style="font-size:32px;margin-bottom:8px">🏠</div><div style="font-weight:700;color:var(--dark);font-size:13px">Layout Studio</div></div>
+    <div class="sc" style="cursor:pointer;text-align:center;padding:18px" onclick="goTab('market')"><div style="font-size:32px;margin-bottom:8px">🛒</div><div style="font-weight:700;color:var(--dark);font-size:13px">Marketplace</div></div>
+    <div class="sc" style="cursor:pointer;text-align:center;padding:18px" onclick="goTab('agent')"><div style="font-size:32px;margin-bottom:8px">🤖</div><div style="font-weight:700;color:var(--dark);font-size:13px">AI Agent</div></div>
+  </div>
+</div>
+
+<!-- MATERIAL CALCULATOR -->
+<div class="page" id="page-calc">
+  <div class="pg-h">🧮 Material Calculator</div>
+  <div class="pg-s">Calculate exact material quantities with GBA/BBMP Bengaluru reference rates</div>
+  <div class="calc-wrap">
+    <div>
+      <div class="calc-card">
+        <div style="font-size:13px;font-weight:700;color:var(--dark);margin-bottom:12px">Select Calculation Type</div>
+        <div class="ctype-grid" id="ctype-grid">
+          <div class="ctype-btn on" data-type="slab" onclick="setCalcType('slab',this)"><span class="ci">🏗️</span><span class="cl">RCC Slab</span></div>
+          <div class="ctype-btn" data-type="wall" onclick="setCalcType('wall',this)"><span class="ci">🧱</span><span class="cl">Brick Wall</span></div>
+          <div class="ctype-btn" data-type="plaster" onclick="setCalcType('plaster',this)"><span class="ci">🖼️</span><span class="cl">Plastering</span></div>
+          <div class="ctype-btn" data-type="flooring" onclick="setCalcType('flooring',this)"><span class="ci">🔲</span><span class="cl">Flooring</span></div>
+          <div class="ctype-btn" data-type="paint" onclick="setCalcType('paint',this)"><span class="ci">🎨</span><span class="cl">Painting</span></div>
+          <div class="ctype-btn" data-type="foundation" onclick="setCalcType('foundation',this)"><span class="ci">⬇️</span><span class="cl">Foundation</span></div>
+        </div>
+        <div id="calc-form"></div>
+        <button class="btn bp" style="width:100%;justify-content:center;padding:11px;margin-top:10px" onclick="doCalculate()">Calculate Materials →</button>
+      </div>
+    </div>
+    <div>
+      <div class="calc-card">
+        <div style="font-size:13px;font-weight:700;color:var(--dark);margin-bottom:12px">📊 Material Requirements</div>
+        <div id="calc-results"><div class="empty"><div class="ei">🧮</div><p>Select type and enter dimensions</p></div></div>
+      </div>
+      <div class="calc-card" style="margin-top:14px">
+        <div style="font-size:13px;font-weight:700;color:var(--dark);margin-bottom:12px">💰 Cost Estimate (GBA/BBMP Rates)</div>
+        <div id="calc-cost"><div class="empty"><div class="ei">₹</div><p>Cost estimate appears after calculation</p></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BOQ -->
+<div class="page" id="page-boq">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;flex-wrap:wrap;gap:8px">
+    <div class="pg-h">📋 BOQ Calculator</div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap">
+      <button class="btn bgr bsm" onclick="exportBOQ('csv')">⬇ Excel</button>
+      <button class="btn br bsm" onclick="exportBOQ('pdf')">⬇ PDF</button>
+      <button class="btn bp bsm" onclick="openMo('m-boq')">+ Add Item</button>
+    </div>
+  </div>
+  <div class="pg-s">Full Bill of Quantities for your construction project</div>
+  <div class="panel" style="margin-bottom:14px">
+    <div class="ph"><div class="ptl">Project Details</div></div>
+    <div style="padding:14px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+      <div class="fgrp" style="margin:0"><label>Project Name</label><input type="text" class="fi" id="bpn" placeholder="My Project" style="padding:7px 10px;font-size:12px"></div>
+      <div class="fgrp" style="margin:0"><label>Location</label><input type="text" class="fi" id="bpl" placeholder="Koramangala, Bengaluru" style="padding:7px 10px;font-size:12px"></div>
+      <div class="fgrp" style="margin:0"><label>Plot Area (SFT)</label><input type="number" class="fi" id="bpa" placeholder="1200" style="padding:7px 10px;font-size:12px"></div>
+      <div class="fgrp" style="margin:0"><label>Floors</label><input type="number" class="fi" id="bpf" placeholder="2" style="padding:7px 10px;font-size:12px"></div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="ph"><div><div class="ptl">Bill of Quantities</div><div class="psb">Add all work items — materials, labour, machinery</div></div></div>
+    <div class="ts" style="max-height:400px;overflow-y:auto">
+      <table>
+        <thead><tr><th>#</th><th>Description</th><th>Category</th><th>Unit</th><th>Qty</th><th>Rate ₹</th><th>Amount ₹</th><th>GST%</th><th>Total ₹</th><th></th></tr>
+        </thead><tbody id="boq-body"></tbody>
+      </table>
+    </div>
+    <div id="boq-total" style="padding:14px"></div>
+  </div>
+</div>
+
+<!-- DRAWINGS -->
+<div class="page" id="page-drawings">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;flex-wrap:wrap;gap:8px">
+    <div class="pg-h">📐 Drawings & Design</div>
+    <button class="btn bp bsm" onclick="document.getElementById('dwg-inp').click()">⬆ Upload Drawing</button>
+  </div>
+  <div class="pg-s">Upload, manage and share architectural drawings and design files</div>
+  <input type="file" id="dwg-inp" accept=".pdf,.dwg,.jpg,.png,.jpeg" multiple style="display:none" onchange="uploadDwg(this)">
+  <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap" id="dwg-filters">
+    <button class="btn bp bsm" onclick="filterDwg('all',this)">All</button>
+    <button class="btn bg bsm" onclick="filterDwg('plan',this)">Floor Plans</button>
+    <button class="btn bg bsm" onclick="filterDwg('elevation',this)">Elevations</button>
+    <button class="btn bg bsm" onclick="filterDwg('electrical',this)">Electrical</button>
+    <button class="btn bg bsm" onclick="filterDwg('plumbing',this)">Plumbing</button>
+    <button class="btn bg bsm" onclick="filterDwg('structural',this)">Structural</button>
+  </div>
+  <div class="drop-zone" ondragover="event.preventDefault();this.style.borderColor='var(--accent)'" ondragleave="this.style.borderColor='var(--b2)'" ondrop="dropDwg(event)" onclick="document.getElementById('dwg-inp').click()">
+    📁 Click or drag &amp; drop drawings here<br><span style="font-size:11px">PDF, DWG, JPG, PNG supported</span>
+  </div>
+  <div id="dwg-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px;margin-top:14px"></div>
+</div>
+
+<!-- LAYOUT STUDIO -->
+<div class="page" id="page-layout">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+    <div><div class="pg-h">🏠 Layout Studio</div><div style="font-size:12px;color:var(--t3)">Click room → add to canvas. Drag to reposition. Click room on canvas to remove.</div></div>
+    <div style="display:flex;gap:7px">
+      <button class="btn bg bsm" onclick="clearCanvas()">🗑 Clear All</button>
+      <button class="btn bgr bsm" onclick="saveLayout()">💾 Save</button>
+    </div>
+  </div>
+  <div class="studio-wrap">
+    <div class="studio-tools">
+      <div class="tool-sec">Plot Size</div>
+      <div class="fg2" style="margin-bottom:10px">
+        <div class="fgrp" style="margin:0"><label>Width (ft)</label><input type="number" class="fi" id="pw" value="30" style="padding:6px 9px;font-size:12px"></div>
+        <div class="fgrp" style="margin:0"><label>Length (ft)</label><input type="number" class="fi" id="pl" value="40" style="padding:6px 9px;font-size:12px"></div>
+      </div>
+      <div class="tool-sec">Rooms — Click to Add</div>
+      <div id="room-list"></div>
+      <div class="tool-sec">Amenities</div>
+      <div id="amenity-list"></div>
+      <div class="tool-sec">Summary</div>
+      <div id="layout-summary" style="background:var(--bg);border-radius:8px;padding:10px;font-size:12px;color:var(--t2)">Add rooms to see summary</div>
+    </div>
+    <div class="studio-canvas" id="studio-canvas">
+      <div class="canvas-bg"></div>
+      <div id="canvas-area" style="position:absolute;inset:0"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MARKETPLACE -->
+<div class="page" id="page-market">
+  <div class="pg-h">🛒 Marketplace</div>
+  <div class="pg-s">Browse verified vendors and compare rates across GBA/BBMP Bengaluru</div>
+  <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:12px;display:flex;gap:9px;flex-wrap:wrap;align-items:center;box-shadow:var(--sh)">
+    <input type="text" id="mp-q" class="fi" placeholder="🔍 Search cement, TMT steel, mason, JCB..." style="flex:1;min-width:180px;padding:8px 12px" oninput="renderMarket()">
+    <select id="mp-cat" class="fi" style="width:170px;padding:8px" onchange="renderMarket()">
+      <option value="">All Categories</option>
+      <option>Cement &amp; Concrete</option><option>Steel &amp; Metal</option>
+      <option>Bricks &amp; Blocks</option><option>Sand &amp; Aggregates</option>
+      <option>Labour &amp; Services</option><option>Machinery</option>
+      <option>Electrical</option><option>Plumbing</option>
+      <option>Tiles &amp; Flooring</option><option>Paints &amp; Chemicals</option>
+    </select>
+    <input type="text" id="mp-pin" class="fi" placeholder="📍 Pincode" style="width:110px;padding:8px" oninput="renderMarket()">
+    <select id="mp-sort" class="fi" style="width:150px;padding:8px" onchange="renderMarket()">
+      <option value="asc">Price: Low → High</option>
+      <option value="desc">Price: High → Low</option>
+      <option value="name">Name A–Z</option>
+    </select>
+    <span style="font-size:11px;color:var(--t3)" id="mp-cnt"></span>
+  </div>
+  <div style="display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap">
+    <button class="btn bp bxs" onclick="mpFilter('',this)">All</button>
+    <button class="btn bg bxs" onclick="mpFilter('Cement &amp; Concrete',this)">🏭 Cement</button>
+    <button class="btn bg bxs" onclick="mpFilter('Steel &amp; Metal',this)">⚙️ Steel</button>
+    <button class="btn bg bxs" onclick="mpFilter('Sand &amp; Aggregates',this)">🪨 Sand</button>
+    <button class="btn bg bxs" onclick="mpFilter('Labour &amp; Services',this)">👷 Labour</button>
+    <button class="btn bg bxs" onclick="mpFilter('Machinery',this)">🚜 Machinery</button>
+    <button class="btn bg bxs" onclick="mpFilter('Tiles &amp; Flooring',this)">🔲 Tiles</button>
+    <button class="btn bg bxs" onclick="mpFilter('Electrical',this)">⚡ Electrical</button>
+    <button class="btn bg bxs" onclick="mpFilter('Plumbing',this)">🔧 Plumbing</button>
+  </div>
+  <div id="mp-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:11px"></div>
+</div>
+
+<!-- VENDOR DASHBOARD -->
+<div class="page" id="page-vendor">
+  <div class="pg-h">🏭 Vendor Dashboard</div>
+  <div class="pg-s">Manage your catalogue, rates, enquiries and orders</div>
+  <div class="sg g5" style="margin-bottom:16px">
+    <div class="sc ca"><div class="slbl">Total Items</div><div class="sval" id="v-tot">0</div><div class="ssub">in catalogue</div></div>
+    <div class="sc cgr"><div class="slbl">Rates Set</div><div class="sval" id="v-rated">0</div><div class="ssub">published live</div></div>
+    <div class="sc cpu"><div class="slbl">New Enquiries</div><div class="sval">3</div><div class="ssub">awaiting reply</div></div>
+    <div class="sc cam"><div class="slbl">Active Orders</div><div class="sval">6</div><div class="ssub">in progress</div></div>
+    <div class="sc ct"><div class="slbl">Revenue</div><div class="sval">₹4.2L</div><div class="ssub">this month</div></div>
+  </div>
+  <div class="panel">
+    <div class="ph">
+      <div><div class="ptl">My Catalogue &amp; Rates</div><div class="psb">Set your rates · GBA/BBMP reference rates pre-loaded</div></div>
+      <div style="display:flex;gap:7px;flex-wrap:wrap">
+        <button class="btn bg bsm" onclick="openMo('m-csv')">📥 CSV Upload</button>
+        <button class="btn bt bsm" onclick="openMo('m-additem')">+ Add Item</button>
+        <button class="btn ba bsm" onclick="autoFillRates()">Auto-fill GBA Rates</button>
+        <button class="btn bgr bsm" onclick="exportCatCSV()">⬇ Export</button>
+        <button class="btn bp bsm" onclick="publishCat()">💾 Save &amp; Publish</button>
+      </div>
+    </div>
+    <div style="padding:10px 14px;background:#f8f9fd;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <span style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.07em">Service Area:</span>
+      <input type="text" id="v-pin" class="fi" style="width:100px;padding:5px 9px;font-size:11px" placeholder="Pincode" oninput="saveLocData()">
+      <input type="text" id="v-city" class="fi" style="width:130px;padding:5px 9px;font-size:11px" placeholder="City" oninput="saveLocData()">
+      <input type="text" id="v-state" class="fi" style="width:110px;padding:5px 9px;font-size:11px" placeholder="State" oninput="saveLocData()">
+      <input type="number" id="v-lead" class="fi" style="width:80px;padding:5px 9px;font-size:11px" placeholder="Lead Days" oninput="saveLocData()">
+    </div>
+    <div style="display:flex;gap:7px;padding:9px 14px;background:#f8f9fd;border-bottom:1px solid var(--border);flex-wrap:wrap;align-items:center">
+      <select id="vf-cat" class="fi" style="width:auto;padding:5px 9px;font-size:11px" onchange="buildVendorTable()">
+        <option value="">All Categories</option>
+        <option>Cement &amp; Concrete</option><option>Steel &amp; Metal</option><option>Bricks &amp; Blocks</option>
+        <option>Sand &amp; Aggregates</option><option>Plumbing</option><option>Electrical</option>
+        <option>Tiles &amp; Flooring</option><option>Labour &amp; Services</option><option>Machinery</option>
+      </select>
+      <select id="vf-type" class="fi" style="width:auto;padding:5px 9px;font-size:11px" onchange="buildVendorTable()">
+        <option value="">All Types</option><option value="MATERIAL">Material</option><option value="SERVICE">Service</option><option value="LABOUR">Labour</option><option value="MACHINE">Machinery</option>
+      </select>
+      <select id="vf-rate" class="fi" style="width:auto;padding:5px 9px;font-size:11px" onchange="buildVendorTable()">
+        <option value="">All Items</option><option value="set">Rate Set ✓</option><option value="unset">Pending</option>
+      </select>
+      <input type="text" id="vf-q" class="fi" style="width:150px;padding:5px 9px;font-size:11px" placeholder="🔍 Search..." oninput="buildVendorTable()">
+      <button class="btn bg bxs" onclick="clearVFilter()">✕ Clear</button>
+      <span style="margin-left:auto;font-size:11px;color:var(--t3);font-weight:600" id="vf-cnt"></span>
+    </div>
+    <div class="ts" style="max-height:420px;overflow-y:auto">
+      <table>
+        <thead><tr><th>#</th><th>Code</th><th>Category</th><th>Type</th><th>Item Name</th>
+        <th>UOM</th><th>HSN</th><th>GST%</th><th>GBA Ref ₹</th><th>Your Rate ₹</th><th>Stock</th><th>Status</th><th></th></tr>
+        </thead><tbody id="v-tbody"></tbody>
+      </table>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f8f9fd;border-top:1px solid var(--border);flex-wrap:wrap;gap:8px">
+      <div style="font-size:11px;color:var(--t3);display:flex;align-items:center"><span class="udot"></span><span id="v-hint">Unsaved changes</span></div>
+      <button class="btn bp bsm" onclick="publishCat()">💾 Save &amp; Publish</button>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="ph"><div class="ptl">Recent Enquiries</div><button class="btn bg bsm" onclick="goTab('approvals')">View All →</button></div>
+    <div style="padding:12px 14px" id="v-enq-list"></div>
+  </div>
+</div>
+
+<!-- AI AGENT -->
+<div class="page" id="page-agent">
+  <div class="pg-h">🤖 AI Agent Dashboard</div>
+  <div class="pg-s">Your construction AI assistant — ask anything about materials, costs, vendors, BOQ</div>
+  <div class="agent-wrap">
+    <div class="agent-chat">
+      <div style="padding:12px 16px;background:linear-gradient(135deg,#1e2640,#2d3a6e);color:#fff;flex-shrink:0">
+        <div style="font-weight:700;font-size:13px">🤖 BuildMitra AI Agent</div>
+        <div style="font-size:11px;opacity:.65;margin-top:1px">Construction expert · Bengaluru GBA/BBMP rates</div>
+      </div>
+      <div class="chat-msgs" id="chat-msgs"></div>
+      <div class="chat-inp-row">
+        <input class="chat-inp" id="chat-inp" placeholder="Ask anything about construction..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg();}">
+        <button class="btn bp" onclick="sendMsg()">Send →</button>
+      </div>
+    </div>
+    <div class="agent-side">
+      <div style="font-size:13px;font-weight:700;color:var(--dark);margin-bottom:10px">⚡ Quick Ask</div>
+      <div class="aqgrid">
+        <button class="aqb" onclick="quickMsg('How much cement for 1000 SFT slab?')">🏗️ Cement for 1000 SFT slab</button>
+        <button class="aqb" onclick="quickMsg('Current TMT steel rate in Bengaluru')">⚙️ TMT steel rate today</button>
+        <button class="aqb" onclick="quickMsg('Bricks needed for 100 SFT wall 9 inch thick')">🧱 Bricks for 100 SFT wall</button>
+        <button class="aqb" onclick="quickMsg('Best cement vendors near Koramangala')">🏭 Cement vendors nearby</button>
+        <button class="aqb" onclick="quickMsg('Mason daily rate in Bengaluru')">👷 Mason daily rate</button>
+        <button class="aqb" onclick="quickMsg('BOQ estimate for 1200 SFT 2BHK house')">📋 BOQ for 2BHK house</button>
+        <button class="aqb" onclick="quickMsg('Cost to build house in Bengaluru per SFT')">💰 Construction cost/SFT</button>
+        <button class="aqb" onclick="quickMsg('Sand required for plastering 500 SFT')">🪨 Sand for plastering</button>
+      </div>
+      <div style="font-size:12px;font-weight:700;color:var(--dark);margin:12px 0 8px">📊 Session Stats</div>
+      <div style="display:flex;flex-direction:column;gap:7px">
+        <div style="display:flex;justify-content:space-between;padding:8px 11px;background:var(--bg);border-radius:7px"><span style="font-size:12px;color:var(--t2)">Questions Asked</span><span style="font-weight:700;color:var(--accent)" id="q-cnt">0</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 11px;background:var(--bg);border-radius:7px"><span style="font-size:12px;color:var(--t2)">Calculations Done</span><span style="font-weight:700;color:var(--teal)" id="q-calc">0</span></div>
+      </div>
+      <button class="btn br bsm" style="width:100%;justify-content:center;margin-top:12px" onclick="clearChat()">🗑 Clear Chat</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN -->
+<div class="page" id="page-admin">
+  <div class="pg-h">⚙️ Admin Panel</div>
+  <div class="pg-s">Platform management — vendors, buyers, listings, analytics</div>
+  <div class="atabs" id="atabs">
+    <button class="atab on" onclick="adminTab('overview',this)">Overview</button>
+    <button class="atab" onclick="adminTab('vendors',this)">Vendors</button>
+    <button class="atab" onclick="adminTab('buyers',this)">Buyers</button>
+    <button class="atab" onclick="adminTab('listings',this)">Listings</button>
+    <button class="atab" onclick="adminTab('analytics',this)">Analytics</button>
+    <button class="atab" onclick="adminTab('settings',this)">Settings</button>
+  </div>
+  <div id="admin-content"></div>
+</div>
+
+<!-- APPROVALS -->
+<div class="page" id="page-approvals">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;flex-wrap:wrap;gap:8px">
+    <div class="pg-h">✅ Approvals</div>
+    <button class="btn bgr bsm" onclick="approveAll()">✅ Approve All Pending</button>
+  </div>
+  <div class="pg-s">Review and approve vendor registrations, listing uploads, KYC documents</div>
+  <div class="sg g4" style="margin-bottom:16px">
+    <div class="sc cam"><div class="slbl">Pending</div><div class="sval" id="ap-pend">0</div><div class="ssub">awaiting review</div></div>
+    <div class="sc cgr"><div class="slbl">Approved Today</div><div class="sval">12</div></div>
+    <div class="sc cr"><div class="slbl">Rejected</div><div class="sval">2</div></div>
+    <div class="sc ca"><div class="slbl">Total Processed</div><div class="sval">840</div></div>
+  </div>
+  <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap" id="ap-filter-btns">
+    <button class="btn bp bsm" onclick="apFilter('all',this)">All</button>
+    <button class="btn bg bsm" onclick="apFilter('vendor',this)">Vendor Reg</button>
+    <button class="btn bg bsm" onclick="apFilter('listing',this)">Listing Upload</button>
+    <button class="btn bg bsm" onclick="apFilter('rate',this)">Rate Change</button>
+    <button class="btn bg bsm" onclick="apFilter('kyc',this)">KYC Docs</button>
+  </div>
+  <div id="ap-list"></div>
+</div>
+
+</div><!-- /body -->
+
+<!-- MODALS -->
+<div class="mo" id="m-boq"><div class="mbox"><div class="mh"><div class="mt">➕ Add BOQ Item</div><button class="mx" onclick="closeMo('m-boq')">×</button></div><div style="padding:16px"><div class="fg2"><div class="fgrp"><label>Description</label><input type="text" id="bd-desc" class="fi"></div><div class="fgrp"><label>Category</label><select id="bd-cat" class="fi"><option>Earthwork</option><option>Foundation</option><option>Structure</option><option>Brickwork</option><option>Plastering</option><option>Flooring</option><option>Roofing</option><option>Doors &amp; Windows</option><option>Electrical</option><option>Plumbing</option><option>Painting</option><option>Labour</option><option>Machinery</option></select></div><div class="fgrp"><label>Unit</label><select id="bd-unit" class="fi"><option>SFT</option><option>CUM</option><option>CFT</option><option>KG</option><option>Bag</option><option>Piece</option><option>Day</option><option>Hour</option><option>RMT</option><option>Lump Sum</option></select></div><div class="fgrp"><label>Quantity</label><input type="number" id="bd-qty" class="fi"></div><div class="fgrp"><label>Rate (₹)</label><input type="number" id="bd-rate" class="fi"></div><div class="fgrp"><label>GST %</label><select id="bd-gst" class="fi"><option value="0">0%</option><option value="5">5%</option><option value="12">12%</option><option value="18" selected>18%</option><option value="28">28%</option></select></div></div><div class="fgrp"><label>Notes</label><textarea id="bd-notes" class="fi" rows="2"></textarea></div></div><div class="mf"><button class="btn bg" onclick="closeMo('m-boq')">Cancel</button><button class="btn bp" onclick="addBOQItem()">Add to BOQ</button></div></div></div>
+
+<div class="mo" id="m-additem"><div class="mbox"><div class="mh"><div class="mt">➕ Add Item to Catalogue</div><button class="mx" onclick="closeMo('m-additem')">×</button></div><div style="padding:16px"><div class="fg3"><div class="fgrp"><label>Item Code</label><input type="text" id="ai-code" class="fi"></div><div class="fgrp"><label>Item Name</label><input type="text" id="ai-name" class="fi"></div><div class="fgrp"><label>Category</label><select id="ai-cat" class="fi"><option>Cement &amp; Concrete</option><option>Steel &amp; Metal</option><option>Bricks &amp; Blocks</option><option>Sand &amp; Aggregates</option><option>Plumbing</option><option>Electrical</option><option>Tiles &amp; Flooring</option><option>Labour &amp; Services</option><option>Machinery</option></select></div><div class="fgrp"><label>Type</label><select id="ai-type" class="fi"><option value="MATERIAL">Material</option><option value="SERVICE">Service</option><option value="LABOUR">Labour</option><option value="MACHINE">Machinery</option></select></div><div class="fgrp"><label>UOM</label><input type="text" id="ai-uom" class="fi"></div><div class="fgrp"><label>HSN Code</label><input type="text" id="ai-hsn" class="fi"></div><div class="fgrp"><label>GST %</label><input type="number" id="ai-gst" class="fi" value="18"></div><div class="fgrp"><label>Your Rate ₹</label><input type="number" id="ai-rate" class="fi"></div><div class="fgrp"><label>GBA Ref Rate ₹</label><input type="number" id="ai-ref" class="fi"></div></div></div><div class="mf"><button class="btn bg" onclick="closeMo('m-additem')">Cancel</button><button class="btn bp" onclick="addItemManual()">Add Item</button></div></div></div>
+
+<div class="mo" id="m-csv"><div class="mbox"><div class="mh"><div class="mt">📥 Bulk CSV Upload</div><button class="mx" onclick="closeMo('m-csv')">×</button></div><div style="padding:16px"><div style="font-size:12px;color:var(--t2);margin-bottom:10px">CSV columns: <span style="font-family:var(--mono);font-size:11px;color:var(--accent)">code, name, category, type, uom, hsn, gst, rate, stock</span></div><div class="drop-zone" onclick="document.getElementById('csv-inp').click()" style="padding:20px">📄 Click to select CSV file</div><input type="file" id="csv-inp" accept=".csv" style="display:none" onchange="parseCSV(this)"><div id="csv-preview" style="margin-top:10px"></div></div><div class="mf"><button class="btn bg" onclick="closeMo('m-csv')">Cancel</button><button class="btn bp" id="csv-btn" onclick="importCSV()" style="display:none">Import Items</button></div></div></div>
+
+<div class="mo" id="m-quote"><div class="mbox"><div class="mh"><div class="mt">📋 Send Quote to Buyer</div><button class="mx" onclick="closeMo('m-quote')">×</button></div><div style="padding:16px" id="quote-body"></div><div class="mf"><button class="btn bg" onclick="closeMo('m-quote')">Cancel</button><button class="btn bg bsm" onclick="printQuote()">🖨 Print/PDF</button><button class="btn bwa" onclick="sendWAQuote()"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a.5.5 0 00-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>WhatsApp Quote</button><button class="btn bp" onclick="confirmQuote()">✅ Confirm &amp; Send</button></div></div></div>
+
+<div class="mo" id="m-dwg"><div class="mbox"><div class="mh"><div class="mt" id="dwg-view-title">Drawing</div><button class="mx" onclick="closeMo('m-dwg')">×</button></div><div style="padding:20px;min-height:300px;display:flex;align-items:center;justify-content:center" id="dwg-view-body"></div><div class="mf"><button class="btn bg" onclick="closeMo('m-dwg')">Close</button><button class="btn bp">⬇ Download</button></div></div></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// MASTER DATA
+// ═══════════════════════════════════════════════════════════
+var CATALOG = [
+  {code:'CEM-001',name:'OPC 43 Grade Cement',cat:'Cement & Concrete',type:'MATERIAL',uom:'Bag (50kg)',hsn:'25232100',gst:28,ref:400},
+  {code:'CEM-002',name:'PPC Cement',cat:'Cement & Concrete',type:'MATERIAL',uom:'Bag (50kg)',hsn:'25232900',gst:28,ref:380},
+  {code:'CEM-003',name:'Ready Mix Concrete M20',cat:'Cement & Concrete',type:'MATERIAL',uom:'Cubic Metre',hsn:'38246000',gst:18,ref:5400},
+  {code:'STL-001',name:'TMT Bar 8mm Fe-500',cat:'Steel & Metal',type:'MATERIAL',uom:'KG',hsn:'72139190',gst:18,ref:68},
+  {code:'STL-002',name:'TMT Bar 12mm Fe-500',cat:'Steel & Metal',type:'MATERIAL',uom:'KG',hsn:'72139190',gst:18,ref:65},
+  {code:'STL-003',name:'MS Angle 50×50mm',cat:'Steel & Metal',type:'MATERIAL',uom:'KG',hsn:'72169100',gst:18,ref:72},
+  {code:'BRK-001',name:'Red Clay Brick (Modular)',cat:'Bricks & Blocks',type:'MATERIAL',uom:'Per 1000',hsn:'69010010',gst:5,ref:7500},
+  {code:'BRK-002',name:'AAC Block 600×200×200mm',cat:'Bricks & Blocks',type:'MATERIAL',uom:'Per Piece',hsn:'68099000',gst:12,ref:55},
+  {code:'AGG-001',name:'River Sand / M-Sand',cat:'Sand & Aggregates',type:'MATERIAL',uom:'CFT',hsn:'25010000',gst:5,ref:55},
+  {code:'AGG-002',name:'20mm Blue Metal',cat:'Sand & Aggregates',type:'MATERIAL',uom:'CFT',hsn:'25171010',gst:5,ref:50},
+  {code:'PLB-001',name:'CPVC Pipe 1/2 inch (3m)',cat:'Plumbing',type:'MATERIAL',uom:'Piece',hsn:'39172100',gst:18,ref:180},
+  {code:'PLB-002',name:'Plumbing Labour',cat:'Plumbing',type:'LABOUR',uom:'Day',hsn:'995422',gst:18,ref:900},
+  {code:'ELC-001',name:'2.5 sqmm Wire (90m roll)',cat:'Electrical',type:'MATERIAL',uom:'Roll',hsn:'85441190',gst:18,ref:2200},
+  {code:'ELC-002',name:'Electrician Labour',cat:'Electrical',type:'LABOUR',uom:'Day',hsn:'995433',gst:18,ref:1000},
+  {code:'TFL-001',name:'Vitrified Tile 600×600mm',cat:'Tiles & Flooring',type:'MATERIAL',uom:'SFT',hsn:'69072100',gst:18,ref:55},
+  {code:'TFL-002',name:'Tile Fixing Labour',cat:'Tiles & Flooring',type:'LABOUR',uom:'SFT',hsn:'995421',gst:18,ref:30},
+  {code:'SRV-001',name:'Mason (Skilled)',cat:'Labour & Services',type:'LABOUR',uom:'Day',hsn:'995421',gst:18,ref:850},
+  {code:'SRV-002',name:'Helper / Unskilled Labour',cat:'Labour & Services',type:'LABOUR',uom:'Day',hsn:'995421',gst:18,ref:500},
+  {code:'SRV-003',name:'Civil Contractor (per SFT)',cat:'Labour & Services',type:'SERVICE',uom:'SFT',hsn:'995421',gst:18,ref:1800},
+  {code:'MCH-001',name:'JCB / Excavator',cat:'Machinery',type:'MACHINE',uom:'Hour',hsn:'999731',gst:18,ref:2500},
+  {code:'MCH-002',name:'Concrete Mixer (1 bag)',cat:'Machinery',type:'MACHINE',uom:'Day',hsn:'999731',gst:18,ref:1200},
+  {code:'MCH-003',name:'Tower Crane',cat:'Machinery',type:'MACHINE',uom:'Day',hsn:'999731',gst:18,ref:18000},
+  {code:'PNT-001',name:'Exterior Emulsion (20L)',cat:'Paints & Chemicals',type:'MATERIAL',uom:'Tin',hsn:'32091000',gst:18,ref:3800},
+  {code:'GLS-001',name:'Float Glass 5mm',cat:'Glass & Aluminium',type:'MATERIAL',uom:'SFT',hsn:'70051030',gst:18,ref:75},
+];
+
+var VENDORS_LIST = [
+  {id:'V1',name:'Suresh Kumar & Co.',city:'Gandhi Nagar',pin:'560032',phone:'+91 98765 43210',rating:4.8},
+  {id:'V2',name:'BuildRight Contracts',city:'Rajajinagar',pin:'560010',phone:'+91 87654 32109',rating:4.6},
+  {id:'V3',name:'Karnataka Labour Hub',city:'Peenya',pin:'560058',phone:'+91 76543 21098',rating:4.5},
+  {id:'V4',name:'Heavy Machinery Rentals',city:'Bommasandra',pin:'560099',phone:'+91 65432 10987',rating:4.7},
+  {id:'V5',name:'Horizon Tiles & Flooring',city:'Indiranagar',pin:'560038',phone:'+91 54321 09876',rating:4.9},
+];
+
+var SAMPLE_DWG = [
+  {id:'d1',name:'Ground Floor Plan',type:'plan',icon:'🏠',color:'#e8f0fe',tags:['2BHK','1200 SFT']},
+  {id:'d2',name:'Front Elevation',type:'elevation',icon:'🏛️',color:'#e6f4ea',tags:['North Face']},
+  {id:'d3',name:'Electrical Layout',type:'electrical',icon:'⚡',color:'#fce8b2',tags:['DB Board']},
+  {id:'d4',name:'Plumbing Schematic',type:'plumbing',icon:'🔧',color:'#e3f2fd',tags:['Drainage']},
+  {id:'d5',name:'Structural Drawing',type:'structural',icon:'⚙️',color:'#fce4ec',tags:['RCC']},
+];
+
+var ROOM_TYPES = [
+  {name:'Living Room',ico:'🛋️',color:'#e8f0fe',w:180,h:140},
+  {name:'Master Bedroom',ico:'🛏️',color:'#fce4ec',w:160,h:130},
+  {name:'Bedroom',ico:'🛏️',color:'#fce8b2',w:140,h:120},
+  {name:'Kitchen',ico:'🍳',color:'#e6f4ea',w:120,h:100},
+  {name:'Bathroom',ico:'🚿',color:'#e3f2fd',w:80,h:90},
+  {name:'Pooja Room',ico:'🕯️',color:'#fff3e0',w:80,h:80},
+  {name:'Dining Room',ico:'🍽️',color:'#f3e5f5',w:130,h:110},
+  {name:'Study Room',ico:'📚',color:'#e0f2f1',w:120,h:110},
+];
+var AMENITY_TYPES = [
+  {name:'Main Door',ico:'🚪',color:'#cfd8dc',w:60,h:20},
+  {name:'Staircase',ico:'🪜',color:'#b0bec5',w:80,h:100},
+  {name:'Parking',ico:'🅿️',color:'#eceff1',w:120,h:80},
+  {name:'Garden',ico:'🌿',color:'#c8e6c9',w:100,h:80},
+];
+
+// ═══ STATE ═══
+var vendorRows = [];
+var boqItems = [];
+var drawings = [];
+var layoutRooms = [];
+var csvParsed = [];
+var mpListings = [];
+var approvalData = [];
+var curQuote = null;
+var curCalcType = 'slab';
+var adminCurTab = 'overview';
+var apCurFilter = 'all';
+var qCount = 0;
+var calcCount = 0;
+
+// ═══ LOCALSTORAGE ═══
+function lsGet(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+
+// ═══ TOAST ═══
+var _toastTimer;
+function toast(msg,type){
+  var t=document.getElementById('toast');
+  if(!t)return;
+  t.textContent=msg;
+  t.className='toast '+(type==='err'?'terr':type==='info'?'tinf':'tok')+' on';
+  clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(function(){t.classList.remove('on');},3200);
+}
+
+// ═══ MODALS ═══
+function openMo(id){var el=document.getElementById(id);if(el)el.classList.add('on');}
+function closeMo(id){var el=document.getElementById(id);if(el)el.classList.remove('on');}
+function setupModalClose(){
+  document.querySelectorAll('.mo').forEach(function(m){
+    m.addEventListener('click',function(e){if(e.target===m)m.classList.remove('on');});
+  });
+}
+
+// ═══ NAVIGATION ═══
+function goTab(id){
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('on');});
+  document.querySelectorAll('.ntab').forEach(function(t){t.classList.remove('on');});
+  var pg=document.getElementById('page-'+id);
+  var tb=document.getElementById('ntab-'+id);
+  if(pg) pg.classList.add('on');
+  if(tb) tb.classList.add('on');
+  // Tab-specific init
+  if(id==='calc') initCalcForm();
+  if(id==='vendor'){buildVendorTable();renderVEnq();}
+  if(id==='market') renderMarket();
+  if(id==='admin') renderAdmin();
+  if(id==='approvals') renderApprovals();
+  if(id==='drawings') renderDrawings();
+  if(id==='layout') renderLayout();
+  if(id==='agent') initChat();
+}
+
+// ═══════════════════════════════════════════════════════════
+// MATERIAL CALCULATOR
+// ═══════════════════════════════════════════════════════════
+var CALC_FORMS = {
+  slab:'<div class="fg2"><div class="fgrp" style="margin:0"><label>Length (ft)</label><input type="number" class="fi" id="c-len" value="20" style="padding:7px"></div><div class="fgrp" style="margin:0"><label>Width (ft)</label><input type="number" class="fi" id="c-wid" value="15" style="padding:7px"></div></div><div class="fg2" style="margin-top:10px"><div class="fgrp" style="margin:0"><label>Thickness (inch)</label><input type="number" class="fi" id="c-thk" value="5" style="padding:7px"></div><div class="fgrp" style="margin:0"><label>Grade</label><select class="fi" id="c-grade" style="padding:7px"><option>M20</option><option>M25</option><option>M30</option></select></div></div>',
+  wall:'<div class="fg2"><div class="fgrp" style="margin:0"><label>Length (ft)</label><input type="number" class="fi" id="c-len" value="20" style="padding:7px"></div><div class="fgrp" style="margin:0"><label>Height (ft)</label><input type="number" class="fi" id="c-hgt" value="10" style="padding:7px"></div></div><div class="fg2" style="margin-top:10px"><div class="fgrp" style="margin:0"><label>Thickness</label><select class="fi" id="c-thk" style="padding:7px"><option value="9">9 inch (1 Brick)</option><option value="4.5">4.5 inch (Half)</option></select></div><div class="fgrp" style="margin:0"><label>Mortar Mix</label><select class="fi" id="c-mix" style="padding:7px"><option>1:6</option><option>1:4</option></select></div></div>',
+  plaster:'<div class="fg2"><div class="fgrp" style="margin:0"><label>Area (SFT)</label><input type="number" class="fi" id="c-area" value="500" style="padding:7px"></div><div class="fgrp" style="margin:0"><label>Thickness</label><select class="fi" id="c-thk" style="padding:7px"><option value="12">12mm (Internal)</option><option value="20">20mm (External)</option></select></div></div>',
+  flooring:'<div class="fg2"><div class="fgrp" style="margin:0"><label>Area (SFT)</label><input type="number" class="fi" id="c-area" value="800" style="padding:7px"></div><div class="fgrp" style="margin:0"><label>Tile Size</label><select class="fi" id="c-tile" style="padding:7px"><option value="600">600×600mm</option><option value="800">800×800mm</option><option value="300">300×300mm</option></select></div></div><div class="fgrp" style="margin-top:10px;margin-bottom:0"><label>Wastage %</label><input type="number" class="fi" id="c-waste" value="10" style="padding:7px"></div>',
+  paint:'<div class="fg2"><div class="fgrp" style="margin:0"><label>Wall Area (SFT)</label><input type="number" class="fi" id="c-area" value="1200" style="padding:7px"></div><div class="fgrp" style="margin:0"><label>Coats</label><select class="fi" id="c-coats" style="padding:7px"><option value="2">2 Coats</option><option value="3">3 Coats</option></select></div></div>',
+  foundation:'<div class="fg2"><div class="fgrp" style="margin:0"><label>Length (ft)</label><input type="number" class="fi" id="c-len" value="30" style="padding:7px"></div><div class="fgrp" style="margin:0"><label>Width (ft)</label><input type="number" class="fi" id="c-wid" value="3" style="padding:7px"></div></div><div class="fg2" style="margin-top:10px"><div class="fgrp" style="margin:0"><label>Depth (ft)</label><input type="number" class="fi" id="c-dep" value="4" style="padding:7px"></div><div class="fgrp" style="margin:0"><label>Type</label><select class="fi" id="c-ftype" style="padding:7px"><option>Strip Foundation</option><option>Raft Foundation</option></select></div></div>',
+};
+
+function initCalcForm(){
+  var cf=document.getElementById('calc-form');
+  if(cf&&cf.innerHTML==='') cf.innerHTML='<div style="font-size:11px;font-weight:700;color:var(--t3);margin:10px 0 8px;text-transform:uppercase;letter-spacing:.07em">Dimensions</div>'+CALC_FORMS[curCalcType];
+}
+
+function setCalcType(type,el){
+  curCalcType=type;
+  document.querySelectorAll('.ctype-btn').forEach(function(b){b.classList.remove('on');});
+  el.classList.add('on');
+  var cf=document.getElementById('calc-form');
+  if(cf) cf.innerHTML='<div style="font-size:11px;font-weight:700;color:var(--t3);margin:10px 0 8px;text-transform:uppercase;letter-spacing:.07em">Dimensions</div>'+CALC_FORMS[type];
+}
+
+function gv(id){var el=document.getElementById(id);return el?parseFloat(el.value)||0:0;}
+function gsel(id){var el=document.getElementById(id);return el?el.value:'';}
+
+function doCalculate(){
+  var results=[], costs=[];
+  var t=curCalcType;
+  if(t==='slab'){
+    var l=gv('c-len'),w=gv('c-wid'),thk=gv('c-thk');
+    var vol=l*w*(thk/12)*0.0283;
+    var cem=Math.ceil(vol*8.06), sand=Math.round(vol*0.44*35.32), agg=Math.round(vol*0.88*35.32), steel=Math.ceil(l*w*3.5);
+    results=[{n:'RCC Volume',v:vol.toFixed(2),u:'CUM'},{n:'Cement (OPC)',v:cem,u:'Bags'},{n:'M-Sand',v:sand,u:'CFT'},{n:'20mm Aggregate',v:agg,u:'CFT'},{n:'TMT Steel (est.)',v:steel,u:'KG'}];
+    costs=[{n:'Cement ('+cem+' bags)',v:cem*400},{n:'M-Sand ('+sand+' CFT)',v:sand*55},{n:'Aggregate ('+agg+' CFT)',v:agg*50},{n:'TMT Steel ('+steel+' KG)',v:steel*68},{n:'Labour (est.)',v:Math.round(l*w*35)}];
+  } else if(t==='wall'){
+    var l=gv('c-len'),h=gv('c-hgt'),thk=parseFloat(gsel('c-thk'))||9;
+    var area=l*h, bricks=Math.ceil(area*(thk===9?13:6.5)), cem=Math.ceil(area*thk/100), sand=Math.ceil(area*thk/30);
+    results=[{n:'Wall Area',v:area,u:'SFT'},{n:'Bricks',v:bricks.toLocaleString(),u:'Nos'},{n:'Cement',v:cem,u:'Bags'},{n:'Sand',v:sand,u:'CFT'}];
+    costs=[{n:'Bricks',v:Math.ceil(bricks/1000)*7500},{n:'Cement ('+cem+' bags)',v:cem*400},{n:'Sand ('+sand+' CFT)',v:sand*55},{n:'Mason Labour',v:Math.round(area*25)}];
+  } else if(t==='plaster'){
+    var area=gv('c-area'), thk=parseFloat(gsel('c-thk'))||12;
+    var vol=area*thk/304.8*0.0929, cem=Math.ceil(vol*6), sand=Math.ceil(vol*18);
+    results=[{n:'Plaster Area',v:area,u:'SFT'},{n:'Cement',v:cem,u:'Bags'},{n:'Sand',v:sand,u:'CFT'}];
+    costs=[{n:'Cement ('+cem+' bags)',v:cem*400},{n:'Sand ('+sand+' CFT)',v:sand*55},{n:'Labour (est.)',v:Math.round(area*18)}];
+  } else if(t==='flooring'){
+    var area=gv('c-area'), waste=gv('c-waste')||10;
+    var tiles=Math.ceil(area*(1+waste/100)), adh=Math.ceil(area/40), grout=Math.ceil(area/80);
+    results=[{n:'Floor Area',v:area,u:'SFT'},{n:'Tiles Required',v:tiles,u:'SFT (+'+waste+'% waste)'},{n:'Adhesive',v:adh,u:'Bags'},{n:'Grout',v:grout,u:'KG'}];
+    costs=[{n:'Vitrified Tiles',v:tiles*55},{n:'Adhesive ('+adh+' bags)',v:adh*650},{n:'Tile Fixing Labour',v:area*30}];
+  } else if(t==='paint'){
+    var area=gv('c-area'), coats=parseInt(gsel('c-coats'))||2;
+    var putty=Math.ceil(area/60), primer=Math.ceil(area*coats/200), paint=Math.ceil(area*coats/120);
+    results=[{n:'Paint Area',v:area,u:'SFT'},{n:'Wall Putty',v:putty,u:'Bags (40kg)'},{n:'Primer',v:primer,u:'Litres'},{n:'Paint (Emulsion)',v:paint,u:'Litres'}];
+    costs=[{n:'Wall Putty ('+putty+' bags)',v:putty*900},{n:'Primer ('+primer+' L)',v:primer*80},{n:'Emulsion Paint ('+paint+' L)',v:paint*190},{n:'Labour',v:area*12}];
+  } else if(t==='foundation'){
+    var l=gv('c-len'),w=gv('c-wid'),d=gv('c-dep');
+    var vol=(l*w*d)*0.0283, cem=Math.ceil(vol*7), sand=Math.ceil(vol*0.44*35.32), agg=Math.ceil(vol*0.88*35.32);
+    results=[{n:'Excavation Volume',v:(l*w*d).toFixed(0),u:'CFT'},{n:'PCC Volume',v:vol.toFixed(2),u:'CUM'},{n:'Cement',v:cem,u:'Bags'},{n:'Sand',v:sand,u:'CFT'},{n:'Aggregate',v:agg,u:'CFT'}];
+    costs=[{n:'Excavation Labour',v:Math.round(l*w*d*5)},{n:'Cement ('+cem+' bags)',v:cem*400},{n:'Sand ('+sand+' CFT)',v:sand*55},{n:'Aggregate ('+agg+' CFT)',v:agg*50}];
+  }
+  if(!results.length){toast('Please enter valid dimensions','err');return;}
+  var total=costs.reduce(function(s,c){return s+c.v;},0);
+  var rEl=document.getElementById('calc-results');
+  if(rEl) rEl.innerHTML='<div class="res-box">'+results.map(function(r){return'<div class="ri-row"><span class="ri-lbl">'+r.n+'</span><span class="ri-val">'+r.v+' <span style="font-size:10px;font-weight:400;color:var(--t3)">'+r.u+'</span></span></div>';}).join('')+'</div><button class="btn bp bsm" style="width:100%;justify-content:center;margin-top:10px" onclick="goTab(\'boq\')">➕ Add to BOQ</button>';
+  var cEl=document.getElementById('calc-cost');
+  if(cEl) cEl.innerHTML='<div class="res-box">'+costs.map(function(c){return'<div class="ri-row"><span class="ri-lbl">'+c.n+'</span><span style="font-family:var(--mono);font-weight:700;color:var(--accent)">₹'+c.v.toLocaleString()+'</span></div>';}).join('')+'<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0 4px;margin-top:6px;border-top:2px solid var(--border)"><span style="font-size:14px;font-weight:700;color:var(--dark)">Total Estimate</span><span style="font-size:20px;font-weight:900;color:var(--accent);font-family:var(--mono)">₹'+total.toLocaleString()+'</span></div><div style="font-size:10px;color:var(--t3);margin-top:3px">*GBA/BBMP reference rates. Actual may vary.</div></div>';
+  calcCount++;
+  var cc=document.getElementById('q-calc');if(cc)cc.textContent=calcCount;
+  toast('Materials calculated successfully!','ok');
+}
+
+// ═══════════════════════════════════════════════════════════
+// BOQ CALCULATOR
+// ═══════════════════════════════════════════════════════════
+function addBOQItem(){
+  var desc=document.getElementById('bd-desc').value.trim();
+  if(!desc){toast('Enter item description','err');return;}
+  var cat=document.getElementById('bd-cat').value;
+  var unit=document.getElementById('bd-unit').value;
+  var qty=parseFloat(document.getElementById('bd-qty').value)||0;
+  var rate=parseFloat(document.getElementById('bd-rate').value)||0;
+  var gst=parseFloat(document.getElementById('bd-gst').value)||0;
+  var notes=document.getElementById('bd-notes').value;
+  var base=qty*rate, gstAmt=Math.round(base*gst/100), total=base+gstAmt;
+  boqItems.push({id:Date.now(),desc:desc,cat:cat,unit:unit,qty:qty,rate:rate,gst:gst,base:base,gstAmt:gstAmt,total:total,notes:notes});
+  lsSet('bm_boq',boqItems);
+  closeMo('m-boq');
+  renderBOQ();
+  ['bd-desc','bd-qty','bd-rate','bd-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  toast('Item added to BOQ','ok');
+}
+
+function renderBOQ(){
+  var tbody=document.getElementById('boq-body');
+  if(!tbody) return;
+  if(!boqItems.length){
+    tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--t3)">No items yet. Click "+ Add Item" to begin.</td></tr>';
+    var tb=document.getElementById('boq-total');if(tb)tb.innerHTML='';
+    return;
+  }
+  tbody.innerHTML=boqItems.map(function(it,i){
+    return '<tr>'
+      +'<td style="color:var(--t3);font-size:10px">'+(i+1)+'</td>'
+      +'<td style="font-weight:600">'+it.desc+(it.notes?'<div style="font-size:10px;color:var(--t3)">'+it.notes+'</div>':'')+'</td>'
+      +'<td><span class="pill" style="background:rgba(37,99,235,.07);color:var(--accent)">'+it.cat+'</span></td>'
+      +'<td style="color:var(--t2)">'+it.unit+'</td>'
+      +'<td style="font-family:var(--mono);text-align:right">'+it.qty.toLocaleString()+'</td>'
+      +'<td style="font-family:var(--mono);text-align:right">₹'+it.rate.toLocaleString()+'</td>'
+      +'<td style="font-family:var(--mono);color:var(--teal);font-weight:700;text-align:right">₹'+it.base.toLocaleString()+'</td>'
+      +'<td style="text-align:center">'+it.gst+'%</td>'
+      +'<td style="font-family:var(--mono);font-weight:800;color:var(--accent);text-align:right">₹'+it.total.toLocaleString()+'</td>'
+      +'<td><button class="del-btn" onclick="delBOQ('+it.id+')">×</button></td>'
+      +'</tr>';
+  }).join('');
+  var sub=boqItems.reduce(function(s,it){return s+it.base;},0);
+  var gstT=boqItems.reduce(function(s,it){return s+it.gstAmt;},0);
+  var grand=sub+gstT;
+  var tb=document.getElementById('boq-total');
+  if(tb) tb.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:linear-gradient(135deg,#1e2640,#2d3a6e);color:#fff;border-radius:9px;flex-wrap:wrap;gap:10px">'
+    +'<div style="display:flex;gap:24px;flex-wrap:wrap">'
+    +'<div><div style="font-size:10px;opacity:.55;text-transform:uppercase;letter-spacing:.07em">Sub Total</div><div style="font-size:15px;font-weight:700;font-family:var(--mono)">₹'+sub.toLocaleString()+'</div></div>'
+    +'<div><div style="font-size:10px;opacity:.55;text-transform:uppercase;letter-spacing:.07em">GST</div><div style="font-size:15px;font-weight:700;font-family:var(--mono)">₹'+gstT.toLocaleString()+'</div></div>'
+    +'<div><div style="font-size:10px;opacity:.55;text-transform:uppercase;letter-spacing:.07em">Items</div><div style="font-size:15px;font-weight:700">'+boqItems.length+'</div></div>'
+    +'</div>'
+    +'<div><div style="font-size:10px;opacity:.55">Grand Total</div><div style="font-size:26px;font-weight:900;font-family:var(--mono)">₹'+grand.toLocaleString()+'</div></div>'
+    +'</div>';
+}
+
+function delBOQ(id){boqItems=boqItems.filter(function(it){return it.id!==id;});lsSet('bm_boq',boqItems);renderBOQ();}
+
+function exportBOQ(type){
+  if(!boqItems.length){toast('Add items to BOQ first','err');return;}
+  var pn=document.getElementById('bpn')?document.getElementById('bpn').value||'My Project':'My Project';
+  var pl=document.getElementById('bpl')?document.getElementById('bpl').value||'Bengaluru':'Bengaluru';
+  var grand=boqItems.reduce(function(s,it){return s+it.total;},0);
+  if(type==='csv'){
+    var h='"#","Description","Category","Unit","Qty","Rate","Amount","GST%","Total","Notes"';
+    var rows=boqItems.map(function(it,i){return '"'+(i+1)+'","'+it.desc+'","'+it.cat+'","'+it.unit+'","'+it.qty+'","'+it.rate+'","'+it.base+'","'+it.gst+'%","'+it.total+'","'+(it.notes||'')+'"';});
+    rows.push('"","","","","","","","","GRAND TOTAL","₹'+grand.toLocaleString()+'"');
+    var blob=new Blob([[h].concat(rows).join('\n')],{type:'text/csv'});
+    var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='BOQ_'+pn.replace(/\s/g,'_')+'.csv';a.click();
+    toast('BOQ exported as Excel/CSV','ok');
+  } else {
+    var rows=boqItems.map(function(it,i){return'<tr><td>'+(i+1)+'</td><td>'+it.desc+'</td><td>'+it.cat+'</td><td>'+it.unit+'</td><td>'+it.qty+'</td><td>₹'+it.rate.toLocaleString()+'</td><td>₹'+it.base.toLocaleString()+'</td><td>'+it.gst+'%</td><td>₹'+it.total.toLocaleString()+'</td></tr>';}).join('');
+    var w=window.open('','_blank');
+    w.document.write('<!DOCTYPE html><html><head><title>BOQ - '+pn+'</title>'
+      +'<style>body{font-family:Outfit,sans-serif;margin:20px;color:#18202e}'
+      +'h1{font-size:22px;font-weight:800;color:#2563eb;margin-bottom:6px}'
+      +'table{width:100%;border-collapse:collapse;font-size:12px;margin-top:14px}'
+      +'th{background:#f8f9fd;padding:8px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:#8a92aa;border-bottom:1px solid #dde3f2}'
+      +'td{padding:8px;border-bottom:1px solid #dde3f2}'
+      +'</style></head><body>'
+      +'<h1>Bill of Quantities</h1>'
+      +'<div style="color:#4a5570;margin-bottom:14px"><b>Project:</b> '+pn+' &nbsp;|&nbsp; <b>Location:</b> '+pl+' &nbsp;|&nbsp; <b>Date:</b> '+new Date().toLocaleDateString('en-IN')+'</div>'
+      +'<table><thead><tr><th>#</th><th>Description</th><th>Category</th><th>Unit</th><th>Qty</th><th>Rate ₹</th><th>Amount ₹</th><th>GST%</th><th>Total ₹</th></tr></thead>'
+      +'<tbody>'+rows+'<tr style="background:#1e2640;color:#fff"><td colspan="8" style="text-align:right;padding:12px 8px;font-weight:800">Grand Total</td><td style="padding:12px 8px;font-size:16px;font-weight:900">₹'+grand.toLocaleString()+'</td></tr></tbody></table>'
+      +'<script>setTimeout(function(){window.print();},400);<\/script></body></html>');
+    w.document.close();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// DRAWINGS & DESIGN
+// ═══════════════════════════════════════════════════════════
+var dwgFilter='all';
+
+function renderDrawings(){
+  var grid=document.getElementById('dwg-grid');
+  if(!grid)return;
+  var all=drawings.length?drawings:SAMPLE_DWG;
+  var filtered=dwgFilter==='all'?all:all.filter(function(d){return d.type===dwgFilter;});
+  if(!filtered.length){grid.innerHTML='<div class="empty"><div class="ei">📐</div><p>No drawings found. Upload some!</p></div>';return;}
+  grid.innerHTML=filtered.map(function(d){
+    return '<div style="background:#fff;border:1.5px solid var(--border);border-radius:11px;overflow:hidden;transition:.2s;cursor:pointer" onmouseenter="this.style.borderColor=\'var(--accent)\';this.style.transform=\'translateY(-2px)\'" onmouseleave="this.style.borderColor=\'var(--border)\';this.style.transform=\'\'">'
+      +'<div style="height:120px;background:'+d.color+';display:flex;align-items:center;justify-content:center;font-size:44px">'+d.ico+'</div>'
+      +'<div style="padding:11px 13px">'
+      +'<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px">'+d.name+'</div>'
+      +'<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:9px">'+d.tags.map(function(tg){return'<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:var(--bg);color:var(--t2);font-weight:600">'+tg+'</span>';}).join('')+'</div>'
+      +'<div style="display:flex;gap:6px">'
+      +'<button class="btn bp bxs" onclick="viewDwg(\''+d.id+'\')">👁 View</button>'
+      +'<button class="btn bg bxs">⬇ Download</button>'
+      +'<button class="btn br bxs" onclick="delDwg(\''+d.id+'\')">🗑</button>'
+      +'</div></div></div>';
+  }).join('');
+}
+
+function filterDwg(f,el){
+  dwgFilter=f;
+  document.querySelectorAll('#dwg-filters .btn').forEach(function(b){b.className='btn bg bsm';});
+  el.className='btn bp bsm';
+  renderDrawings();
+}
+
+function uploadDwg(input){
+  Array.from(input.files).forEach(function(f){
+    drawings.unshift({id:'d'+Date.now()+Math.random(),name:f.name.replace(/\.[^.]+$/,''),type:'plan',icon:'📄',color:'#f0f4fb',tags:[f.name.split('.').pop().toUpperCase()]});
+  });
+  lsSet('bm_dwgs',drawings);renderDrawings();
+  toast(input.files.length+' file(s) uploaded','ok');input.value='';
+}
+
+function dropDwg(e){
+  e.preventDefault();
+  var ft={target:{files:e.dataTransfer.files}};
+  uploadDwg(ft.target);
+}
+
+function viewDwg(id){
+  var all=drawings.length?drawings:SAMPLE_DWG;
+  var d=all.find(function(x){return x.id===id;});
+  if(!d)return;
+  document.getElementById('dwg-view-title').textContent=d.name;
+  document.getElementById('dwg-view-body').innerHTML='<div style="text-align:center"><div style="font-size:72px;margin-bottom:14px">'+d.ico+'</div><div style="font-size:16px;font-weight:700;color:var(--dark)">'+d.name+'</div><div style="font-size:12px;color:var(--t3);margin-top:6px">Preview not available in demo mode</div><div style="display:flex;gap:7px;justify-content:center;margin-top:12px">'+d.tags.map(function(tg){return'<span style="font-size:11px;padding:3px 9px;border-radius:10px;background:var(--bg);color:var(--t2);font-weight:600">'+tg+'</span>';}).join('')+'</div></div>';
+  openMo('m-dwg');
+}
+
+function delDwg(id){
+  var all=drawings.length?drawings:SAMPLE_DWG;
+  drawings=all.filter(function(d){return d.id!==id;});
+  lsSet('bm_dwgs',drawings);renderDrawings();toast('Drawing deleted','info');
+}
+
+// ═══════════════════════════════════════════════════════════
+// LAYOUT STUDIO
+// ═══════════════════════════════════════════════════════════
+function renderLayout(){
+  var rl=document.getElementById('room-list');
+  var al=document.getElementById('amenity-list');
+  if(!rl||!al)return;
+  rl.innerHTML=ROOM_TYPES.map(function(r,i){
+    return '<div class="tool-item" onclick="addRoom('+i+')">'
+      +'<div class="tool-ico" style="background:'+r.color+'">'+r.ico+'</div>'
+      +'<div><div style="font-size:12px;font-weight:600;color:var(--text)">'+r.name+'</div><div style="font-size:10px;color:var(--t3)">'+r.w+'×'+r.h+' ft</div></div>'
+      +'</div>';
+  }).join('');
+  al.innerHTML=AMENITY_TYPES.map(function(a,i){
+    return '<div class="tool-item" onclick="addAmenity('+i+')">'
+      +'<div class="tool-ico" style="background:'+a.color+'">'+a.ico+'</div>'
+      +'<div style="font-size:12px;font-weight:600;color:var(--text)">'+a.name+'</div>'
+      +'</div>';
+  }).join('');
+  renderCanvasRooms();
+}
+
+function addRoom(idx){
+  var r=ROOM_TYPES[idx];
+  layoutRooms.push({id:Date.now(),name:r.name,ico:r.ico,color:r.color,w:r.w,h:r.h,x:20+layoutRooms.length*10,y:20+layoutRooms.length*10});
+  lsSet('bm_layout',layoutRooms);renderCanvasRooms();updateLayoutSummary();
+}
+
+function addAmenity(idx){
+  var a=AMENITY_TYPES[idx];
+  layoutRooms.push({id:Date.now(),name:a.name,ico:a.ico,color:a.color,w:a.w,h:a.h,x:20,y:20+layoutRooms.length*15});
+  lsSet('bm_layout',layoutRooms);renderCanvasRooms();updateLayoutSummary();
+}
+
+function renderCanvasRooms(){
+  var area=document.getElementById('canvas-area');
+  if(!area)return;
+  area.innerHTML='';
+  layoutRooms.forEach(function(r){
+    var div=document.createElement('div');
+    div.className='canvas-room';
+    div.style.cssText='left:'+r.x+'px;top:'+r.y+'px;width:'+r.w+'px;height:'+r.h+'px;background:'+r.color+'99;border-color:'+r.color.replace('#','').length===6?r.color:r.color+';';
+    div.innerHTML='<span class="rm-ico">'+r.ico+'</span><span class="rm-lbl">'+r.name+'</span><button class="rm-del" onclick="removeRoom('+r.id+')">×</button>';
+    makeDraggable(div,r);
+    area.appendChild(div);
+  });
+}
+
+function removeRoom(id){layoutRooms=layoutRooms.filter(function(r){return r.id!==id;});lsSet('bm_layout',layoutRooms);renderCanvasRooms();updateLayoutSummary();}
+
+function makeDraggable(el,room){
+  var ox,oy,mx,my,dragging=false;
+  el.onmousedown=function(e){
+    if(e.target.tagName==='BUTTON')return;
+    e.preventDefault();dragging=true;
+    ox=el.offsetLeft;oy=el.offsetTop;mx=e.clientX;my=e.clientY;
+  };
+  document.addEventListener('mousemove',function(e){
+    if(!dragging)return;
+    var dx=e.clientX-mx,dy=e.clientY-my;
+    var nx=Math.max(0,ox+dx),ny=Math.max(0,oy+dy);
+    el.style.left=nx+'px';el.style.top=ny+'px';
+    room.x=nx;room.y=ny;
+  });
+  document.addEventListener('mouseup',function(){
+    if(dragging){dragging=false;lsSet('bm_layout',layoutRooms);}
+  });
+}
+
+function updateLayoutSummary(){
+  var el=document.getElementById('layout-summary');
+  if(!el)return;
+  var totalArea=layoutRooms.reduce(function(s,r){return s+(r.w*r.h/100);},0);
+  el.innerHTML='<div style="font-weight:700;color:var(--dark);margin-bottom:5px">📐 Summary</div>'
+    +'<div>Rooms: <b>'+layoutRooms.length+'</b></div>'
+    +'<div style="margin-top:3px">Est. Area: <b>'+totalArea.toFixed(0)+' SFT</b></div>'
+    +'<div style="font-size:10px;color:var(--t3);margin-top:5px">Click room to remove · Drag to move</div>';
+}
+
+function clearCanvas(){layoutRooms=[];lsSet('bm_layout',layoutRooms);renderCanvasRooms();updateLayoutSummary();toast('Canvas cleared','info');}
+function saveLayout(){lsSet('bm_layout',layoutRooms);toast('Layout saved!','ok');}
+
+// ═══════════════════════════════════════════════════════════
+// MARKETPLACE
+// ═══════════════════════════════════════════════════════════
+function buildListings(){
+  mpListings=[];
+  CATALOG.forEach(function(r){
+    var v=VENDORS_LIST[Math.floor(Math.random()*VENDORS_LIST.length)];
+    var rate=Math.round(r.ref*(0.9+Math.random()*0.2));
+    mpListings.push(Object.assign({},r,{vendorId:v.id,vendorName:v.name,vendorCity:v.city,vendorPin:v.pin,vendorPhone:v.phone,rating:v.rating,myRate:rate}));
+  });
+}
+
+function renderMarket(){
+  if(!mpListings.length) buildListings();
+  var q=(document.getElementById('mp-q')?document.getElementById('mp-q').value:'').toLowerCase();
+  var cat=document.getElementById('mp-cat')?document.getElementById('mp-cat').value:'';
+  var pin=document.getElementById('mp-pin')?document.getElementById('mp-pin').value:'';
+  var sort=document.getElementById('mp-sort')?document.getElementById('mp-sort').value:'asc';
+  var items=mpListings.filter(function(it){
+    if(cat&&it.cat!==cat)return false;
+    if(q&&!it.name.toLowerCase().includes(q)&&!it.cat.toLowerCase().includes(q))return false;
+    if(pin&&!it.vendorPin.includes(pin))return false;
+    return true;
+  });
+  if(sort==='asc') items.sort(function(a,b){return a.myRate-b.myRate;});
+  else if(sort==='desc') items.sort(function(a,b){return b.myRate-a.myRate;});
+  else items.sort(function(a,b){return a.name.localeCompare(b.name);});
+  var cnt=document.getElementById('mp-cnt');
+  if(cnt) cnt.textContent=items.length+' listings';
+  var grid=document.getElementById('mp-grid');
+  if(!grid)return;
+  var ICONS={'Cement & Concrete':'🏭','Steel & Metal':'⚙️','Bricks & Blocks':'🧱','Sand & Aggregates':'🪨','Labour & Services':'👷','Machinery':'🚜','Electrical':'⚡','Plumbing':'🔧','Tiles & Flooring':'🔲','Paints & Chemicals':'🎨'};
+  grid.innerHTML=items.length===0?'<div class="empty" style="grid-column:1/-1"><div class="ei">🔍</div><p>No listings match your search</p></div>':
+    items.map(function(it){
+      var below=it.myRate<it.ref;
+      var waLink='https://wa.me/'+(it.vendorPhone||'').replace(/\D/g,'')+'?text='+encodeURIComponent('Hi, I enquire about '+it.name+' at ₹'+it.myRate+'/'+it.uom);
+      return '<div style="background:#fff;border:1.5px solid var(--border);border-radius:11px;padding:13px;transition:.2s" onmouseenter="this.style.borderColor=\'var(--accent)\';this.style.transform=\'translateY(-2px)\'" onmouseleave="this.style.borderColor=\'var(--border)\';this.style.transform=\'\'">'
+        +'<div style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">'+(ICONS[it.cat]||'📦')+' '+it.cat+'</div>'
+        +'<div style="font-size:13px;font-weight:700;color:var(--dark);margin-bottom:3px">'+it.name+'</div>'
+        +'<div style="font-size:11px;color:var(--t2);margin-bottom:9px">🏭 '+it.vendorName+' · '+it.vendorCity+'</div>'
+        +'<div style="display:flex;align-items:baseline;gap:4px;margin-bottom:9px">'
+        +'<span style="font-size:20px;font-weight:900;color:var(--accent);font-family:var(--mono)">₹'+it.myRate.toLocaleString()+'</span>'
+        +'<span style="font-size:11px;color:var(--t3)">/ '+it.uom+'</span>'
+        +'</div>'
+        +'<div style="display:flex;gap:8px;font-size:10px;color:var(--t3);margin-bottom:11px;flex-wrap:wrap">'
+        +'<span>📍 '+it.vendorPin+'</span><span>GST: '+it.gst+'%</span><span>⭐ '+it.rating+'</span>'
+        +'<span style="color:'+(below?'var(--green)':'var(--amber)')+'">Ref: ₹'+it.ref+'</span>'
+        +'</div>'
+        +'<div style="display:flex;gap:6px">'
+        +'<button class="btn bp bxs" style="flex:1;justify-content:center" onclick="openQuote(\''+it.vendorId+'\',\''+it.code+'\')">💬 Enquire</button>'
+        +'<button class="btn bwa bxs" onclick="window.open(\''+waLink+'\',\'_blank\')">WA</button>'
+        +'</div></div>';
+    }).join('');
+}
+
+function mpFilter(cat,el){
+  var mc=document.getElementById('mp-cat');
+  if(mc) mc.value=cat;
+  document.querySelectorAll('#page-market .bxs').forEach(function(b){b.className='btn bg bxs';});
+  el.className='btn bp bxs';
+  renderMarket();
+}
+
+function openQuote(vid,code){
+  var v=VENDORS_LIST.find(function(x){return x.id===vid;});
+  var item=mpListings.find(function(x){return x.code===code&&x.vendorId===vid;});
+  if(!v||!item)return;
+  curQuote={v:v,item:item};
+  var now=new Date();
+  var qno='QT-'+now.getFullYear()+String(now.getMonth()+1).padStart(2,'0')+'-'+String(Math.floor(Math.random()*999)).padStart(3,'0');
+  var base=item.myRate, gstAmt=Math.round(base*item.gst/100), total=base+gstAmt;
+  var body=document.getElementById('quote-body');
+  if(body) body.innerHTML='<div style="background:rgba(124,58,237,.07);border:1px solid rgba(124,58,237,.2);border-radius:8px;padding:10px 13px;font-size:12px;color:var(--purple);margin-bottom:13px">🔔 Sending enquiry to <b>'+v.name+'</b> for <b>'+item.name+'</b></div>'
+    +'<div style="border:1px solid var(--border);border-radius:8px;overflow:hidden">'
+    +'<div style="background:linear-gradient(135deg,#2563eb,#1a4fd6);color:#fff;padding:18px 22px">'
+    +'<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px">'
+    +'<div><div style="font-size:19px;font-weight:800">QUOTATION</div><div style="font-size:11px;opacity:.7;margin-top:2px">BuildMitra · GBA/BBMP Bengaluru</div></div>'
+    +'<div style="text-align:right;font-size:11px"><div>Quote: <b style="font-family:var(--mono)">'+qno+'</b></div><div style="margin-top:2px">'+now.toLocaleDateString('en-IN')+'</div><div style="margin-top:2px">Valid: 7 Days</div></div>'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">'
+    +'<div style="background:rgba(255,255,255,.15);border-radius:7px;padding:10px"><div style="font-size:9px;opacity:.6;text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">From (Vendor)</div><div style="font-weight:700">'+v.name+'</div><div style="font-size:11px;opacity:.8">'+v.city+' · '+v.pin+'</div><div style="font-size:11px;opacity:.8">'+v.phone+'</div></div>'
+    +'<div style="background:rgba(255,255,255,.15);border-radius:7px;padding:10px"><div style="font-size:9px;opacity:.6;text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">To (Buyer)</div><div style="font-weight:700">BuildPro Admin</div><div style="font-size:11px;opacity:.8">Bengaluru, Karnataka</div></div>'
+    +'</div></div>'
+    +'<div style="padding:18px 22px">'
+    +'<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr>'
+    +'<th style="background:#f8f9fd;padding:8px;text-align:left;font-size:9px;text-transform:uppercase;color:var(--t3);border-bottom:1px solid var(--border)">#</th>'
+    +'<th style="background:#f8f9fd;padding:8px;text-align:left;font-size:9px;text-transform:uppercase;color:var(--t3);border-bottom:1px solid var(--border)">Description</th>'
+    +'<th style="background:#f8f9fd;padding:8px;text-align:right;font-size:9px;text-transform:uppercase;color:var(--t3);border-bottom:1px solid var(--border)">Rate ₹</th>'
+    +'<th style="background:#f8f9fd;padding:8px;text-align:right;font-size:9px;text-transform:uppercase;color:var(--t3);border-bottom:1px solid var(--border)">GST</th>'
+    +'<th style="background:#f8f9fd;padding:8px;text-align:right;font-size:9px;text-transform:uppercase;color:var(--t3);border-bottom:1px solid var(--border)">Total ₹</th>'
+    +'</tr></thead><tbody><tr>'
+    +'<td style="padding:10px 8px;border-bottom:1px solid var(--border)">1</td>'
+    +'<td style="padding:10px 8px;border-bottom:1px solid var(--border)"><div style="font-weight:700">'+item.name+'</div><div style="font-size:10px;color:var(--t3)">'+item.code+' | '+item.uom+' | HSN: '+item.hsn+'</div></td>'
+    +'<td style="padding:10px 8px;border-bottom:1px solid var(--border);text-align:right;font-family:var(--mono);font-weight:700;color:var(--teal)">₹'+base.toLocaleString()+'</td>'
+    +'<td style="padding:10px 8px;border-bottom:1px solid var(--border);text-align:right;color:var(--t3)">'+item.gst+'% = ₹'+gstAmt+'</td>'
+    +'<td style="padding:10px 8px;border-bottom:1px solid var(--border);text-align:right;font-family:var(--mono);font-weight:800;color:var(--accent)">₹'+total.toLocaleString()+'</td>'
+    +'</tr></tbody><tfoot><tr style="background:#f8f9fd"><td colspan="3" style="padding:11px 8px;font-weight:800;font-size:13px">Grand Total (per '+item.uom+')</td><td colspan="2" style="padding:11px 8px;text-align:right;font-size:19px;font-weight:900;color:var(--accent);font-family:var(--mono)">₹'+total.toLocaleString()+'</td></tr></tfoot></table>'
+    +'<div style="margin-top:10px;font-size:11px;color:var(--t3);background:var(--bg);border-radius:7px;padding:9px 11px">✅ Valid 7 days · 50% advance on confirmation · Delivery per agreed schedule</div>'
+    +'</div></div>';
+  openMo('m-quote');
+}
+
+function sendWAQuote(){
+  if(!curQuote)return;
+  var v=curQuote.v,it=curQuote.item;
+  var total=Math.round(it.myRate*(1+it.gst/100));
+  var msg='*BUILDMITRA QUOTATION* 🏗️\n━━━━━━━━━━━━━━\n*From:* '+v.name+'\n*City:* '+v.city+'\n*Phone:* '+v.phone+'\n━━━━━━━━━━━━━━\n*Item:* '+it.name+'\n*Code:* '+it.code+'\n*UOM:* '+it.uom+'\n*Rate:* ₹'+it.myRate.toLocaleString()+'\n*GST:* '+it.gst+'%\n*Total:* ₹'+total.toLocaleString()+'\n━━━━━━━━━━━━━━\n✅ Valid 7 days from today\n_Powered by BuildMitra_';
+  window.open('https://wa.me/917676942386?text='+encodeURIComponent(msg),'_blank');
+  toast('Opening WhatsApp with quote...','ok');
+}
+
+function printQuote(){
+  var body=document.getElementById('quote-body');
+  if(!body)return;
+  var w=window.open('','_blank');
+  w.document.write('<!DOCTYPE html><html><head><title>Quotation</title><style>body{font-family:Outfit,sans-serif;margin:20px}</style></head><body>'+body.innerHTML+'<script>setTimeout(function(){window.print();},400);<\/script></body></html>');
+  w.document.close();
+}
+
+function confirmQuote(){closeMo('m-quote');toast('Enquiry sent to vendor!','ok');}
+
+// ═══════════════════════════════════════════════════════════
+// VENDOR DASHBOARD
+// ═══════════════════════════════════════════════════════════
+function buildVendorTable(){
+  var cat=document.getElementById('vf-cat')?document.getElementById('vf-cat').value:'';
+  var type=document.getElementById('vf-type')?document.getElementById('vf-type').value:'';
+  var rate=document.getElementById('vf-rate')?document.getElementById('vf-rate').value:'';
+  var q=(document.getElementById('vf-q')?document.getElementById('vf-q').value:'').toLowerCase();
+  var rows=vendorRows.filter(function(r){
+    if(cat&&r.cat!==cat)return false;
+    if(type&&r.type!==type)return false;
+    if(rate==='set'&&(!r.rate||+r.rate===0))return false;
+    if(rate==='unset'&&r.rate&&+r.rate>0)return false;
+    if(q&&!r.name.toLowerCase().includes(q)&&!r.code.toLowerCase().includes(q))return false;
+    return true;
+  });
+  var cnt=document.getElementById('vf-cnt');
+  if(cnt) cnt.textContent=rows.length+' of '+vendorRows.length+' items';
+  var tbody=document.getElementById('v-tbody');
+  if(!tbody)return;
+  var CATC={'Cement & Concrete':'#0ea5e9','Steel & Metal':'#64748b','Bricks & Blocks':'#d97706','Sand & Aggregates':'#16a34a','Plumbing':'#2563eb','Electrical':'#7c3aed','Tiles & Flooring':'#ea580c','Labour & Services':'#4f46e5','Machinery':'#dc2626','Paints & Chemicals':'#dc2626','Glass & Aluminium':'#0d9488'};
+  tbody.innerHTML=rows.map(function(r,i){
+    var hasRate=r.rate!==''&&r.rate!==null&&+r.rate>0;
+    var cc=CATC[r.cat]||'#888';
+    return '<tr style="'+(hasRate?'background:rgba(22,163,74,.02)':'')+(r.isCustom?'background:rgba(217,119,6,.03)':'')+';">'
+      +'<td style="color:var(--t3);font-size:10px;text-align:center">'+(i+1)+'</td>'
+      +'<td><span class="chip cht">'+r.code+'</span></td>'
+      +'<td><span class="pill" style="background:'+cc+'22;color:'+cc+'">'+r.cat.split(' ')[0]+'</span></td>'
+      +'<td><span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(37,99,235,.08);color:var(--accent)">'+r.type+'</span></td>'
+      +'<td style="font-weight:600;font-size:12px">'+r.name+'</td>'
+      +'<td style="font-size:11px;color:var(--t2)">'+r.uom+'</td>'
+      +'<td style="font-family:var(--mono);font-size:10px;color:var(--t3)">'+r.hsn+'</td>'
+      +'<td style="font-family:var(--mono);font-size:11px;text-align:right">'+r.gst+'%</td>'
+      +'<td style="font-family:var(--mono);font-size:11px;color:var(--t3);text-align:right">₹'+r.ref.toLocaleString()+'</td>'
+      +'<td><input type="number" value="'+(r.rate||'')+'" placeholder="₹ rate" min="0" class="rate-inp" oninput="updRow(\''+r.code+'\',\'rate\',this.value)"></td>'
+      +'<td><input type="number" value="'+(r.stock||'')+'" placeholder="qty" min="0" style="width:70px;border:1.5px solid var(--b2);background:#fafbfe;border-radius:6px;padding:5px 7px;font-size:12px;text-align:right;outline:none" oninput="updRow(\''+r.code+'\',\'stock\',this.value)"></td>'
+      +'<td><span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:5px;background:'+(hasRate?'rgba(22,163,74,.1)':'rgba(138,149,176,.08)')+';color:'+(hasRate?'var(--green)':'var(--t3)')+';">'+(hasRate?'✓ Set':'○ Pending')+'</span></td>'
+      +'<td><button class="del-btn" onclick="delRow(\''+r.code+'\')">×</button></td>'
+      +'</tr>';
+  }).join('');
+  updateVStats();
+}
+
+function updRow(code,field,val){
+  var r=vendorRows.find(function(x){return x.code===code;});
+  if(r) r[field]=val===''?'':parseFloat(val)||val;
+  lsSet('bm_vrows',vendorRows);updateVStats();
+}
+
+function delRow(code){vendorRows=vendorRows.filter(function(r){return r.code!==code;});lsSet('bm_vrows',vendorRows);buildVendorTable();}
+
+function updateVStats(){
+  var rated=vendorRows.filter(function(r){return r.rate!==''&&r.rate!==null&&+r.rate>0;}).length;
+  var custom=vendorRows.filter(function(r){return r.isCustom;}).length;
+  function ss(id,v){var el=document.getElementById(id);if(el)el.textContent=v;}
+  ss('v-tot',vendorRows.length);ss('v-rated',rated);
+}
+
+function clearVFilter(){
+  ['vf-cat','vf-type','vf-rate'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  var vq=document.getElementById('vf-q');if(vq)vq.value='';
+  buildVendorTable();
+}
+
+function saveLocData(){
+  var d={};
+  ['pin','city','state','lead'].forEach(function(k){var el=document.getElementById('v-'+k);if(el)d[k]=el.value;});
+  lsSet('bm_loc',d);updateVStats();
+}
+
+function autoFillRates(){
+  vendorRows.forEach(function(r){if((!r.rate||+r.rate===0)&&r.ref>0)r.rate=r.ref;});
+  lsSet('bm_vrows',vendorRows);buildVendorTable();toast('GBA/BBMP rates auto-filled','ok');
+}
+
+function publishCat(){
+  var pin=document.getElementById('v-pin')?document.getElementById('v-pin').value:'';
+  if(!pin){toast('Enter your service pincode first','err');return;}
+  var rated=vendorRows.filter(function(r){return r.rate&&+r.rate>0;}).length;
+  if(!rated){toast('Set at least one rate before publishing','err');return;}
+  var h=document.getElementById('v-hint');
+  if(h)h.innerHTML='<span style="color:var(--green)">✓ Published</span> — buyers can see your rates';
+  toast(rated+' items published live to buyers','ok');
+}
+
+function exportCatCSV(){
+  var esc=function(v){return'"'+String(v||'').replace(/"/g,'""')+'"';};
+  var h='code,name,category,type,uom,hsn,gst,ref_rate,my_rate,stock';
+  var rows=vendorRows.map(function(r){return[r.code,r.name,r.cat,r.type,r.uom,r.hsn,r.gst,r.ref,r.rate||'',r.stock||''].map(esc).join(',');});
+  var blob=new Blob([[h].concat(rows).join('\n')],{type:'text/csv'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='buildmitra_catalogue.csv';a.click();
+  toast('CSV exported','ok');
+}
+
+function addItemManual(){
+  var code=document.getElementById('ai-code').value.trim();
+  var name=document.getElementById('ai-name').value.trim();
+  if(!code||!name){toast('Code and Name are required','err');return;}
+  if(vendorRows.find(function(r){return r.code===code;})){toast('Item code already exists','err');return;}
+  vendorRows.push({code:code,name:name,cat:document.getElementById('ai-cat').value,type:document.getElementById('ai-type').value,uom:document.getElementById('ai-uom').value,hsn:document.getElementById('ai-hsn').value,gst:+document.getElementById('ai-gst').value||18,rate:+document.getElementById('ai-rate').value||'',ref:+document.getElementById('ai-ref').value||0,stock:'',isCustom:true});
+  lsSet('bm_vrows',vendorRows);closeMo('m-additem');buildVendorTable();toast('Item added to catalogue','ok');
+}
+
+// CSV
+var csvRows=[];
+function parseCSV(input){
+  var f=input.files[0];if(!f)return;
+  var r=new FileReader();
+  r.onload=function(e){
+    var lines=e.target.result.split('\n').filter(function(l){return l.trim();});
+    var hdr=lines[0].split(',').map(function(h){return h.trim().replace(/"/g,'').toLowerCase();});
+    csvRows=lines.slice(1).map(function(l){
+      var v=l.split(',').map(function(x){return x.trim().replace(/^"|"$/g,'');});
+      var obj={};hdr.forEach(function(h,i){obj[h]=v[i]||'';});return obj;
+    }).filter(function(r){return r.name||r.code;});
+    var p=document.getElementById('csv-preview');
+    if(p) p.innerHTML='<div style="font-size:12px;color:var(--t2);margin-bottom:7px"><b>'+csvRows.length+'</b> items found</div>'
+      +'<div style="max-height:100px;overflow-y:auto;font-size:11px;font-family:var(--mono);background:var(--bg);border-radius:7px;padding:9px">'+csvRows.slice(0,4).map(function(r){return(r.code||'—')+' · '+(r.name||'—');}).join('<br>')+(csvRows.length>4?'<br>...and '+(csvRows.length-4)+' more':'')+'</div>';
+    var btn=document.getElementById('csv-btn');if(btn)btn.style.display='inline-flex';
+  };
+  r.readAsText(f);input.value='';
+}
+
+function importCSV(){
+  var added=0;
+  csvRows.forEach(function(r){
+    if(!r.name)return;
+    var code=r.code||'CSV-'+Date.now()+Math.random().toString(36).slice(2,5);
+    if(!vendorRows.find(function(x){return x.code===code;})){
+      vendorRows.push({code:code,name:r.name,cat:r.category||'Cement & Concrete',type:(r.type||'MATERIAL').toUpperCase(),uom:r.uom||'Nos',hsn:r.hsn||'',gst:+r.gst||18,ref:+r.ref_rate||0,rate:+r.rate||'',stock:+r.stock||'',isCustom:true});
+      added++;
+    }
+  });
+  lsSet('bm_vrows',vendorRows);closeMo('m-csv');buildVendorTable();
+  toast('Imported '+csvRows.length+' items ('+added+' new)','ok');csvRows=[];
+}
+
+function renderVEnq(){
+  var list=document.getElementById('v-enq-list');
+  if(!list)return;
+  var enqs=[
+    {buyer:'Rajesh Constructions',items:'OPC Cement × 200 Bags',date:'Apr 22',status:'New',phone:'919876011111'},
+    {buyer:'Skyline Builders',items:'TMT 12mm × 500 KG',date:'Apr 21',status:'New',phone:'919876033333'},
+    {buyer:'Priya Nair',items:'Vitrified Tiles × 500 SFT',date:'Apr 20',status:'Replied',phone:'919876022222'},
+  ];
+  list.innerHTML=enqs.map(function(e){
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:.5px solid var(--border);flex-wrap:wrap;gap:8px">'
+      +'<div><div style="font-size:12px;font-weight:700">'+e.buyer+'</div><div style="font-size:11px;color:var(--t3);margin-top:2px">📦 '+e.items+' · '+e.date+'</div></div>'
+      +'<div style="display:flex;gap:6px;align-items:center">'
+      +'<span class="sb '+(e.status==='New'?'sba':'sbb')+'">'+e.status+'</span>'
+      +'<button class="btn bwa bxs" onclick="window.open(\'https://wa.me/'+e.phone+'?text='+encodeURIComponent('Hi, responding to your enquiry for '+e.items)+'\',\'_blank\')">💬 WA</button>'
+      +'<button class="btn bp bxs" onclick="openQuote(\'V1\',\'CEM-001\')">📋 Quote</button>'
+      +'</div></div>';
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+// AI AGENT
+// ═══════════════════════════════════════════════════════════
+var ANSWERS = {
+  'cement': function(q){var sft=parseInt((q.match(/(\d+)\s*sft/i)||[])[1])||1000;var bags=Math.ceil(sft*0.4);return'For a <b>'+sft+' SFT RCC slab</b>, you need:\n\n🏭 <b>Cement:</b> '+bags+' Bags (OPC 43 Grade)\n🪨 <b>M-Sand:</b> '+Math.round(sft*0.08)+' CFT\n⚙️ <b>Aggregates:</b> '+Math.round(sft*0.16)+' CFT\n\n<b>GBA Rate:</b> ₹400/bag | <b>Est. Cement Cost:</b> ₹'+(bags*400).toLocaleString()+'\n\nGo to <b>Material Calculator</b> tab for detailed calculation!';},
+  'tmt|steel': function(){return'<b>TMT Steel Rates — Bengaluru GBA/BBMP 2025:</b>\n\n⚙️ TMT 8mm Fe-500: <b>₹68/KG</b>\n⚙️ TMT 10mm Fe-500: <b>₹66/KG</b>\n⚙️ TMT 12mm Fe-500: <b>₹65/KG</b>\n⚙️ TMT 16mm Fe-500: <b>₹64/KG</b>\n\n📈 Up ~2% this month. Check Marketplace for vendor quotes!';},
+  'brick|wall': function(q){var sft=parseInt((q.match(/(\d+)\s*sft/i)||[])[1])||100;var bricks=Math.ceil(sft*13);return'For a <b>9-inch brick wall of '+sft+' SFT:</b>\n\n🧱 Bricks: <b>'+bricks.toLocaleString()+' nos</b>\n🏭 Cement: <b>'+Math.ceil(sft*0.05)+' Bags</b>\n🪨 Sand: <b>'+Math.ceil(sft*0.12)+' CFT</b>\n\n<b>Est. Cost:</b> ₹'+(Math.ceil(bricks/1000)*7500+Math.ceil(sft*0.05)*400+Math.ceil(sft*0.12)*55).toLocaleString();},
+  'mason|labour|worker': function(){return'<b>Labour Rates — Bengaluru GBA/BBMP:</b>\n\n👷 Mason (Skilled): <b>₹850/day</b>\n👷 Helper/Unskilled: <b>₹500/day</b>\n⚡ Electrician: <b>₹1,000/day</b>\n🔧 Plumber: <b>₹900/day</b>\n🎨 Painter: <b>₹750/day</b>\n🪵 Carpenter: <b>₹950/day</b>';},
+  'sand': function(q){var sft=parseInt((q.match(/(\d+)\s*sft/i)||[])[1])||500;return'For plastering <b>'+sft+' SFT</b> (12mm):\n\n🪨 M-Sand: <b>'+Math.ceil(sft*0.18)+' CFT</b>\n🏭 Cement: <b>'+Math.ceil(sft*0.04)+' Bags</b>\n\n<b>GBA Rates:</b> M-Sand ₹55/CFT · Cement ₹400/bag\n<b>Est. Cost:</b> ₹'+(Math.ceil(sft*0.18)*55+Math.ceil(sft*0.04)*400).toLocaleString();},
+  'cost|price|sqft|per sft|sft': function(){return'<b>Construction Cost — Bengaluru 2025:</b>\n\n🏗️ Basic: <b>₹1,400–1,700/SFT</b>\n🏠 Standard: <b>₹1,700–2,200/SFT</b>\n✨ Premium: <b>₹2,200–3,000/SFT</b>\n💎 Luxury: <b>₹3,000–5,000+/SFT</b>\n\n<i>Includes structure, finishes, electrical, plumbing. Excludes land, GST, architect fees.</i>';},
+  'boq|estimate|project|2bhk|3bhk': function(q){var sft=parseInt((q.match(/(\d+)\s*sft/i)||[])[1])||1200;return'<b>BOQ Estimate — '+sft+' SFT Project:</b>\n\n📋 Civil Structure: ₹'+Math.round(sft*600).toLocaleString()+'\n🏭 Materials: ₹'+Math.round(sft*400).toLocaleString()+'\n👷 Labour: ₹'+Math.round(sft*300).toLocaleString()+'\n⚡ Electrical: ₹'+Math.round(sft*120).toLocaleString()+'\n🔧 Plumbing: ₹'+Math.round(sft*100).toLocaleString()+'\n🎨 Painting: ₹'+Math.round(sft*80).toLocaleString()+'\n\n<b>Total: ₹'+(sft*1500).toLocaleString()+' – ₹'+(sft*2000).toLocaleString()+'</b>\n\nGo to <b>BOQ Calculator</b> tab for detailed breakdown!';},
+  'vendor|supplier|find|where': function(){return'<b>Top Verified Vendors — Bengaluru:</b>\n\n🏭 Suresh Kumar & Co. — Cement, Steel | Gandhi Nagar\n🏭 BuildRight Contracts — Civil Work | Rajajinagar\n👷 Karnataka Labour Hub — All Labour | Peenya\n🚜 Heavy Machinery Rentals — JCB, Crane | Bommasandra\n🔲 Horizon Tiles & Flooring — Tiles | Indiranagar\n\nAll GST verified. Go to <b>Marketplace</b> to compare rates!';},
+  'jcb|excavator|machine|crane|mixer': function(){return'<b>Machinery Rates — Bengaluru GBA:</b>\n\n🚜 JCB / Excavator: <b>₹2,500/hour</b>\n🏗️ Tower Crane: <b>₹18,000/day</b>\n🔄 Concrete Mixer: <b>₹1,200/day</b>\n🚛 Transit Mixer (6 cum): <b>₹4,500/trip</b>\n\nOperators included. Fuel extra for some equipment.';}
+};
+
+function getAnswer(q){
+  var ql=q.toLowerCase();
+  var keys=Object.keys(ANSWERS);
+  for(var i=0;i<keys.length;i++){
+    var k=keys[i];
+    if(k.split('|').some(function(kk){return ql.includes(kk);})) return ANSWERS[k](ql);
+  }
+  return 'I understand you\'re asking about: <b>"'+q+'"</b>\n\nI can help with:\n\n🧮 Material quantity calculations\n💰 Cost estimates (GBA/BBMP rates)\n🏭 Vendor recommendations in Bengaluru\n📋 BOQ generation advice\n\nTry asking: <i>"Cement for 1000 SFT slab"</i> or <i>"TMT steel rate today"</i>';
+}
+
+var chatInited=false;
+function initChat(){
+  var msgs=document.getElementById('chat-msgs');
+  if(!msgs||chatInited)return;
+  chatInited=true;
+  addAIMsg('👋 Hello! I\'m the BuildMitra AI Agent — your Bengaluru construction expert.\n\nI can help with:\n🧮 <b>Material calculations</b> — cement, steel, sand, bricks\n💰 <b>Cost estimates</b> — GBA/BBMP reference rates\n🏭 <b>Vendor finder</b> — verified Bengaluru suppliers\n📋 <b>BOQ guidance</b> — project cost breakdowns\n\nWhat can I help you build today?');
+}
+
+function addAIMsg(html){
+  var msgs=document.getElementById('chat-msgs');if(!msgs)return;
+  var d=document.createElement('div');d.className='cmsg cm-ai';
+  d.innerHTML=html.replace(/\n/g,'<br>');
+  msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;
+}
+
+function addUserMsg(text){
+  var msgs=document.getElementById('chat-msgs');if(!msgs)return;
+  var d=document.createElement('div');d.className='cmsg cm-user';d.textContent=text;
+  msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;
+}
+
+function sendMsg(){
+  var inp=document.getElementById('chat-inp');
+  if(!inp||!inp.value.trim())return;
+  var msg=inp.value.trim();inp.value='';
+  addUserMsg(msg);
+  qCount++;
+  var qc=document.getElementById('q-cnt');if(qc)qc.textContent=qCount;
+  var msgs=document.getElementById('chat-msgs');
+  var typing=document.createElement('div');typing.className='cmsg cm-ai';typing.id='typing';typing.textContent='🤔 Thinking...';typing.style.opacity='.6';
+  msgs.appendChild(typing);msgs.scrollTop=msgs.scrollHeight;
+  setTimeout(function(){
+    var t=document.getElementById('typing');if(t)t.remove();
+    addAIMsg(getAnswer(msg));
+  },600+Math.random()*600);
+}
+
+function quickMsg(q){
+  var page=document.getElementById('page-agent');
+  if(page&&!page.classList.contains('on')) goTab('agent');
+  initChat();
+  setTimeout(function(){
+    var inp=document.getElementById('chat-inp');if(inp){inp.value=q;sendMsg();}
+  },100);
+}
+
+function clearChat(){
+  var msgs=document.getElementById('chat-msgs');
+  if(msgs) msgs.innerHTML='';
+  chatInited=false;
+  qCount=0;var qc=document.getElementById('q-cnt');if(qc)qc.textContent=0;
+  initChat();
+}
+
+// ═══════════════════════════════════════════════════════════
+// ADMIN
+// ═══════════════════════════════════════════════════════════
+function adminTab(tab,el){
+  adminCurTab=tab;
+  document.querySelectorAll('.atab').forEach(function(t){t.classList.remove('on');});
+  el.classList.add('on');
+  renderAdmin();
+}
+
+function renderAdmin(){
+  var c=document.getElementById('admin-content');if(!c)return;
+  if(adminCurTab==='overview') c.innerHTML=adminOverview();
+  else if(adminCurTab==='vendors') c.innerHTML=adminVendors();
+  else if(adminCurTab==='buyers') c.innerHTML=adminBuyers();
+  else if(adminCurTab==='listings') c.innerHTML=adminListings();
+  else if(adminCurTab==='analytics') c.innerHTML=adminAnalytics();
+  else if(adminCurTab==='settings') c.innerHTML=adminSettings();
+}
+
+function adminOverview(){
+  return '<div class="sg g4" style="margin-bottom:16px">'
+    +'<div class="sc ca"><div class="slbl">Total Vendors</div><div class="sval">528</div><div class="ssub">GBA/BBMP area</div><div class="strend tu">↑ 12 new this week</div></div>'
+    +'<div class="sc ct"><div class="slbl">Total Buyers</div><div class="sval">2,140</div><div class="ssub">registered</div><div class="strend tu">↑ 34 this week</div></div>'
+    +'<div class="sc cgr"><div class="slbl">Active Listings</div><div class="sval">12,480</div><div class="ssub">verified</div><div class="strend tu">↑ 340 this week</div></div>'
+    +'<div class="sc cpu"><div class="slbl">Platform Revenue</div><div class="sval">₹2.8Cr</div><div class="ssub">all time</div><div class="strend tu">↑ 34% growth</div></div>'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">'
+    +'<div class="panel"><div class="ph"><div class="ptl">Recent Vendor Registrations</div></div><div class="ts"><table><thead><tr><th>Vendor</th><th>Type</th><th>City</th><th>Status</th></tr></thead><tbody>'
+    +[{n:'Mahesh Steel Traders',t:'Material Vendor',c:'Whitefield',s:'Pending'},{n:'Priya Sand Suppliers',t:'Material Vendor',c:'Hosur Road',s:'Approved'},{n:'Namma Labour Hub',t:'Labour',c:'Peenya',s:'Approved'},{n:'Sky High Cranes',t:'Machinery',c:'Bommasandra',s:'Pending'}]
+      .map(function(v){return'<tr><td style="font-weight:600">'+v.n+'</td><td><span class="pill" style="background:rgba(37,99,235,.07);color:var(--accent)">'+v.t+'</span></td><td style="font-size:11px;color:var(--t2)">'+v.c+'</span></td><td><span class="sb '+(v.s==='Approved'?'sbg':'sba')+'">'+v.s+'</span></td></tr>';}).join('')
+    +'</tbody></table></div></div>'
+    +'<div class="panel"><div class="ph"><div class="ptl">Today\'s Stats</div></div><div style="padding:14px">'
+    +[{l:'Enquiries Today',v:'86',c:'var(--purple)'},{l:'Quotes Sent',v:'54',c:'var(--accent)'},{l:'Orders Created',v:'21',c:'var(--teal)'},{l:'WhatsApp Messages',v:'312',c:'#25d366'},{l:'BOQ Generated',v:'43',c:'var(--amber)'},{l:'Pending Approvals',v:approvalData.filter(function(a){return a.status==='pending';}).length,c:'var(--red)'}]
+      .map(function(s){return'<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:.5px solid var(--border)"><span style="font-size:12px;color:var(--t2)">'+s.l+'</span><span style="font-size:16px;font-weight:800;color:'+s.c+';font-family:var(--mono)">'+s.v+'</span></div>';}).join('')
+    +'</div></div></div>';
+}
+
+function adminVendors(){
+  var vendors=[
+    {n:'Suresh Kumar & Co.',t:'Material Vendor',c:'Gandhi Nagar',pin:'560032',items:23,enq:18,rev:'₹4.2L',gstin:'29AAACS8888B1ZQ',status:'Active'},
+    {n:'BuildRight Contracts',t:'Contractor',c:'Rajajinagar',pin:'560010',items:12,enq:9,rev:'₹2.8L',gstin:'29BRCTS7777C2ZR',status:'Active'},
+    {n:'Karnataka Labour Hub',t:'Labour Supplier',c:'Peenya',pin:'560058',items:8,enq:22,rev:'₹1.5L',gstin:'29LABKH6666D3ZL',status:'Active'},
+    {n:'Heavy Machinery Rentals',t:'Machinery',c:'Bommasandra',pin:'560099',items:6,enq:7,rev:'₹6.8L',gstin:'29HMRNT5555E4ZM',status:'Active'},
+    {n:'Horizon Properties',t:'Real Estate',c:'Indiranagar',pin:'560038',items:4,enq:3,rev:'₹12L',gstin:'29HZPRO4444F5ZR',status:'Active'},
+    {n:'Mahesh Steel Traders',t:'Material Vendor',c:'Whitefield',pin:'560066',items:0,enq:0,rev:'₹0',gstin:'29MAHST1234A1ZB',status:'Pending'},
+  ];
+  return '<div class="panel"><div class="ts"></table><thead><tr><th>Vendor</th><th>Type</th><th>City·PIN</th><th>GSTIN</th><th>Items</th><th>Enquiries</th><th>Revenue</th><th>Status</th><th></th></tr></thead><tbody>'
+    +vendors.map(function(v){return'<tr><td style="font-weight:700">'+v.n+'</td><td><span class="pill" style="background:rgba(37,99,235,.07);color:var(--accent);font-size:9px">'+v.t+'</span></td><td style="font-size:11px;color:var(--t2)">'+v.c+' · '+v.pin+'</td><td><span class="chip cht">'+v.gstin+'</span></td><td style="font-family:var(--mono);text-align:right">'+v.items+'</td><td style="font-family:var(--mono);text-align:right">'+v.enq+'</td><td style="font-family:var(--mono);color:var(--teal);font-weight:700">'+v.rev+'</td><td><span class="sb '+(v.status==='Active'?'sbg':'sba')+'">'+v.status+'</span></td><td><button class="btn bg bxs" onclick="toast(\'View: '+v.n+'\',\'info\')">View</button></td></tr>';}).join('')
+    +'</tbody></table></div></div>';
+}
+
+function adminBuyers(){
+  var buyers=[{n:'Rajesh Constructions',loc:'Koramangala',enq:12,ord:5,spent:'₹8.4L',joined:'Jan 2025'},{n:'Priya Nair',loc:'HSR Layout',enq:6,ord:2,spent:'₹1.2L',joined:'Feb 2025'},{n:'Skyline Builders',loc:'Whitefield',enq:18,ord:9,spent:'₹22L',joined:'Oct 2024'},{n:'GreenHome Pvt Ltd',loc:'JP Nagar',enq:8,ord:4,spent:'₹5.6L',joined:'Dec 2024'},{n:'Mitra Projects',loc:'Hebbal',enq:14,ord:7,spent:'₹11L',joined:'Nov 2024'}];
+  return '<div class="panel"><div class="ts"><table><thead><tr><th>Buyer</th><th>Location</th><th>Enquiries</th><th>Orders</th><th>Spent</th><th>Joined</th><th></th></tr></thead><tbody>'
+    +buyers.map(function(b){return'<tr><td style="font-weight:700">'+b.n+'</td><td style="font-size:11px;color:var(--t2)">📍 '+b.loc+'</td><td style="font-family:var(--mono);text-align:right">'+b.enq+'</td><td style="font-family:var(--mono);text-align:right">'+b.ord+'</td><td style="font-family:var(--mono);color:var(--teal);font-weight:700">'+b.spent+'</td><td style="font-size:11px;color:var(--t3)">'+b.joined+'</td><td><button class="btn bg bxs" onclick="toast(\'View history\',\'info\')">History</button></td></tr>';}).join('')
+    +'</tbody></table></div></div>';
+}
+
+function adminListings(){
+  return '<div class="panel"><div class="ts"><table><thead><tr><th>Code</th><th>Item</th><th>Category</th><th>Type</th><th>GBA Rate ₹</th><th>UOM</th><th>GST%</th></tr></thead><tbody>'
+    +CATALOG.map(function(it){return'<td><span class="chip cht">'+it.code+'</span></td><td style="font-weight:600">'+it.name+'</td><td style="font-size:11px;color:var(--t2)">'+it.cat+'</td><td><span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;background:rgba(37,99,235,.07);color:var(--accent)">'+it.type+'</span></td><td style="font-family:var(--mono);font-weight:700;color:var(--teal);text-align:right">₹'+it.ref.toLocaleString()+'</td><td style="font-size:11px;color:var(--t2)">'+it.uom+'</td><td style="font-family:var(--mono);text-align:right">'+it.gst+'%</td></tr>';}).join('')
+    +'</tbody></table></div></div>';
+}
+
+function adminAnalytics(){
+  return '<div class="sg g4" style="margin-bottom:16px">'
+    +'<div class="sc ca"><div class="slbl">Enquiries/Month</div><div class="sval">1,240</div><div class="strend tu">↑ 23%</div></div>'
+    +'<div class="sc cgr"><div class="slbl">Orders/Month</div><div class="sval">486</div><div class="strend tu">↑ 18%</div></div>'
+    +'<div class="sc ct"><div class="slbl">Platform Revenue</div><div class="sval">₹28.4L</div><div class="strend tu">↑ 34%</div></div>'
+    +'<div class="sc cam"><div class="slbl">Avg Order Value</div><div class="sval">₹58.4K</div><div class="strend tu">↑ ₹4K</div></div>'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">'
+    +'<div class="panel"><div class="ph"><div class="ptl">Top Categories</div></div><div style="padding:14px">'
+    +[{cat:'Cement & Concrete',count:312,pct:100},{cat:'Steel & Metal',count:248,pct:79},{cat:'Labour & Services',count:186,pct:60},{cat:'Sand & Aggregates',count:149,pct:48},{cat:'Tiles & Flooring',count:124,pct:40},{cat:'Machinery',count:99,pct:32}]
+      .map(function(c){return'<div style="margin-bottom:11px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span>'+c.cat+'</span><span style="font-weight:700;color:var(--accent)">'+c.count+'</span></div><div style="height:6px;background:var(--bg);border-radius:3px;overflow:hidden"><div style="width:'+c.pct+'%;height:100%;background:linear-gradient(90deg,var(--accent),var(--teal));border-radius:3px"></div></div></div>';}).join('')
+    +'</div></div>'
+    +'<div class="panel"><div class="ph"><div class="ptl">Monthly Growth</div></div><div style="padding:14px">'
+    +[{m:'Nov 2024',enq:486,rev:'₹18.2L'},{m:'Dec 2024',enq:612,rev:'₹22.4L'},{m:'Jan 2025',enq:724,rev:'₹24.8L'},{m:'Feb 2025',enq:810,rev:'₹26.2L'},{m:'Mar 2025',enq:968,rev:'₹27.8L'},{m:'Apr 2025',enq:1240,rev:'₹28.4L'}]
+      .map(function(m){return'<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:.5px solid var(--border)"><span style="font-size:12px;font-weight:600">'+m.m+'</span><span style="font-size:11px;color:var(--t2)">'+m.enq+' enquiries</span><span style="font-family:var(--mono);font-weight:700;color:var(--teal)">'+m.rev+'</span></div>';}).join('')
+    +'</div></div></div>';
+}
+
+function adminSettings(){
+  return '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">'
+    +'<div class="panel"><div class="ph"><div class="ptl">Platform Settings</div></div><div style="padding:16px">'
+    +[{l:'Platform Name',v:'BuildMitra'},{l:'WhatsApp',v:'+91 76769 42386'},{l:'Admin Email',v:'admin@buildmitra.com'},{l:'GST Number',v:'29XXXXX0000X1ZX'},{l:'City / Area',v:'Bengaluru · GBA/BBMP'}]
+      .map(function(s){return'<div class="fgrp" style="margin-bottom:12px"><label>'+s.l+'</label><input type="text" class="fi" value="'+s.v+'" style="padding:8px 11px;font-size:13px"></div>';}).join('')
+    +'<button class="btn bp" style="width:100%;justify-content:center" onclick="toast(\'Settings saved!\',\'ok\')">Save Settings</button>'
+    +'</div></div>'
+    +'<div class="panel"><div class="ph"><div class="ptl">GBA/BBMP Rate Management</div></div><div style="padding:16px">'
+    +'<div style="font-size:12px;color:var(--t2);margin-bottom:12px">Update reference rates for all vendors</div>'
+    +[{item:'OPC Cement',cur:'₹400/bag'},{item:'TMT 8mm Fe-500',cur:'₹68/KG'},{item:'M-Sand',cur:'₹55/CFT'},{item:'Mason Labour',cur:'₹850/day'},{item:'JCB Excavator',cur:'₹2,500/hr'}]
+      .map(function(r){return'<div style="display:flex;align-items:center;gap:8px;margin-bottom:9px"><span style="flex:1;font-size:12px;font-weight:600">'+r.item+'</span><input type="text" class="fi" value="'+r.cur+'" style="width:110px;padding:6px 9px;font-size:12px"><button class="btn bt bxs" onclick="toast(\'Rate updated!\',\'ok\')">Update</button></div>';}).join('')
+    +'<button class="btn bp bsm" style="width:100%;justify-content:center;margin-top:8px" onclick="toast(\'All rates updated!\',\'ok\')">Update All Rates</button>'
+    +'</div></div></div>';
+}
+
+// ═══════════════════════════════════════════════════════════
+// APPROVALS
+// ═══════════════════════════════════════════════════════════
+function getDefaultApprovals(){
+  return [
+    {id:'AP-001',type:'vendor',name:'Mahesh Steel Traders',detail:'New vendor registration · Steel & Metal supplier',status:'pending',date:'Apr 22',gstin:'29MAHST1234A1ZB',phone:'919876055555'},
+    {id:'AP-002',type:'kyc',name:'BuildRight Contracts',detail:'KYC document upload — GST Certificate',status:'pending',date:'Apr 22',gstin:'29BRCTS7777C2ZR',phone:'918765432109'},
+    {id:'AP-003',type:'listing',name:'Priya Sand Suppliers',detail:'52 new listings uploaded via CSV bulk upload',status:'pending',date:'Apr 21',gstin:'29PRIYA5678B2ZC',phone:'917654321098'},
+    {id:'AP-004',type:'rate',name:'Suresh Kumar & Co.',detail:'Rate change: OPC Cement ₹400 → ₹420/bag',status:'pending',date:'Apr 21',gstin:'29AAACS8888B1ZQ',phone:'919876543210'},
+    {id:'AP-005',type:'vendor',name:'Karnataka Labour Hub',detail:'New vendor registration · Labour & Services',status:'pending',date:'Apr 20',gstin:'29LABKH6666D3ZL',phone:'917654321098'},
+    {id:'AP-006',type:'listing',name:'Horizon Properties',detail:'8 new Real Estate listings uploaded',status:'approved',date:'Apr 20',gstin:'29HZPRO4444F5ZR',phone:'915432109876'},
+    {id:'AP-007',type:'kyc',name:'Heavy Machinery Rentals',detail:'GST Certificate verified successfully',status:'approved',date:'Apr 19',gstin:'29HMRNT5555E4ZM',phone:'916543210987'},
+  ];
+}
+
+function renderApprovals(){
+  var list=document.getElementById('ap-list');if(!list)return;
+  var pending=approvalData.filter(function(a){return a.status==='pending';}).length;
+  var ap=document.getElementById('ap-pend');if(ap)ap.textContent=pending;
+  var filtered=apCurFilter==='all'?approvalData:approvalData.filter(function(a){return a.type===apCurFilter;});
+  list.innerHTML=filtered.map(function(a){
+    var typeColor={vendor:'sbb',listing:'sbp',rate:'sba',kyc:'sbt'}[a.type]||'sbb';
+    var statusClass={pending:'sba',approved:'sbg',rejected:'sbr'}[a.status]||'sba';
+    return '<div class="acard '+a.status+'">'
+      +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap">'
+      +'<div>'
+      +'<div style="display:flex;align-items:center;gap:7px;margin-bottom:5px"><span class="chip chb">'+a.id+'</span><span class="sb '+typeColor+'">'+a.type.toUpperCase()+'</span><span style="font-size:11px;color:var(--t3)">'+a.date+'</span></div>'
+      +'<div style="font-size:13px;font-weight:700;color:var(--text)">'+a.name+'</div>'
+      +'<div style="font-size:12px;color:var(--t2);margin-top:3px">'+a.detail+'</div>'
+      +'<div style="font-size:11px;color:var(--t3);margin-top:4px">GSTIN: '+a.gstin+' · 📞 +'+a.phone+'</div>'
+      +'</div>'
+      +'<span class="sb '+statusClass+'">'+{pending:'⏳ Pending',approved:'✅ Approved',rejected:'❌ Rejected'}[a.status]+'</span>'
+      +'</div>'
+      +(a.status==='pending'?'<div style="display:flex;gap:7px;margin-top:10px;flex-wrap:wrap">'
+        +'<button class="btn bgr bsm" onclick="doApproval(\''+a.id+'\',\'approved\')">✅ Approve</button>'
+        +'<button class="btn br bsm" onclick="doApproval(\''+a.id+'\',\'rejected\')">❌ Reject</button>'
+        +'<button class="btn bwa bsm" onclick="window.open(\'https://wa.me/'+a.phone+'?text='+encodeURIComponent('Hi '+a.name+', your BuildMitra registration is under review. We will update you shortly.')+'\',\'_blank\')">💬 WhatsApp</button>'
+        +'<button class="btn bg bsm" onclick="toast(\'Viewing docs for '+a.name+'\',\'info\')">📄 View Docs</button>'
+        +'</div>':'')
+      +'</div>';
+  }).join('');
+}
+
+function apFilter(f,el){
+  apCurFilter=f;
+  document.querySelectorAll('#ap-filter-btns .btn').forEach(function(b){b.className='btn bg bsm';});
+  el.className='btn bp bsm';
+  renderApprovals();
+}
+
+function doApproval(id,status){
+  var a=approvalData.find(function(x){return x.id===id;});if(!a)return;
+  a.status=status;lsSet('bm_approvals',approvalData);renderApprovals();
+  toast(a.name+' '+(status==='approved'?'approved ✅':'rejected ❌'),'ok');
+}
+
+function approveAll(){
+  approvalData.filter(function(a){return a.status==='pending';}).forEach(function(a){a.status='approved';});
+  lsSet('bm_approvals',approvalData);renderApprovals();toast('All pending approvals approved ✅','ok');
+}
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', function(){
+  // Load from localStorage
+  vendorRows = lsGet('bm_vrows', CATALOG.map(function(r){return Object.assign({},r,{rate:'',stock:''});}));
+  boqItems   = lsGet('bm_boq', []);
+  drawings   = lsGet('bm_dwgs', []);
+  layoutRooms= lsGet('bm_layout', []);
+  approvalData = lsGet('bm_approvals', getDefaultApprovals());
+
+  // Modal close on overlay click
+  document.querySelectorAll('.mo').forEach(function(m){
+    m.addEventListener('click', function(e){ if(e.target===m) m.classList.remove('on'); });
+  });
+
+  // Restore loc data
+  var loc=lsGet('bm_loc',{});
+  ['pin','city','state','lead'].forEach(function(k){
+    var el=document.getElementById('v-'+k);
+    if(el&&loc[k]) el.value=loc[k];
+  });
+
+  // Init calculator form
+  var cf=document.getElementById('calc-form');
+  if(cf) cf.innerHTML='<div style="font-size:11px;font-weight:700;color:var(--t3);margin:10px 0 8px;text-transform:uppercase;letter-spacing:.07em">Dimensions</div>'+CALC_FORMS['slab'];
+
+  // Render BOQ if items exist
+  if(boqItems.length) renderBOQ();
+});
+</script>
+</body>
+</html>

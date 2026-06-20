@@ -1,0 +1,24 @@
+// Add this to supplier-dashboard.tsx - handle blank state
+// In the renderOverview function, add check for empty data
+
+// If supplierInfo is empty or has isNewUser flag, show welcome message
+if (supplierInfo.isNewUser || !supplierInfo.shopName) {
+  return React.createElement("div", { style: styles.card },
+    React.createElement("div", { style: { textAlign: "center", padding: "40px" } },
+      React.createElement("div", { style: { fontSize: "60px" } }, "👋"),
+      React.createElement("h2", null, "Welcome to Your Supplier Dashboard!"),
+      React.createElement("p", null, "Get started by setting up your business profile:"),
+      React.createElement("div", { style: { display: "flex", gap: "12px", justifyContent: "center", marginTop: "20px", flexWrap: "wrap" } },
+        React.createElement("button", { onClick: () => setActiveTab("products"), style: styles.button }, "📦 Add Products"),
+        React.createElement("label", { style: { ...styles.buttonInfo, cursor: "pointer", padding: "10px 20px" } },
+          "📸 Upload Shop Photo",
+          React.createElement("input", { type: "file", accept: "image/*", onChange: handleShopPhotoUpload, style: { display: "none" } })
+        ),
+        React.createElement("label", { style: { ...styles.buttonInfo, cursor: "pointer", padding: "10px 20px" } },
+          "📇 Upload Business Card",
+          React.createElement("input", { type: "file", accept: "image/*", onChange: handleBusinessCardUpload, style: { display: "none" } })
+        )
+      )
+    )
+  );
+}
