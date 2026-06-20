@@ -1,9 +1,9 @@
 import React from "react";
 import Sidebar from "../components/Sidebar";
-import OriginalDashboard from "./' + $d.file + '";
+import OriginalDashboard from "./realestate-dashboard";
 
-export default function DashboardWithSidebar() {
-  return React.createElement(Sidebar, { currentPath: "/' + $d.name + '-dashboard" },
+export default function RealestateWithSidebar() {
+  return React.createElement(Sidebar, { currentPath: "/realestate-dashboard" },
     React.createElement(OriginalDashboard, null)
   );
 }
