@@ -273,15 +273,22 @@ export default function Sidebar({ children, currentPath }) {
   const [mounted, setMounted] = useState(false);
 const [userName, setUserName] = useState("Guest");
 const [userRole, setUserRole] = useState("Contractor");
+const [uniqueCode, setUniqueCode] = useState("");
 
 useEffect(() => {
   setMounted(true);
 
   const storedName = localStorage.getItem("userName");
   const storedRole = localStorage.getItem("userRole");
+  const storedCode = localStorage.getItem("uniqueCode");
+  let sessionUser: any = null;
+  try {
+    sessionUser = JSON.parse(localStorage.getItem("loggedInUser") || "null");
+  } catch {}
 
-  if (storedName) setUserName(storedName);
-  if (storedRole) setUserRole(storedRole);
+  if (storedName || sessionUser?.name) setUserName(storedName || sessionUser.name);
+  if (storedRole || sessionUser?.role) setUserRole(storedRole || sessionUser.role);
+  if (storedCode || sessionUser?.uniqueCode) setUniqueCode(storedCode || sessionUser.uniqueCode);
 }, []);
 
 if (!mounted) {
@@ -322,6 +329,18 @@ return (
           <div style={styles.userInfo}>
             <div style={styles.userAvatar}>👤</div>
             <div>
+              {uniqueCode && (
+                <div style={{ fontSize: "11px", color: "#ffb366", marginBottom: "3px" }}>
+                  {uniqueCode}
+                  <button
+                    type="button"
+                    onClick={() => navigator.clipboard?.writeText(uniqueCode)}
+                    style={{ marginLeft: "6px", padding: "1px 5px", fontSize: "9px", cursor: "pointer", borderRadius: "4px", border: 0 }}
+                  >
+                    Copy
+                  </button>
+                </div>
+              )}
               <div style={styles.userName}>{userName}</div>
               <div style={styles.userRole}>{userRole.toUpperCase()}</div>
             </div>

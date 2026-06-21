@@ -22,6 +22,7 @@ const PROJECT_ARRAY_FIELDS = [
 ];
 
 export const DEFAULT_PROJECT_PERMISSIONS = {
+  projectSummary: true,
   milestones: true,
   inventory: true,
   labour: true,

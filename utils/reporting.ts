@@ -7,9 +7,9 @@ export const exportProjectReport = (reportType: string, project: any, rows: any[
     ["Report Type", reportType],
     ["Project Name", project?.name || project?.projectName || "All Projects"],
     ["Project ID", project?.projectId || project?.projectUniqueId || project?.id || "-"],
-    ["Buyer", `${project?.buyerName || "-"}${project?.buyerCode ? ` (${project.buyerCode})` : ""}`],
-    ["Contractor", `${project?.contractorName || "-"}${project?.contractorCode ? ` (${project.contractorCode})` : ""}`],
-    ["Date Generated", generated],
+    ["Buyer Code", project?.buyerCode || "-"],
+    ["Contractor Code", project?.contractorCode || "-"],
+    ["Generated Date", generated],
     []
   ];
   const worksheet = XLSX.utils.aoa_to_sheet(metadata);

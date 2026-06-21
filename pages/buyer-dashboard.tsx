@@ -29,7 +29,7 @@ export default function BuyerDashboard() {
   const [paymentReference, setPaymentReference] = useState("");
   const [paymentRemarks, setPaymentRemarks] = useState("");
   const [reportType, setReportType] = useState("milestones");
-  const [reportFilters, setReportFilters] = useState({ startDate: "", endDate: "", projectId: "", supplier: "", contractor: "", material: "", labourName: "", role: "", payment: "", milestone: "", extraWork: "" });
+  const [reportFilters, setReportFilters] = useState({ startDate: "", endDate: "", projectId: "", supplier: "", contractor: "", material: "", labourName: "", role: "", payment: "", milestone: "", quotation: "", extraWork: "" });
   const [mediaFile, setMediaFile] = useState(null);
   const [mediaTitle, setMediaTitle] = useState("");
   const [mediaType, setMediaType] = useState("photo");
@@ -457,7 +457,7 @@ export default function BuyerDashboard() {
     setMediaPreview(null); 
     setMediaType("photo"); 
     setShowMediaModal(false);
-    alert("File selected successfully. Full cloud upload will be enabled after backend storage integration.");
+    alert("Cloud upload pending; file metadata saved.");
   };
 
   const addExtraWork = () => {
@@ -612,7 +612,7 @@ export default function BuyerDashboard() {
         Supplier: i.supplier 
       }));
     } else if (reportType === "quotations") {
-      data = projectQuotations.map((q: any) => ({ QuoteNo: q.quoteNo, Project: q.projectName, Date: q.date, Description: q.description, Amount: q.amount, Status: q.status, Remarks: q.remarks }));
+      data = projectQuotations.filter((q: any) => !reportFilters.quotation || String(q.quoteNo || q.description || "").toLowerCase().includes(reportFilters.quotation.toLowerCase())).map((q: any) => ({ QuoteNo: q.quoteNo, Project: q.projectName, Date: q.date, Description: q.description, Amount: q.amount, Status: q.status, Remarks: q.remarks }));
     } else if (reportType === "attendance") {
       data = (selectedProjectData?.labourAttendance || []).map((entry: any) => {
         const labour = projectLabour.find((item: any) => String(item.id) === String(entry.labourId));
@@ -705,7 +705,7 @@ export default function BuyerDashboard() {
   ];
 
   const visibleTabs = tabs.filter((tab) => {
-    const permissionByTab = { milestones: "milestones", payments: "payments", inventory: "inventory", progress: "siteMedia", labour: "labour", quotations: "quotations", reports: "reports" };
+    const permissionByTab = { dashboard: "projectSummary", projects: "projectSummary", milestones: "milestones", payments: "payments", inventory: "inventory", progress: "siteMedia", labour: "labour", quotations: "quotations", reports: "reports" };
     const permission = permissionByTab[tab.id];
     return !permission || projectPermissions[permission] !== false;
   });
@@ -750,6 +750,7 @@ export default function BuyerDashboard() {
             React.createElement("div", null,
               React.createElement("div", { style: { fontSize: "24px", fontWeight: "bold", color: "#800020" } }, selectedProjectData.name),
               React.createElement("div", null, React.createElement("strong", null, "Plot:"), " ", selectedProjectData.plotLength, "' x ", selectedProjectData.plotWidth, "'"),
+              React.createElement("div", null, React.createElement("strong", null, "Plot Area:"), " ", Number(selectedProjectData.plotArea || (Number(selectedProjectData.plotLength || 0) * Number(selectedProjectData.plotWidth || 0))).toLocaleString(), " sq.ft"),
               React.createElement("div", null, React.createElement("strong", null, "Floors:"), " ", selectedProjectData.floors),
               React.createElement("div", null, React.createElement("strong", null, "BUA:"), " ", selectedProjectData.bua?.toLocaleString(), " sq.ft")
             ),
@@ -821,7 +822,11 @@ export default function BuyerDashboard() {
           React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" } },
             React.createElement("div", null,
               React.createElement("h3", { style: { margin: 0 } }, p.name),
-              React.createElement("p", { style: { margin: "8px 0 0", fontSize: "13px", color: "#666" } }, p.contractorName, " | ", p.bua, " sq.ft")
+              React.createElement("p", { style: { margin: "8px 0 0", fontSize: "13px", color: "#666" } }, p.contractorName, " | Project ID: ", p.projectId || p.projectUniqueId),
+              React.createElement("p", { style: { margin: "4px 0", fontSize: "12px", color: "#666" } },
+                "Plot Area: ", Number(p.plotArea || (Number(p.plotLength || 0) * Number(p.plotWidth || 0))).toLocaleString(), " sq.ft | BUA: ", Number(p.bua || 0).toLocaleString(), " sq.ft | Floors: ", p.floors || 0
+              ),
+              React.createElement("p", { style: { margin: "4px 0", fontSize: "12px", color: "#666" } }, "Rate: ₹", Number(p.ratePerSft || 0).toLocaleString(), "/sq.ft | Total: ₹", Number(p.totalAmount || 0).toLocaleString())
             ),
             React.createElement("div", null,
               React.createElement("div", { style: { fontSize: "24px", fontWeight: "bold", color: "#800020" } }, p.progress, "%"),
@@ -890,8 +895,8 @@ export default function BuyerDashboard() {
         React.createElement("thead", null,
           React.createElement("tr", null,
             React.createElement("th", { style: styles.th }, "Date"), React.createElement("th", { style: styles.th }, "Milestone"),
-            React.createElement("th", { style: styles.th }, "Amount"), React.createElement("th", { style: styles.th }, "Cumulative Paid"),
-            React.createElement("th", { style: styles.th }, "Balance"), React.createElement("th", { style: styles.th }, "Cheque/UTR")
+            React.createElement("th", { style: styles.th }, "Paid Amount"), React.createElement("th", { style: styles.th }, "Mode"),
+            React.createElement("th", { style: styles.th }, "Reference"), React.createElement("th", { style: styles.th }, "Remarks"), React.createElement("th", { style: styles.th }, "Status")
           )
         ),
         React.createElement("tbody", null,
@@ -902,12 +907,13 @@ export default function BuyerDashboard() {
               React.createElement("td", { style: styles.td }, p.paidDate || p.date),
               React.createElement("td", { style: styles.td }, p.milestoneName),
               React.createElement("td", { style: styles.td }, "₹", (p.amount/1000).toFixed(0), "K"),
-              React.createElement("td", { style: styles.td }, "₹", (cumulative/100000).toFixed(2), "L"),
-              React.createElement("td", { style: styles.td }, "₹", (remaining/100000).toFixed(2), "L"),
-              React.createElement("td", { style: styles.td }, p.status, p.chequeNo || p.utrNo ? ` / ${p.chequeNo || p.utrNo}` : "")
+              React.createElement("td", { style: styles.td }, p.paymentMode || (p.status === "Paid" ? "Recorded" : "Not paid")),
+              React.createElement("td", { style: styles.td }, p.paymentReference || p.chequeNo || p.utrNo || "Not available"),
+              React.createElement("td", { style: styles.td }, p.paymentRemarks || (p.status === "Paid" ? "Payment recorded" : "Awaiting payment")),
+              React.createElement("td", { style: styles.td }, p.status || "Not Due")
             );
           }),
-          projectPayments.length === 0 && React.createElement("tr", null, React.createElement("td", { colSpan: 6, style: { textAlign: "center", padding: "40px" } }, "No payments recorded yet"))
+          projectPayments.length === 0 && React.createElement("tr", null, React.createElement("td", { colSpan: 7, style: { textAlign: "center", padding: "40px" } }, "No payments recorded yet"))
         )
       )
     );
@@ -1127,16 +1133,17 @@ export default function BuyerDashboard() {
     React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: "10px" } },
       React.createElement("input", { placeholder: "Payment status", value: reportFilters.payment, onChange: (e) => setReportFilters({...reportFilters, payment: e.target.value}), style: styles.input }),
       React.createElement("input", { placeholder: "Milestone", value: reportFilters.milestone, onChange: (e) => setReportFilters({...reportFilters, milestone: e.target.value}), style: styles.input }),
+      React.createElement("input", { placeholder: "Quotation", value: reportFilters.quotation, onChange: (e) => setReportFilters({...reportFilters, quotation: e.target.value}), style: styles.input }),
       React.createElement("input", { placeholder: "Extra / correction work", value: reportFilters.extraWork, onChange: (e) => setReportFilters({...reportFilters, extraWork: e.target.value}), style: styles.input })
     ),
     React.createElement("button", { onClick: () => setShowReportModal(true), style: { ...styles.button, marginTop: "16px" } }, "Generate Report")
   );
 
   const renderContent = () => {
-    const permissionByTab = { milestones: "milestones", payments: "payments", inventory: "inventory", progress: "siteMedia", labour: "labour", quotations: "quotations", reports: "reports" };
+    const permissionByTab = { dashboard: "projectSummary", projects: "projectSummary", milestones: "milestones", payments: "payments", inventory: "inventory", progress: "siteMedia", labour: "labour", quotations: "quotations", reports: "reports" };
     const requiredPermission = permissionByTab[activeTab];
     if (requiredPermission && projectPermissions[requiredPermission] === false) {
-      return React.createElement("div", { style: styles.card }, "This section is not shared for the selected project.");
+      return React.createElement("div", { style: styles.card }, "Contractor has not enabled this section for your view.");
     }
     switch(activeTab) {
       case "dashboard": return renderDashboard();

@@ -56,9 +56,10 @@ export default function Login() {
       supplier: "SUP",
       contractor: "CON",
       buyer: "BUY",
-      machinery: "MCH",
+      machinery: "MAC",
       labour: "LAB",
-      realestate: "REL"
+      realestate: "REA",
+      admin: "ADM"
     };
     const codePrefix = prefix[role] || "USR";
     const existingCodes = new Set(
@@ -257,6 +258,10 @@ export default function Login() {
     });
     
     if (user) {
+      if (!user.uniqueCode) {
+        user.uniqueCode = generateUniqueCode(user.role, users);
+        localStorage.setItem("users", JSON.stringify(users));
+      }
       const loggedInUser = {
         userId: user.userId,
         uniqueCode: user.uniqueCode,
@@ -270,6 +275,7 @@ export default function Login() {
       localStorage.setItem("loggedInUser", JSON.stringify(loggedInUser));
       localStorage.setItem("userName", user.name);
       localStorage.setItem("userRole", user.role);
+      localStorage.setItem("uniqueCode", user.uniqueCode);
       sessionStorage.setItem("justLoggedIn", "true");
       
       setSuccess(`✅ Login successful! Welcome ${user.name}!`);
@@ -358,11 +364,14 @@ export default function Login() {
     
     users.push(newUser);
     localStorage.setItem("users", JSON.stringify(users));
+    localStorage.setItem("userName", newUser.name);
+    localStorage.setItem("userRole", newUser.role);
+    localStorage.setItem("uniqueCode", uniqueCode);
     
     // Reset dashboard data
     resetUserData(userId, formData.name.trim(), formData.phone.trim(), uniqueCode, formData.role);
     
-    setSuccess(`✅ Registration successful! Welcome ${formData.name}! (Code: ${uniqueCode}) Please login to continue.`);
+    setSuccess(`Registration successful. Your code is ${uniqueCode}. Share this code only with the contractor you want to give project view access.`);
     setRegisteredCode(uniqueCode);
     setLoading(false);
     
