@@ -17,8 +17,20 @@ const PROJECT_ARRAY_FIELDS = [
   "labourAttendance",
   "payments",
   "siteMedia",
-  "extraWorks"
+  "extraWorks",
+  "quotations"
 ];
+
+export const DEFAULT_PROJECT_PERMISSIONS = {
+  projectSummary: true,
+  milestones: true,
+  inventory: true,
+  labour: true,
+  siteMedia: true,
+  payments: true,
+  reports: true,
+  quotations: true
+};
 
 const readArray = (key: string): any[] => {
   if (typeof window === "undefined") return [];
@@ -27,6 +39,70 @@ const readArray = (key: string): any[] => {
     return Array.isArray(value) ? value : [];
   } catch {
     return [];
+  }
+};
+
+const normalizeMediaRecord = (media: any, projectId: string) => {
+  const metadata = media || {};
+  const uploadDate = metadata.uploadDate || metadata.date || new Date().toISOString();
+  const description = metadata.description || metadata.title || "";
+  const mediaType = metadata.mediaType || metadata.type || metadata.category || "document";
+  return {
+    id: metadata.id || `MEDIA-${Date.now()}`,
+    fileName: metadata.fileName || metadata.title || "Site media",
+    fileSize: Number(metadata.fileSize || 0),
+    fileType: metadata.fileType || metadata.mimeType || "",
+    uploadDate,
+    description,
+    mediaType,
+    projectId: metadata.projectId || projectId,
+    // Lightweight compatibility fields used by the existing galleries and invoice list.
+    type: mediaType,
+    title: description || metadata.fileName || "Site media",
+    category: metadata.category || (mediaType === "document" ? "document" : "progress"),
+    date: String(uploadDate).split("T")[0],
+    uploadedBy: metadata.uploadedBy || "Contractor",
+    milestoneName: metadata.milestoneName,
+    amount: metadata.amount
+  };
+};
+
+const compactLegacyMediaPayloads = () => {
+  ["sharedProjects", "contractorProjects"].forEach((key) => {
+    const projects = readArray(key);
+    if (!projects.length) return;
+    const compacted = projects.map((project) => {
+      const projectId = String(project?.projectUniqueId || project?.projectId || project?.id || "");
+      const sourceMedia = Array.isArray(project?.siteMedia) ? project.siteMedia : Array.isArray(project?.media) ? project.media : [];
+      return {
+        ...project,
+        siteMedia: sourceMedia.map((media: any) => normalizeMediaRecord(media, projectId)),
+        media: undefined
+      };
+    });
+    try {
+      localStorage.setItem(key, JSON.stringify(compacted));
+    } catch {}
+  });
+};
+
+const saveCanonicalProjects = (projects: any[]) => {
+  try {
+    localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(projects));
+    window.dispatchEvent(new Event("buildmitraProjectsUpdated"));
+    return true;
+  } catch (error) {
+    compactLegacyMediaPayloads();
+    try {
+      localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(projects));
+      window.dispatchEvent(new Event("buildmitraProjectsUpdated"));
+      return true;
+    } catch (retryError) {
+      console.error("BuildMitra project save failed", retryError || error);
+      window.alert("Unable to save project updates because browser storage is full. Site files are saved as metadata only; please remove old browser data or try again.");
+      window.dispatchEvent(new CustomEvent("buildmitraProjectsSaveFailed"));
+      return false;
+    }
   }
 };
 
@@ -39,6 +115,12 @@ export const normalizeProjectRecord = (project: any) => {
       normalized[field] = [];
     }
   });
+  const normalizedProjectId = String(normalized.projectUniqueId || normalized.projectId || normalized.id || "");
+  normalized.siteMedia = normalized.siteMedia.map((media: any) => normalizeMediaRecord(media, normalizedProjectId));
+  normalized.permissions = {
+    ...DEFAULT_PROJECT_PERMISSIONS,
+    ...(normalized.permissions || {})
+  };
   return normalized;
 };
 
@@ -81,6 +163,8 @@ export const getAllProjects = (): any[] =>
 
 export const migrateLegacyProjects = (user: BuildMitraUser | null): any[] => {
   if (typeof window === "undefined" || !user) return getAllProjects();
+
+  compactLegacyMediaPayloads();
 
   const markerKey = migrationMarkerKey(user);
   if (localStorage.getItem(markerKey) === "complete") {
@@ -126,8 +210,11 @@ export const migrateLegacyProjects = (user: BuildMitraUser | null): any[] => {
   }
 
   canonical = canonical.map(normalizeProjectRecord);
-  localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(canonical));
-  localStorage.setItem(markerKey, "complete");
+  if (saveCanonicalProjects(canonical)) {
+    try {
+      localStorage.setItem(markerKey, "complete");
+    } catch {}
+  }
   return canonical;
 };
 
@@ -143,8 +230,7 @@ export const saveProjectsForContractor = (
     ...otherProjects,
     ...contractorProjects.map(normalizeProjectRecord)
   ];
-  localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(nextProjects));
-  window.dispatchEvent(new Event("buildmitraProjectsUpdated"));
+  saveCanonicalProjects(nextProjects);
   return nextProjects;
 };
 
@@ -154,8 +240,7 @@ export const saveProjectsForBuyer = (buyerCode: string, buyerProjects: any[]) =>
     (project) => String(project.buyerCode || "").toUpperCase() !== normalizedBuyerCode
   );
   const nextProjects = [...otherProjects, ...buyerProjects.map(normalizeProjectRecord)];
-  localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(nextProjects));
-  window.dispatchEvent(new Event("buildmitraProjectsUpdated"));
+  saveCanonicalProjects(nextProjects);
   return nextProjects;
 };
 

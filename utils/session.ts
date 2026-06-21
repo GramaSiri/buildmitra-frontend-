@@ -1,4 +1,4 @@
-const SESSION_KEYS = ["loggedInUser", "userRole", "userName", "justLoggedIn"];
+const SESSION_KEYS = ["loggedInUser", "userRole", "userName", "uniqueCode", "justLoggedIn"];
 
 export const clearBuildMitraSession = () => {
   if (typeof window === "undefined") return;
