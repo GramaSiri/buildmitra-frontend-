@@ -32,6 +32,17 @@ export const DEFAULT_PROJECT_PERMISSIONS = {
   quotations: true
 };
 
+export const PRIVATE_PROJECT_PERMISSIONS = {
+  projectSummary: false,
+  milestones: false,
+  inventory: false,
+  labour: false,
+  siteMedia: false,
+  payments: false,
+  reports: false,
+  quotations: false
+};
+
 const readArray = (key: string): any[] => {
   if (typeof window === "undefined") return [];
   try {
@@ -117,10 +128,14 @@ export const normalizeProjectRecord = (project: any) => {
   });
   const normalizedProjectId = String(normalized.projectUniqueId || normalized.projectId || normalized.id || "");
   normalized.siteMedia = normalized.siteMedia.map((media: any) => normalizeMediaRecord(media, normalizedProjectId));
-  normalized.permissions = {
-    ...DEFAULT_PROJECT_PERMISSIONS,
-    ...(normalized.permissions || {})
-  };
+  const hasBuyerCode = Boolean(String(normalized.buyerCode || "").trim());
+  const isLegacyBuyerLink = normalized.sharedWithBuyer == null && hasBuyerCode;
+  normalized.sharedWithBuyer = normalized.sharedWithBuyer === true || isLegacyBuyerLink;
+  normalized.permissions = !normalized.sharedWithBuyer
+    ? { ...PRIVATE_PROJECT_PERMISSIONS }
+    : isLegacyBuyerLink
+      ? { ...DEFAULT_PROJECT_PERMISSIONS, ...(normalized.permissions || {}) }
+      : { ...PRIVATE_PROJECT_PERMISSIONS, ...(normalized.permissions || {}) };
   return normalized;
 };
 

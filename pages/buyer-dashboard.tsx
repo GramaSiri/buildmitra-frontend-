@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { exportProjectReport } from "../utils/reporting";
-import { DEFAULT_PROJECT_PERMISSIONS, getLoggedInUser, migrateLegacyProjects, saveProjectsForBuyer } from "../utils/projectStorage";
+import { PRIVATE_PROJECT_PERMISSIONS, getLoggedInUser, migrateLegacyProjects, saveProjectsForBuyer } from "../utils/projectStorage";
 import { logoutToLogin } from "../utils/session";
 
 export default function BuyerDashboard() {
@@ -151,7 +151,8 @@ export default function BuyerDashboard() {
         return;
       }
       const assigned = migrateLegacyProjects(user).filter(
-        (project) => String(project.buyerCode || "").toUpperCase() === String(user.uniqueCode || "").toUpperCase()
+        (project) => project.sharedWithBuyer === true &&
+          String(project.buyerCode || "").toUpperCase() === String(user.uniqueCode || "").toUpperCase()
       );
       setProjects(assigned);
       setSelectedProject((current) => assigned.some((project) => project.id === current) ? current : assigned[0]?.id ?? null);
@@ -201,7 +202,7 @@ export default function BuyerDashboard() {
   const projectExtraWorks = selectedProjectData?.extraWorks || [];
   const projectLabour = selectedProjectData?.labour || [];
   const projectQuotations = selectedProjectData?.quotations || [];
-  const projectPermissions = { ...DEFAULT_PROJECT_PERMISSIONS, ...(selectedProjectData?.permissions || {}) };
+  const projectPermissions = { ...PRIVATE_PROJECT_PERMISSIONS, ...(selectedProjectData?.permissions || {}) };
   console.log("Selected Project", selectedProjectData);
   console.log("Labour Data", projectLabour);
   
@@ -705,7 +706,8 @@ export default function BuyerDashboard() {
   ];
 
   const visibleTabs = tabs.filter((tab) => {
-    const permissionByTab = { dashboard: "projectSummary", projects: "projectSummary", milestones: "milestones", payments: "payments", inventory: "inventory", progress: "siteMedia", labour: "labour", quotations: "quotations", reports: "reports" };
+    if (!selectedProjectData) return tab.id === "dashboard";
+    const permissionByTab = { dashboard: "projectSummary", projects: "projectSummary", milestones: "milestones", payments: "payments", inventory: "inventory", progress: "siteMedia", extrawork: "reports", labour: "labour", quotations: "quotations", reports: "reports" };
     const permission = permissionByTab[tab.id];
     return !permission || projectPermissions[permission] !== false;
   });
@@ -810,7 +812,7 @@ export default function BuyerDashboard() {
         )
       )
     ) : React.createElement("div", { style: styles.card }, 
-      React.createElement("p", null, "No projects are assigned to your Buyer Unique Code yet. Ask your contractor to create and assign one.")
+      React.createElement("p", null, "No projects shared yet. Ask your contractor to enter your Buyer Code and enable sharing.")
     );
   };
 
@@ -1140,7 +1142,8 @@ export default function BuyerDashboard() {
   );
 
   const renderContent = () => {
-    const permissionByTab = { dashboard: "projectSummary", projects: "projectSummary", milestones: "milestones", payments: "payments", inventory: "inventory", progress: "siteMedia", labour: "labour", quotations: "quotations", reports: "reports" };
+    if (!selectedProjectData) return renderDashboard();
+    const permissionByTab = { dashboard: "projectSummary", projects: "projectSummary", milestones: "milestones", payments: "payments", inventory: "inventory", progress: "siteMedia", extrawork: "reports", labour: "labour", quotations: "quotations", reports: "reports" };
     const requiredPermission = permissionByTab[activeTab];
     if (requiredPermission && projectPermissions[requiredPermission] === false) {
       return React.createElement("div", { style: styles.card }, "Contractor has not enabled this section for your view.");
