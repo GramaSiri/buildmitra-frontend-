@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { exportProjectReport } from "../utils/reporting";
 import {
-  PRIVATE_PROJECT_PERMISSIONS,
+  DEFAULT_PROJECT_PERMISSIONS,
   findBuyerByCode,
   getLoggedInUser,
   migrateLegacyProjects,
@@ -22,7 +22,6 @@ export default function ContractorDashboard() {
   const [showPaymentEntryModal, setShowPaymentEntryModal] = useState(false);
   const [showMilestoneModal, setShowMilestoneModal] = useState(false);
   const [showProjectQuoteModal, setShowProjectQuoteModal] = useState(false);
-  const [showBuyerShareModal, setShowBuyerShareModal] = useState(false);
   const [selectedProject, setSelectedProject] = useState(1);
   const [activeTab, setActiveTab] = useState("overview");
   const [selectedMilestone, setSelectedMilestone] = useState(null);
@@ -50,13 +49,11 @@ export default function ContractorDashboard() {
   const [loggedInUser, setLoggedInUser] = useState<any>(null);
   const [newInventoryItem, setNewInventoryItem] = useState({ material: "", supplier: "", invoiceNo: "", invoiceDate: "", orderedQty: "", receivedQty: "", consumedQty: "", unit: "bags", rate: "" });
   const [newProjectQuote, setNewProjectQuote] = useState({ quoteNo: "", date: new Date().toISOString().split("T")[0], description: "", amount: "", status: "Draft", remarks: "" });
-  const [buyerShareCode, setBuyerShareCode] = useState("");
-  const [shareProjectId, setShareProjectId] = useState(null);
   const [newPayment, setNewPayment] = useState({ milestoneName: "", amount: "", date: new Date().toISOString().split("T")[0], status: "Received", reference: "" });
   const [newMilestone, setNewMilestone] = useState({ name: "", amount: "", plannedEndDate: "", status: "Pending" });
 
   const [newProject, setNewProject] = useState({
-    name: "", clientName: "", clientMobile: "", clientEmail: "",
+    name: "", buyerCode: "", clientName: "", clientMobile: "", clientEmail: "",
     plotLength: "", plotWidth: "", floors: "", ratePerSft: "", startDate: "", endDate: "", agreementUrl: null
   });
 
@@ -324,10 +321,11 @@ useEffect(() => {
   const calculatedFloors = Math.max(1, Number(newProject.floors) || 0);
   const calculatedBua = Number((plotArea * 0.9 * calculatedFloors).toFixed(2));
   const calculatedTotalAmount = Number((calculatedBua * Number(newProject.ratePerSft || 0)).toFixed(2));
-  const matchedShareBuyer = buyerShareCode.trim() ? findBuyerByCode(buyerShareCode) : null;
+  const matchedBuyer = newProject.buyerCode.trim() ? findBuyerByCode(newProject.buyerCode) : null;
+
   const addProject = () => {
-    if (!newProject.name.trim() || !newProject.startDate || !newProject.endDate) {
-      alert("Project name, start date, and end date are required.");
+    if (!newProject.name.trim() || !newProject.buyerCode.trim() || !newProject.startDate || !newProject.endDate) {
+      alert("Project name, Buyer Unique Code, start date, and end date are required.");
       return;
     }
     if (new Date(newProject.endDate).getTime() < new Date(newProject.startDate).getTime()) {
@@ -339,6 +337,11 @@ useEffect(() => {
     const totalAmount = calculatedTotalAmount;
     if (!Number(newProject.plotLength) || !Number(newProject.plotWidth) || !Number(newProject.floors) || !Number(newProject.ratePerSft) || bua <= 0 || totalAmount <= 0) {
       alert("Plot length, plot width, number of floors, and rate per sqft must all be greater than zero.");
+      return;
+    }
+    const buyer = findBuyerByCode(newProject.buyerCode);
+    if (!buyer) {
+      alert("Buyer Unique Code was not found. Ask the buyer to register first and verify the code.");
       return;
     }
     if (!loggedInUser || loggedInUser.role !== "contractor") {
@@ -360,9 +363,8 @@ useEffect(() => {
       ...newProject,
       name: newProject.name.trim(),
       projectName: newProject.name.trim(),
-      buyerCode: "",
-      buyerName: "",
-      sharedWithBuyer: false,
+      buyerCode: buyer.uniqueCode,
+      buyerName: buyer.name,
       contractorId: loggedInUser.userId ?? loggedInUser.id,
       contractorName: loggedInUser.name || contractorInfo.companyName,
       contractorCode: loggedInUser.uniqueCode || contractorInfo.uniqueCode,
@@ -385,51 +387,19 @@ useEffect(() => {
       suppliers: [],
       extraWorks: [],
       quotations: [],
-      permissions: { ...PRIVATE_PROJECT_PERMISSIONS }
+      permissions: { ...DEFAULT_PROJECT_PERMISSIONS }
     };
     setProjects([...projects, newProjectObj]);
     setSelectedProject(projectId);
-    setNewProject({ name: "", clientName: "", clientMobile: "", clientEmail: "", plotLength: "", plotWidth: "", floors: "", ratePerSft: "", startDate: "", endDate: "", agreementUrl: null });
+    setNewProject({ name: "", buyerCode: "", clientName: "", clientMobile: "", clientEmail: "", plotLength: "", plotWidth: "", floors: "", ratePerSft: "", startDate: "", endDate: "", agreementUrl: null });
     setShowProjectModal(false);
-    alert(`Private project created with ${milestones.length} civil milestones. Use Share with Buyer when you are ready.`);
-  };
-
-  const shareProjectWithBuyer = () => {
-    const buyer = findBuyerByCode(buyerShareCode);
-    if (!buyer) {
-      alert("Buyer code not found or is not registered as a buyer.");
-      return;
-    }
-    setProjects(projects.map((project) => String(project.id) === String(shareProjectId) ? {
-      ...project,
-      buyerCode: buyer.uniqueCode,
-      buyerName: buyer.name,
-      sharedWithBuyer: true,
-      permissions: { ...PRIVATE_PROJECT_PERMISSIONS, ...(project.permissions || {}) }
-    } : project));
-    setBuyerShareCode("");
-    setShareProjectId(null);
-    setShowBuyerShareModal(false);
-    alert(`Project shared with ${buyer.name}. Enable the sections the buyer may view.`);
-  };
-
-  const stopSharingWithBuyer = (projectId) => {
-    if (!window.confirm("Stop sharing this project with the buyer?")) return;
-    setProjects(projects.map((project) => String(project.id) === String(projectId) ? {
-      ...project,
-      buyerCode: "",
-      buyerName: "",
-      sharedWithBuyer: false,
-      permissions: { ...PRIVATE_PROJECT_PERMISSIONS }
-    } : project));
+    alert(`Project created with ${milestones.length} civil milestones and assigned to ${buyer.name} (${buyer.uniqueCode}).`);
   };
 
   const updatePermission = (permission: string, enabled: boolean, projectId = selectedProject) => {
     setProjects(projects.map((project) => project.id === projectId ? {
       ...project,
-      permissions: project.sharedWithBuyer
-        ? { ...PRIVATE_PROJECT_PERMISSIONS, ...(project.permissions || {}), [permission]: enabled }
-        : { ...PRIVATE_PROJECT_PERMISSIONS }
+      permissions: { ...DEFAULT_PROJECT_PERMISSIONS, ...(project.permissions || {}), [permission]: enabled }
     } : project));
   };
 
@@ -1177,7 +1147,7 @@ useEffect(() => {
             React.createElement("div", { style: { display: "flex", justifyContent: "space-between", flexWrap: "wrap" } },
               React.createElement("div", null,
                 React.createElement("h3", { style: { margin: 0 } }, p.name),
-                React.createElement("p", { style: { margin: "4px 0", fontSize: "13px", color: "#666" } }, "Project ID: ", p.projectUniqueId)
+                React.createElement("p", { style: { margin: "4px 0", fontSize: "13px", color: "#666" } }, "Buyer: ", p.buyerName || p.clientName, " (", p.buyerCode || "Legacy unassigned", ") | ID: ", p.projectUniqueId)
               ),
               React.createElement("div", null,
                 React.createElement("div", { style: { fontSize: "24px", fontWeight: "bold", color: "#2d6a4f" } }, p.progress, "%"),
@@ -1186,21 +1156,11 @@ useEffect(() => {
             ),
             React.createElement("div", { style: styles.progressBar }, React.createElement("div", { style: { ...styles.progressFill, width: p.progress + "%" } })),
             React.createElement("div", { style: { marginTop: "14px", padding: "12px", backgroundColor: "#f8f9fa", borderRadius: "8px" }, onClick: (e) => e.stopPropagation() },
-              React.createElement("div", { style: { display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "center", flexWrap: "wrap" } },
-                React.createElement("div", null,
-                  React.createElement("strong", null, "Buyer sharing"),
-                  React.createElement("div", { style: { fontSize: "12px", color: p.sharedWithBuyer ? "#15803d" : "#666", marginTop: "4px" } },
-                    p.sharedWithBuyer ? `Shared with ${p.buyerName} (${p.buyerCode})` : "Private — not shared with a buyer"
-                  )
-                ),
-                p.sharedWithBuyer
-                  ? React.createElement("button", { onClick: () => stopSharingWithBuyer(p.id), style: styles.buttonDanger }, "Stop Sharing")
-                  : React.createElement("button", { onClick: () => { setShareProjectId(p.id); setBuyerShareCode(""); setShowBuyerShareModal(true); }, style: styles.buttonSuccess }, "Share with Buyer")
-              ),
-              p.sharedWithBuyer && React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: "12px", marginTop: "12px" } },
-                Object.entries({ projectSummary: "Summary", milestones: "Milestones", inventory: "Inventory", labour: "Labour", siteMedia: "Site Progress / Media", payments: "Payments", quotations: "Quotations", reports: "Reports" }).map(([key, label]) =>
+              React.createElement("strong", null, "Buyer permissions"),
+              React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: "12px", marginTop: "10px" } },
+                Object.entries({ projectSummary: "Project summary", milestones: "Milestones", inventory: "Inventory", labour: "Labour", siteMedia: "Site progress/media", payments: "Payments", quotations: "Quotations", reports: "Reports" }).map(([key, label]) =>
                   React.createElement("label", { key, style: { display: "flex", gap: "6px", alignItems: "center" } },
-                    React.createElement("input", { type: "checkbox", checked: p.permissions?.[key] === true, onChange: (e) => { setSelectedProject(p.id); updatePermission(key, e.target.checked, p.id); } }), label
+                    React.createElement("input", { type: "checkbox", checked: p.permissions?.[key] !== false, onChange: (e) => { setSelectedProject(p.id); updatePermission(key, e.target.checked, p.id); } }), label
                   )
                 )
               )
@@ -1381,7 +1341,14 @@ useEffect(() => {
     showProjectModal && React.createElement("div", { style: styles.modal, onClick: () => setShowProjectModal(false) },
       React.createElement("div", { style: styles.modalContent, onClick: (e) => e.stopPropagation() },
         React.createElement("h2", { style: { color: "#2d6a4f" } }, "Add New Project"),
-        React.createElement("input", { type: "text", placeholder: "Project Name", value: newProject.name, onChange: (e) => setNewProject({...newProject, name: e.target.value}), style: styles.input }),
+        React.createElement("div", { style: styles.row2 },
+          React.createElement("input", { type: "text", placeholder: "Project Name", value: newProject.name, onChange: (e) => setNewProject({...newProject, name: e.target.value}), style: styles.input }),
+          React.createElement("div", null,
+            React.createElement("input", { type: "text", placeholder: "Buyer Unique Code (e.g. BUY-1234)", value: newProject.buyerCode, onChange: (e) => setNewProject({...newProject, buyerCode: e.target.value.toUpperCase()}), style: styles.input }),
+            React.createElement("div", { style: { fontSize: "11px", color: "#666", marginTop: "-8px", marginBottom: "4px" } }, "Ask the buyer to copy their Buyer Code from the buyer dashboard."),
+            newProject.buyerCode && React.createElement("div", { style: { fontSize: "11px", color: matchedBuyer ? "#15803d" : "#dc2626", marginBottom: "12px" } }, matchedBuyer ? `Buyer verified: ${matchedBuyer.name}` : "Buyer code not found or is not registered as a buyer.")
+          )
+        ),
         React.createElement("div", { style: styles.row2 },
           React.createElement("input", { type: "tel", placeholder: "Client Mobile", value: newProject.clientMobile, onChange: (e) => setNewProject({...newProject, clientMobile: e.target.value}), style: styles.input }),
           React.createElement("input", { type: "email", placeholder: "Client Email", value: newProject.clientEmail, onChange: (e) => setNewProject({...newProject, clientEmail: e.target.value}), style: styles.input })
@@ -1411,18 +1378,6 @@ useEffect(() => {
           }, style: styles.input })
         ),
         React.createElement("button", { onClick: addProject, style: { ...styles.buttonSuccess, width: "100%" } }, "Create Project")
-      )
-    ),
-
-    showBuyerShareModal && React.createElement("div", { style: styles.modal, onClick: () => setShowBuyerShareModal(false) },
-      React.createElement("div", { style: styles.modalContent, onClick: (e) => e.stopPropagation() },
-        React.createElement("h2", { style: { color: "#2d6a4f" } }, "Share with Buyer"),
-        React.createElement("p", { style: { color: "#666", fontSize: "13px" } }, "Ask the buyer to copy their Buyer Code from the buyer dashboard."),
-        React.createElement("input", { type: "text", placeholder: "Buyer Unique Code (e.g. BUY-1234)", value: buyerShareCode, onChange: (e) => setBuyerShareCode(e.target.value.toUpperCase()), style: styles.input }),
-        buyerShareCode && React.createElement("div", { style: { fontSize: "12px", color: matchedShareBuyer ? "#15803d" : "#dc2626", marginBottom: "12px" } },
-          matchedShareBuyer ? `Buyer verified: ${matchedShareBuyer.name}` : "Buyer code not found or is not registered as a buyer."
-        ),
-        React.createElement("button", { onClick: shareProjectWithBuyer, disabled: !matchedShareBuyer, style: { ...styles.buttonSuccess, width: "100%", opacity: matchedShareBuyer ? 1 : 0.6 } }, "Confirm Share")
       )
     ),
 
