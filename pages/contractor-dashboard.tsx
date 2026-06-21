@@ -37,6 +37,7 @@ export default function ContractorDashboard() {
   // Media upload states
   const [mediaFile, setMediaFile] = useState(null);
   const [mediaTitle, setMediaTitle] = useState("");
+  const [mediaSelectionMessage, setMediaSelectionMessage] = useState("");
   const [mediaType, setMediaType] = useState("photo");
   const [mediaCategory, setMediaCategory] = useState("progress"); // progress, document, invoice
   
@@ -107,9 +108,6 @@ useEffect(() => {
   if (!storageReady || !loggedInUser) return;
   const contractorId = loggedInUser.userId ?? loggedInUser.id;
   saveProjectsForContractor(contractorId, projects);
-  // Keep legacy mirrors for existing modules while buildmitraProjects remains canonical.
-  localStorage.setItem("contractorProjects", JSON.stringify(projects));
-  localStorage.setItem("sharedProjects", JSON.stringify(projects));
 }, [projects, storageReady, loggedInUser]);
 
   const [completedProjects, setCompletedProjects] = useState<any[]>([]);
@@ -215,27 +213,26 @@ useEffect(() => {
   ];
 
   // Add Site Media (Photos/Documents/Invoices) - Links to Buyer Dashboard via projectUniqueId
-  const addSiteMedia = async () => {
-    if (!mediaTitle) {
-      alert("Please enter title");
+  const addSiteMedia = () => {
+    if (!mediaTitle || !mediaFile) {
+      alert("Please select a file and enter its description.");
       return;
     }
-    const mediaUrl = mediaFile ? await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result));
-      reader.onerror = reject;
-      reader.readAsDataURL(mediaFile);
-    }) : null;
+    const uploadDate = new Date().toISOString();
     const newMedia = {
-      id: (selectedProjectData?.siteMedia?.length || 0) + 1,
+      id: `MEDIA-${Date.now()}`,
+      fileName: mediaFile.name,
+      fileSize: mediaFile.size,
+      fileType: mediaFile.type,
+      uploadDate,
+      description: mediaTitle.trim(),
+      mediaType,
+      projectId: selectedProjectData?.projectUniqueId || selectedProjectData?.projectId || selectedProject,
       type: mediaType,
-      title: mediaTitle,
-      url: mediaUrl,
+      title: mediaTitle.trim(),
       category: mediaCategory,
-      date: new Date().toISOString().split("T")[0],
-      uploadedBy: "Contractor",
-      fileName: mediaFile?.name,
-      fileSize: mediaFile?.size
+      date: uploadDate.split("T")[0],
+      uploadedBy: "Contractor"
     };
     
     const updatedProjects = projects.map(p => 
@@ -244,10 +241,11 @@ useEffect(() => {
     setProjects(updatedProjects);
     setMediaTitle("");
     setMediaFile(null);
+    setMediaSelectionMessage("");
     setMediaType("photo");
     setMediaCategory("progress");
     setShowMediaModal(false);
-    alert(`Media uploaded! Buyer can now view this in their dashboard under Project ID: ${selectedProjectData?.projectUniqueId}`);
+    alert("File selected successfully. Full cloud upload will be enabled after backend storage integration.");
   };
 
   const deleteSiteMedia = (mediaId) => {
@@ -778,8 +776,9 @@ useEffect(() => {
               React.createElement("div", { style: styles.mediaIcon }, m.type === "photo" ? "📷" : m.type === "video" ? "🎥" : "📄"),
               React.createElement("div", { style: { fontWeight: "bold" } }, m.title),
               React.createElement("div", { style: { fontSize: "11px", color: "#666" } }, m.date),
+              React.createElement("div", { style: { fontSize: "11px", color: "#666" } }, m.fileName || "Metadata record", m.fileSize ? ` (${Math.ceil(m.fileSize / 1024)} KB)` : ""),
               React.createElement("div", { style: { display: "flex", gap: "8px", justifyContent: "center", marginTop: "8px" } },
-                React.createElement("button", { onClick: () => window.open(m.url, "_blank"), style: styles.buttonInfo, style: { fontSize: "11px", padding: "4px 8px" } }, "View"),
+                React.createElement("span", { style: { fontSize: "11px", color: "#666" } }, "Cloud file pending"),
                 React.createElement("button", { onClick: () => deleteSiteMedia(m.id), style: styles.buttonDanger, style: { fontSize: "11px", padding: "4px 8px" } }, "Delete")
               )
             )
@@ -794,7 +793,7 @@ useEffect(() => {
               React.createElement("div", { style: styles.mediaIcon }, "📄"),
               React.createElement("div", { style: { fontWeight: "bold" } }, m.title),
               React.createElement("div", { style: { fontSize: "11px", color: "#666" } }, m.date),
-              React.createElement("button", { onClick: () => window.open(m.url, "_blank"), style: styles.buttonInfo, style: { fontSize: "11px", padding: "4px 8px", marginTop: "8px" } }, "Download")
+              React.createElement("div", { style: { fontSize: "11px", color: "#666" } }, m.fileName || "Metadata record", " — cloud upload pending")
             )
           )
         )
@@ -808,7 +807,7 @@ useEffect(() => {
               React.createElement("div", { style: { fontWeight: "bold" } }, m.title),
               React.createElement("div", { style: { fontSize: "11px", color: "#666" } }, m.date),
               React.createElement("div", { style: { fontSize: "12px", color: "#2d6a4f" } }, "Amount: ₹", m.amount?.toLocaleString()),
-              React.createElement("button", { onClick: () => window.open(m.url, "_blank"), style: styles.buttonSuccess, style: { fontSize: "11px", padding: "4px 8px", marginTop: "8px" } }, "View Invoice")
+              React.createElement("div", { style: { fontSize: "11px", color: "#666", marginTop: "8px" } }, m.fileName ? "Cloud file pending" : "Invoice metadata")
             )
           )
         )
@@ -1479,9 +1478,14 @@ useEffect(() => {
         ),
         React.createElement("div", null,
           React.createElement("label", { style: styles.label }, "File"),
-          React.createElement("input", { type: "file", onChange: (e) => setMediaFile(e.target.files[0]), style: styles.input })
+          React.createElement("input", { type: "file", onChange: (e) => {
+            const file = e.target.files?.[0] || null;
+            setMediaFile(file);
+            setMediaSelectionMessage(file ? "File selected successfully. Full cloud upload will be enabled after backend storage integration." : "");
+          }, style: styles.input }),
+          mediaSelectionMessage && React.createElement("div", { style: { padding: "10px", marginBottom: "12px", backgroundColor: "#e8f5e9", color: "#1b4332", borderRadius: "8px", fontSize: "12px" } }, mediaSelectionMessage)
         ),
-        React.createElement("button", { onClick: addSiteMedia, style: { ...styles.buttonSuccess, width: "100%" } }, "Upload - Buyer can view instantly")
+        React.createElement("button", { onClick: addSiteMedia, style: { ...styles.buttonSuccess, width: "100%" } }, "Save File Metadata")
       )
     ),
     

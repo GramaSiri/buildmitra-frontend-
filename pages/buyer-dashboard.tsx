@@ -442,21 +442,22 @@ export default function BuyerDashboard() {
   const uploadMedia = () => {
     if (isReadOnly) return denyContractorEdit();
     if (!mediaTitle) { alert("Enter title"); return; }
-    const mediaUrl = mediaFile ? URL.createObjectURL(mediaFile) : null;
     setSiteMedia([...siteMedia, { 
       id: siteMedia.length + 1, 
       projectId: selectedProject, 
-      type: mediaType, 
-      title: mediaTitle, 
-      url: mediaUrl, 
-      date: new Date().toISOString().split("T")[0] 
+      fileName: mediaFile?.name || "",
+      fileSize: mediaFile?.size || 0,
+      fileType: mediaFile?.type || "",
+      uploadDate: new Date().toISOString(),
+      description: mediaTitle,
+      mediaType
     }]);
     setMediaTitle(""); 
     setMediaFile(null); 
     setMediaPreview(null); 
     setMediaType("photo"); 
     setShowMediaModal(false);
-    alert("Media uploaded!");
+    alert("File selected successfully. Full cloud upload will be enabled after backend storage integration.");
   };
 
   const addExtraWork = () => {
@@ -964,11 +965,10 @@ export default function BuyerDashboard() {
       React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "16px" } },
         projectMedia.map((m: any) =>
           React.createElement("div", { key: m.id, style: { border: "1px solid #ddd", borderRadius: "8px", overflow: "hidden", cursor: "pointer" }, onClick: () => { setSelectedMedia(m); setShowMediaViewer(true); } },
-            m.type === "photo" && m.url
-              ? React.createElement("img", { src: m.url, alt: m.title, style: { width: "100%", height: "140px", objectFit: "cover" } })
-              : React.createElement("div", { style: { height: "140px", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#f4f4f4", fontSize: "44px" } }, m.type === "video" ? "🎥" : "📄"),
-            React.createElement("div", { style: { padding: "10px", fontSize: "12px", fontWeight: "500" } }, m.title),
-            React.createElement("div", { style: { padding: "0 10px 10px", fontSize: "10px", color: "#666" } }, m.date)
+            React.createElement("div", { style: { height: "140px", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#f4f4f4", fontSize: "44px" } }, (m.mediaType || m.type) === "photo" ? "📷" : (m.mediaType || m.type) === "video" ? "🎥" : "📄"),
+            React.createElement("div", { style: { padding: "10px", fontSize: "12px", fontWeight: "500" } }, m.description || m.title || m.fileName),
+            React.createElement("div", { style: { padding: "0 10px 4px", fontSize: "10px", color: "#666" } }, m.fileName || "Metadata record"),
+            React.createElement("div", { style: { padding: "0 10px 10px", fontSize: "10px", color: "#666" } }, (m.uploadDate || m.date || "").split("T")[0], m.fileSize ? ` • ${Math.ceil(m.fileSize / 1024)} KB` : "", " • Cloud file pending")
           )
         )
       )
@@ -1343,15 +1343,13 @@ export default function BuyerDashboard() {
     
     showMediaViewer && selectedMedia && React.createElement("div", { style: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.9)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000 }, onClick: () => setShowMediaViewer(false) },
       React.createElement("div", { style: { color: "white", textAlign: "center" } },
-        selectedMedia.type === "photo" && selectedMedia.url
-          ? React.createElement("img", { src: selectedMedia.url, alt: selectedMedia.title, style: { maxWidth: "90vw", maxHeight: "80vh", borderRadius: "12px" } })
-          : selectedMedia.type === "video" && selectedMedia.url
-            ? React.createElement("video", { src: selectedMedia.url, controls: true, style: { maxWidth: "90vw", maxHeight: "80vh", borderRadius: "12px" } })
-            : React.createElement("div", null,
-              React.createElement("div", { style: { fontSize: "72px" } }, "📄"),
-              React.createElement("h3", null, selectedMedia.title),
-              selectedMedia.url && React.createElement("a", { href: selectedMedia.url, target: "_blank", rel: "noreferrer", style: { color: "white" } }, "Open document")
-            ),
+        React.createElement("div", null,
+          React.createElement("div", { style: { fontSize: "72px" } }, (selectedMedia.mediaType || selectedMedia.type) === "photo" ? "📷" : (selectedMedia.mediaType || selectedMedia.type) === "video" ? "🎥" : "📄"),
+          React.createElement("h3", null, selectedMedia.description || selectedMedia.title || selectedMedia.fileName),
+          React.createElement("p", null, selectedMedia.fileName || "Metadata record"),
+          React.createElement("p", null, selectedMedia.fileType || "File type unavailable", selectedMedia.fileSize ? ` • ${Math.ceil(selectedMedia.fileSize / 1024)} KB` : ""),
+          React.createElement("p", null, "Full cloud upload will be enabled after backend storage integration.")
+        ),
         React.createElement("button", { onClick: () => setShowMediaViewer(false), style: { position: "absolute", top: 20, right: 30, color: "white", fontSize: 30, background: "none", border: "none", cursor: "pointer" } }, "×")
       )
     )
