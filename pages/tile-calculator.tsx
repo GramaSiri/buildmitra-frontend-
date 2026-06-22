@@ -215,7 +215,6 @@ export default function TilesPage() {
         roomTileCost = toiletTileArea * tileRate * (1 + wastage / 100);
       } else {
         roomTileCost = floorArea * tileRate * (1 + wastage / 100);
-        roomTileCost = floorTiles * tileRate;
         
         if (room.includeSkirting) {
           const perimeter = 2 * (room.length + room.width);
@@ -495,5 +494,6 @@ export default function TilesPage() {
     )
   );
 }
+
 
 
