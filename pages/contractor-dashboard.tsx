@@ -321,7 +321,7 @@ useEffect(() => {
   const calculatedFloors = Math.max(1, Number(newProject.floors) || 0);
   const calculatedBua = Number((plotArea * 0.9 * calculatedFloors).toFixed(2));
   const calculatedTotalAmount = Number((calculatedBua * Number(newProject.ratePerSft || 0)).toFixed(2));
-  const matchedBuyer = newProject.buyerCode.trim() ? findBuyerByCode(newProject.buyerCode) : null;
+  const matchedBuyer = null;
 
   const addProject = () => {
     if (!newProject.name.trim() || !newProject.buyerCode.trim() || !newProject.startDate || !newProject.endDate) {
@@ -1591,6 +1591,7 @@ useEffect(() => {
     )
   );
 }
+
 
 
 
