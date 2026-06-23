@@ -264,6 +264,9 @@ export default function Sidebar({ children, currentPath }) {
   // ---------------- OTHER MODULES ----------------
   const otherTabs = [
     { name: "Marketplace", icon: "🛒", path: "/marketplace" },
+    { name: "Admin Dashboard", icon: "👑", path: "/admin-dashboard" },
+    { name: "DRG", icon: "📐", path: "/drg" },
+    { name: "Layout Plans", icon: "🗺️", path: "/layout-plans" },
     { name: "Learn & Earn", icon: "📚", path: "/learn-earn" },
     { name: "Real Estate", icon: "🏠", path: "/realestate-dashboard" },
     { name: "Pricing", icon: "💰", path: "/pricing" }
@@ -471,3 +474,5 @@ return (
     </div>
   );
 }
+
+

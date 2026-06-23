@@ -1,0 +1,219 @@
+import React, { useState } from "react";
+
+const dias = [6, 8, 10, 12, 16, 20, 25, 32];
+
+const kgPerM = (dia: number) => (dia * dia) / 162;
+const ftToM = (ft: number) => ft * 0.3048;
+const inchToFt = (inch: number) => inch / 12;
+
+export default function SteelCalculator() {
+  const [item, setItem] = useState("Slab");
+  const [rate, setRate] = useState(68);
+  const [wastage, setWastage] = useState(3);
+  const [bindingWirePercent, setBindingWirePercent] = useState(1);
+
+  const [length, setLength] = useState(30);
+  const [width, setWidth] = useState(20);
+  const [thickness, setThickness] = useState(5);
+  const [cover, setCover] = useState(1);
+  const [xDia, setXDia] = useState(10);
+  const [yDia, setYDia] = useState(8);
+  const [xSpacing, setXSpacing] = useState(6);
+  const [ySpacing, setYSpacing] = useState(6);
+
+  const [memberNos, setMemberNos] = useState(1);
+  const [memberLength, setMemberLength] = useState(10);
+  const [memberWidth, setMemberWidth] = useState(9);
+  const [memberDepth, setMemberDepth] = useState(12);
+  const [mainDia, setMainDia] = useState(12);
+  const [mainBars, setMainBars] = useState(4);
+  const [stirrupDia, setStirrupDia] = useState(8);
+  const [stirrupSpacing, setStirrupSpacing] = useState(6);
+
+  const [generated, setGenerated] = useState(false);
+
+  const styles: any = {
+    page: { fontFamily: "Arial", padding: 20, background: "#f5f7fb", minHeight: "100vh" },
+    card: { background: "white", padding: 18, borderRadius: 12, marginBottom: 16, boxShadow: "0 2px 8px #ddd" },
+    row: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 12 },
+    input: { padding: 10, border: "1px solid #ccc", borderRadius: 8, width: "100%" },
+    label: { fontWeight: "bold", fontSize: 13 },
+    button: { background: "#800020", color: "white", border: 0, padding: "12px 20px", borderRadius: 8, cursor: "pointer" },
+    table: { width: "100%", borderCollapse: "collapse", marginTop: 12 },
+    th: { background: "#800020", color: "white", padding: 10, textAlign: "left" },
+    td: { border: "1px solid #ddd", padding: 10 },
+    note: { background: "#fff7ed", padding: 10, borderRadius: 8, fontSize: 13, color: "#92400e" }
+  };
+
+  const input = (label: string, value: any, setValue: any, type = "number") => (
+    <div>
+      <label style={styles.label}>{label}</label>
+      <input type={type} value={value} onChange={(e) => setValue(type === "number" ? Number(e.target.value) : e.target.value)} style={styles.input} />
+    </div>
+  );
+
+  const diaSelect = (label: string, value: number, setValue: any) => (
+    <div>
+      <label style={styles.label}>{label}</label>
+      <select value={value} onChange={(e) => setValue(Number(e.target.value))} style={styles.input}>
+        {dias.map(d => <option key={d} value={d}>{d} mm</option>)}
+      </select>
+    </div>
+  );
+
+  const calculateSlab = () => {
+    const clearLength = Math.max(0, length - 2 * inchToFt(cover));
+    const clearWidth = Math.max(0, width - 2 * inchToFt(cover));
+
+    const xBarsCount = Math.floor((width * 12) / xSpacing) + 1;
+    const yBarsCount = Math.floor((length * 12) / ySpacing) + 1;
+
+    const crankExtraFt = thickness * 2 * 0.42 / 12;
+    const lapExtraFt = 1.5;
+    const xBarLengthFt = clearLength + crankExtraFt + lapExtraFt;
+    const yBarLengthFt = clearWidth + crankExtraFt + lapExtraFt;
+
+    const xLengthM = ftToM(xBarLengthFt * xBarsCount);
+    const yLengthM = ftToM(yBarLengthFt * yBarsCount);
+
+    const xKg = xLengthM * kgPerM(xDia);
+    const yKg = yLengthM * kgPerM(yDia);
+    const baseKg = xKg + yKg;
+    const wasteKg = baseKg * wastage / 100;
+    const totalKg = baseKg + wasteKg;
+    const bindingWireKg = totalKg * bindingWirePercent / 100;
+    const coverBlocksNos = Math.ceil((length * width) / 4);
+
+    return {
+      title: "Slab Steel",
+      rows: [
+        ["X Direction Bars", `${xBarsCount} nos × ${xBarLengthFt.toFixed(2)} ft`, `${xKg.toFixed(2)} kg`],
+        ["Y Direction Bars", `${yBarsCount} nos × ${yBarLengthFt.toFixed(2)} ft`, `${yKg.toFixed(2)} kg`],
+        ["Base Steel", "-", `${baseKg.toFixed(2)} kg`],
+        [`Wastage ${wastage}%`, "-", `${wasteKg.toFixed(2)} kg`],
+        ["Total Steel", "-", `${totalKg.toFixed(2)} kg`],
+        ["Binding Wire", `${bindingWirePercent}%`, `${bindingWireKg.toFixed(2)} kg`],
+        ["Cover Blocks", "Approx 1 per 4 sqft", `${coverBlocksNos} nos`],
+        ["Steel Cost", `₹${rate}/kg`, `₹${(totalKg * rate).toFixed(2)}`]
+      ],
+      totalKg
+    };
+  };
+
+  const calculateMember = () => {
+    const clearLength = Math.max(0, memberLength - 2 * inchToFt(cover));
+    const hookFt = stirrupDia <= 8 ? 0.75 : 1;
+    const lapExtraFt = item === "Column" ? 2.5 : 1.5;
+
+    const mainLengthM = ftToM((clearLength + lapExtraFt) * mainBars * memberNos);
+    const mainKg = mainLengthM * kgPerM(mainDia);
+
+    const stirrupCountPerMember = Math.floor((memberLength * 12) / stirrupSpacing) + 1;
+    const stirrupLengthFt = 2 * ((memberWidth - 2 * cover) / 12 + (memberDepth - 2 * cover) / 12) + hookFt;
+    const stirrupLengthM = ftToM(stirrupLengthFt * stirrupCountPerMember * memberNos);
+    const stirrupKg = stirrupLengthM * kgPerM(stirrupDia);
+
+    const baseKg = mainKg + stirrupKg;
+    const wasteKg = baseKg * wastage / 100;
+    const totalKg = baseKg + wasteKg;
+    const bindingWireKg = totalKg * bindingWirePercent / 100;
+    const coverBlocksNos = Math.ceil(memberNos * mainBars * 2);
+
+    return {
+      title: `${item} Steel`,
+      rows: [
+        ["Main Bars", `${mainBars} bars × ${memberNos} members`, `${mainKg.toFixed(2)} kg`],
+        ["Stirrups/Rings", `${stirrupCountPerMember} nos/member`, `${stirrupKg.toFixed(2)} kg`],
+        ["Base Steel", "-", `${baseKg.toFixed(2)} kg`],
+        [`Wastage ${wastage}%`, "-", `${wasteKg.toFixed(2)} kg`],
+        ["Total Steel", "-", `${totalKg.toFixed(2)} kg`],
+        ["Binding Wire", `${bindingWirePercent}%`, `${bindingWireKg.toFixed(2)} kg`],
+        ["Cover Blocks", "Approx", `${coverBlocksNos} nos`],
+        ["Steel Cost", `₹${rate}/kg`, `₹${(totalKg * rate).toFixed(2)}`]
+      ],
+      totalKg
+    };
+  };
+
+  const result = item === "Slab" || item === "Footing" ? calculateSlab() : calculateMember();
+
+  return (
+    <div style={styles.page}>
+      <h1>🔩 RCC Steel Calculator</h1>
+      <div style={styles.note}>
+        Formula: Steel kg/m = Dia²/162. Includes crank/lap allowance, wastage, binding wire and cover blocks.
+      </div>
+
+      <div style={styles.card}>
+        <div style={styles.row}>
+          <div>
+            <label style={styles.label}>RCC Item</label>
+            <select value={item} onChange={(e) => setItem(e.target.value)} style={styles.input}>
+              {["Slab", "Beam", "Column", "Lintel", "Footing"].map(x => <option key={x}>{x}</option>)}
+            </select>
+          </div>
+          {input("Steel Rate ₹/kg", rate, setRate)}
+          {input("Wastage %", wastage, setWastage)}
+          {input("Binding Wire %", bindingWirePercent, setBindingWirePercent)}
+        </div>
+      </div>
+
+      {(item === "Slab" || item === "Footing") ? (
+        <div style={styles.card}>
+          <h2>{item} Inputs</h2>
+          <div style={styles.row}>
+            {input("Length (ft)", length, setLength)}
+            {input("Width (ft)", width, setWidth)}
+            {input("Thickness (inch)", thickness, setThickness)}
+            {input("Clear Cover (inch)", cover, setCover)}
+            {diaSelect("X Bar Dia", xDia, setXDia)}
+            {diaSelect("Y Bar Dia", yDia, setYDia)}
+            {input("X Bar Spacing (inch)", xSpacing, setXSpacing)}
+            {input("Y Bar Spacing (inch)", ySpacing, setYSpacing)}
+          </div>
+        </div>
+      ) : (
+        <div style={styles.card}>
+          <h2>{item} Inputs</h2>
+          <div style={styles.row}>
+            {input(item === "Column" ? "Column Height (ft)" : "Member Length (ft)", memberLength, setMemberLength)}
+            {input("No. of Members", memberNos, setMemberNos)}
+            {input("Width (inch)", memberWidth, setMemberWidth)}
+            {input("Depth (inch)", memberDepth, setMemberDepth)}
+            {input("Clear Cover (inch)", cover, setCover)}
+            {diaSelect("Main Bar Dia", mainDia, setMainDia)}
+            {input("No. of Main Bars", mainBars, setMainBars)}
+            {diaSelect("Stirrup/Ring Dia", stirrupDia, setStirrupDia)}
+            {input("Stirrup Spacing (inch)", stirrupSpacing, setStirrupSpacing)}
+          </div>
+        </div>
+      )}
+
+      <button style={styles.button} onClick={() => setGenerated(true)}>Generate</button>
+
+      {generated && (
+        <div style={styles.card}>
+          <h2>{result.title} Result</h2>
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th style={styles.th}>Item</th>
+                <th style={styles.th}>Calculation</th>
+                <th style={styles.th}>Quantity</th>
+              </tr>
+            </thead>
+            <tbody>
+              {result.rows.map((r, i) => (
+                <tr key={i}>
+                  <td style={styles.td}>{r[0]}</td>
+                  <td style={styles.td}>{r[1]}</td>
+                  <td style={styles.td}>{r[2]}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}

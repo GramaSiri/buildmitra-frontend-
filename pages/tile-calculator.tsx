@@ -49,15 +49,26 @@ const flooringTypes = {
   'Cladding Tiles': { rateKey: 'cladding', defaultRate: 80, unit: 'sqft', skirtingRate: 0 }
 };
 
-// Tile sizes
+// Tile sizes commonly available in India
+const commonFloorTileSizes = [
+  '8x8', '10x10', '12x12', '16x16', '18x18',
+  '24x24', '24x48', '24x60', '32x32', '36x36',
+  '48x48', '48x96', '60x60', '80x80', '120x120'
+];
+
+const commonWallTileSizes = [
+  '8x12', '10x15', '12x18', '12x24', '12x36',
+  '12x48', '18x24', '24x48', '24x60'
+];
+
 const tileSizes = {
-  'Vitrified Tiles': ['12x12', '18x18', '24x24', '36x36'],
-  'Granite': ['12x12', '18x18', '24x24'],
-  'Marble': ['12x12', '18x18', '24x24'],
-  'Ceramic Tiles': ['12x12', '18x18', '24x24', '8x48', '6x24'],
+  'Vitrified Tiles': commonFloorTileSizes,
+  'Granite': ['12x12', '18x18', '24x24', '24x48', '24x60', '32x32', '36x36', '48x48', '48x96'],
+  'Marble': ['12x12', '18x18', '24x24', '24x48', '24x60', '32x32', '36x36', '48x48', '48x96'],
+  'Ceramic Tiles': [...commonWallTileSizes, ...commonFloorTileSizes],
   'IPS': ['Cast in situ'],
-  'Wooden Flooring': ['Planks 4x36', 'Planks 6x36', 'Planks 8x48'],
-  'Cladding Tiles': ['12x12', '18x18', '24x24', '8x48', '6x24']
+  'Wooden Flooring': ['Planks 4x36', 'Planks 6x36', 'Planks 8x48', 'Planks 9x48', 'Planks 9x60'],
+  'Cladding Tiles': ['4x12', '6x12', '6x24', '8x24', '8x48', '12x12', '12x18', '12x24', '12x36', '12x48', '18x24', '24x48', '24x60']
 };
 
 const roomTypesList = ['Living Room', 'Bed Room', 'Kitchen', 'Balcony', 'Dining Room', 'Pooja Room', 'Study Room', 'Office Room', 'Toilet'];
@@ -183,9 +194,9 @@ export default function TilesPage() {
     setCladdings(claddings.filter(c => c.id !== id));
   };
 
-  const calculateToiletWallArea = (length, width, height, nos, doorDeduction = 20) => {
+  const calculateToiletWallArea = (length, width, height, nos, doorDeductionPerToilet = 15) => {
     const wallAreaPerToilet = 2 * (length + width) * height;
-    const netWallAreaPerToilet = Math.max(0, wallAreaPerToilet - doorDeduction);
+    const netWallAreaPerToilet = Math.max(0, wallAreaPerToilet - doorDeductionPerToilet);
     return netWallAreaPerToilet * nos;
   };
 
@@ -208,7 +219,7 @@ export default function TilesPage() {
       const tilesPerSqft = getTilesPerSqft(room.tileSize);
       
       if (isToilet) {
-        toiletWallArea = calculateToiletWallArea(room.length, room.width, 7, room.nos, 20);
+        toiletWallArea = calculateToiletWallArea(room.length, room.width, 7, room.nos, 15);
         floorArea = room.length * room.width * room.nos;
         totalToiletArea += toiletWallArea;
         const toiletTileArea = floorArea + toiletWallArea;
@@ -221,7 +232,6 @@ export default function TilesPage() {
           const skirtingLength = (perimeter - 3) * room.nos;
           skirtingArea = (skirtingLength * 4) / 12;
           roomTileCost += skirtingArea * tileRate * (1 + wastage / 100);
-          roomTileCost += skirtingTiles * tileRate * 0.8;
           totalSkirtingArea += skirtingArea;
         }
       }
@@ -481,7 +491,7 @@ export default function TilesPage() {
               React.createElement('td', { style: styles.td }, 'sqft'),
               React.createElement('td', { style: styles.td }, `₹${formatNumber(clad.cost)}`))),
             React.createElement('tr', { style: { backgroundColor: '#e8f4f8', fontWeight: 'bold' } }, React.createElement('td', { colSpan: 4, style: styles.td }, 'TOILET')),
-            React.createElement('tr', null, React.createElement('td', { style: styles.td }, 'Toilet (Floor + Walls - 20 sqft)'), React.createElement('td', { style: styles.td }, results.totals.toiletArea), React.createElement('td', { style: styles.td }, 'sqft'), React.createElement('td', { style: styles.td }, '-')),
+            React.createElement('tr', null, React.createElement('td', { style: styles.td }, 'Toilet Wall Cladding'), React.createElement('td', { style: styles.td }, results.totals.toiletArea), React.createElement('td', { style: styles.td }, 'sqft'), React.createElement('td', { style: styles.td }, '-')),
             React.createElement('tr', { style: { backgroundColor: '#e8f4f8', fontWeight: 'bold' } }, React.createElement('td', { colSpan: 4, style: styles.td }, 'MATERIALS')),
             React.createElement('tr', { style: styles.evenRow }, React.createElement('td', { style: styles.td }, 'Cement'), React.createElement('td', { style: styles.td }, results.materials.cement), React.createElement('td', { style: styles.td }, 'bags'), React.createElement('td', { style: styles.td }, `₹${results.costs.cement}`)),
             React.createElement('tr', null, React.createElement('td', { style: styles.td }, 'Sand'), React.createElement('td', { style: styles.td }, results.materials.sand), React.createElement('td', { style: styles.td }, 'CFT'), React.createElement('td', { style: styles.td }, `₹${results.costs.sand}`)),
@@ -494,6 +504,11 @@ export default function TilesPage() {
     )
   );
 }
+
+
+
+
+
 
 
 
