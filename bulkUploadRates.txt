@@ -1,0 +1,86 @@
+  const bulkUploadRates = async (e, type) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    const pick = (r, keys) => {
+      for (const k of keys) {
+        if (r[k] !== undefined && r[k] !== null && String(r[k]).trim() !== "") return r[k];
+      }
+      return "";
+    };
+
+    const toNumber = (v) => {
+      const n = Number(String(v || "0").replace(/[^0-9.-]/g, ""));
+      return isNaN(n) ? 0 : n;
+    };
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const data = new Uint8Array(evt.target.result);
+      const workbook = XLSX.read(data, { type: "array" });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+
+      let imported = 0;
+
+      if (type === "materials") {
+        const mapped = rows.map((r, i) => {
+          const code = pick(r, ["Code", "code", "Item Code", "ItemCode"]);
+          const category = pick(r, ["Category", "category", "Module", "module"]) || "General";
+          const subCategory = pick(r, ["SubCategory", "Sub Category", "subCategory"]);
+          const item = pick(r, ["ItemName", "Item Name", "Item", "item", "Description", "Material", "Service"]);
+          const brand = pick(r, ["Brand", "brand"]);
+          const unit = pick(r, ["Unit", "unit", "UOM", "uom", "Units", "units"]);
+          const rate = toNumber(pick(r, ["Rate", "rate", "Material Rate", "MaterialRate", "UnitRate", "Unit Rate", "Basic Rate"]));
+          return { id: Date.now() + i, code, category, subCategory, item, brand, unit, rate, gst: toNumber(pick(r, ["GST", "gst"])), status: pick(r, ["Status", "status"]) || "Active" };
+        }).filter(r => r.item && r.unit && r.rate > 0);
+
+        imported = mapped.length;
+        setMaterialRates(prev => [...prev, ...mapped]);
+      }
+
+      if (type === "labour") {
+        const mapped = rows.map((r, i) => {
+          const trade = pick(r, ["Trade", "trade", "Item", "ItemName", "Description"]);
+          const category = pick(r, ["Category", "category"]) || "General";
+          const unit = pick(r, ["Unit", "unit", "UOM", "uom"]);
+          const rate = toNumber(pick(r, ["Rate", "rate", "Labour Rate", "LabourRate", "UnitRate", "Unit Rate"]));
+          return { id: Date.now() + i, trade, category, unit, rate, status: pick(r, ["Status", "status"]) || "Active" };
+        }).filter(r => r.trade && r.unit && r.rate > 0);
+
+        imported = mapped.length;
+        setLabourRates(prev => [...prev, ...mapped]);
+      }
+
+      if (type === "services") {
+        const mapped = rows.map((r, i) => {
+          const module = pick(r, ["Module", "module", "Category", "category"]) || "BOQ";
+          const service = pick(r, ["Service", "service", "ItemName", "Item Name", "Item", "Description", "Material"]);
+          const unit = pick(r, ["Unit", "unit", "UOM", "uom"]);
+          const rate = toNumber(pick(r, ["Rate", "rate", "Labour Rate", "LabourRate", "Service Rate", "ServiceRate", "UnitRate", "Unit Rate"]));
+          return { id: Date.now() + i, module, service, unit, rate, status: pick(r, ["Status", "status"]) || "Active" };
+        }).filter(r => r.module && r.service && r.unit && r.rate > 0);
+
+        imported = mapped.length;
+        setServiceRates(prev => [...prev, ...mapped]);
+      }
+
+      if (type === "equipment") {
+        const mapped = rows.map((r, i) => {
+          const item = pick(r, ["Equipment", "Item", "ItemName", "Description"]);
+          const unit = pick(r, ["Unit", "unit", "UOM", "uom"]);
+          const rate = toNumber(pick(r, ["Rate", "rate", "UnitRate", "Unit Rate"]));
+          return { id: Date.now() + i, item, unit, rate, status: pick(r, ["Status", "status"]) || "Active" };
+        }).filter(r => r.item && r.unit && r.rate > 0);
+
+        imported = mapped.length;
+        setEquipmentRates(prev => [...prev, ...mapped]);
+      }
+
+      console.log("Bulk Upload Type:", type, "Rows:", rows, "Imported:", imported); alert("Bulk upload completed for " + type + ". Imported " + imported + " rows out of " + rows.length + " rows.");
+      e.target.value = "";
+    };
+
+    reader.readAsArrayBuffer(file);
+  };
+

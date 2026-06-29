@@ -239,6 +239,7 @@ export default function Sidebar({ children, currentPath }) {
     { name: "Plaster Calculator", path: "/plaster-calculator", icon: "🧱" },
     { name: "Brick Work", path: "/brick-work-calculator", icon: "🧱" },
     { name: "RCC Slab", path: "/rcc-slab-calculator", icon: "🏗️" },
+    { name: "RCC + Steel + Blockwork", path: "/rcc-steel-building-calculator", icon: "🏢" },
     { name: "Column Calculator", path: "/column-calculator", icon: "📏" },
     { name: "Beam Calculator", path: "/beam-calculator", icon: "📐" },
     { name: "Footing Calculator", path: "/footing-calculator", icon: "🔽" },
@@ -402,7 +403,7 @@ return (
           onMouseLeave={() => setHoveredMain(null)}
           onClick={() => toggle("calculators")}
         >
-          <span>📐 CALCULATORS (18)</span>
+          <span>📐 CALCULATORS (19)</span>
           <span>{open.calculators ? "▼" : "▶"}</span>
         </div>
 
@@ -474,5 +475,6 @@ return (
     </div>
   );
 }
+
 
 

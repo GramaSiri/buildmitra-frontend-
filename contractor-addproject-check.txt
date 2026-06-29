@@ -1,0 +1,120 @@
+
+  const updatePortfolio = () => {
+    const updatedPortfolios = completedProjects.map(p => 
+      p.id === editPortfolioId ? { ...p, ...portfolioData, totalValue: parseFloat(portfolioData.totalValue) || 0 } : p
+    );
+    setCompletedProjects(updatedPortfolios);
+    setPortfolioData({ name: "", clientName: "", location: "", completionDate: "", totalValue: "", testimonial: "" });
+    setEditPortfolioId(null);
+    setShowPortfolioModal(false);
+    alert("Portfolio updated successfully!");
+  };
+
+  const deletePortfolio = (portfolioId) => {
+    if (window.confirm("Delete this portfolio item?")) {
+      setCompletedProjects(completedProjects.filter(p => p.id !== portfolioId));
+      alert("Portfolio deleted!");
+    }
+  };
+
+  const plotArea = Number(newProject.plotLength || 0) * Number(newProject.plotWidth || 0);
+  const calculatedFloors = Math.max(1, Number(newProject.floors) || 0);
+  const calculatedBua = Number((plotArea * 0.9 * calculatedFloors).toFixed(2));
+  const calculatedTotalAmount = Number((calculatedBua * Number(newProject.ratePerSft || 0)).toFixed(2));
+  const matchedBuyer = null;
+
+  const addProject = () => {
+    if (!newProject.name.trim() || !newProject.buyerCode.trim() || !newProject.startDate || !newProject.endDate) {
+      alert("Project name, Buyer Unique Code, start date, and end date are required.");
+      return;
+    }
+    if (new Date(newProject.endDate).getTime() < new Date(newProject.startDate).getTime()) {
+      alert("End date cannot be before start date.");
+      return;
+    }
+    const bua = calculatedBua;
+    const floors = calculatedFloors;
+    const totalAmount = calculatedTotalAmount;
+    if (!Number(newProject.plotLength) || !Number(newProject.plotWidth) || !Number(newProject.floors) || !Number(newProject.ratePerSft) || bua <= 0 || totalAmount <= 0) {
+      alert("Plot length, plot width, number of floors, and rate per sqft must all be greater than zero.");
+      return;
+    }
+    const buyer = findBuyerByCode(newProject.buyerCode);
+    if (!buyer) {
+      alert("Buyer Unique Code was not found. Ask the buyer to register first and verify the code.");
+      return;
+    }
+    if (!loggedInUser || loggedInUser.role !== "contractor") {
+      alert("Please log in with a contractor account to create a project.");
+      return;
+    }
+    const projectId = `PROJ-${Date.now()}`;
+    const milestones = generateCivilMilestones({
+      startDate: newProject.startDate,
+      endDate: newProject.endDate,
+      bua,
+      floors,
+      totalAmount
+    });
+    const newProjectObj = {
+      id: projectId,
+      projectId,
+      projectUniqueId: projectId,
+      ...newProject,
+      name: newProject.name.trim(),
+      projectName: newProject.name.trim(),
+      buyerCode: buyer.uniqueCode,
+      buyerName: buyer.name,
+      contractorId: loggedInUser.userId ?? loggedInUser.id,
+      contractorName: loggedInUser.name || contractorInfo.companyName,
+      contractorCode: loggedInUser.uniqueCode || contractorInfo.uniqueCode,
+      plotLength: parseFloat(newProject.plotLength) || 0,
+      plotWidth: parseFloat(newProject.plotWidth) || 0,
+      plotArea,
+      floors,
+      ratePerSft: Number(newProject.ratePerSft),
+      bua,
+      totalAmount,
+      progress: 0,
+      status: "Planning",
+      agreementUrl: newProject.agreementUrl,
+      milestones,
+      payments: [],
+      labour: [],
+      labourAttendance: [],
+      siteMedia: [],
+      inventory: [],
+      suppliers: [],
+      extraWorks: [],
+      quotations: [],
+      permissions: { projectSummary: false, milestones: false, inventory: false, labour: false, siteMedia: false, payments: false, quotations: false, reports: false }
+    };
+    setProjects([...projects, newProjectObj]);
+    setSelectedProject(projectId);
+    setNewProject({ name: "", buyerCode: "", clientName: "", clientMobile: "", clientEmail: "", plotLength: "", plotWidth: "", floors: "", ratePerSft: "", startDate: "", endDate: "", agreementUrl: null });
+    setShowProjectModal(false);
+    alert(`Project created privately with ${milestones.length} civil milestones. Use Share Project to link buyer code.`);
+  };
+
+  const updatePermission = (permission: string, enabled: boolean, projectId = selectedProject) => {
+    setProjects(projects.map((project) => project.id === projectId ? {
+      ...project,
+      permissions: { ...DEFAULT_PROJECT_PERMISSIONS, ...(project.permissions || {}), [permission]: enabled }
+    } : project));
+  };
+
+  const addProjectQuotation = () => {
+    const amount = Number(newProjectQuote.amount);
+    if (!selectedProjectData || !newProjectQuote.quoteNo.trim() || !newProjectQuote.date || !newProjectQuote.description.trim() || amount <= 0 || !newProjectQuote.status) {
+      alert("Quote number, project, date, description, amount, and status are required.");
+      return;
+    }
+    const quote = { id: `QUOTE-${Date.now()}`, ...newProjectQuote, amount, projectId: selectedProjectData.id, projectName: selectedProjectData.name };
+    setProjects(projects.map((project) => project.id === selectedProject ? { ...project, quotations: [...(project.quotations || []), quote] } : project));
+    setNewProjectQuote({ quoteNo: "", date: new Date().toISOString().split("T")[0], description: "", amount: "", status: "Draft", remarks: "" });
+    setShowProjectQuoteModal(false);
+  };
+
+  const addPayment = () => {
+    const amount = Number(newPayment.amount);
+    if (!selectedProjectData || !newPayment.milestoneName || !amount || amount < 0) {

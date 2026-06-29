@@ -1,0 +1,348 @@
+import React, { useMemo, useState } from "react";
+
+type Room = {
+  name: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  label?: string;
+};
+
+const ft = (v: number) => `${Math.round(v)}'`;
+const mm = (dia: number) => `Y${dia}`;
+
+export default function DRGPage() {
+  const [plotLength, setPlotLength] = useState(40);
+  const [plotWidth, setPlotWidth] = useState(30);
+  const [floors, setFloors] = useState(3);
+  const [bedrooms, setBedrooms] = useState(3);
+  const [toilets, setToilets] = useState(4);
+  const [parking, setParking] = useState("Yes");
+  const [lift, setLift] = useState("Yes");
+  const [ugTank, setUgTank] = useState("Yes");
+  const [generated, setGenerated] = useState(false);
+
+  const scale = 12;
+  const wall = 5;
+  const plotW = plotWidth * scale;
+  const plotH = plotLength * scale;
+
+  const rules = useMemo(() => {
+    const plotArea = plotLength * plotWidth;
+    const setbackFront = plotArea <= 1200 ? 4 : 5;
+    const setbackSide = plotArea <= 1200 ? 3 : 4;
+    const builtW = plotWidth - setbackSide * 2;
+    const builtL = plotLength - setbackFront - 3;
+    const bua = builtW * builtL * floors;
+
+    const maxSpan = floors <= 2 ? 12 : floors <= 4 ? 10 : 9;
+    const gridXCount = Math.ceil(builtW / maxSpan);
+    const gridYCount = Math.ceil(builtL / maxSpan);
+    const spanX = builtW / gridXCount;
+    const spanY = builtL / gridYCount;
+
+    const footingSize = Math.min(6, 3 + Math.max(0, floors - 1) * 0.5);
+    const footingDepth = Math.min(6, 3 + Math.max(0, floors - 1) * 0.5);
+
+    const columnSize =
+      floors <= 1 ? "9 in × 9 in" :
+      floors <= 3 ? "9 in × 12 in" :
+      floors <= 5 ? "12 in × 15 in" :
+      "15 in × 18 in";
+
+    const beamSize =
+      Math.max(spanX, spanY) <= 10 ? "9 in × 12 in" :
+      Math.max(spanX, spanY) <= 15 ? "9 in × 15 in" :
+      "12 in × 18 in";
+
+    const slabThickness =
+      floors <= 2 ? "5 inch" :
+      floors <= 4 ? "5.5 inch" :
+      "6 inch";
+
+    const steelKgPerSft = 3 + Math.max(0, floors - 1) * 0.1;
+    const steelQty = bua * steelKgPerSft;
+
+    return {
+      plotArea,
+      setbackFront,
+      setbackSide,
+      builtW,
+      builtL,
+      bua,
+      maxSpan,
+      gridXCount,
+      gridYCount,
+      spanX,
+      spanY,
+      footingSize,
+      footingDepth,
+      columnSize,
+      beamSize,
+      slabThickness,
+      steelKgPerSft,
+      steelQty,
+    };
+  }, [plotLength, plotWidth, floors]);
+
+  const bW = rules.builtW * scale;
+  const bH = rules.builtL * scale;
+  const ox = rules.setbackSide * scale + 20;
+  const oy = 20;
+
+  const groundRooms: Room[] = useMemo(() => {
+    const list: Room[] = [];
+
+    if (parking === "Yes") {
+      list.push({ name: "FULL PARKING AREA", x: 0, y: 0, w: bW * 0.70, h: bH * 0.70, label: "Car + Bike Parking" });
+    }
+
+    list.push({ name: "TOILET 1", x: bW * 0.76, y: 0, w: bW * 0.20, h: bH * 0.14, label: "4'×6'" });
+    if (lift === "Yes") list.push({ name: "LIFT", x: bW * 0.76, y: bH * 0.22, w: bW * 0.20, h: bH * 0.14, label: "5'×5'" });
+    list.push({ name: "STAIRCASE", x: bW * 0.72, y: bH * 0.42, w: bW * 0.24, h: bH * 0.30, label: "Dog-leg stair" });
+    list.push({ name: "TOILET 2", x: bW * 0.72, y: bH * 0.74, w: bW * 0.24, h: bH * 0.10, label: "4'×6'" });
+    if (ugTank === "Yes") list.push({ name: "UG TANK", x: bW * 0.72, y: bH * 0.86, w: bW * 0.24, h: bH * 0.10, label: rules.plotArea <= 1200 ? "6'×5'×5'" : "8'×6'×6'" });
+
+    return list;
+  }, [parking, lift, ugTank, bW, bH, rules.plotArea]);
+
+  const firstRooms: Room[] = useMemo(() => {
+    const list: Room[] = [
+      { name: "LIVING ROOM", x: 0, y: bH * 0.42, w: bW * 0.42, h: bH * 0.30, label: "14'×18'" },
+      { name: "DINING", x: bW * 0.44, y: bH * 0.42, w: bW * 0.26, h: bH * 0.25, label: "10'×12'" },
+      { name: "KITCHEN", x: bW * 0.46, y: bH * 0.08, w: bW * 0.26, h: bH * 0.22, label: "10'×10' SE/NW" },
+      { name: "UTILITY", x: bW * 0.74, y: bH * 0.08, w: bW * 0.18, h: bH * 0.22, label: "4'×10'" },
+      { name: "BEDROOM 1", x: 0, y: bH * 0.08, w: bW * 0.38, h: bH * 0.24, label: "12'×14'" },
+      { name: "BEDROOM 2", x: bW * 0.46, y: bH * 0.72, w: bW * 0.28, h: bH * 0.22, label: "12'×14'" },
+      { name: "TOILET 1", x: bW * 0.38, y: bH * 0.08, w: bW * 0.12, h: bH * 0.16, label: "5'×8'" },
+      { name: "TOILET 2", x: bW * 0.76, y: bH * 0.72, w: bW * 0.16, h: bH * 0.14, label: "5'×7'" },
+      { name: "STAIR", x: bW * 0.78, y: bH * 0.38, w: bW * 0.18, h: bH * 0.30, label: "UP" },
+      { name: "BALCONY", x: 0, y: bH * 0.94, w: bW * 0.72, h: bH * 0.06, label: "4' wide" },
+    ];
+
+    if (lift === "Yes") list.push({ name: "LIFT", x: bW * 0.76, y: bH * 0.30, w: bW * 0.18, h: bH * 0.12, label: "5'×5'" });
+
+    return list.slice(0, Math.max(7, bedrooms + toilets + 5));
+  }, [bW, bH, lift, bedrooms, toilets]);
+
+  const secondRooms: Room[] = useMemo(() => {
+    const list: Room[] = [
+      { name: "FAMILY LOUNGE", x: bW * 0.42, y: bH * 0.40, w: bW * 0.28, h: bH * 0.25, label: "10'×12'" },
+      { name: "BEDROOM 3", x: bW * 0.68, y: bH * 0.08, w: bW * 0.28, h: bH * 0.25, label: "11'×12'" },
+      { name: "BEDROOM 4", x: 0, y: bH * 0.42, w: bW * 0.36, h: bH * 0.23, label: "10'×10'" },
+      { name: "BEDROOM 5", x: 0, y: bH * 0.08, w: bW * 0.36, h: bH * 0.23, label: "12'×13'" },
+      { name: "TOILET 3", x: bW * 0.42, y: bH * 0.08, w: bW * 0.14, h: bH * 0.16, label: "5'×7'" },
+      { name: "STAIR", x: bW * 0.72, y: bH * 0.42, w: bW * 0.24, h: bH * 0.28, label: "UP" },
+      { name: "BALCONY", x: 0, y: bH * 0.86, w: bW * 0.96, h: bH * 0.10, label: "4' wide" },
+    ];
+
+    if (lift === "Yes") list.push({ name: "LIFT", x: bW * 0.72, y: bH * 0.30, w: bW * 0.18, h: bH * 0.12, label: "5'×5'" });
+
+    return list;
+  }, [bW, bH, lift]);
+
+  const styles: any = {
+    page: { padding: 20, fontFamily: "Arial", background: "#f5f7fb", minHeight: "100vh" },
+    card: { background: "white", padding: 18, borderRadius: 12, marginBottom: 16, boxShadow: "0 2px 8px #ddd" },
+    row: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 12 },
+    input: { padding: 10, border: "1px solid #ccc", borderRadius: 8, width: "100%" },
+    label: { fontWeight: "bold", fontSize: 13 },
+    button: { background: "#800020", color: "white", padding: "12px 20px", border: 0, borderRadius: 8, cursor: "pointer" },
+    table: { width: "100%", borderCollapse: "collapse", marginTop: 12 },
+    th: { background: "#800020", color: "white", padding: 10, textAlign: "left" },
+    td: { border: "1px solid #ddd", padding: 10 },
+    note: { background: "#fff7ed", padding: 12, borderRadius: 8, color: "#92400e", fontSize: 13 },
+  };
+
+  const input = (label: string, value: any, setValue: any) => (
+    <div>
+      <label style={styles.label}>{label}</label>
+      <input style={styles.input} type="number" value={value} onChange={(e) => setValue(Number(e.target.value))} />
+    </div>
+  );
+
+  const select = (label: string, value: any, setValue: any, options: string[]) => (
+    <div>
+      <label style={styles.label}>{label}</label>
+      <select style={styles.input} value={value} onChange={(e) => setValue(e.target.value)}>
+        {options.map((o) => <option key={o}>{o}</option>)}
+      </select>
+    </div>
+  );
+
+  const Door = ({ x, y, rotate = 0 }: any) => (
+    <g transform={`translate(${x} ${y}) rotate(${rotate})`}>
+      <line x1="0" y1="0" x2="22" y2="0" stroke="#111" strokeWidth="2" />
+      <path d="M0 0 A22 22 0 0 1 22 22" fill="none" stroke="#111" strokeWidth="1" />
+    </g>
+  );
+
+  const Window = ({ x, y, w = 28 }: any) => (
+    <g>
+      <line x1={x} y1={y} x2={x + w} y2={y} stroke="#2563eb" strokeWidth="3" />
+      <line x1={x} y1={y + 4} x2={x + w} y2={y + 4} stroke="#2563eb" strokeWidth="1" />
+    </g>
+  );
+
+  const RoomBox = ({ r }: { r: Room }) => (
+    <g>
+      <rect x={r.x} y={r.y} width={r.w} height={r.h} fill="#fafafa" stroke="#111" strokeWidth={wall} />
+      <text x={r.x + 8} y={r.y + 22} fontSize="12" fontWeight="bold">{r.name}</text>
+      <text x={r.x + 8} y={r.y + 40} fontSize="10">{r.label || `${ft(r.w / scale)} × ${ft(r.h / scale)}`}</text>
+      <Door x={r.x + r.w - 30} y={r.y + r.h} rotate={270} />
+      <Window x={r.x + 12} y={r.y} />
+    </g>
+  );
+
+  const Dimension = ({ x1, y1, x2, y2, text }: any) => (
+    <g>
+      <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="#111" strokeWidth="1" />
+      <text x={(x1 + x2) / 2 - 18} y={(y1 + y2) / 2 - 4} fontSize="10">{text}</text>
+    </g>
+  );
+
+  const Stair = ({ x, y, w, h }: any) => (
+    <g>
+      <rect x={x} y={y} width={w} height={h} fill="none" stroke="#111" strokeWidth={wall} />
+      {Array.from({ length: 7 }).map((_, i) => (
+        <line key={i} x1={x} y1={y + (i * h) / 7} x2={x + w} y2={y + (i * h) / 7} stroke="#111" strokeWidth="1" />
+      ))}
+      <text x={x + 8} y={y + h / 2} fontSize="11">STAIR UP</text>
+    </g>
+  );
+
+  const Plan = ({ title, rooms }: { title: string; rooms: Room[] }) => (
+    <div style={styles.card}>
+      <h2>{title}</h2>
+      <svg width="100%" viewBox={`0 0 ${plotW + 70} ${plotH + 90}`} style={{ background: "#fff", border: "2px solid #111" }}>
+        <rect x="20" y="20" width={plotW} height={plotH} fill="none" stroke="#111" strokeWidth="2" />
+        <rect x={ox} y={oy} width={bW} height={bH} fill="none" stroke="#111" strokeWidth="4" />
+
+        <Dimension x1={20} y1={12} x2={20 + plotW} y2={12} text={`${plotWidth}'-0"`} />
+        <Dimension x1={8} y1={20} x2={8} y2={20 + plotH} text={`${plotLength}'-0"`} />
+        <Dimension x1={ox} y1={oy - 8} x2={ox + bW} y2={oy - 8} text={`${rules.builtW.toFixed(1)}' built width`} />
+
+        <g transform={`translate(${ox} ${oy})`}>
+          {rooms.map((r, i) => r.name.includes("STAIR") || r.name === "STAIR" || r.name === "STAIRCASE"
+            ? <Stair key={i} x={r.x} y={r.y} w={r.w} h={r.h} />
+            : <RoomBox key={i} r={r} />
+          )}
+        </g>
+
+        <text x="20" y={plotH + 45} fontSize="16" fontWeight="bold">{title.toUpperCase()}</text>
+        <text x="20" y={plotH + 65} fontSize="10">Wall thickness shown conceptually. Doors/windows/stairs/lift/UG tank are rule-based placements.</text>
+      </svg>
+    </div>
+  );
+
+  const StructuralPlan = () => (
+    <div style={styles.card}>
+      <h2>Structural Grid / Footing Plan</h2>
+      <svg width="100%" viewBox={`0 0 ${plotW + 70} ${plotH + 90}`} style={{ background: "#fff", border: "2px solid #111" }}>
+        <rect x={ox} y={oy} width={bW} height={bH} fill="none" stroke="#111" strokeWidth="4" />
+
+        {Array.from({ length: rules.gridXCount + 1 }).map((_, i) => {
+          const x = ox + (i * bW) / rules.gridXCount;
+          return (
+            <g key={i}>
+              <line x1={x} y1={oy} x2={x} y2={oy + bH} stroke="#64748b" strokeWidth="1" />
+              <text x={x - 5} y={oy - 8} fontSize="10">X{i + 1}</text>
+            </g>
+          );
+        })}
+
+        {Array.from({ length: rules.gridYCount + 1 }).map((_, i) => {
+          const y = oy + (i * bH) / rules.gridYCount;
+          return (
+            <g key={i}>
+              <line x1={ox} y1={y} x2={ox + bW} y2={y} stroke="#64748b" strokeWidth="1" />
+              <text x={ox - 22} y={y + 4} fontSize="10">Y{i + 1}</text>
+            </g>
+          );
+        })}
+
+        {Array.from({ length: rules.gridXCount + 1 }).map((_, ix) =>
+          Array.from({ length: rules.gridYCount + 1 }).map((_, iy) => {
+            const x = ox + (ix * bW) / rules.gridXCount;
+            const y = oy + (iy * bH) / rules.gridYCount;
+            return (
+              <g key={`${ix}-${iy}`}>
+                <rect x={x - 12} y={y - 12} width="24" height="24" fill="none" stroke="#800020" strokeWidth="2" />
+                <circle cx={x} cy={y} r="4" fill="#800020" />
+              </g>
+            );
+          })
+        )}
+
+        <Dimension x1={ox} y1={oy + bH + 18} x2={ox + bW} y2={oy + bH + 18} text={`X span ≈ ${rules.spanX.toFixed(1)} ft`} />
+        <Dimension x1={ox + bW + 18} y1={oy} x2={ox + bW + 18} y2={oy + bH} text={`Y span ≈ ${rules.spanY.toFixed(1)} ft`} />
+
+        <text x="20" y={plotH + 45} fontSize="16" fontWeight="bold">STRUCTURAL GRID PLAN</text>
+        <text x="20" y={plotH + 65} fontSize="10">Footing boxes shown at column grid junctions.</text>
+      </svg>
+    </div>
+  );
+
+  return (
+    <div style={styles.page}>
+      <h1>📐 BuildMitra Professional Architectural + Structural DRG</h1>
+      <div style={styles.note}>
+        Conceptual architectural and structural thumb-rule drawings. Final approval drawings and RCC design must be checked by licensed architect/structural engineer.
+      </div>
+
+      <div style={styles.card}>
+        <h2>Project Inputs</h2>
+        <div style={styles.row}>
+          {input("Plot Length (ft)", plotLength, setPlotLength)}
+          {input("Plot Width (ft)", plotWidth, setPlotWidth)}
+          {input("Floors", floors, setFloors)}
+          {input("Bedrooms", bedrooms, setBedrooms)}
+          {input("Toilets", toilets, setToilets)}
+          {select("Parking", parking, setParking, ["Yes", "No"])}
+          {select("Lift", lift, setLift, ["Yes", "No"])}
+          {select("UG Tank", ugTank, setUgTank, ["Yes", "No"])}
+        </div>
+        <br />
+        <button style={styles.button} onClick={() => setGenerated(true)}>Generate Professional DRG</button>
+      </div>
+
+      {generated && (
+        <>
+          <Plan title="Ground Floor Plan" rooms={groundRooms} />
+          <Plan title="First Floor Plan" rooms={firstRooms} />
+          {floors >= 2 && <Plan title="Second Floor Plan" rooms={secondRooms} />}
+          <StructuralPlan />
+
+          <div style={styles.card}>
+            <h2>Structural Thumb-Rule Summary</h2>
+            <table style={styles.table}>
+              <tbody>
+                {[
+                  ["Plot Area", `${rules.plotArea.toFixed(0)} sqft`],
+                  ["Built-up Footprint", `${rules.builtW.toFixed(1)} ft × ${rules.builtL.toFixed(1)} ft`],
+                  ["Approx BUA", `${rules.bua.toFixed(0)} sqft`],
+                  ["Grid", `${rules.gridXCount + 1} × ${rules.gridYCount + 1} column points`],
+                  ["Max Span Rule", `${rules.maxSpan} ft`],
+                  ["Actual Span", `${rules.spanX.toFixed(1)} ft × ${rules.spanY.toFixed(1)} ft`],
+                  ["Footing Size", `${rules.footingSize.toFixed(1)} ft × ${rules.footingSize.toFixed(1)} ft × ${rules.footingDepth.toFixed(1)} ft`],
+                  ["Column Size", rules.columnSize],
+                  ["Beam Size", rules.beamSize],
+                  ["Slab Thickness", rules.slabThickness],
+                  ["Reinforcement Note", `Footing bottom mesh ${mm(12)} @ 6 in c/c both ways; column vertical ${mm(16)} / ties ${mm(8)} @ 6 in c/c thumb-rule`],
+                  ["Steel Thumb Rule", `${rules.steelKgPerSft.toFixed(2)} kg/sqft`],
+                  ["Approx Steel Qty", `${rules.steelQty.toFixed(0)} kg`],
+                ].map((r, i) => (
+                  <tr key={i}>
+                    <td style={styles.td}><b>{r[0]}</b></td>
+                    <td style={styles.td}>{r[1]}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}

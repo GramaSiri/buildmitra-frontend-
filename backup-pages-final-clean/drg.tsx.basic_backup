@@ -1,0 +1,91 @@
+import React, { useState } from "react";
+
+export default function DRGPage() {
+  const [plotLength, setPlotLength] = useState(40);
+  const [plotWidth, setPlotWidth] = useState(30);
+  const [floors, setFloors] = useState(1);
+  const [bedrooms, setBedrooms] = useState(2);
+  const [toilets, setToilets] = useState(2);
+  const [kitchen, setKitchen] = useState("South-East");
+  const [vaastu, setVaastu] = useState(true);
+  const [generated, setGenerated] = useState(false);
+
+  const scale = 10;
+  const w = plotWidth * scale;
+  const h = plotLength * scale;
+
+  const rooms = [
+    { name: "Living", x: 10, y: 10, w: w * 0.45, h: h * 0.25 },
+    { name: "Kitchen", x: w * 0.55, y: 10, w: w * 0.35, h: h * 0.22 },
+    { name: "Bedroom 1", x: 10, y: h * 0.40, w: w * 0.38, h: h * 0.25 },
+    { name: "Bedroom 2", x: w * 0.52, y: h * 0.40, w: w * 0.38, h: h * 0.25 },
+    { name: "Toilet 1", x: 10, y: h * 0.72, w: w * 0.22, h: h * 0.15 },
+    { name: "Toilet 2", x: w * 0.28, y: h * 0.72, w: w * 0.22, h: h * 0.15 },
+    { name: "Staircase", x: w * 0.58, y: h * 0.72, w: w * 0.30, h: h * 0.18 }
+  ];
+
+  const visibleRooms = rooms.filter((r) => {
+    if (r.name === "Bedroom 2" && bedrooms < 2) return false;
+    if (r.name === "Toilet 2" && toilets < 2) return false;
+    return true;
+  });
+
+  const styles: any = {
+    page: { padding: 20, fontFamily: "Arial", background: "#f5f7fb", minHeight: "100vh" },
+    card: { background: "#fff", padding: 18, borderRadius: 12, marginBottom: 16, boxShadow: "0 2px 8px #ddd" },
+    row: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 12 },
+    input: { padding: 10, border: "1px solid #ccc", borderRadius: 8, width: "100%" },
+    label: { fontWeight: "bold", fontSize: 13 },
+    button: { background: "#800020", color: "white", padding: "12px 20px", border: 0, borderRadius: 8, cursor: "pointer" }
+  };
+
+  return (
+    <div style={styles.page}>
+      <h1>📐 BuildMitra 2D Drawing Generator</h1>
+      <p>Generate basic room layout from user inputs. Professional CAD/PDF export can be added in next phase.</p>
+
+      <div style={styles.card}>
+        <h2>Project Inputs</h2>
+        <div style={styles.row}>
+          <div><label style={styles.label}>Plot Length (ft)</label><input style={styles.input} type="number" value={plotLength} onChange={(e) => setPlotLength(Number(e.target.value))} /></div>
+          <div><label style={styles.label}>Plot Width (ft)</label><input style={styles.input} type="number" value={plotWidth} onChange={(e) => setPlotWidth(Number(e.target.value))} /></div>
+          <div><label style={styles.label}>Floors</label><input style={styles.input} type="number" value={floors} onChange={(e) => setFloors(Number(e.target.value))} /></div>
+          <div><label style={styles.label}>Bedrooms</label><input style={styles.input} type="number" value={bedrooms} onChange={(e) => setBedrooms(Number(e.target.value))} /></div>
+          <div><label style={styles.label}>Toilets</label><input style={styles.input} type="number" value={toilets} onChange={(e) => setToilets(Number(e.target.value))} /></div>
+          <div><label style={styles.label}>Kitchen Zone</label><select style={styles.input} value={kitchen} onChange={(e) => setKitchen(e.target.value)}><option>South-East</option><option>North-West</option></select></div>
+          <div><label style={styles.label}>Vaastu</label><select style={styles.input} value={String(vaastu)} onChange={(e) => setVaastu(e.target.value === "true")}><option value="true">Yes</option><option value="false">No</option></select></div>
+        </div>
+        <br />
+        <button style={styles.button} onClick={() => setGenerated(true)}>Generate 2D Drawing</button>
+      </div>
+
+      {generated && (
+        <div style={styles.card}>
+          <h2>2D Floor Plan</h2>
+          <p>Plot: {plotLength} ft × {plotWidth} ft | Floors: {floors} | BUA Approx: {(plotLength * plotWidth * 0.9 * floors).toFixed(0)} sqft</p>
+
+          <svg width="100%" viewBox={`0 0 ${w + 20} ${h + 20}`} style={{ border: "2px solid #111", background: "#fff" }}>
+            <rect x="10" y="10" width={w} height={h} fill="none" stroke="#111" strokeWidth="3" />
+            {visibleRooms.map((r, i) => (
+              <g key={i}>
+                <rect x={r.x} y={r.y} width={r.w} height={r.h} fill="#f8fafc" stroke="#800020" strokeWidth="2" />
+                <text x={r.x + 8} y={r.y + 22} fontSize="12" fontWeight="bold">{r.name}</text>
+                <text x={r.x + 8} y={r.y + 40} fontSize="10">{Math.round(r.w / scale)}' × {Math.round(r.h / scale)}'</text>
+              </g>
+            ))}
+            <line x1={w / 2} y1={10} x2={w / 2 + 20} y2={10} stroke="green" strokeWidth="5" />
+            <text x={w / 2 - 20} y={h + 18} fontSize="11">Main Door / Entry</text>
+          </svg>
+
+          <h3>Drawing Notes</h3>
+          <ul>
+            <li>Kitchen preferred zone: {kitchen}</li>
+            <li>Vaastu mode: {vaastu ? "Enabled" : "Disabled"}</li>
+            <li>Setback assumed: 10%</li>
+            <li>This is conceptual 2D layout, not municipal approval drawing.</li>
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
