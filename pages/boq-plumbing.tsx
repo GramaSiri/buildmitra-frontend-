@@ -66,9 +66,17 @@ const router = useRouter();
   const [results, setResults] = useState(null);
   const [generated, setGenerated] = useState(false);
   
-  const setbackArea = (plotLength - setbackFront) * (plotWidth - setbackFront);
-  const totalBUA = setbackArea * floors;
-  const totalPipeLength = (toilets * 15 + kitchens * 12) * floors;
+  const plotArea = plotLength * plotWidth;
+  const footprintArea = plotArea * 0.9; // Auto 10% setback area
+  const totalBUA = footprintArea * floors;
+
+  const floorCount = Math.max(1, Math.ceil(floors));
+  const floorHeightM = 3.0;
+  const wetPoints = toilets + kitchens;
+
+  const horizontalWaterPipe = (toilets * 12) + (kitchens * 10);
+  const verticalRiserPipe = wetPoints * floorCount * floorHeightM;
+  const totalPipeLength = horizontalWaterPipe + verticalRiserPipe;
   
   const calculateBOQ = () => {
     const items = [
@@ -82,20 +90,20 @@ const router = useRouter();
       { sr: 8, code: 'PLB-08', desc: 'CPVC Elbow 20mm', uom: 'nos', qty: totalPipeLength * 0.1, matRate: rates?.elbow20 || 20, labRate: 10, amount: 0 },
       { sr: 9, code: 'PLB-09', desc: 'CPVC Tee 15mm', uom: 'nos', qty: totalPipeLength * 0.08, matRate: rates?.tee15 || 18, labRate: 8, amount: 0 },
       { sr: 10, code: 'PLB-10', desc: 'CPVC Tee 20mm', uom: 'nos', qty: totalPipeLength * 0.06, matRate: rates?.tee20 || 25, labRate: 10, amount: 0 },
-      { sr: 11, code: 'PLB-11', desc: 'Gate Valve 15mm', uom: 'nos', qty: floors * 2, matRate: rates?.gateValve15 || 180, labRate: 30, amount: 0 },
-      { sr: 12, code: 'PLB-12', desc: 'Gate Valve 20mm', uom: 'nos', qty: floors, matRate: rates?.gateValve20 || 250, labRate: 40, amount: 0 },
-      { sr: 13, code: 'PLB-13', desc: 'Stop Cock 15mm', uom: 'nos', qty: kitchens * floors, matRate: rates?.stopCock || 120, labRate: 25, amount: 0 },
-      { sr: 14, code: 'PLB-14', desc: 'Bib Cock', uom: 'nos', qty: toilets * floors, matRate: rates?.bibCock || 250, labRate: 30, amount: 0 },
-      { sr: 15, code: 'PLB-15', desc: 'Pillar Tap', uom: 'nos', qty: kitchens * 2 * floors, matRate: rates?.pillarTap || 300, labRate: 30, amount: 0 },
-      { sr: 16, code: 'PLB-16', desc: 'Angle Valve', uom: 'nos', qty: (toilets + kitchens) * 2 * floors, matRate: rates?.angleValve || 80, labRate: 20, amount: 0 },
-      { sr: 17, code: 'PLB-17', desc: 'Health Faucet', uom: 'nos', qty: toilets * floors, matRate: rates?.healthFaucet || 350, labRate: 40, amount: 0 },
-      { sr: 18, code: 'PLB-18', desc: 'Western Commode (EWC)', uom: 'set', qty: toilets * floors, matRate: rates?.wc || 3500, labRate: 400, amount: 0 },
-      { sr: 19, code: 'PLB-19', desc: 'Wash Basin', uom: 'set', qty: toilets * floors, matRate: rates?.washBasin || 1200, labRate: 250, amount: 0 },
-      { sr: 20, code: 'PLB-20', desc: 'Kitchen Sink', uom: 'set', qty: kitchens * floors, matRate: rates?.kitchenSink || 2500, labRate: 350, amount: 0 },
-      { sr: 21, code: 'PLB-21', desc: 'Floor Trap', uom: 'nos', qty: toilets * floors, matRate: rates?.floorTrap || 150, labRate: 40, amount: 0 },
-      { sr: 22, code: 'PLB-22', desc: 'Nahani Trap', uom: 'nos', qty: toilets * floors, matRate: rates?.nahaniTrap || 120, labRate: 35, amount: 0 },
-      { sr: 23, code: 'PLB-23', desc: 'Grease Trap', uom: 'nos', qty: kitchens * floors, matRate: rates?.greaseTrap || 400, labRate: 80, amount: 0 },
-      { sr: 24, code: 'PLB-24', desc: 'Chamber Cover', uom: 'nos', qty: toilets * floors, matRate: rates?.chamberCover || 250, labRate: 50, amount: 0 },
+      { sr: 11, code: 'PLB-11', desc: 'Gate Valve 15mm', uom: 'nos', qty: Math.ceil(toilets + kitchens), matRate: rates?.gateValve15 || 180, labRate: 30, amount: 0 },
+{ sr: 12, code: 'PLB-12', desc: 'Gate Valve 20mm', uom: 'nos', qty: Math.ceil(floorCount), matRate: rates?.gateValve20 || 250, labRate: 40, amount: 0 },
+{ sr: 13, code: 'PLB-13', desc: 'Stop Cock 15mm', uom: 'nos', qty: Math.ceil(kitchens), matRate: rates?.stopCock || 120, labRate: 25, amount: 0 },
+{ sr: 14, code: 'PLB-14', desc: 'Bib Cock', uom: 'nos', qty: Math.ceil((toilets * 2) + kitchens), matRate: rates?.bibCock || 250, labRate: 30, amount: 0 },
+{ sr: 15, code: 'PLB-15', desc: 'Pillar Tap', uom: 'nos', qty: Math.ceil(kitchens), matRate: rates?.pillarTap || 300, labRate: 30, amount: 0 },
+{ sr: 16, code: 'PLB-16', desc: 'Angle Valve', uom: 'nos', qty: Math.ceil((toilets * 3) + (kitchens * 2)), matRate: rates?.angleValve || 80, labRate: 20, amount: 0 },
+{ sr: 17, code: 'PLB-17', desc: 'Health Faucet', uom: 'nos', qty: Math.ceil(toilets), matRate: rates?.healthFaucet || 350, labRate: 40, amount: 0 },
+{ sr: 18, code: 'PLB-18', desc: 'Western Commode (EWC)', uom: 'set', qty: Math.ceil(toilets), matRate: rates?.wc || 3500, labRate: 400, amount: 0 },
+{ sr: 19, code: 'PLB-19', desc: 'Wash Basin', uom: 'set', qty: Math.ceil(toilets), matRate: rates?.washBasin || 1200, labRate: 250, amount: 0 },
+{ sr: 20, code: 'PLB-20', desc: 'Kitchen Sink', uom: 'set', qty: Math.ceil(kitchens), matRate: rates?.kitchenSink || 2500, labRate: 350, amount: 0 },
+{ sr: 21, code: 'PLB-21', desc: 'Floor Trap', uom: 'nos', qty: Math.ceil(toilets + kitchens), matRate: rates?.floorTrap || 150, labRate: 40, amount: 0 },
+{ sr: 22, code: 'PLB-22', desc: 'Nahani Trap', uom: 'nos', qty: Math.ceil(toilets), matRate: rates?.nahaniTrap || 120, labRate: 35, amount: 0 },
+{ sr: 23, code: 'PLB-23', desc: 'Grease Trap', uom: 'nos', qty: Math.ceil(kitchens), matRate: rates?.greaseTrap || 400, labRate: 80, amount: 0 },
+{ sr: 24, code: 'PLB-24', desc: 'Chamber Cover', uom: 'nos', qty: Math.ceil(toilets + kitchens + floorCount), matRate: rates?.chamberCover || 250, labRate: 50, amount: 0 },
       { sr: 25, code: 'PLB-25', desc: 'UPVC Solvent Cement', uom: 'bottle', qty: totalPipeLength * 0.01, matRate: rates?.solvent || 80, labRate: 0, amount: 0 },
       { sr: 26, code: 'PLB-26', desc: 'PTFE Tape', uom: 'roll', qty: totalPipeLength * 0.005, matRate: rates?.ptfe || 15, labRate: 0, amount: 0 },
       { sr: 27, code: 'PLB-27', desc: 'Clamps & Hangers', uom: 'set', qty: totalPipeLength * 0.05, matRate: rates?.clamps || 20, labRate: 10, amount: 0 },
@@ -194,7 +202,7 @@ const router = useRouter();
       React.createElement('div', { style: styles.cardContainer },
         React.createElement('div', { style: { ...styles.card, ...styles.cardTotal } }, React.createElement('div', null, '💰'), React.createElement('div', null, 'Total Cost'), React.createElement('div', { style: styles.cardValue }, `₹${formatNumber(results.grandTotal/100000)} L`)),
         React.createElement('div', { style: { ...styles.card, ...styles.cardPipe } }, React.createElement('div', null, '📏'), React.createElement('div', null, 'Pipe Length'), React.createElement('div', { style: styles.cardValue }, `${formatNumber(results.totalPipeLength)} m`)),
-        React.createElement('div', { style: { ...styles.card, ...styles.cardSanitary } }, React.createElement('div', null, '🚽'), React.createElement('div', null, 'Sanitary'), React.createElement('div', { style: styles.cardValue }, `${toilets * floors} sets`)),
+        React.createElement('div', { style: { ...styles.card, ...styles.cardSanitary } }, React.createElement('div', null, '🚽'), React.createElement('div', null, 'Sanitary'), React.createElement('div', { style: styles.cardValue }, `${toilets} sets`)),
         React.createElement('div', { style: { ...styles.card, ...styles.cardLabour } }, React.createElement('div', null, '👷'), React.createElement('div', null, 'Labour'), React.createElement('div', { style: styles.cardValue }, `₹${formatNumber(results.labourTotal/100000)} L`))
       ),
       
