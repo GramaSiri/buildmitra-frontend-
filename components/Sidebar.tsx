@@ -259,7 +259,7 @@ export default function Sidebar({ children, currentPath }) {
     { name: "Plumbing BOQ", path: "/boq-plumbing", icon: "🔧" },
     { name: "Electrical BOQ", path: "/boq-electrical", icon: "⚡" },
     { name: "Painting BOQ", path: "/boq-painting", icon: "🎨" },
-    { name: "False Ceiling BOQ", path: "/boq-ceiling", icon: "⬇️" }
+    { name: "False Ceiling BOQ", path: "/boq-false-ceiling", icon: "⬇️" }
   ];
 
   // ---------------- OTHER MODULES ----------------
@@ -475,6 +475,7 @@ return (
     </div>
   );
 }
+
 
 
 
