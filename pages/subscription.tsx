@@ -1,4 +1,3 @@
-@'
 import React, { useState } from "react";
 import { useRouter } from "next/router";
 
@@ -146,4 +145,4 @@ const styles: Record<string, React.CSSProperties> = {
   primary: { padding: "11px 18px", border: 0, borderRadius: 8, background: "#7f1d1d", color: "white", fontWeight: 900, cursor: "pointer" },
   qr: { border: "1px solid #e2e8f0", borderRadius: 12, background: "#fff" }
 };
-'@ | Set-Content ".\pages\subscription.tsx" -Encoding UTF8
+
