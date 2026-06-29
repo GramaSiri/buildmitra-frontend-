@@ -1,439 +1,340 @@
-import React, { useState } from 'react';
-import { useRouter } from 'next/router';
-import { useRates } from '../contexts/RateContext';
-import * as XLSX from 'xlsx';
-import { usePaymentBarrier } from '../hooks/usePaymentBarrier';
+import React, { useState } from "react";
+import { useRouter } from "next/router";
+import { useRates } from "../contexts/RateContext";
+import * as XLSX from "xlsx";
+import { usePaymentBarrier } from "../hooks/usePaymentBarrier";
 
-const styles = {
-  container: { maxWidth: '100%', margin: 0, padding: '12px', backgroundColor: '#f5f0e8', minHeight: '100vh', boxSizing: 'border-box' },
-  header: { backgroundColor: '#8d6e63', padding: '16px', borderRadius: '8px', marginBottom: '20px', color: 'white', display: 'flex', alignItems: 'center', gap: '15px' },
-  backButton: { backgroundColor: 'transparent', border: 'none', color: 'white', fontSize: '22px', cursor: 'pointer', padding: '5px 10px', borderRadius: '6px' },
-  headerTitle: { margin: 0, fontSize: '20px', flex: 1 },
-  headerSub: { margin: '5px 0 0', opacity: 0.9, fontSize: '12px' },
-  sectionTitle: { backgroundColor: '#e8f4f8', color: '#8d6e63', padding: '8px', borderRadius: '6px', marginBottom: '12px', fontSize: '14px', fontWeight: 'bold', textAlign: 'center', border: '1px solid #cce5ed' },
-  row6: { display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '8px', marginBottom: '12px' },
-  row4: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '12px' },
-  inputGroup: { marginBottom: '6px' },
-  label: { display: 'block', marginBottom: '3px', fontWeight: '600', fontSize: '10px', color: '#555' },
-  input: { width: '100%', padding: '6px', border: '1px solid #ccc', borderRadius: '4px', fontSize: '11px', boxSizing: 'border-box', backgroundColor: '#fff' },
-  select: { width: '100%', padding: '6px', border: '1px solid #ccc', borderRadius: '4px', fontSize: '11px', backgroundColor: '#fff' },
-  buttonSmall: { backgroundColor: '#2196F3', color: 'white', padding: '4px 12px', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', marginTop: '4px' },
-  buttonGenerate: { backgroundColor: '#800020', color: 'white', padding: '12px 24px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold', width: '100%', marginTop: '20px' },
-  buttonExport: { backgroundColor: '#28a745', color: 'white', padding: '8px 20px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', marginRight: '10px' },
-  buttonWhatsapp: { backgroundColor: '#25D366', color: 'white', padding: '8px 20px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' },
-  buttonContainer: { display: 'flex', justifyContent: 'center', gap: '15px', margin: '20px 0' },
-  cardContainer: { display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px', marginBottom: '20px' },
-  card: { padding: '15px', borderRadius: '12px', textAlign: 'center', color: 'white' },
-  cardTotal: { backgroundColor: '#800020' },
-  cardWood: { backgroundColor: '#8d6e63' },
-  cardLaminate: { backgroundColor: '#4CAF50' },
-  cardHardware: { backgroundColor: '#FF9800' },
-  cardLabour: { backgroundColor: '#2196F3' },
-  cardValue: { fontSize: '20px', fontWeight: 'bold', marginTop: '8px' },
-  tableContainer: { overflowX: 'auto', marginTop: '15px', border: '1px solid #ddd', borderRadius: '8px', backgroundColor: '#fff' },
-  table: { width: '100%', borderCollapse: 'collapse', fontSize: '11px' },
-  th: { backgroundColor: '#8d6e63', color: 'white', padding: '8px', textAlign: 'left' },
-  td: { padding: '6px', borderBottom: '1px solid #eee' },
-  evenRow: { backgroundColor: '#f9f9f9' },
-  totalRow: { backgroundColor: '#800020', color: 'white', fontWeight: 'bold' },
-  infoBox: { backgroundColor: '#e8f4f8', padding: '10px', borderRadius: '8px', marginBottom: '15px', fontSize: '12px', textAlign: 'center' }
+const styles: Record<string, React.CSSProperties> = {
+  container: { maxWidth: "100%", margin: 0, padding: "12px", backgroundColor: "#f5f0e8", minHeight: "100vh", boxSizing: "border-box" },
+  header: { backgroundColor: "#8d6e63", padding: "16px", borderRadius: "8px", marginBottom: "20px", color: "white", display: "flex", alignItems: "center", gap: "15px" },
+  backButton: { backgroundColor: "transparent", border: "none", color: "white", fontSize: "22px", cursor: "pointer", padding: "5px 10px", borderRadius: "6px" },
+  headerTitle: { margin: 0, fontSize: "20px", flex: 1 },
+  headerSub: { margin: "5px 0 0", opacity: 0.9, fontSize: "12px" },
+  sectionTitle: { backgroundColor: "#e8f4f8", color: "#8d6e63", padding: "8px", borderRadius: "6px", marginBottom: "12px", fontSize: "14px", fontWeight: "bold", textAlign: "center", border: "1px solid #cce5ed" },
+  row4: { display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "12px", marginBottom: "12px" },
+  row5: { display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: "8px", marginBottom: "12px" },
+  label: { display: "block", marginBottom: "3px", fontWeight: 600, fontSize: "10px", color: "#555" },
+  input: { width: "100%", padding: "6px", border: "1px solid #ccc", borderRadius: "4px", fontSize: "11px", boxSizing: "border-box", backgroundColor: "#fff" },
+  select: { width: "100%", padding: "6px", border: "1px solid #ccc", borderRadius: "4px", fontSize: "11px", backgroundColor: "#fff" },
+  buttonSmall: { backgroundColor: "#2196F3", color: "white", padding: "6px 12px", border: "none", borderRadius: "4px", cursor: "pointer", fontSize: "11px" },
+  buttonGenerate: { backgroundColor: "#800020", color: "white", padding: "12px 24px", border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "14px", fontWeight: "bold" },
+  buttonExport: { backgroundColor: "#28a745", color: "white", padding: "8px 20px", border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "13px" },
+  buttonWhatsapp: { backgroundColor: "#25D366", color: "white", padding: "8px 20px", border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "13px" },
+  buttonContainer: { display: "flex", justifyContent: "center", gap: "15px", margin: "20px 0", flexWrap: "wrap" },
+  cardContainer: { display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: "12px", marginBottom: "20px" },
+  card: { padding: "15px", borderRadius: "12px", textAlign: "center", color: "white" },
+  cardValue: { fontSize: "20px", fontWeight: "bold", marginTop: "8px" },
+  tableContainer: { overflowX: "auto", marginTop: "15px", border: "1px solid #ddd", borderRadius: "8px", backgroundColor: "#fff" },
+  table: { width: "100%", borderCollapse: "collapse", fontSize: "11px" },
+  th: { backgroundColor: "#8d6e63", color: "white", padding: "8px", textAlign: "left" },
+  td: { padding: "6px", borderBottom: "1px solid #eee" },
+  evenRow: { backgroundColor: "#f9f9f9" },
+  totalRow: { backgroundColor: "#800020", color: "white", fontWeight: "bold" },
+  infoBox: { backgroundColor: "#fff8e1", padding: "10px", borderRadius: "8px", marginBottom: "15px", fontSize: "12px", textAlign: "center", border: "1px solid #ffe082" }
 };
 
-const formatNumber = (num) => {
-  if (!num || isNaN(num)) return "0";
-  return num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const itemTypes: any = {
+  "Wardrobe (Sliding)": { kind: "sliding", defaultHeight: 7, depth: 1.5, rate: 1800, labour: 220 },
+  "Wardrobe (Hinged)": { kind: "hinged", defaultHeight: 7, depth: 1.5, rate: 1500, labour: 200 },
+  "Modular Kitchen": { kind: "kitchen", defaultHeight: 3, depth: 1.5, rate: 2500, labour: 300 },
+  "Loft Storage": { kind: "loft", defaultHeight: 2.5, depth: 1.5, rate: 1200, labour: 150 },
+  "TV Panel / Unit": { kind: "tv", defaultHeight: 7, depth: 0.5, rate: 1200, labour: 120 },
+  "Shoe Rack": { kind: "shoe", defaultHeight: 4, depth: 1, rate: 800, labour: 120 },
+  "Pooja Unit": { kind: "pooja", defaultHeight: 7, depth: 1.5, rate: 1800, labour: 250 },
+  "Study Table": { kind: "study", defaultHeight: 2.5, depth: 1.5, rate: 1200, labour: 180 },
+  "Crockery Unit": { kind: "crockery", defaultHeight: 7, depth: 1.5, rate: 1600, labour: 220 },
+  "Bathroom Vanity": { kind: "vanity", defaultHeight: 2.5, depth: 1.5, rate: 1800, labour: 220 }
 };
 
-// Item types with their rates and material factors
-const itemTypes = {
-  'Wardrobe (Sliding)': { unit: 'rft', rateKey: 'wardrobe', defaultRate: 1800, labourRate: 200, woodFactor: 4.5, laminateFactor: 4.0, hardwareFactor: 2.0 },
-  'Wardrobe (Hinged)': { unit: 'rft', rateKey: 'wardrobeHinged', defaultRate: 1500, labourRate: 180, woodFactor: 4.0, laminateFactor: 3.5, hardwareFactor: 1.8 },
-  'Modular Kitchen': { unit: 'rft', rateKey: 'modularKitchen', defaultRate: 2500, labourRate: 300, woodFactor: 5.0, laminateFactor: 5.0, hardwareFactor: 3.0 },
-  'Loft Storage': { unit: 'rft', rateKey: 'loft', defaultRate: 1200, labourRate: 150, woodFactor: 3.0, laminateFactor: 2.5, hardwareFactor: 1.5 },
-  'TV Panel / Unit': { unit: 'rft', rateKey: 'tvUnit', defaultRate: 1200, labourRate: 100, woodFactor: 3.5, laminateFactor: 3.0, hardwareFactor: 1.5 },
-  'Shoe Rack': { unit: 'rft', rateKey: 'shoeRack', defaultRate: 800, labourRate: 100, woodFactor: 2.5, laminateFactor: 2.0, hardwareFactor: 1.0 },
-  'Toilet Basket / Cabinet': { unit: 'nos', rateKey: 'toiletCabinet', defaultRate: 2500, labourRate: 300, woodFactor: 8, laminateFactor: 7, hardwareFactor: 3 },
-  'Pooja Room / Temple': { unit: 'set', rateKey: 'poojaUnit', defaultRate: 15000, labourRate: 500, woodFactor: 30, laminateFactor: 25, hardwareFactor: 10 },
-  'Door Panel (Flush)': { unit: 'nos', rateKey: 'flushDoor', defaultRate: 2500, labourRate: 400, woodFactor: 12, laminateFactor: 10, hardwareFactor: 4 },
-  'Door Panel (WPC)': { unit: 'nos', rateKey: 'wpcDoor', defaultRate: 2000, labourRate: 300, woodFactor: 10, laminateFactor: 8, hardwareFactor: 3 },
-  'Door Panel (Glass)': { unit: 'nos', rateKey: 'glassDoor', defaultRate: 3000, labourRate: 350, woodFactor: 11, laminateFactor: 9, hardwareFactor: 3 },
-  'Bed (King Size)': { unit: 'nos', rateKey: 'kingBed', defaultRate: 25000, labourRate: 1000, woodFactor: 45, laminateFactor: 35, hardwareFactor: 15 },
-  'Bed (Queen Size)': { unit: 'nos', rateKey: 'queenBed', defaultRate: 20000, labourRate: 800, woodFactor: 35, laminateFactor: 28, hardwareFactor: 12 },
-  'Bed (Single)': { unit: 'nos', rateKey: 'singleBed', defaultRate: 12000, labourRate: 500, woodFactor: 25, laminateFactor: 20, hardwareFactor: 8 },
-  'Dining Table (4 Seater)': { unit: 'set', rateKey: 'dining4', defaultRate: 15000, labourRate: 600, woodFactor: 25, laminateFactor: 20, hardwareFactor: 8 },
-  'Dining Table (6 Seater)': { unit: 'set', rateKey: 'dining6', defaultRate: 25000, labourRate: 800, woodFactor: 35, laminateFactor: 28, hardwareFactor: 12 },
-  'Dining Table (8 Seater)': { unit: 'set', rateKey: 'dining8', defaultRate: 35000, labourRate: 1000, woodFactor: 45, laminateFactor: 35, hardwareFactor: 15 },
-  'Sofa (3 Seater)': { unit: 'set', rateKey: 'sofa3', defaultRate: 25000, labourRate: 800, woodFactor: 30, laminateFactor: 25, hardwareFactor: 10 },
-  'Sofa (2 Seater)': { unit: 'set', rateKey: 'sofa2', defaultRate: 18000, labourRate: 600, woodFactor: 22, laminateFactor: 18, hardwareFactor: 8 },
-  'Sofa (L-Shape)': { unit: 'set', rateKey: 'sofaL', defaultRate: 40000, labourRate: 1200, woodFactor: 50, laminateFactor: 40, hardwareFactor: 15 },
-  'Sitout / Bench': { unit: 'rft', rateKey: 'sitout', defaultRate: 800, labourRate: 100, woodFactor: 2.0, laminateFactor: 1.5, hardwareFactor: 0.8 },
-  'Study Table': { unit: 'set', rateKey: 'studyTable', defaultRate: 8000, labourRate: 300, woodFactor: 15, laminateFactor: 12, hardwareFactor: 5 }
-};
+const fmt = (n: any) => Number(n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const ceil = (n: number) => Math.ceil(Number(n || 0));
+
+function calcItem(name: string, length: number, height: number, nos: number, rates: any) {
+  const t = itemTypes[name];
+  const L = Number(length || 0);
+  const H = Number(height || t.defaultHeight || 0);
+  const N = Number(nos || 1);
+  const depth = t.depth;
+  const frontArea = L * H * N;
+  const rft = L * N;
+
+  let q: any = {
+    plywood18mm: 0, plywood12mm: 0, plywood6mm: 0,
+    externalLaminate: 0, internalLaminate: 0, edgeBanding: 0,
+    hinges: 0, handles: 0, locks: 0, drawerChannels: 0,
+    slidingTrack: 0, kitchenAccessories: 0, countertop: 0,
+    fevicol: 0, nails: 0, screws: 0, mirrors: 0, glass: 0
+  };
+
+  if (t.kind === "sliding") {
+    q.plywood18mm = frontArea * 2.2;
+    q.plywood12mm = frontArea * 0.3;
+    q.plywood6mm = frontArea;
+    q.externalLaminate = frontArea;
+    q.internalLaminate = q.plywood18mm * 0.55;
+    q.edgeBanding = frontArea * 1.8;
+    q.slidingTrack = rft;
+    q.handles = 2 * N;
+    q.locks = N;
+    q.mirrors = frontArea * 0.25;
+  } else if (t.kind === "hinged") {
+    q.plywood18mm = frontArea * 2.4;
+    q.plywood12mm = frontArea * 0.25;
+    q.plywood6mm = frontArea;
+    q.externalLaminate = frontArea;
+    q.internalLaminate = q.plywood18mm * 0.6;
+    q.edgeBanding = frontArea * 2;
+    q.hinges = ceil(frontArea / 7);
+    q.handles = ceil(frontArea / 14);
+    q.locks = N;
+  } else if (t.kind === "kitchen") {
+    q.plywood18mm = rft * 18;
+    q.plywood12mm = rft * 5;
+    q.plywood6mm = rft * 6;
+    q.externalLaminate = rft * 5;
+    q.internalLaminate = (q.plywood18mm + q.plywood12mm) * 0.5;
+    q.edgeBanding = rft * 8;
+    q.hinges = ceil(rft * 1.5);
+    q.handles = ceil(rft * 1.5);
+    q.drawerChannels = ceil(rft / 2);
+    q.kitchenAccessories = ceil(rft / 2);
+    q.countertop = rft;
+  } else if (t.kind === "loft") {
+    q.plywood18mm = frontArea * 1.6;
+    q.plywood12mm = frontArea * 0.25;
+    q.plywood6mm = frontArea;
+    q.externalLaminate = frontArea;
+    q.internalLaminate = frontArea * 0.5;
+    q.edgeBanding = frontArea * 1.6;
+    q.hinges = ceil(frontArea / 8);
+    q.handles = ceil(frontArea / 12);
+    q.locks = N;
+  } else if (t.kind === "tv") {
+    q.plywood18mm = frontArea * 1.25;
+    q.plywood12mm = frontArea * 0.2;
+    q.externalLaminate = frontArea;
+    q.internalLaminate = frontArea * 0.2;
+    q.edgeBanding = (L + H) * 2 * N;
+  } else if (t.kind === "shoe") {
+    q.plywood18mm = frontArea * 1.5;
+    q.plywood12mm = frontArea * 0.2;
+    q.plywood6mm = frontArea;
+    q.externalLaminate = frontArea;
+    q.internalLaminate = frontArea * 0.5;
+    q.edgeBanding = frontArea * 1.8;
+    q.hinges = ceil(frontArea / 8);
+    q.handles = ceil(frontArea / 12);
+    q.locks = N;
+  } else {
+    q.plywood18mm = frontArea * 1.8;
+    q.plywood12mm = frontArea * 0.25;
+    q.plywood6mm = frontArea * 0.5;
+    q.externalLaminate = frontArea;
+    q.internalLaminate = frontArea * 0.5;
+    q.edgeBanding = frontArea * 1.5;
+    q.hinges = ceil(frontArea / 8);
+    q.handles = ceil(frontArea / 12);
+    q.locks = N;
+  }
+
+  q.fevicol = (q.plywood18mm + q.plywood12mm) * 0.015;
+  q.nails = frontArea * 0.01;
+  q.screws = ceil(frontArea / 30);
+
+  const rate = rates?.[t.kind] || t.rate;
+  const labourRate = t.labour;
+  const chargeQty = t.kind === "kitchen" ? rft : frontArea;
+  const amount = chargeQty * rate;
+  const labourAmount = chargeQty * labourRate;
+
+  return {
+    id: Date.now() + Math.random(),
+    name, length: L, depth, height: H, nos: N,
+    displayQty: t.kind === "kitchen" ? rft : frontArea,
+    displayUnit: t.kind === "kitchen" ? "rft" : "sft",
+    frontArea, rft, rate, labourRate, amount, labourAmount, total: amount + labourAmount,
+    ...q
+  };
+}
 
 export default function InteriorBOQPage() {
-  
   const { checkAndRun } = usePaymentBarrier();
-const router = useRouter();
+  const router = useRouter();
   const { rates, loading } = useRates();
-  
-  const [projectName, setProjectName] = useState('Jai Sri ram');
-  const [clientName, setClientName] = useState('Reddy');
-  const [mobileNo, setMobileNo] = useState('7676942386');
-  const [city, setCity] = useState('Bengaluru');
-  
-  const [items, setItems] = useState([]);
-  const [selectedItem, setSelectedItem] = useState('Wardrobe (Sliding)');
+
+  const [projectName, setProjectName] = useState("Jai Sri ram");
+  const [clientName, setClientName] = useState("Reddy");
+  const [mobileNo, setMobileNo] = useState("7676942386");
+  const [city, setCity] = useState("Bengaluru");
+  const [items, setItems] = useState<any[]>([]);
+  const [selectedItem, setSelectedItem] = useState("Wardrobe (Sliding)");
   const [length, setLength] = useState(6);
-  const [width, setWidth] = useState(0);
   const [height, setHeight] = useState(7);
   const [nos, setNos] = useState(1);
-  
-  const [results, setResults] = useState(null);
+  const [results, setResults] = useState<any>(null);
   const [generated, setGenerated] = useState(false);
 
-  const getItemRate = (itemName) => {
-    const itemInfo = itemTypes[itemName];
-    return rates?.[itemInfo.rateKey] || itemInfo.defaultRate;
-  };
-
-  const getItemLabourRate = (itemName) => {
-    const itemInfo = itemTypes[itemName];
-    return itemInfo.labourRate;
-  };
-
-  const calculateArea = () => {
-    const itemInfo = itemTypes[selectedItem];
-    if (itemInfo.unit === 'rft') {
-      return length * nos;
-    } else if (itemInfo.unit === 'nos') {
-      return nos;
-    } else if (itemInfo.unit === 'set') {
-      return nos;
-    } else {
-      return (length * width * height * nos) / 144;
-    }
-  };
-
   const addItem = () => {
-    const area = calculateArea();
-    const itemInfo = itemTypes[selectedItem];
-    const rate = getItemRate(selectedItem);
-    const labourRate = getItemLabourRate(selectedItem);
-    const amount = area * rate;
-    const labourAmount = area * labourRate;
-    
-    // Calculate all material requirements
-    const plywood18mm = area * itemInfo.woodFactor;
-    const plywood12mm = area * itemInfo.woodFactor * 0.3;
-    const plywood6mm = area * itemInfo.woodFactor * 0.15;
-    const externalLaminate = area * itemInfo.laminateFactor;
-    const internalLaminate = area * itemInfo.laminateFactor * 0.6;
-    const edgeBanding = area * itemInfo.laminateFactor * 2;
-    const hinges = area * 0.5;
-    const handles = area * 0.2;
-    const locks = area * 0.05;
-    const drawerChannels = area * 0.15;
-    const kitchenAccessories = selectedItem === 'Modular Kitchen' ? area * 1.5 : 0;
-    const fevicol = area * 0.05;
-    const nails = area * 0.03;
-    const screws = area * 0.04;
-    const mirrors = selectedItem === 'Wardrobe (Sliding)' ? area * 0.3 : selectedItem === 'Wardrobe (Hinged)' ? area * 0.2 : 0;
-    const glass = selectedItem === 'Door Panel (Glass)' ? area * 1.2 : 0;
-    
-    setItems([...items, {
-      id: Date.now(),
-      name: selectedItem,
-      length: length,
-      width: width,
-      height: height,
-      nos: nos,
-      unit: itemInfo.unit,
-      area: area,
-      rate: rate,
-      labourRate: labourRate,
-      amount: amount,
-      labourAmount: labourAmount,
-      total: amount + labourAmount,
-      // Material quantities
-      plywood18mm, plywood12mm, plywood6mm,
-      externalLaminate, internalLaminate, edgeBanding,
-      hinges, handles, locks, drawerChannels, kitchenAccessories,
-      fevicol, nails, screws, mirrors, glass
-    }]);
-    
-    setLength(6);
-    setWidth(0);
-    setHeight(7);
-    setNos(1);
+    if (!length || length <= 0) return alert("Enter valid length.");
+    if (!height || height <= 0) return alert("Enter valid height.");
+    const item = calcItem(selectedItem, length, height, nos, rates);
+    setItems([...items, item]);
+    setHeight(itemTypes[selectedItem].defaultHeight);
   };
 
-  const removeItem = (id) => {
-    setItems(items.filter(item => item.id !== id));
-  };
+  const removeItem = (id: any) => setItems(items.filter(i => i.id !== id));
 
   const calculateBOQ = () => {
-    // Item-wise totals
-    const materialTotal = items.reduce((sum, item) => sum + item.amount, 0);
-    const labourTotal = items.reduce((sum, item) => sum + item.labourAmount, 0);
-    const grandTotal = materialTotal + labourTotal;
-    const totalArea = items.reduce((sum, item) => sum + item.area, 0);
-    
-    // Material-wise totals
-    const materialBreakdown = {
-      plywood18mm: items.reduce((sum, item) => sum + item.plywood18mm, 0),
-      plywood12mm: items.reduce((sum, item) => sum + item.plywood12mm, 0),
-      plywood6mm: items.reduce((sum, item) => sum + item.plywood6mm, 0),
-      externalLaminate: items.reduce((sum, item) => sum + item.externalLaminate, 0),
-      internalLaminate: items.reduce((sum, item) => sum + item.internalLaminate, 0),
-      edgeBanding: items.reduce((sum, item) => sum + item.edgeBanding, 0),
-      hinges: items.reduce((sum, item) => sum + item.hinges, 0),
-      handles: items.reduce((sum, item) => sum + item.handles, 0),
-      locks: items.reduce((sum, item) => sum + item.locks, 0),
-      drawerChannels: items.reduce((sum, item) => sum + item.drawerChannels, 0),
-      kitchenAccessories: items.reduce((sum, item) => sum + item.kitchenAccessories, 0),
-      fevicol: items.reduce((sum, item) => sum + item.fevicol, 0),
-      nails: items.reduce((sum, item) => sum + item.nails, 0),
-      screws: items.reduce((sum, item) => sum + item.screws, 0),
-      mirrors: items.reduce((sum, item) => sum + item.mirrors, 0),
-      glass: items.reduce((sum, item) => sum + item.glass, 0)
+    const sum = (k: string) => items.reduce((s, i) => s + Number(i[k] || 0), 0);
+    const materialBreakdown: any = {
+      plywood18mm: sum("plywood18mm"), plywood12mm: sum("plywood12mm"), plywood6mm: sum("plywood6mm"),
+      externalLaminate: sum("externalLaminate"), internalLaminate: sum("internalLaminate"), edgeBanding: sum("edgeBanding"),
+      hinges: sum("hinges"), handles: sum("handles"), locks: sum("locks"), drawerChannels: sum("drawerChannels"),
+      slidingTrack: sum("slidingTrack"), kitchenAccessories: sum("kitchenAccessories"), countertop: sum("countertop"),
+      fevicol: sum("fevicol"), nails: sum("nails"), screws: sum("screws"), mirrors: sum("mirrors"), glass: sum("glass")
     };
-    
-    // Material costs
-    const materialCosts = {
-      plywood18mmCost: materialBreakdown.plywood18mm * (rates?.plywood18mm || 80),
-      plywood12mmCost: materialBreakdown.plywood12mm * (rates?.plywood12mm || 65),
-      plywood6mmCost: materialBreakdown.plywood6mm * (rates?.plywood6mm || 40),
-      externalLaminateCost: materialBreakdown.externalLaminate * (rates?.laminateExt || 45),
-      internalLaminateCost: materialBreakdown.internalLaminate * (rates?.laminateInt || 30),
-      edgeBandingCost: materialBreakdown.edgeBanding * (rates?.edgeBanding || 8),
-      hingesCost: materialBreakdown.hinges * (rates?.hinge || 35),
-      handlesCost: materialBreakdown.handles * (rates?.handle || 50),
-      locksCost: materialBreakdown.locks * (rates?.lock || 120),
-      drawerChannelsCost: materialBreakdown.drawerChannels * (rates?.drawerChannel || 80),
-      kitchenAccessoriesCost: materialBreakdown.kitchenAccessories * (rates?.kitchenAcc || 150),
-      fevicolCost: materialBreakdown.fevicol * (rates?.fevicol || 60),
-      nailsCost: materialBreakdown.nails * (rates?.nails || 30),
-      screwsCost: materialBreakdown.screws * (rates?.screws || 40),
-      mirrorsCost: materialBreakdown.mirrors * (rates?.mirror || 50),
-      glassCost: materialBreakdown.glass * (rates?.glass || 60)
+
+    const r = {
+      plywood18mm: rates?.plywood18mm || 80,
+      plywood12mm: rates?.plywood12mm || 65,
+      plywood6mm: rates?.plywood6mm || 40,
+      externalLaminate: rates?.laminateExt || 45,
+      internalLaminate: rates?.laminateInt || 30,
+      edgeBanding: rates?.edgeBanding || 8,
+      hinges: rates?.hinge || 35,
+      handles: rates?.handle || 50,
+      locks: rates?.lock || 120,
+      drawerChannels: rates?.drawerChannel || 80,
+      slidingTrack: rates?.slidingTrack || 250,
+      kitchenAccessories: rates?.kitchenAcc || 150,
+      countertop: rates?.countertop || 1200,
+      fevicol: rates?.fevicol || 60,
+      nails: rates?.nails || 30,
+      screws: rates?.screws || 40,
+      mirrors: rates?.mirror || 50,
+      glass: rates?.glass || 60
     };
-    
-    const materialCostTotal = Object.values(materialCosts).reduce((a, b) => a + b, 0);
-    
-    return { 
-      items, 
-      materialTotal, 
-      labourTotal, 
-      grandTotal, 
-      totalArea,
-      materialBreakdown,
-      materialCosts,
-      materialCostTotal
-    };
+
+    const materialCosts: any = {};
+    Object.keys(materialBreakdown).forEach(k => materialCosts[k + "Cost"] = materialBreakdown[k] * (r as any)[k]);
+
+    const materialCostTotal = Object.values(materialCosts).reduce((a: any, b: any) => a + b, 0);
+    const labourTotal = items.reduce((s, i) => s + i.labourAmount, 0);
+    const itemTotal = items.reduce((s, i) => s + i.amount, 0);
+    const grandTotal = materialCostTotal + labourTotal;
+
+    return { items, materialBreakdown, materialCosts, materialCostTotal, labourTotal, itemTotal, grandTotal };
   };
 
-  const handleGenerate = () => {
-    setResults(calculateBOQ());
-    setGenerated(true);
-  };
+  const handleGenerate = () => { setResults(calculateBOQ()); setGenerated(true); };
+  const handleReset = () => { setItems([]); setResults(null); setGenerated(false); };
+  const handleBack = () => router.push("/boq");
 
-  const handleReset = () => {
-    setItems([]);
-    setResults(null);
-    setGenerated(false);
-    setProjectName('Jai Sri ram');
-    setClientName('Reddy');
-    setMobileNo('7676942386');
-    setCity('Bengaluru');
-  };
-
-  const handleBack = () => {
-    router.push('/boq');
-  };
+  const materialRows = (res: any) => [
+    ["18mm Plywood BWP", res.materialBreakdown.plywood18mm, "sft", rates?.plywood18mm || 80, res.materialCosts.plywood18mmCost],
+    ["12mm Plywood BWP", res.materialBreakdown.plywood12mm, "sft", rates?.plywood12mm || 65, res.materialCosts.plywood12mmCost],
+    ["6mm Plywood MR", res.materialBreakdown.plywood6mm, "sft", rates?.plywood6mm || 40, res.materialCosts.plywood6mmCost],
+    ["External Laminate", res.materialBreakdown.externalLaminate, "sft", rates?.laminateExt || 45, res.materialCosts.externalLaminateCost],
+    ["Internal Laminate", res.materialBreakdown.internalLaminate, "sft", rates?.laminateInt || 30, res.materialCosts.internalLaminateCost],
+    ["Edge Banding", res.materialBreakdown.edgeBanding, "m", rates?.edgeBanding || 8, res.materialCosts.edgeBandingCost],
+    ["Hinges Soft Close", res.materialBreakdown.hinges, "nos", rates?.hinge || 35, res.materialCosts.hingesCost],
+    ["Handles / Pulls", res.materialBreakdown.handles, "nos", rates?.handle || 50, res.materialCosts.handlesCost],
+    ["Locks", res.materialBreakdown.locks, "nos", rates?.lock || 120, res.materialCosts.locksCost],
+    ["Drawer Channels", res.materialBreakdown.drawerChannels, "set", rates?.drawerChannel || 80, res.materialCosts.drawerChannelsCost],
+    ["Sliding Track", res.materialBreakdown.slidingTrack, "rft", rates?.slidingTrack || 250, res.materialCosts.slidingTrackCost],
+    ["Kitchen Accessories", res.materialBreakdown.kitchenAccessories, "set", rates?.kitchenAcc || 150, res.materialCosts.kitchenAccessoriesCost],
+    ["Countertop", res.materialBreakdown.countertop, "rft", rates?.countertop || 1200, res.materialCosts.countertopCost],
+    ["Fevicol / Adhesive", res.materialBreakdown.fevicol, "kg", rates?.fevicol || 60, res.materialCosts.fevicolCost],
+    ["Nails", res.materialBreakdown.nails, "kg", rates?.nails || 30, res.materialCosts.nailsCost],
+    ["Screws", res.materialBreakdown.screws, "box", rates?.screws || 40, res.materialCosts.screwsCost],
+    ["Mirrors", res.materialBreakdown.mirrors, "sft", rates?.mirror || 50, res.materialCosts.mirrorsCost],
+    ["Glass", res.materialBreakdown.glass, "sft", rates?.glass || 60, res.materialCosts.glassCost]
+  ];
 
   const handleExportExcel = () => {
     if (!results) return;
-    
-    // Items sheet
-    const itemsData = results.items.map(item => ({
-      'Item': item.name,
-      'Size': `${item.length}' x ${item.width}' x ${item.height}'`,
-      'Nos': item.nos,
-      'Area (sqft)': formatNumber(item.area),
-      'Material (₹)': formatNumber(item.amount),
-      'Labour (₹)': formatNumber(item.labourAmount),
-      'Total (₹)': formatNumber(item.total)
+    const itemsData = results.items.map((i: any) => ({
+      Item: i.name, Size: `${i.length}' x ${i.depth}' x ${i.height}'`, Nos: i.nos,
+      Qty: fmt(i.displayQty), Unit: i.displayUnit, Material: fmt(i.amount), Labour: fmt(i.labourAmount), Total: fmt(i.total)
     }));
-    
-    // Materials sheet with all details
-    const materialsData = [
-      { 'Material': '18mm Plywood (BWP)', 'Quantity': formatNumber(results.materialBreakdown.plywood18mm), 'Unit': 'sft', 'Rate': formatNumber(rates?.plywood18mm || 80), 'Cost': formatNumber(results.materialCosts.plywood18mmCost) },
-      { 'Material': '12mm Plywood (BWP)', 'Quantity': formatNumber(results.materialBreakdown.plywood12mm), 'Unit': 'sft', 'Rate': formatNumber(rates?.plywood12mm || 65), 'Cost': formatNumber(results.materialCosts.plywood12mmCost) },
-      { 'Material': '6mm Plywood (MR)', 'Quantity': formatNumber(results.materialBreakdown.plywood6mm), 'Unit': 'sft', 'Rate': formatNumber(rates?.plywood6mm || 40), 'Cost': formatNumber(results.materialCosts.plywood6mmCost) },
-      { 'Material': 'External Laminate (Sunmica)', 'Quantity': formatNumber(results.materialBreakdown.externalLaminate), 'Unit': 'sft', 'Rate': formatNumber(rates?.laminateExt || 45), 'Cost': formatNumber(results.materialCosts.externalLaminateCost) },
-      { 'Material': 'Internal Laminate (Back side)', 'Quantity': formatNumber(results.materialBreakdown.internalLaminate), 'Unit': 'sft', 'Rate': formatNumber(rates?.laminateInt || 30), 'Cost': formatNumber(results.materialCosts.internalLaminateCost) },
-      { 'Material': 'Edge Banding (PVC)', 'Quantity': formatNumber(results.materialBreakdown.edgeBanding), 'Unit': 'm', 'Rate': formatNumber(rates?.edgeBanding || 8), 'Cost': formatNumber(results.materialCosts.edgeBandingCost) },
-      { 'Material': 'Hinges (Soft Close)', 'Quantity': formatNumber(results.materialBreakdown.hinges), 'Unit': 'nos', 'Rate': formatNumber(rates?.hinge || 35), 'Cost': formatNumber(results.materialCosts.hingesCost) },
-      { 'Material': 'Handles / Pulls', 'Quantity': formatNumber(results.materialBreakdown.handles), 'Unit': 'nos', 'Rate': formatNumber(rates?.handle || 50), 'Cost': formatNumber(results.materialCosts.handlesCost) },
-      { 'Material': 'Locks', 'Quantity': formatNumber(results.materialBreakdown.locks), 'Unit': 'nos', 'Rate': formatNumber(rates?.lock || 120), 'Cost': formatNumber(results.materialCosts.locksCost) },
-      { 'Material': 'Drawer Channels (SS)', 'Quantity': formatNumber(results.materialBreakdown.drawerChannels), 'Unit': 'set', 'Rate': formatNumber(rates?.drawerChannel || 80), 'Cost': formatNumber(results.materialCosts.drawerChannelsCost) },
-      { 'Material': 'Kitchen Accessories', 'Quantity': formatNumber(results.materialBreakdown.kitchenAccessories), 'Unit': 'set', 'Rate': formatNumber(rates?.kitchenAcc || 150), 'Cost': formatNumber(results.materialCosts.kitchenAccessoriesCost) },
-      { 'Material': 'Fevicol / Adhesive', 'Quantity': formatNumber(results.materialBreakdown.fevicol), 'Unit': 'kg', 'Rate': formatNumber(rates?.fevicol || 60), 'Cost': formatNumber(results.materialCosts.fevicolCost) },
-      { 'Material': 'Nails', 'Quantity': formatNumber(results.materialBreakdown.nails), 'Unit': 'kg', 'Rate': formatNumber(rates?.nails || 30), 'Cost': formatNumber(results.materialCosts.nailsCost) },
-      { 'Material': 'Screws', 'Quantity': formatNumber(results.materialBreakdown.screws), 'Unit': 'box', 'Rate': formatNumber(rates?.screws || 40), 'Cost': formatNumber(results.materialCosts.screwsCost) },
-      { 'Material': 'Mirrors', 'Quantity': formatNumber(results.materialBreakdown.mirrors), 'Unit': 'sft', 'Rate': formatNumber(rates?.mirror || 50), 'Cost': formatNumber(results.materialCosts.mirrorsCost) },
-      { 'Material': 'Glass', 'Quantity': formatNumber(results.materialBreakdown.glass), 'Unit': 'sft', 'Rate': formatNumber(rates?.glass || 60), 'Cost': formatNumber(results.materialCosts.glassCost) }
-    ];
-    
-    const ws1 = XLSX.utils.json_to_sheet(itemsData);
-    const ws2 = XLSX.utils.json_to_sheet(materialsData);
+    const materialsData = materialRows(results).map(r => ({ Material: r[0], Quantity: fmt(r[1]), Unit: r[2], Rate: fmt(r[3]), Cost: fmt(r[4]) }));
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws1, 'Items_BOQ');
-    XLSX.utils.book_append_sheet(wb, ws2, 'Materials_BOQ');
-    XLSX.writeFile(wb, `Interior_BOQ_${new Date().toISOString().split('T')[0]}.xlsx`);
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(itemsData), "Interior_Items");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(materialsData), "Material_BOQ");
+    XLSX.writeFile(wb, `Interior_BOQ_${new Date().toISOString().split("T")[0]}.xlsx`);
   };
 
   const handleWhatsApp = () => {
     if (!results) return;
-    const message = `🛋️ INTERIOR BOQ\n\nProject: ${projectName}\nTotal Items: ${results.items.length}\nPlywood: ${formatNumber(results.materialBreakdown.plywood18mm)} sft\nLaminate: ${formatNumber(results.materialBreakdown.externalLaminate)} sft\nHardware: ${formatNumber(results.materialBreakdown.hinges)} nos\nTotal Cost: ₹${formatNumber(results.grandTotal/100000)} Lakhs`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+    const msg = `Interior BOQ\nProject: ${projectName}\nItems: ${results.items.length}\nPlywood: ${fmt(results.materialBreakdown.plywood18mm)} sft\nLaminate: ${fmt(results.materialBreakdown.externalLaminate)} sft\nTotal: ₹${fmt(results.grandTotal)}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
-  if (loading) {
-    return React.createElement('div', { style: { padding: '20px', textAlign: 'center' } }, 'Loading rates...');
-  }
+  if (loading) return <div style={{ padding: 20, textAlign: "center" }}>Loading rates...</div>;
 
-  return React.createElement('div', { style: styles.container },
-    React.createElement('div', { style: styles.header },
-      React.createElement('button', { onClick: handleBack, style: styles.backButton }, '←'),
-      React.createElement('div', { style: { flex: 1 } },
-        React.createElement('h1', { style: styles.headerTitle }, '🛋️ Interior BOQ Calculator'),
-        React.createElement('p', { style: styles.headerSub }, 'Complete material breakdown - Plywood, Laminate, Hardware, Accessories')
-      )
-    ),
-    
-    React.createElement('div', { style: styles.sectionTitle }, '📋 Project Details'),
-    React.createElement('div', { style: styles.row4 },
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Project Name'), React.createElement('input', { type: 'text', value: projectName, onChange: (e) => setProjectName(e.target.value), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Client Name'), React.createElement('input', { type: 'text', value: clientName, onChange: (e) => setClientName(e.target.value), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Mobile No.'), React.createElement('input', { type: 'text', value: mobileNo, onChange: (e) => setMobileNo(e.target.value), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'City'), React.createElement('input', { type: 'text', value: city, onChange: (e) => setCity(e.target.value), style: styles.input }))
-    ),
-    
-    React.createElement('div', { style: styles.sectionTitle }, '➕ Add Interior Item'),
-    React.createElement('div', { style: styles.row6 },
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Item Type'), React.createElement('select', { value: selectedItem, onChange: (e) => setSelectedItem(e.target.value), style: styles.select },
-        Object.keys(itemTypes).map(item => React.createElement('option', { key: item, value: item }, `${item} (${itemTypes[item].unit})`)))),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Length (ft)'), React.createElement('input', { type: 'number', value: length, onChange: (e) => setLength(parseFloat(e.target.value)), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Width (ft)'), React.createElement('input', { type: 'number', value: width, onChange: (e) => setWidth(parseFloat(e.target.value)), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Height (ft)'), React.createElement('input', { type: 'number', value: height, onChange: (e) => setHeight(parseFloat(e.target.value)), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Nos'), React.createElement('input', { type: 'number', value: nos, onChange: (e) => setNos(parseFloat(e.target.value)), style: styles.input })),
-      React.createElement('div', { style: { display: 'flex', alignItems: 'flex-end' } }, React.createElement('button', { onClick: addItem, style: styles.buttonSmall }, '+ Add Item'))
-    ),
-    
-    items.length > 0 && React.createElement('div', { style: styles.tableContainer },
-      React.createElement('table', { style: styles.table },
-        React.createElement('thead', null, React.createElement('tr', null,
-          React.createElement('th', { style: styles.th }, 'Item'), React.createElement('th', { style: styles.th }, 'Size'),
-          React.createElement('th', { style: styles.th }, 'Nos'), React.createElement('th', { style: styles.th }, 'Area'),
-          React.createElement('th', { style: styles.th }, 'Material'), React.createElement('th', { style: styles.th }, 'Labour'),
-          React.createElement('th', { style: styles.th }, 'Total'), React.createElement('th', { style: styles.th }, '')
-        )),
-        React.createElement('tbody', null,
-          items.map((item, idx) => React.createElement('tr', { key: item.id, style: idx % 2 === 0 ? {} : styles.evenRow },
-            React.createElement('td', { style: styles.td }, item.name),
-            React.createElement('td', { style: styles.td }, `${item.length}' x ${item.width}' x ${item.height}'`),
-            React.createElement('td', { style: styles.td }, item.nos),
-            React.createElement('td', { style: styles.td }, formatNumber(item.area)),
-            React.createElement('td', { style: styles.td }, `₹${formatNumber(item.amount)}`),
-            React.createElement('td', { style: styles.td }, `₹${formatNumber(item.labourAmount)}`),
-            React.createElement('td', { style: styles.td }, `₹${formatNumber(item.total)}`),
-            React.createElement('td', { style: styles.td }, React.createElement('button', { onClick: () => removeItem(item.id), style: { ...styles.buttonSmall, backgroundColor: '#dc3545' } }, 'X'))
-          ))
-        )
-      )
-    ),
-    
-    React.createElement('div', { style: styles.buttonContainer },
-      React.createElement('button', { onClick: handleReset, style: styles.buttonExport }, '🔄 Reset'),
-      React.createElement('button', { onClick: handleGenerate, style: styles.buttonGenerate }, '🔨 Generate Interior BOQ')
-    ),
-    
-    generated && results && React.createElement('div', null,
-      React.createElement('div', { style: styles.cardContainer },
-        React.createElement('div', { style: { ...styles.card, ...styles.cardTotal } }, React.createElement('div', null, '💰'), React.createElement('div', null, 'Total Cost'), React.createElement('div', { style: styles.cardValue }, `₹${formatNumber(results.grandTotal/100000)} L`)),
-        React.createElement('div', { style: { ...styles.card, ...styles.cardWood } }, React.createElement('div', null, '🪵'), React.createElement('div', null, 'Plywood'), React.createElement('div', { style: styles.cardValue }, `${formatNumber(results.materialBreakdown.plywood18mm)} sft`)),
-        React.createElement('div', { style: { ...styles.card, ...styles.cardLaminate } }, React.createElement('div', null, '🎨'), React.createElement('div', null, 'Laminate'), React.createElement('div', { style: styles.cardValue }, `${formatNumber(results.materialBreakdown.externalLaminate)} sft`)),
-        React.createElement('div', { style: { ...styles.card, ...styles.cardHardware } }, React.createElement('div', null, '🔧'), React.createElement('div', null, 'Hardware'), React.createElement('div', { style: styles.cardValue }, `${formatNumber(results.materialBreakdown.hinges)} nos`)),
-        React.createElement('div', { style: { ...styles.card, ...styles.cardLabour } }, React.createElement('div', null, '👷'), React.createElement('div', null, 'Labour'), React.createElement('div', { style: styles.cardValue }, `₹${formatNumber(results.labourTotal/100000)} L`))
-      ),
-      
-      React.createElement('div', { style: styles.buttonContainer },
-        React.createElement('button', { onClick: () => checkAndRun('boq_export', 'boq-interior', handleExportExcel), style: styles.buttonExport }, '📊 Excel'),
-        React.createElement('button', { onClick: () => checkAndRun('boq_export', 'boq-interior', handleWhatsApp), style: styles.buttonWhatsapp }, '💬 Share')
-      ),
-      
-      // Complete Material BOQ Table
-      React.createElement('div', { style: styles.tableContainer },
-        React.createElement('table', { style: styles.table },
-          React.createElement('thead', null, React.createElement('tr', null,
-            React.createElement('th', { style: styles.th }, 'Material'), React.createElement('th', { style: styles.th }, 'Quantity'),
-            React.createElement('th', { style: styles.th }, 'Unit'), React.createElement('th', { style: styles.th }, 'Rate'),
-            React.createElement('th', { style: styles.th }, 'Cost (₹)')
-          )),
-          React.createElement('tbody', null,
-            React.createElement('tr', null, React.createElement('td', { style: styles.td }, '18mm Plywood (BWP)'), React.createElement('td', { style: styles.td }, formatNumber(results.materialBreakdown.plywood18mm)), React.createElement('td', { style: styles.td }, 'sft'), React.createElement('td', { style: styles.td }, formatNumber(rates?.plywood18mm || 80)), React.createElement('td', { style: styles.td }, formatNumber(results.materialCosts.plywood18mmCost))),
-            React.createElement('tr', { style: styles.evenRow }, React.createElement('td', { style: styles.td }, '12mm Plywood (BWP)'), React.createElement('td', { style: styles.td }, formatNumber(results.materialBreakdown.plywood12mm)), React.createElement('td', { style: styles.td }, 'sft'), React.createElement('td', { style: styles.td }, formatNumber(rates?.plywood12mm || 65)), React.createElement('td', { style: styles.td }, formatNumber(results.materialCosts.plywood12mmCost))),
-            React.createElement('tr', null, React.createElement('td', { style: styles.td }, '6mm Plywood (MR)'), React.createElement('td', { style: styles.td }, formatNumber(results.materialBreakdown.plywood6mm)), React.createElement('td', { style: styles.td }, 'sft'), React.createElement('td', { style: styles.td }, formatNumber(rates?.plywood6mm || 40)), React.createElement('td', { style: styles.td }, formatNumber(results.materialCosts.plywood6mmCost))),
-            React.createElement('tr', { style: styles.evenRow }, React.createElement('td', { style: styles.td }, 'External Laminate'), React.createElement('td', { style: styles.td }, formatNumber(results.materialBreakdown.externalLaminate)), React.createElement('td', { style: styles.td }, 'sft'), React.createElement('td', { style: styles.td }, formatNumber(rates?.laminateExt || 45)), React.createElement('td', { style: styles.td }, formatNumber(results.materialCosts.externalLaminateCost))),
-            React.createElement('tr', null, React.createElement('td', { style: styles.td }, 'Internal Laminate'), React.createElement('td', { style: styles.td }, formatNumber(results.materialBreakdown.internalLaminate)), React.createElement('td', { style: styles.td }, 'sft'), React.createElement('td', { style: styles.td }, formatNumber(rates?.laminateInt || 30)), React.createElement('td', { style: styles.td }, formatNumber(results.materialCosts.internalLaminateCost))),
-            React.createElement('tr', { style: styles.evenRow }, React.createElement('td', { style: styles.td }, 'Edge Banding'), React.createElement('td', { style: styles.td }, formatNumber(results.materialBreakdown.edgeBanding)), React.createElement('td', { style: styles.td }, 'm'), React.createElement('td', { style: styles.td }, formatNumber(rates?.edgeBanding || 8)), React.createElement('td', { style: styles.td }, formatNumber(results.materialCosts.edgeBandingCost))),
-            React.createElement('tr', null, React.createElement('td', { style: styles.td }, 'Hinges (Soft Close)'), React.createElement('td', { style: styles.td }, formatNumber(results.materialBreakdown.hinges)), React.createElement('td', { style: styles.td }, 'nos'), React.createElement('td', { style: styles.td }, formatNumber(rates?.hinge || 35)), React.createElement('td', { style: styles.td }, formatNumber(results.materialCosts.hingesCost))),
-            React.createElement('tr', { style: styles.evenRow }, React.createElement('td', { style: styles.td }, 'Handles / Pulls'), React.createElement('td', { style: styles.td }, formatNumber(results.materialBreakdown.handles)), React.createElement('td', { style: styles.td }, 'nos'), React.createElement('td', { style: styles.td }, formatNumber(rates?.handle || 50)), React.createElement('td', { style: styles.td }, formatNumber(results.materialCosts.handlesCost))),
-            React.createElement('tr', null, React.createElement('td', { style: styles.td }, 'Locks'), React.createElement('td', { style: styles.td }, formatNumber(results.materialBreakdown.locks)), React.createElement('td', { style: styles.td }, 'nos'), React.createElement('td', { style: styles.td }, formatNumber(rates?.lock || 120)), React.createElement('td', { style: styles.td }, formatNumber(results.materialCosts.locksCost))),
-            React.createElement('tr', { style: styles.evenRow }, React.createElement('td', { style: styles.td }, 'Drawer Channels'), React.createElement('td', { style: styles.td }, formatNumber(results.materialBreakdown.drawerChannels)), React.createElement('td', { style: styles.td }, 'set'), React.createElement('td', { style: styles.td }, formatNumber(rates?.drawerChannel || 80)), React.createElement('td', { style: styles.td }, formatNumber(results.materialCosts.drawerChannelsCost))),
-            React.createElement('tr', null, React.createElement('td', { style: styles.td }, 'Kitchen Accessories'), React.createElement('td', { style: styles.td }, formatNumber(results.materialBreakdown.kitchenAccessories)), React.createElement('td', { style: styles.td }, 'set'), React.createElement('td', { style: styles.td }, formatNumber(rates?.kitchenAcc || 150)), React.createElement('td', { style: styles.td }, formatNumber(results.materialCosts.kitchenAccessoriesCost))),
-            React.createElement('tr', { style: styles.evenRow }, React.createElement('td', { style: styles.td }, 'Fevicol / Adhesive'), React.createElement('td', { style: styles.td }, formatNumber(results.materialBreakdown.fevicol)), React.createElement('td', { style: styles.td }, 'kg'), React.createElement('td', { style: styles.td }, formatNumber(rates?.fevicol || 60)), React.createElement('td', { style: styles.td }, formatNumber(results.materialCosts.fevicolCost))),
-            React.createElement('tr', null, React.createElement('td', { style: styles.td }, 'Nails'), React.createElement('td', { style: styles.td }, formatNumber(results.materialBreakdown.nails)), React.createElement('td', { style: styles.td }, 'kg'), React.createElement('td', { style: styles.td }, formatNumber(rates?.nails || 30)), React.createElement('td', { style: styles.td }, formatNumber(results.materialCosts.nailsCost))),
-            React.createElement('tr', { style: styles.evenRow }, React.createElement('td', { style: styles.td }, 'Screws'), React.createElement('td', { style: styles.td }, formatNumber(results.materialBreakdown.screws)), React.createElement('td', { style: styles.td }, 'box'), React.createElement('td', { style: styles.td }, formatNumber(rates?.screws || 40)), React.createElement('td', { style: styles.td }, formatNumber(results.materialCosts.screwsCost))),
-            React.createElement('tr', null, React.createElement('td', { style: styles.td }, 'Mirrors'), React.createElement('td', { style: styles.td }, formatNumber(results.materialBreakdown.mirrors)), React.createElement('td', { style: styles.td }, 'sft'), React.createElement('td', { style: styles.td }, formatNumber(rates?.mirror || 50)), React.createElement('td', { style: styles.td }, formatNumber(results.materialCosts.mirrorsCost))),
-            React.createElement('tr', { style: styles.evenRow }, React.createElement('td', { style: styles.td }, 'Glass'), React.createElement('td', { style: styles.td }, formatNumber(results.materialBreakdown.glass)), React.createElement('td', { style: styles.td }, 'sft'), React.createElement('td', { style: styles.td }, formatNumber(rates?.glass || 60)), React.createElement('td', { style: styles.td }, formatNumber(results.materialCosts.glassCost))),
-            React.createElement('tr', { style: styles.totalRow },
-              React.createElement('td', { colSpan: 4, style: { padding: '10px' } }, 'TOTAL MATERIAL COST'),
-              React.createElement('td', { style: { padding: '10px' } }, `₹${formatNumber(results.materialCostTotal)}`)
-            )
-          )
-        )
-      ),
-      
-      // Items Summary Table
-      React.createElement('div', { style: styles.tableContainer },
-        React.createElement('table', { style: styles.table },
-          React.createElement('thead', null, React.createElement('tr', null,
-            React.createElement('th', { style: styles.th }, 'Item'), React.createElement('th', { style: styles.th }, 'Size'),
-            React.createElement('th', { style: styles.th }, 'Nos'), React.createElement('th', { style: styles.th }, 'Area'),
-            React.createElement('th', { style: styles.th }, 'Material'), React.createElement('th', { style: styles.th }, 'Labour'),
-            React.createElement('th', { style: styles.th }, 'Total')
-          )),
-          React.createElement('tbody', null,
-            results.items.map((item, idx) => React.createElement('tr', { key: item.id, style: idx % 2 === 0 ? {} : styles.evenRow },
-              React.createElement('td', { style: styles.td }, item.name),
-              React.createElement('td', { style: styles.td }, `${item.length}' x ${item.width}' x ${item.height}'`),
-              React.createElement('td', { style: styles.td }, item.nos),
-              React.createElement('td', { style: styles.td }, formatNumber(item.area)),
-              React.createElement('td', { style: styles.td }, `₹${formatNumber(item.amount)}`),
-              React.createElement('td', { style: styles.td }, `₹${formatNumber(item.labourAmount)}`),
-              React.createElement('td', { style: styles.td }, `₹${formatNumber(item.total)}`)
-            )),
-            React.createElement('tr', { style: styles.totalRow },
-              React.createElement('td', { colSpan: 6, style: { padding: '10px' } }, 'GRAND TOTAL'),
-              React.createElement('td', { style: { padding: '10px' } }, `₹${formatNumber(results.grandTotal)}`)
-            )
-          )
-        )
-      )
-    )
+  return (
+    <div style={styles.container}>
+      <div style={styles.header}>
+        <button onClick={handleBack} style={styles.backButton}>←</button>
+        <div>
+          <h1 style={styles.headerTitle}>🛋️ Interior BOQ Calculator</h1>
+          <p style={styles.headerSub}>Accurate plywood, laminate, hardware and labour BOQ</p>
+        </div>
+      </div>
+
+      <div style={styles.sectionTitle}>📋 Project Details</div>
+      <div style={styles.row4}>
+        <div><label style={styles.label}>Project Name</label><input value={projectName} onChange={e => setProjectName(e.target.value)} style={styles.input} /></div>
+        <div><label style={styles.label}>Client Name</label><input value={clientName} onChange={e => setClientName(e.target.value)} style={styles.input} /></div>
+        <div><label style={styles.label}>Mobile No.</label><input value={mobileNo} onChange={e => setMobileNo(e.target.value)} style={styles.input} /></div>
+        <div><label style={styles.label}>City</label><input value={city} onChange={e => setCity(e.target.value)} style={styles.input} /></div>
+      </div>
+
+      <div style={styles.infoBox}>Depth fixed by standard: Wardrobe / Kitchen / Loft = 18&quot; | Shoe Rack = 12&quot;. Area is calculated from Length × Height × Nos.</div>
+
+      <div style={styles.sectionTitle}>➕ Add Interior Item</div>
+      <div style={styles.row5}>
+        <div><label style={styles.label}>Item Type</label><select value={selectedItem} onChange={e => { setSelectedItem(e.target.value); setHeight(itemTypes[e.target.value].defaultHeight); }} style={styles.select}>{Object.keys(itemTypes).map(i => <option key={i}>{i}</option>)}</select></div>
+        <div><label style={styles.label}>Length / RFT</label><input type="number" value={length} onChange={e => setLength(Number(e.target.value))} style={styles.input} /></div>
+        <div><label style={styles.label}>Height</label><input type="number" value={height} onChange={e => setHeight(Number(e.target.value))} style={styles.input} /></div>
+        <div><label style={styles.label}>Nos</label><input type="number" value={nos} onChange={e => setNos(Number(e.target.value))} style={styles.input} /></div>
+        <div style={{ display: "flex", alignItems: "end" }}><button onClick={addItem} style={styles.buttonSmall}>+ Add Item</button></div>
+      </div>
+
+      {items.length > 0 && <div style={styles.tableContainer}><table style={styles.table}><thead><tr>
+        <th style={styles.th}>Item</th><th style={styles.th}>Size</th><th style={styles.th}>Nos</th><th style={styles.th}>Qty</th><th style={styles.th}>Unit</th><th style={styles.th}>Material</th><th style={styles.th}>Labour</th><th style={styles.th}>Total</th><th style={styles.th}></th>
+      </tr></thead><tbody>{items.map((i, idx) => <tr key={i.id} style={idx % 2 ? styles.evenRow : {}}>
+        <td style={styles.td}>{i.name}</td><td style={styles.td}>{i.length}' x {i.depth}' x {i.height}'</td><td style={styles.td}>{i.nos}</td><td style={styles.td}>{fmt(i.displayQty)}</td><td style={styles.td}>{i.displayUnit}</td>
+        <td style={styles.td}>₹{fmt(i.amount)}</td><td style={styles.td}>₹{fmt(i.labourAmount)}</td><td style={styles.td}>₹{fmt(i.total)}</td>
+        <td style={styles.td}><button onClick={() => removeItem(i.id)} style={{ ...styles.buttonSmall, backgroundColor: "#dc3545" }}>X</button></td>
+      </tr>)}</tbody></table></div>}
+
+      <div style={styles.buttonContainer}>
+        <button onClick={handleReset} style={styles.buttonExport}>🔄 Reset</button>
+        <button onClick={handleGenerate} style={styles.buttonGenerate}>🔨 Generate Interior BOQ</button>
+      </div>
+
+      {generated && results && <>
+        <div style={styles.cardContainer}>
+          <div style={{ ...styles.card, backgroundColor: "#800020" }}>💰<div>Total Cost</div><div style={styles.cardValue}>₹{fmt(results.grandTotal / 100000)} L</div></div>
+          <div style={{ ...styles.card, backgroundColor: "#8d6e63" }}>🪵<div>Plywood</div><div style={styles.cardValue}>{fmt(results.materialBreakdown.plywood18mm)} sft</div></div>
+          <div style={{ ...styles.card, backgroundColor: "#4CAF50" }}>🎨<div>Laminate</div><div style={styles.cardValue}>{fmt(results.materialBreakdown.externalLaminate)} sft</div></div>
+          <div style={{ ...styles.card, backgroundColor: "#FF9800" }}>🔧<div>Hardware</div><div style={styles.cardValue}>{fmt(results.materialBreakdown.hinges + results.materialBreakdown.handles)} nos</div></div>
+          <div style={{ ...styles.card, backgroundColor: "#2196F3" }}>👷<div>Labour</div><div style={styles.cardValue}>₹{fmt(results.labourTotal / 100000)} L</div></div>
+        </div>
+
+        <div style={styles.buttonContainer}>
+          <button onClick={() => checkAndRun("boq_export", "boq-interior", handleExportExcel)} style={styles.buttonExport}>📊 Excel</button>
+          <button onClick={() => checkAndRun("boq_export", "boq-interior", handleWhatsApp)} style={styles.buttonWhatsapp}>💬 Share</button>
+        </div>
+
+        <div style={styles.tableContainer}><table style={styles.table}><thead><tr><th style={styles.th}>Material</th><th style={styles.th}>Quantity</th><th style={styles.th}>Unit</th><th style={styles.th}>Rate</th><th style={styles.th}>Cost</th></tr></thead><tbody>
+          {materialRows(results).map((r, idx) => <tr key={String(r[0])} style={idx % 2 ? styles.evenRow : {}}><td style={styles.td}>{r[0]}</td><td style={styles.td}>{fmt(r[1])}</td><td style={styles.td}>{r[2]}</td><td style={styles.td}>{fmt(r[3])}</td><td style={styles.td}>{fmt(r[4])}</td></tr>)}
+          <tr style={styles.totalRow}><td colSpan={4} style={styles.td}>TOTAL MATERIAL COST</td><td style={styles.td}>₹{fmt(results.materialCostTotal)}</td></tr>
+          <tr style={styles.totalRow}><td colSpan={4} style={styles.td}>GRAND TOTAL</td><td style={styles.td}>₹{fmt(results.grandTotal)}</td></tr>
+        </tbody></table></div>
+      </>}
+    </div>
   );
 }
-
 
