@@ -1,599 +1,670 @@
-import React, { useEffect, useMemo, useState } from "react";
-
-type MarketItem = {
-  id: string;
-  title: string;
-  category: string;
-  sourceType: string;
-  uploaderName: string;
-  uploaderCode: string;
-  mobile: string;
-  address: string;
-  location: string;
-  pincode: string;
-  unit: string;
-  rate: number;
-  description: string;
-  status: string;
-  sourceKey: string;
-};
-
-const text = (v: any) => String(v ?? "").trim();
-const lower = (v: any) => text(v).toLowerCase();
-const money = (v: any) => {
-  const n = Number(String(v ?? "0").replace(/[^0-9.-]/g, ""));
-  return Number.isFinite(n) ? n : 0;
-};
-
-const readArray = (key: string): any[] => {
-  try {
-    const value = JSON.parse(localStorage.getItem(key) || "[]");
-    return Array.isArray(value) ? value : [];
-  } catch {
-    return [];
-  }
-};
-
-const users = () => readArray("users");
-
-const roleType = (role: string) => {
-  const r = lower(role);
-  if (r === "supplier" || r === "vendor") return "Products";
-  if (r === "contractor") return "Contractors";
-  if (r === "labour" || r === "laboursupply") return "Labours";
-  if (r === "machinery" || r === "machinehire") return "Machine Rentals";
-  if (r === "realestate") return "Real Estate";
-  return "";
-};
-
-const productCategories = [
-  "All", "Cement", "Steel", "Sand", "Aggregate", "Blocks", "Bricks", "Hardware",
-  "Electrical", "Plumbing", "Paint", "Tiles", "Wood", "Glass", "Sanitary",
-  "Waterproofing", "Safety", "Tools", "Other"
-];
-
-const cleanCategory = (cat: string, type: string) => {
-  const c = text(cat);
-  if (!c) return type === "Products" ? "Other" : type;
-  return c;
-};
-
-const isMasterOrWrongKey = (key: string) => {
-  const k = lower(key);
-  const getProfileItems = (profile: MarketItem | null) => {
-    if (!profile) return [];
-
-    const direct = items.filter((item) =>
-      item.sourceType === profile.sourceType &&
-      (
-        (profile.uploaderCode && item.uploaderCode === profile.uploaderCode) ||
-        item.uploaderName === profile.uploaderName ||
-        item.mobile === profile.mobile
-      )
-    );
-
-    return direct;
-  };
-
-  const downloadProfileQuote = (profile: MarketItem) => {
-    const related = getProfileItems(profile);
-    const rows = [
-      ["BuildMitra Provider Quote / Profile"],
-      ["Name", profile.uploaderName],
-      ["Code", profile.uploaderCode || "-"],
-      ["Type", profile.sourceType],
-      ["Location", profile.location],
-      ["Contact", profile.mobile || "-"],
-      [],
-      ["Service / Item", "Category", "Rate", "Unit"]
-    ];
-
-    related.forEach((item) => rows.push([item.title, item.category, String(item.rate), item.unit]));
-
-    const csv = rows.map((r) => r.map((v) => `"${String(v || "").replace(/"/g, '""')}"`).join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${profile.uploaderCode || profile.uploaderName}-quote.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-  return (
-    k.includes("bm_material_rates") ||
-    k.includes("bm_labour_rates") ||
-    k.includes("bm_service_rates") ||
-    k.includes("bm_equipment_rates") ||
-    k.includes("admin_rates") ||
-    k.includes("buildmitraprojects") ||
-    k.includes("sharedprojects") ||
-    k.includes("contractorprojects") ||
-    k.includes("buyerprojects") ||
-    k.includes("bm_admin_projects") ||
-    k.includes("bm_admin_users") ||
-    k.includes("migration") ||
-    k === "users" ||
-      k.includes("loggedinuser") ||
-    k.includes("ticket") ||
-    k.includes("transaction")
-  );
-};
-
-const detectType = (raw: any, key: string) => {
-  const k = lower(key);
-
-  const explicit = text(raw.sourceType || raw.marketType || raw.listingType);
-  if (["Products", "Contractors", "Labours", "Machine Rentals", "Real Estate"].includes(explicit)) return explicit;
-
-  if (raw.propertyType || raw.propertyName || raw.listingTitle || raw.bhk || raw.plotArea || k.includes("realestate") || k.includes("property")) return "Real Estate";
-  if (raw.machineName || raw.equipment || raw.equipmentName || raw.machine || raw.vehicleName || raw.assetName || raw.dailyRate || raw.hourlyRate || raw.rent || raw.hireRate || raw.rentalRate || raw.ratePerHour || raw.ratePerDay || k.includes("machine") || k.includes("machinery") || k.includes("equipment")) return "Machine Rentals";
-  if (raw.trade || raw.labourType || raw.labourCategory || raw.workerCount || raw.manpower || raw.skill || raw.role || raw.serviceName || raw.dailyWage || raw.wage || raw.ratePerDay || k.includes("labour") || k.includes("laboursupply") || k.includes("labourservice")) return "Labours";
-  if (raw.contractorName || raw.serviceArea || raw.specialization || k.includes("contractor")) return "Contractors";
-
-  if (
-    raw.productName || raw.itemName || raw.materialName || raw.material || raw.brand ||
-    raw.stock || raw.availableQty || raw.unit || raw.price || raw.rate ||
-    k.includes("supplier") || k.includes("product") || k.includes("catalog")
-  ) return "Products";
-
-  return "";
-};
-
-const titleFor = (raw: any, type: string) => {
-  if (type === "Real Estate") return text(raw.propertyName) || text(raw.listingTitle) || text(raw.projectName) || text(raw.title) || "Real Estate Listing";
-  if (type === "Machine Rentals") return text(raw.machineName) || text(raw.equipment) || text(raw.equipmentName) || text(raw.machine) || text(raw.vehicleName) || text(raw.assetName) || text(raw.name) || text(raw.itemName) || "Machine Rental";
-  if (type === "Labours") return text(raw.trade) || text(raw.labourType) || text(raw.labourCategory) || text(raw.skill) || text(raw.role) || text(raw.serviceName) || text(raw.service) || text(raw.name) || "Labour Service";
-  if (type === "Contractors") return text(raw.companyName) || text(raw.contractorName) || text(raw.service) || text(raw.name) || "Contractor Service";
-  return text(raw.productName) || text(raw.itemName) || text(raw.materialName) || text(raw.material) || text(raw.name) || text(raw.item) || "";
-};
+import React, { useState, useEffect } from "react";
 
 export default function Marketplace() {
-  
-  const { checkAndRun } = usePaymentBarrier();
-const [items, setItems] = useState<MarketItem[]>([]);
-  const [search, setSearch] = useState("");
-  const [sourceType, setSourceType] = useState("Products");
-  const [categoryFilter, setCategoryFilter] = useState("All");
-  const [vendorFilter, setVendorFilter] = useState("All");
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedSubCategory, setSelectedSubCategory] = useState("all");
+  const [selectedCity, setSelectedCity] = useState("all");
   const [pincode, setPincode] = useState("");
-  const [pincodeChecked, setPincodeChecked] = useState(false);
-  const [selectedProfile, setSelectedProfile] = useState<MarketItem | null>(null);
+  const [pincodeError, setPincodeError] = useState("");
+  const [pincodeVerified, setPincodeVerified] = useState(false);
+  const [showEnquiryModal, setShowEnquiryModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [enquiryData, setEnquiryData] = useState({
+    name: "",
+    phone: "",
+    location: "",
+    quantity: "",
+    requirement: ""
+  });
+  const [isClient, setIsClient] = useState(false);
 
-  const serviceTypes = ["Products", "Contractors", "Labours", "Machine Rentals", "Real Estate"];
+  const serviceablePincodes = ["560062", "560108", "400001", "400002", "411001", "600001", "500001", "682001"];
 
-  const uploaderFor = (raw: any, type: string) => {
-    const allUsers = users();
-
-    const code = text(raw.uploaderCode || raw.uniqueCode || raw.supplierCode || raw.vendorCode || raw.contractorCode || raw.labourCode || raw.machineCode || raw.realEstateCode || raw.userCode);
-    const mobile = text(raw.mobile || raw.phone || raw.supplierMobile || raw.vendorMobile || raw.ownerMobile || raw.contractorMobile || raw.contact || raw.userPhone);
-    const name = text(raw.uploaderName || raw.supplierName || raw.vendorName || raw.companyName || raw.ownerName || raw.contractorName || raw.labourName || raw.machineOwnerName || raw.realEstateName || raw.userName);
-
-    const matched =
-      allUsers.find((u: any) => code && text(u.uniqueCode).toUpperCase() === code.toUpperCase()) ||
-      allUsers.find((u: any) => mobile && text(u.mobile || u.phone).replace(/[^0-9]/g, "") === mobile.replace(/[^0-9]/g, "")) ||
-      allUsers.find((u: any) => name && lower(u.name) === name.toLowerCase()) ||
-      allUsers.find((u: any) => roleType(text(u.role)) === type);
-
-    return {
-      name: name || text(matched?.name) || type,
-      code: code || text(matched?.uniqueCode),
-      mobile: mobile || text(matched?.mobile || matched?.phone),
-      address: text(raw.address || raw.supplierAddress || raw.vendorAddress || raw.officeAddress || matched?.address),
-      location: text(raw.location || raw.city || raw.area || raw.address || matched?.location || matched?.city) || "Local",
-      pincode: text(raw.pincode || raw.pinCode || raw.servicePincode || raw.postcode || matched?.pincode)
-    };
+  const subCategories = {
+    supplier: [
+      { id: "all", name: "All Materials" },
+      { id: "cement", name: "Cement" },
+      { id: "steel", name: "Steel" },
+      { id: "hardware", name: "Hardware" },
+      { id: "doors", name: "Doors & Windows" },
+      { id: "wood", name: "Wood & Plywood" },
+      { id: "ss", name: "SS Steel" },
+      { id: "rmc", name: "Ready Mix Concrete" },
+      { id: "pavers", name: "Pavers & Blocks" },
+      { id: "tiles", name: "Tiles" },
+      { id: "sanitary", name: "Sanitaryware & CP Fittings" },
+      { id: "locks", name: "Locks & Hardware" },
+      { id: "paints", name: "Paints & Coatings" },
+      { id: "falseceiling", name: "False Ceiling" },
+      { id: "electrical", name: "Electrical" },
+      { id: "plumbing", name: "Plumbing" },
+      { id: "consumables", name: "Consumables" }
+    ],
+    contractor: [
+      { id: "all", name: "All Services" },
+      { id: "civil", name: "Civil Works" },
+      { id: "electrical", name: "Electrical" },
+      { id: "plumbing", name: "Plumbing" },
+      { id: "carpenter", name: "Carpenter" },
+      { id: "painter", name: "Painter" },
+      { id: "barbender", name: "Barbender" },
+      { id: "shuttering", name: "Shuttering" },
+      { id: "earthwork", name: "Earth Work" },
+      { id: "tilelayer", name: "Tile Layers" },
+      { id: "fabrication", name: "Fabrication" },
+      { id: "waterproofing", name: "Waterproofing" }
+    ],
+    machinery: [
+      { id: "all", name: "All Equipment" },
+      { id: "excavator", name: "Excavator" },
+      { id: "jcb", name: "JCB" },
+      { id: "crane", name: "Crane" },
+      { id: "concretepump", name: "Concrete Pump" },
+      { id: "transitmixer", name: "Transit Mixer" },
+      { id: "compactor", name: "Compactor" },
+      { id: "generator", name: "Generator" },
+      { id: "welding", name: "Welding Machine" },
+      { id: "scaffolding", name: "Scaffolding" }
+    ],
+    labour: [
+      { id: "all", name: "All Labour" },
+      { id: "mason", name: "Mason" },
+      { id: "carpenter", name: "Carpenter" },
+      { id: "helper", name: "Helper" },
+      { id: "electrician", name: "Electrician" },
+      { id: "plumber", name: "Plumber" },
+      { id: "painter", name: "Painter" },
+      { id: "barbender", name: "Barbender" },
+      { id: "shuttering", name: "Shuttering Carpenter" },
+      { id: "tilelayer", name: "Tile Layer" },
+      { id: "welder", name: "Welder" },
+      { id: "driver", name: "Driver" }
+    ],
+    realestate: [
+      { id: "all", name: "All Properties" },
+      { id: "residential", name: "Residential" },
+      { id: "commercial", name: "Commercial" },
+      { id: "villa", name: "Villa" },
+      { id: "plot", name: "Plot/Land" },
+      { id: "agriculture", name: "Agriculture Land" },
+      { id: "industrial", name: "Industrial" },
+      { id: "revenue", name: "Revenue Sites" },
+      { id: "bmrda", name: "BMRDA Sites" }
+    ]
   };
 
-  const normalize = (raw: any, key: string, index: number): MarketItem | null => {
-    if (!raw || typeof raw !== "object") return null;
-    if (isMasterOrWrongKey(key)) return null;
-
-    const type = detectType(raw, key);
-    if (!type) return null;
-
-    const title = titleFor(raw, type);
-    if (!title) return null;
-
-    const uploader = uploaderFor(raw, type);
-    const rate = money(raw.rate ?? raw.price ?? raw.unitRate ?? raw.dailyRate ?? raw.hourlyRate ?? raw.rent ?? raw.hireRate ?? raw.rentalRate ?? raw.ratePerHour ?? raw.ratePerDay ?? raw.dailyWage ?? raw.wage ?? raw.amount ?? raw.expectedPrice);
-
-    return {
-      id: text(raw.id) || `${key}-${index}`,
-      title,
-      category: cleanCategory(text(raw.category || raw.trade || raw.materialCategory || raw.propertyType || raw.machineType), type),
-      sourceType: type,
-      uploaderName: uploader.name,
-      uploaderCode: uploader.code,
-      mobile: uploader.mobile,
-      address: uploader.address,
-      location: uploader.location,
-      pincode: uploader.pincode,
-      unit: text(raw.unit || raw.uom) || (type === "Machine Rentals" ? "Day" : type === "Labours" ? "Day" : type === "Real Estate" ? "Listing" : "Unit"),
-      rate,
-      description: text(raw.description || raw.remarks || raw.details),
-      status: text(raw.status) || "Active",
-      sourceKey: key
-    };
-  };
-
-  const providerProfiles = (): MarketItem[] => {
-    return users().map((u: any) => {
-      const type = roleType(text(u.role));
-      if (!type || type === "Products") return null;
-
-      const name = text(u.name) || type;
-      const code = text(u.uniqueCode);
-      return {
-        id: `profile-${code || name}`,
-        title:
-          type === "Contractors" ? `${name} Contractor Service` :
-          type === "Machine Rentals" ? `${name} Machine Rental Service` :
-          type === "Labours" ? `${name} Labour Supply Service` :
-          `${name} Real Estate Service`,
-        category: type,
-        sourceType: type,
-        uploaderName: name,
-        uploaderCode: code,
-        mobile: text(u.mobile || u.phone),
-        address: text(u.address),
-        location: text(u.location || u.city || u.area) || "Local",
-        pincode: text(u.pincode),
-        unit: "Service",
-        rate: 0,
-        description: "Registered BuildMitra service provider",
-        status: "Active",
-        sourceKey: "users-profile"
-      } as MarketItem;
-    }).filter(Boolean) as MarketItem[];
-  };
-
-  const loadMarketplace = () => {
-    const out: MarketItem[] = [];
-
-    try {
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i) || "";
-        if (isMasterOrWrongKey(key)) continue;
-
-        const value = localStorage.getItem(key);
-        if (!value) continue;
-
-        let parsed: any;
-        try { parsed = JSON.parse(value); } catch { continue; }
-
-        const arrays: any[][] = [];
-        if (Array.isArray(parsed)) arrays.push(parsed);
-        if (parsed && typeof parsed === "object") {
-          ["products", "items", "materials", "equipment", "machines", "labour", "services", "uploads", "listings", "catalog", "properties"].forEach(k => {
-            if (Array.isArray(parsed[k])) arrays.push(parsed[k]);
-          });
-        }
-
-        arrays.forEach(arr => arr.forEach((raw, idx) => {
-          const item = normalize(raw, key, idx);
-          if (item && lower(item.status) !== "deleted") out.push(item);
-        }));
-      }
-
-      out.push(...providerProfiles());
-    } catch (err) {
-      console.error("Marketplace load failed", err);
-    }
-
-    const unique = Array.from(new Map(out.map(x => [`${x.sourceType}-${x.id}-${x.title}-${x.uploaderCode || x.uploaderName}`, x])).values());
-    setItems(unique);
-  };
-
-  useEffect(() => {
-    loadMarketplace();
-    window.addEventListener("storage", loadMarketplace);
-    window.addEventListener("buildmitraMarketplaceUpdated", loadMarketplace);
-    const getProfileItems = (profile: MarketItem | null) => {
-    if (!profile) return [];
-
-    const direct = items.filter((item) =>
-      item.sourceType === profile.sourceType &&
-      (
-        (profile.uploaderCode && item.uploaderCode === profile.uploaderCode) ||
-        item.uploaderName === profile.uploaderName ||
-        item.mobile === profile.mobile
-      )
-    );
-
-    return direct;
-  };
-
-  const downloadProfileQuote = (profile: MarketItem) => {
-    const related = getProfileItems(profile);
-    const rows = [
-      ["BuildMitra Provider Quote / Profile"],
-      ["Name", profile.uploaderName],
-      ["Code", profile.uploaderCode || "-"],
-      ["Type", profile.sourceType],
-      ["Location", profile.location],
-      ["Contact", profile.mobile || "-"],
-      [],
-      ["Service / Item", "Category", "Rate", "Unit"]
-    ];
-
-    related.forEach((item) => rows.push([item.title, item.category, String(item.rate), item.unit]));
-
-    const csv = rows.map((r) => r.map((v) => `"${String(v || "").replace(/"/g, '""')}"`).join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${profile.uploaderCode || profile.uploaderName}-quote.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-  return () => {
-      window.removeEventListener("storage", loadMarketplace);
-      window.removeEventListener("buildmitraMarketplaceUpdated", loadMarketplace);
-    };
+  useEffect(function() {
+    setIsClient(true);
+    loadAllMarketplaceData();
   }, []);
 
-  const categoryOptions = useMemo(() => {
-    if (sourceType === "Products") {
-      const uploaded = items.filter(i => i.sourceType === "Products").map(i => i.category).filter(Boolean);
-      return Array.from(new Set([...productCategories, ...uploaded]));
+  function loadAllMarketplaceData() {
+    try {
+      var allItems = [];
+      var users = JSON.parse(localStorage.getItem("users") || "[]");
+      var allKeys = Object.keys(localStorage);
+      var productKeys = allKeys.filter(function(key) {
+        return key.startsWith("supplierProducts_") && key !== "supplierProducts_undefined";
+      });
+      
+      productKeys.forEach(function(key) {
+        try {
+          var productsData = localStorage.getItem(key);
+          if (productsData) {
+            var userProducts = JSON.parse(productsData);
+            var userId = key.replace("supplierProducts_", "");
+            var user = users.find(function(u) { return u.userId == userId; });
+            var userName = user?.name || "Unknown Supplier";
+            var userPhone = user?.phone || "+919876543210";
+            
+            var supplierInfo = null;
+            var infoKey = "supplierInfo_" + userId;
+            if (localStorage.getItem(infoKey)) {
+              supplierInfo = JSON.parse(localStorage.getItem(infoKey));
+            }
+            
+            userProducts.forEach(function(p) {
+              var subCategory = "all";
+              var lowerName = (p.name || "").toLowerCase();
+              if (lowerName.includes("cement")) subCategory = "cement";
+              else if (lowerName.includes("steel") || lowerName.includes("tmt")) subCategory = "steel";
+              else if (lowerName.includes("brick") || lowerName.includes("block")) subCategory = "pavers";
+              else if (lowerName.includes("tile")) subCategory = "tiles";
+              else if (lowerName.includes("paint")) subCategory = "paints";
+              else if (lowerName.includes("door") || lowerName.includes("window")) subCategory = "doors";
+              else if (lowerName.includes("wood") || lowerName.includes("ply")) subCategory = "wood";
+              else if (lowerName.includes("pipe") || lowerName.includes("fitting")) subCategory = "plumbing";
+              else if (lowerName.includes("wire") || lowerName.includes("switch")) subCategory = "electrical";
+              else if (lowerName.includes("sanitary") || lowerName.includes("cp")) subCategory = "sanitary";
+              else if (lowerName.includes("lock") || lowerName.includes("handle")) subCategory = "locks";
+              else if (lowerName.includes("rmc") || lowerName.includes("ready mix")) subCategory = "rmc";
+              
+              allItems.push({
+                id: "supplier_" + p.id,
+                category: "supplier",
+                subCategory: subCategory,
+                type: "supplier",
+                name: p.name,
+                ownerName: p.ownerName || supplierInfo?.shopName || userName,
+                businessName: p.ownerName || supplierInfo?.shopName || userName,
+                ownerPhone: p.ownerPhone || userPhone,
+                phone: p.ownerPhone || userPhone,
+                location: p.location || (supplierInfo?.address ? supplierInfo.address.split(",")[0] : "Bengaluru"),
+                price: p.price,
+                unit: p.unit,
+                priceRange: "₹" + p.price + " per " + p.unit,
+                rating: p.rating || 4.0,
+                isVerified: true,
+                description: p.description || "Quality construction material",
+                image: getProductImage(p.name),
+                availablePincodes: p.availablePincodes || ["560062", "560108"],
+                userId: userId
+              });
+            });
+          }
+        } catch (e) {}
+      });
+
+      var realEstateData = localStorage.getItem("realEstateProperties");
+      if (realEstateData) {
+        var properties = JSON.parse(realEstateData);
+        properties.forEach(function(p) {
+          var subCategory = "all";
+          var type = (p.type || "").toLowerCase();
+          if (type.includes("villa")) subCategory = "villa";
+          else if (type.includes("commercial")) subCategory = "commercial";
+          else if (type.includes("plot") || type.includes("land")) subCategory = "plot";
+          else if (type.includes("agriculture")) subCategory = "agriculture";
+          else if (type.includes("industrial")) subCategory = "industrial";
+          else if (type.includes("revenue")) subCategory = "revenue";
+          else if (type.includes("bmrda")) subCategory = "bmrda";
+          
+          allItems.push({
+            id: "realestate_" + p.id,
+            category: "realestate",
+            subCategory: subCategory,
+            type: "realestate",
+            name: p.title,
+            businessName: p.title,
+            ownerName: "Real Estate Agent",
+            phone: p.contactNumber || "+919876543210",
+            location: p.location || "Bengaluru",
+            price: p.totalAmount || 0,
+            priceRange: formatPrice(p.totalAmount || 0),
+            rating: 4.5,
+            isVerified: true,
+            description: p.description || (p.type || "Property") + " property available",
+            image: getPropertyImage(p.type),
+            propertyType: p.type,
+            totalArea: p.totalArea || p.plotArea || 0,
+            bedrooms: p.bedrooms || p.bhk || 0,
+            bathrooms: p.bathrooms || p.toilets || 0,
+            status: p.status || "Available",
+            availablePincodes: ["560062", "560108"]
+          });
+        });
+      }
+
+      var demoContractors = [
+        { id: "demo_contractor_1", name: "Sharma Constructions", owner: "Rajesh Sharma", phone: "+919876543216", location: "Bengaluru", rating: 4.7, desc: "25+ years experience", sub: "civil" },
+        { id: "demo_contractor_2", name: "Green Valley Builders", owner: "Nitin Gupta", phone: "+919876543217", location: "Bengaluru", rating: 4.8, desc: "Eco-friendly construction", sub: "civil" },
+        { id: "demo_contractor_3", name: "Elite Electricals", owner: "Amit Patel", phone: "+919876543218", location: "Bengaluru", rating: 4.6, desc: "Electrical works", sub: "electrical" },
+        { id: "demo_contractor_4", name: "Precision Plumbers", owner: "Suresh Kumar", phone: "+919876543219", location: "Bengaluru", rating: 4.5, desc: "Plumbing services", sub: "plumbing" },
+        { id: "demo_contractor_5", name: "Fine Finish Painters", owner: "Manoj Singh", phone: "+919876543220", location: "Bengaluru", rating: 4.4, desc: "Painting services", sub: "painter" }
+      ];
+      demoContractors.forEach(function(d) {
+        allItems.push({
+          id: d.id,
+          category: "contractor",
+          subCategory: d.sub,
+          type: "contractor",
+          name: d.name,
+          businessName: d.name,
+          ownerName: d.owner,
+          phone: d.phone,
+          location: d.location,
+          priceRange: "₹1800 - ₹2200 per sq.ft",
+          rating: d.rating,
+          isVerified: true,
+          description: d.desc,
+          image: "🏗️",
+          availablePincodes: ["560062", "560108"]
+        });
+      });
+
+      var demoMachinery = [
+        { id: "demo_machinery_1", name: "JCB Rentals", owner: "Manoj Kumar", phone: "+919876543221", location: "Bengaluru", rating: 4.4, desc: "JCB 3DX available", sub: "jcb" },
+        { id: "demo_machinery_2", name: "Concrete Pump Rental", owner: "Vikram Singh", phone: "+919876543222", location: "Bengaluru", rating: 4.7, desc: "Latest concrete pumps", sub: "concretepump" },
+        { id: "demo_machinery_3", name: "Excavator Services", owner: "Ravi Kumar", phone: "+919876543223", location: "Bengaluru", rating: 4.5, desc: "Excavator for hire", sub: "excavator" },
+        { id: "demo_machinery_4", name: "Crane Rental", owner: "Suresh Reddy", phone: "+919876543224", location: "Bengaluru", rating: 4.6, desc: "Cranes available", sub: "crane" }
+      ];
+      demoMachinery.forEach(function(d) {
+        allItems.push({
+          id: d.id,
+          category: "machinery",
+          subCategory: d.sub,
+          type: "machinery",
+          name: d.name,
+          businessName: d.name,
+          ownerName: d.owner,
+          phone: d.phone,
+          location: d.location,
+          priceRange: "₹800 - ₹1500 per hour",
+          rating: d.rating,
+          isVerified: true,
+          description: d.desc,
+          image: "🚜",
+          availablePincodes: ["560062", "560108"]
+        });
+      });
+
+      var demoLabour = [
+        { id: "demo_labour_1", name: "SK Labour Supply", owner: "Suresh Kumar", phone: "+919876543225", location: "Bengaluru", rating: 4.3, desc: "Masons available", sub: "mason" },
+        { id: "demo_labour_2", name: "Bangalore Labour Supply", owner: "Hitesh Patel", phone: "+919876543226", location: "Bengaluru", rating: 4.5, desc: "Steel Fixers available", sub: "barbender" },
+        { id: "demo_labour_3", name: "Elite Electricians", owner: "Rajesh Kumar", phone: "+919876543227", location: "Bengaluru", rating: 4.4, desc: "Electricians available", sub: "electrician" },
+        { id: "demo_labour_4", name: "Prime Plumbers", owner: "Manoj Singh", phone: "+919876543228", location: "Bengaluru", rating: 4.2, desc: "Plumbers available", sub: "plumber" },
+        { id: "demo_labour_5", name: "Perfect Painters", owner: "Amit Patel", phone: "+919876543229", location: "Bengaluru", rating: 4.3, desc: "Painters available", sub: "painter" }
+      ];
+      demoLabour.forEach(function(d) {
+        allItems.push({
+          id: d.id,
+          category: "labour",
+          subCategory: d.sub,
+          type: "labour",
+          name: d.name,
+          businessName: d.name,
+          ownerName: d.owner,
+          phone: d.phone,
+          location: d.location,
+          priceRange: "₹700 - ₹1500 per day",
+          rating: d.rating,
+          isVerified: true,
+          description: d.desc,
+          image: "👷",
+          availablePincodes: ["560062", "560108"]
+        });
+      });
+
+      console.log("✅ Total marketplace items:", allItems.length);
+      setProducts(allItems);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error loading marketplace data:", error);
+      setLoading(false);
     }
-    return ["All", ...Array.from(new Set(items.filter(i => i.sourceType === sourceType).map(i => i.category).filter(Boolean)))];
-  }, [items, sourceType]);
+  }
 
-  const vendorOptions = useMemo(() => {
-    return ["All", ...Array.from(new Set(items.filter(i => i.sourceType === sourceType).map(i => i.uploaderCode || i.uploaderName).filter(Boolean)))];
-  }, [items, sourceType]);
+  function getProductImage(name) {
+    var lower = (name || "").toLowerCase();
+    if (lower.includes("cement")) return "🏭";
+    if (lower.includes("steel") || lower.includes("tmt")) return "⚙️";
+    if (lower.includes("brick")) return "🧱";
+    if (lower.includes("sand")) return "🏖️";
+    if (lower.includes("aggregate")) return "🪨";
+    if (lower.includes("paint")) return "🎨";
+    if (lower.includes("tile")) return "⬜";
+    if (lower.includes("pipe")) return "🔧";
+    if (lower.includes("wood")) return "🪵";
+    if (lower.includes("door")) return "🚪";
+    if (lower.includes("lock")) return "🔒";
+    if (lower.includes("wire") || lower.includes("switch")) return "⚡";
+    return "📦";
+  }
 
-  const isAreaAvailable = () => {
-    if (!pincode.trim()) return true;
-    const pins = readArray("bm_admin_service_pincodes");
-    if (!pins.length) return true;
-    return pins.some((p: any) => {
-      const pin = String(p.pincode || p.pin || p).trim();
-      const type = String(p.sourceType || p.serviceType || "All");
-      return pin === pincode.trim() && (type === "All" || type === sourceType);
-    });
-  };
+  function getPropertyImage(type) {
+    var images = {
+      "Plot": "📐",
+      "Apartment": "🏢",
+      "Villa": "🏡",
+      "Commercial": "🏪",
+      "Land": "🌾",
+      "default": "🏠"
+    };
+    return images[type] || images.default;
+  }
 
-  const filtered = items.filter(item => {
-    const q = lower(search);
-    const vendorLabel = item.uploaderCode || item.uploaderName;
+  function formatPrice(price) {
+    if (price >= 10000000) return "₹" + (price/10000000).toFixed(1) + "Cr";
+    if (price >= 100000) return "₹" + (price/100000).toFixed(1) + "L";
+    return "₹" + price.toLocaleString();
+  }
 
-    const matchesType = item.sourceType === sourceType;
-    const matchesCategory = categoryFilter === "All" || item.category === categoryFilter;
-    const matchesVendor = vendorFilter === "All" || vendorLabel === vendorFilter;
-    const matchesArea = !pincode.trim() || isAreaAvailable();
-    const matchesSearch =
-      !q ||
-      lower(item.title).includes(q) ||
-      lower(item.category).includes(q) ||
-      lower(item.uploaderName).includes(q) ||
-      lower(item.uploaderCode).includes(q) ||
-      lower(item.location).includes(q) ||
-      lower(item.pincode).includes(q);
+  function checkPincodeServiceability(pincode) {
+    if (serviceablePincodes.includes(pincode)) {
+      setPincodeError("");
+      setPincodeVerified(true);
+      return true;
+    } else {
+      setPincodeError("📍 Service not yet available in pincode " + pincode + ". We are expanding soon!");
+      setPincodeVerified(false);
+      return false;
+    }
+  }
 
-    return matchesType && matchesCategory && matchesVendor && matchesArea && matchesSearch;
+  function handlePincodeChange(e) {
+    var value = e.target.value;
+    setPincode(value);
+    if (value.length === 6) {
+      checkPincodeServiceability(value);
+    } else {
+      setPincodeError("");
+      setPincodeVerified(false);
+    }
+  }
+
+  function getSubCategories() {
+    if (selectedCategory === "all") return [];
+    return subCategories[selectedCategory] || [];
+  }
+
+  useEffect(function() {
+    if (!isClient) return;
+    function handleStorageChange() {
+      loadAllMarketplaceData();
+    }
+    window.addEventListener("storage", handleStorageChange);
+    return function() { window.removeEventListener("storage", handleStorageChange); };
+  }, [isClient]);
+
+  var categories = [
+    { id: "all", name: "All", icon: "🏠" },
+    { id: "supplier", name: "Suppliers", icon: "📦" },
+    { id: "contractor", name: "Contractors", icon: "🏗️" },
+    { id: "machinery", name: "Machinery", icon: "🚜" },
+    { id: "labour", name: "Labours", icon: "👷" },
+    { id: "realestate", name: "Real Estate", icon: "🏡" }
+  ];
+
+  var cities = ["all", "Mumbai", "Bengaluru", "Chennai", "Hyderabad", "Kerala", "Pune", "Delhi"];
+
+  var filteredItems = products.filter(function(item) {
+    if (selectedCategory !== "all" && item.category !== selectedCategory) return false;
+    if (selectedSubCategory !== "all" && item.subCategory !== selectedSubCategory) return false;
+    if (searchTerm && !(item.name || "").toLowerCase().includes(searchTerm.toLowerCase()) && 
+        !(item.description || "").toLowerCase().includes(searchTerm.toLowerCase())) return false;
+    if (selectedCity !== "all" && !(item.location || "").toLowerCase().includes(selectedCity.toLowerCase())) return false;
+    if (pincode && pincode.length === 6 && pincodeVerified) {
+      if (!(item.availablePincodes || []).includes(pincode)) return false;
+    }
+    return true;
   });
 
-  const checkServiceArea = () => {
-    setPincodeChecked(true);
-    if (!isAreaAvailable()) {
-      alert("Service is not available in your searched area yet. BuildMitra is expanding fast — we will make this service available in your area soon.");
+  function openWhatsApp(item) {
+    if (!enquiryData.name || !enquiryData.phone || !enquiryData.quantity) {
+      alert("Please fill your name, phone number and requirement");
+      return;
     }
+    
+    if (!pincodeVerified) {
+      alert("📍 Please enter a valid serviceable pincode first");
+      return;
+    }
+    
+    var phoneNumber = item.phone || "+919876543210";
+    phoneNumber = phoneNumber.replace(/[^0-9+]/g, '');
+    if (!phoneNumber.startsWith('+')) {
+      if (phoneNumber.startsWith('91')) {
+        phoneNumber = '+' + phoneNumber;
+      } else {
+        phoneNumber = '+91' + phoneNumber;
+      }
+    }
+    
+    var message = "Hello " + (item.businessName || item.name) + ",%0A%0A📋 NEW ENQUIRY FROM MARKETPLACE%0A%0A👤 Customer Name: " + enquiryData.name + "%0A📞 Phone: " + enquiryData.phone + "%0A📍 Location: " + (enquiryData.location || "Not specified") + "%0A📮 Pincode: " + pincode + "%0A📊 Requirement: " + enquiryData.quantity + "%0A📝 Additional Details: " + (enquiryData.requirement || "None") + "%0A%0A";
+    
+    if (item.category === "realestate") {
+      message += "🏡 Property: " + item.name + "%0A💰 Price: " + item.priceRange + "%0A📐 Area: " + (item.totalArea || "N/A") + " sq.ft%0A🛏️ Bedrooms: " + (item.bedrooms || "N/A") + "%0A🛁 Bathrooms: " + (item.bathrooms || "N/A") + "%0A📋 Status: " + (item.status || "Available") + "%0A📍 Location: " + item.location + "%0A";
+    } else {
+      message += "📦 Product/Service: " + item.name + "%0A💰 Price: " + (item.priceRange || "Contact for pricing") + "%0A📍 Location: " + item.location + "%0A";
+    }
+    
+    message += "%0A---%0AFrom: BuildTrack Marketplace";
+    
+    window.open("https://wa.me/" + phoneNumber + "?text=" + message, "_blank");
+    setShowEnquiryModal(false);
+    setEnquiryData({ name: "", phone: "", location: "", quantity: "", requirement: "" });
+    alert("✅ Enquiry sent!");
+  }
+
+  function openEnquiryModal(item) {
+    if (!pincodeVerified) {
+      alert("📍 Please enter a valid serviceable pincode first");
+      return;
+    }
+    setSelectedItem(item);
+    setShowEnquiryModal(true);
+  }
+
+  function openProfileModal(item) {
+    setSelectedItem(item);
+    setShowProfileModal(true);
+  }
+
+  function renderStars(rating) {
+    return "⭐".repeat(Math.floor(rating)) + "☆".repeat(5 - Math.floor(rating));
+  }
+
+  var styles = {
+    container: { padding: "20px", backgroundColor: "#f0f2f5", minHeight: "100vh" },
+    header: { backgroundColor: "#1a5f7a", color: "white", padding: "16px 20px", borderRadius: "12px", marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" },
+    headerTitle: { margin: 0, fontSize: "20px" },
+    headerSub: { margin: "5px 0 0", fontSize: "12px", opacity: 0.9 },
+    locationBar: { backgroundColor: "white", padding: "12px 20px", borderRadius: "12px", marginBottom: "20px", display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" },
+    pincodeInput: { width: "150px", padding: "10px", border: "1px solid #ddd", borderRadius: "8px", fontSize: "14px", textAlign: "center" },
+    warningMessage: { backgroundColor: "#fff3cd", border: "1px solid #ffc107", padding: "12px", borderRadius: "8px", color: "#856404", marginTop: "8px" },
+    searchBar: { display: "flex", gap: "12px", marginBottom: "20px", flexWrap: "wrap" },
+    searchInput: { flex: 1, padding: "12px", border: "1px solid #ddd", borderRadius: "8px", fontSize: "14px" },
+    select: { padding: "10px", border: "1px solid #ddd", borderRadius: "8px", fontSize: "14px", minWidth: "150px" },
+    categoryContainer: { display: "flex", gap: "12px", marginBottom: "20px", flexWrap: "wrap" },
+    categoryBtn: { padding: "10px 24px", backgroundColor: "white", border: "1px solid #ddd", borderRadius: "8px", cursor: "pointer", fontWeight: "500" },
+    categoryBtnActive: { backgroundColor: "#1a5f7a", color: "white", border: "none" },
+    subCategoryContainer: { display: "flex", gap: "8px", marginBottom: "20px", flexWrap: "wrap", padding: "8px 0" },
+    subCategoryBtn: { padding: "6px 16px", backgroundColor: "#f0f2f5", border: "1px solid #ddd", borderRadius: "20px", cursor: "pointer", fontSize: "12px", fontWeight: "500" },
+    subCategoryBtnActive: { backgroundColor: "#1a5f7a", color: "white", border: "none" },
+    grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "20px" },
+    card: { backgroundColor: "white", borderRadius: "12px", padding: "20px", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" },
+    badge: { display: "inline-block", padding: "4px 12px", borderRadius: "20px", fontSize: "11px", fontWeight: "500", marginRight: "8px" },
+    verifiedBadge: { backgroundColor: "#d1fae5", color: "#065f46" },
+    button: { backgroundColor: "#25D366", color: "white", padding: "10px 16px", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold", width: "100%", marginTop: "8px" },
+    buttonOutline: { backgroundColor: "#1a5f7a", color: "white", padding: "10px 16px", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold", width: "100%", marginTop: "8px" },
+    loading: { textAlign: "center", padding: "60px", fontSize: "18px", color: "#666" },
+    rating: { color: "#f59e0b", fontSize: "14px" },
+    modal: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 },
+    modalContent: { backgroundColor: "white", borderRadius: "16px", padding: "24px", width: "90%", maxWidth: "550px", maxHeight: "85vh", overflow: "auto" },
+    input: { width: "100%", padding: "10px", border: "1px solid #ddd", borderRadius: "8px", marginBottom: "12px" },
+    label: { display: "block", marginBottom: "6px", fontWeight: "600", fontSize: "12px", color: "#333" },
+    row2: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" },
+    profileSection: { marginBottom: "16px", paddingBottom: "16px", borderBottom: "1px solid #eee" },
+    supplierName: { fontSize: "16px", fontWeight: "bold", color: "#1a5f7a", marginBottom: "8px", display: "flex", alignItems: "center", gap: "6px" },
+    realEstateBadge: { backgroundColor: "#dbeafe", color: "#1a56db", padding: "4px 12px", borderRadius: "20px", fontSize: "11px", fontWeight: "500", display: "inline-block", marginLeft: "8px" },
+    pincodeVerifiedBadge: { backgroundColor: "#d1fae5", color: "#065f46", padding: "4px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "500", display: "inline-block", marginLeft: "8px" }
   };
 
-  const selectType = (type: string) => {
-    setSourceType(type);
-    setCategoryFilter("All");
-    setVendorFilter("All");
-  };
-
-  const saveEnquiry = (item: MarketItem) => {
-    const logged = JSON.parse(localStorage.getItem("loggedInUser") || "{}");
-    const buyerName = logged.name || "BuildMitra User";
-    const buyerMobile = logged.mobile || logged.phone || "";
-    const qty = "1";
-    const deliveryLocation = pincode || logged.location || item.location || "";
-    const instructions = "Please share best quote and availability.";
-
-    const enquiry = {
-      id: Date.now(),
-      itemId: item.id,
-      itemTitle: item.title,
-      sourceType: item.sourceType,
-      category: item.category,
-      uploaderName: item.uploaderName,
-      uploaderCode: item.uploaderCode,
-      vendorMobile: item.mobile,
-      seenRate: item.rate,
-      unit: item.unit,
-      qty,
-      deliveryLocation,
-      instructions,
-      buyerName,
-      buyerMobile,
-      buyerCode: logged.uniqueCode || "",
-      date: new Date().toISOString(),
-      status: "New"
-    };
-
-    const allOld = readArray("bm_marketplace_enquiries");
-    localStorage.setItem("bm_marketplace_enquiries", JSON.stringify([...allOld, enquiry]));
-
-    const vendorKey = `bm_enquiries_${(item.uploaderCode || item.mobile || item.uploaderName || "unknown").replace(/[^a-zA-Z0-9]/g, "_")}`;
-    const vendorOld = readArray(vendorKey);
-    localStorage.setItem(vendorKey, JSON.stringify([...vendorOld, enquiry]));
-
-    window.dispatchEvent(new Event("buildmitraMarketplaceUpdated"));
-
-    const msg = encodeURIComponent(
-      `BuildMitra Enquiry\n\nItem/Service: ${item.title}\nCode: ${item.uploaderCode || "-"}\nQty: ${qty}\nSeen Rate: ₹${item.rate}/${item.unit}\nDelivery: ${deliveryLocation}\nInstruction: ${instructions}\nBuyer: ${buyerName}\nBuyer Mobile: ${buyerMobile}`
+  if (!isClient || loading) {
+    return React.createElement("div", { style: styles.container },
+      React.createElement("div", { style: styles.loading }, loading ? "Loading marketplace..." : "Loading...")
     );
+  }
 
-    const mobile = String(item.mobile || "").replace(/[^0-9]/g, "");
-    window.open(mobile ? `https://wa.me/${mobile}?text=${msg}` : `https://wa.me/?text=${msg}`, "_blank");
-  };
+  var subCategoriesList = getSubCategories();
 
-  const getProfileItems = (profile: MarketItem | null) => {
-    if (!profile) return [];
+  return React.createElement("div", { style: styles.container },
+    React.createElement("div", { style: styles.header },
+      React.createElement("div", null,
+        React.createElement("h1", { style: styles.headerTitle }, "🏪 BuildTrack Marketplace"),
+        React.createElement("p", { style: styles.headerSub }, "Connect with verified suppliers, contractors, machinery, labour, and real estate")
+      ),
+      React.createElement("button", { onClick: function() { window.location.href = "/"; }, style: { backgroundColor: "#dc3545", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer" } }, "🚪 Exit")
+    ),
 
-    const direct = items.filter((item) =>
-      item.sourceType === profile.sourceType &&
-      (
-        (profile.uploaderCode && item.uploaderCode === profile.uploaderCode) ||
-        item.uploaderName === profile.uploaderName ||
-        item.mobile === profile.mobile
+    React.createElement("div", { style: styles.locationBar },
+      React.createElement("span", { style: { fontWeight: "bold" } }, "📍 Enter Pincode to Search (Mandatory):"),
+      React.createElement("input", {
+        type: "text",
+        placeholder: "Enter 6-digit pincode",
+        value: pincode,
+        onChange: handlePincodeChange,
+        maxLength: 6,
+        style: styles.pincodeInput
+      }),
+      pincode && pincodeVerified && React.createElement("span", { style: styles.pincodeVerifiedBadge }, "✅ Service available!"),
+      pincode && !pincodeVerified && pincode.length === 6 && 
+        React.createElement("div", { style: styles.warningMessage }, "📍 Service not yet available in pincode ", pincode, ". We are expanding soon!")
+    ),
+
+    React.createElement("div", { style: styles.searchBar },
+      React.createElement("input", {
+        type: "text",
+        placeholder: "🔍 Search by business, product, location...",
+        value: searchTerm,
+        onChange: function(e) { setSearchTerm(e.target.value); },
+        style: styles.searchInput
+      }),
+      React.createElement("select", {
+        value: selectedCity,
+        onChange: function(e) { setSelectedCity(e.target.value); },
+        style: styles.select
+      },
+        cities.map(function(city) { return React.createElement("option", { key: city, value: city }, city === "all" ? "All Cities" : city); })
       )
-    );
+    ),
 
-    return direct;
-  };
+    React.createElement("div", { style: styles.categoryContainer },
+      categories.map(function(cat) {
+        return React.createElement("button", {
+          key: cat.id,
+          onClick: function() {
+            setSelectedCategory(cat.id);
+            setSelectedSubCategory("all");
+          },
+          style: { ...styles.categoryBtn, ...(selectedCategory === cat.id ? styles.categoryBtnActive : {}) }
+        }, cat.icon, " ", cat.name);
+      })
+    ),
 
-  const downloadProfileQuote = (profile: MarketItem) => {
-    const related = getProfileItems(profile);
-    const rows = [
-      ["BuildMitra Provider Quote / Profile"],
-      ["Name", profile.uploaderName],
-      ["Code", profile.uploaderCode || "-"],
-      ["Type", profile.sourceType],
-      ["Location", profile.location],
-      ["Contact", profile.mobile || "-"],
-      [],
-      ["Service / Item", "Category", "Rate", "Unit"]
-    ];
+    subCategoriesList.length > 0 && React.createElement("div", { style: styles.subCategoryContainer },
+      subCategoriesList.map(function(sub) {
+        return React.createElement("button", {
+          key: sub.id,
+          onClick: function() { setSelectedSubCategory(sub.id); },
+          style: { ...styles.subCategoryBtn, ...(selectedSubCategory === sub.id ? styles.subCategoryBtnActive : {}) }
+        }, sub.name);
+      })
+    ),
 
-    related.forEach((item) => rows.push([item.title, item.category, String(item.rate), item.unit]));
+    filteredItems.length === 0 ?
+      React.createElement("div", { style: { textAlign: "center", padding: "60px", color: "#666" } }, 
+        pincodeVerified ? "No listings found in your area." : "Please enter a valid pincode to see listings.") :
+      React.createElement("div", { style: styles.grid },
+        filteredItems.map(function(item) {
+          var isRealEstate = item.category === "realestate";
+          var productImage = item.image || getProductImage(item.name);
+          
+          return React.createElement("div", { key: item.id, style: styles.card },
+            React.createElement("div", { style: styles.supplierName },
+              "🏢 ", item.ownerName || item.businessName || item.name,
+              isRealEstate && React.createElement("span", { style: styles.realEstateBadge }, "🏠 Real Estate")
+            ),
+            React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "8px" } },
+              React.createElement("div", null,
+                React.createElement("span", { style: { ...styles.badge, ...styles.verifiedBadge } }, item.isVerified ? "✅ Verified" : "🔄 Pending"),
+                React.createElement("span", { style: { ...styles.badge, backgroundColor: "#e0e7ff", color: "#3730a3" } }, 
+                  item.category === "supplier" ? "🏷️ Supplier" : 
+                  item.category === "contractor" ? "🏗️ Contractor" : 
+                  item.category === "machinery" ? "🚜 Machinery" : 
+                  item.category === "labour" ? "👷 Labour" : "🏡 Real Estate")
+              ),
+              React.createElement("div", { style: styles.rating }, renderStars(item.rating), " ", item.rating)
+            ),
+            
+            React.createElement("div", { style: { display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" } },
+              React.createElement("div", { style: { fontSize: "40px" } }, productImage),
+              React.createElement("div", null,
+                React.createElement("h3", { style: { margin: "0 0 4px 0" } }, item.name),
+                React.createElement("p", { style: { margin: 0, fontSize: "11px", color: "#666" } }, 
+                  (item.description || "").substring(0, 60) || "Available"
+                )
+              )
+            ),
+            
+            React.createElement("p", { style: { fontSize: "18px", fontWeight: "bold", color: "#1a5f7a", margin: "8px 0" } }, 
+              item.priceRange || "Contact for pricing"
+            ),
+            React.createElement("p", { style: { margin: "4px 0", fontSize: "12px" } }, "📍 ", item.location),
+            React.createElement("div", { style: { display: "flex", gap: "8px", marginTop: "12px" } },
+              React.createElement("button", { onClick: function() { openProfileModal(item); }, style: { ...styles.buttonOutline, padding: "8px" } }, "👁️ Profile"),
+              React.createElement("button", { onClick: function() { openEnquiryModal(item); }, style: { ...styles.button, padding: "8px" } }, "💬 Enquiry")
+            )
+          );
+        })
+      ),
 
-    const csv = rows.map((r) => r.map((v) => `"${String(v || "").replace(/"/g, '""')}"`).join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${profile.uploaderCode || profile.uploaderName}-quote.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-  return (
-    <div style={{ padding: 20, background: "#f3f4f6", minHeight: "100vh", fontFamily: "Arial" }}>
-      <div style={{ background: "#800020", color: "white", padding: 20, borderRadius: 14, marginBottom: 20 }}>
-        <h1 style={{ margin: 0 }}>BuildMitra Marketplace</h1>
-        <p style={{ margin: "6px 0 0" }}>Products, Contractors, Labours, Machine Rentals and Uploaded Real Estate Listings</p>
-      </div>
+    showProfileModal && selectedItem && React.createElement("div", { style: styles.modal, onClick: function() { setShowProfileModal(false); } },
+      React.createElement("div", { style: styles.modalContent, onClick: function(e) { e.stopPropagation(); } },
+        React.createElement("div", { style: { textAlign: "center", marginBottom: "20px" } },
+          React.createElement("div", { style: { fontSize: "60px" } }, selectedItem.image || getProductImage(selectedItem.name)),
+          React.createElement("h2", { style: { margin: "8px 0 4px" } }, selectedItem.businessName || selectedItem.name),
+          React.createElement("div", { style: styles.rating }, renderStars(selectedItem.rating), " ", selectedItem.rating),
+          React.createElement("span", { style: { ...styles.badge, ...styles.verifiedBadge, marginTop: "8px", display: "inline-block" } }, selectedItem.isVerified ? "✅ Verified" : "🔄 Pending")
+        ),
+        React.createElement("div", { style: styles.profileSection },
+          React.createElement("h3", { style: { margin: "0 0 12px 0" } }, "📋 Business Details"),
+          React.createElement("p", null, React.createElement("strong", null, "Business:"), " ", selectedItem.businessName || selectedItem.name),
+          React.createElement("p", null, React.createElement("strong", null, "Owner:"), " ", selectedItem.ownerName || "Not specified"),
+          React.createElement("p", null, React.createElement("strong", null, "📞 Phone:"), " ", selectedItem.phone || "Not specified"),
+          React.createElement("p", null, React.createElement("strong", null, "📍 Location:"), " ", selectedItem.location || "Not specified"),
+          React.createElement("p", null, React.createElement("strong", null, "📋 Description:"), " ", selectedItem.description || "No description available"),
+          selectedItem.category === "realestate" && React.createElement(React.Fragment, null,
+            React.createElement("p", null, React.createElement("strong", null, "🏡 Property Type:"), " ", selectedItem.propertyType),
+            React.createElement("p", null, React.createElement("strong", null, "📐 Area:"), " ", selectedItem.totalArea || "N/A", " sq.ft"),
+            React.createElement("p", null, React.createElement("strong", null, "🛏️ Bedrooms:"), " ", selectedItem.bedrooms || "N/A"),
+            React.createElement("p", null, React.createElement("strong", null, "🛁 Bathrooms:"), " ", selectedItem.bathrooms || "N/A"),
+            React.createElement("p", null, React.createElement("strong", null, "📋 Status:"), " ", selectedItem.status || "Available")
+          )
+        ),
+        React.createElement("div", { style: { display: "flex", gap: "12px", marginTop: "20px" } },
+          React.createElement("button", { onClick: function() { setShowProfileModal(false); openEnquiryModal(selectedItem); }, style: { ...styles.buttonOutline, flex: 1 } }, "📞 Send Enquiry"),
+          React.createElement("button", { onClick: function() { setShowProfileModal(false); }, style: { ...styles.button, flex: 1, backgroundColor: "#6c757d" } }, "Close")
+        )
+      )
+    ),
 
-      <div style={{ background: "white", padding: 16, borderRadius: 12, marginBottom: 16 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "2fr auto", gap: 12, marginBottom: 14 }}>
-          <input value={pincode} onChange={(e) => { setPincode(e.target.value); setPincodeChecked(false); }} placeholder="Enter PIN code / service area first" style={{ padding: 12, border: "1px solid #ddd", borderRadius: 8 }} />
-          <button onClick={checkServiceArea} style={{ background: "#800020", color: "white", border: 0, borderRadius: 8, padding: "10px 18px", cursor: "pointer" }}>Check Area</button>
-        </div>
-
-        {pincodeChecked && isAreaAvailable() && <div style={{ padding: 10, borderRadius: 8, background: "#e8f5e9", color: "#166534", marginBottom: 12 }}>✅ Service available in this area.</div>}
-        {pincodeChecked && !isAreaAvailable() && <div style={{ padding: 10, borderRadius: 8, background: "#fff3cd", color: "#92400e", marginBottom: 12 }}>🚧 Service is not available in this searched area yet. BuildMitra will serve this area soon.</div>}
-
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12, marginBottom: 14 }}>
-          {[
-            ["Products", "#2563eb"],
-            ["Contractors", "#16a34a"],
-            ["Labours", "#f97316"],
-            ["Machine Rentals", "#7c3aed"],
-            ["Real Estate", "#dc2626"]
-          ].map(([name, color]) => (
-            <button key={name} onClick={() => selectType(name)} style={{ background: sourceType === name ? color : "white", color: sourceType === name ? "white" : color, border: `2px solid ${color}`, borderRadius: 12, padding: 14, fontWeight: "bold", cursor: "pointer" }}>
-              {name}
-            </button>
-          ))}
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr auto", gap: 12 }}>
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={`Search ${sourceType} by item, code, vendor, pincode...`} style={{ padding: 10, border: "1px solid #ddd", borderRadius: 8 }} />
-          <select value={sourceType} onChange={(e) => selectType(e.target.value)} style={{ padding: 10, border: "1px solid #ddd", borderRadius: 8 }}>
-            {serviceTypes.map(t => <option key={t}>{t}</option>)}
-          </select>
-          <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} style={{ padding: 10, border: "1px solid #ddd", borderRadius: 8 }}>
-            {categoryOptions.map(c => <option key={c}>{c}</option>)}
-          </select>
-          <select value={vendorFilter} onChange={(e) => setVendorFilter(e.target.value)} style={{ padding: 10, border: "1px solid #ddd", borderRadius: 8 }}>
-            {vendorOptions.map(v => <option key={v}>{v}</option>)}
-          </select>
-          <button onClick={loadMarketplace} style={{ background: "#800020", color: "white", border: 0, borderRadius: 8, padding: "10px 16px", cursor: "pointer" }}>Refresh</button>
-        </div>
-      </div>
-
-      <div style={{ marginBottom: 12, fontWeight: "bold" }}>Showing {filtered.length} of {items.length} listings</div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
-        {filtered.map(item => (
-          <div key={`${item.sourceKey}-${item.id}`} style={{ background: "white", borderRadius: 12, padding: 16, boxShadow: "0 2px 6px rgba(0,0,0,0.08)" }}>
-            <div style={{ fontSize: 12, color: "#800020", fontWeight: "bold" }}>{item.sourceType} • {item.category}</div>
-            <h3 style={{ margin: "8px 0" }}>{item.title}</h3>
-            <button onClick={() => setSelectedProfile(item)} style={{ border: 0, background: "transparent", color: "#800020", textDecoration: "underline", cursor: "pointer", padding: 0, fontWeight: "bold" }}>
-              {item.uploaderCode || item.uploaderName}
-            </button>
-            <div style={{ marginTop: 8 }}>Rate: <strong>₹{item.rate.toLocaleString()}</strong> / {item.unit}</div>
-            <div>Area: {item.location}{item.pincode ? ` - ${item.pincode}` : ""}</div>
-            <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-              <button onClick={() => saveEnquiry(item)} style={{ flex: 1, background: "#28a745", color: "white", border: 0, borderRadius: 8, padding: 10, cursor: "pointer" }}>Enquiry</button>
-              <button onClick={() => setSelectedProfile(item)} style={{ flex: 1, background: "#17a2b8", color: "white", border: 0, borderRadius: 8, padding: 10, cursor: "pointer" }}>Profile</button>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {filtered.length === 0 && (
-        <div style={{ background: "white", padding: 30, borderRadius: 12, textAlign: "center", color: "#666", marginTop: 20 }}>
-          No listings found under {sourceType}. Check dashboard uploads, selected category, or pincode.
-        </div>
-      )}
-
-      {selectedProfile && (
-        <div onClick={() => setSelectedProfile(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: "white", padding: 24, borderRadius: 14, width: "90%", maxWidth: 480 }}>
-            <h2 style={{ marginTop: 0, color: "#800020" }}>Uploader Profile</h2>
-            <p><strong>Name:</strong> {selectedProfile.uploaderName}</p>
-            <p><strong>Unique Code:</strong> {selectedProfile.uploaderCode || "Not available"}</p>
-            <p><strong>Type:</strong> {selectedProfile.sourceType}</p>
-            <p><strong>Address:</strong> {selectedProfile.address || "Not available"}</p>
-            <p><strong>Location:</strong> {selectedProfile.location}</p>
-            <p><strong>Pincode:</strong> {selectedProfile.pincode || "Not available"}</p>
-            <p><strong>Contact:</strong> {selectedProfile.mobile || "Not available"}</p>
-            <div style={{ marginTop: 14, padding: 12, background: "#f8f9fa", borderRadius: 10 }}>
-              <h3 style={{ marginTop: 0 }}>
-                {selectedProfile.sourceType === "Labours" ? "Uploaded Labour Rates / Services" :
-                 selectedProfile.sourceType === "Machine Rentals" ? "Uploaded Machine Hire Catalog" :
-                 selectedProfile.sourceType === "Contractors" ? "Uploaded Contractor Services / Quote" :
-                 selectedProfile.sourceType === "Real Estate" ? "Uploaded Real Estate Listings" :
-                 "Uploaded Product Catalog"}
-              </h3>
-
-              <div style={{ maxHeight: 220, overflow: "auto" }}>
-                {getProfileItems(selectedProfile).map((x) => (
-                  <div key={`${x.sourceKey}-${x.id}`} style={{ display: "grid", gridTemplateColumns: "1.6fr .8fr .8fr", gap: 8, padding: "8px 0", borderBottom: "1px solid #e5e7eb", fontSize: 13 }}>
-                    <div><strong>{x.title}</strong><br/><span style={{ color: "#666" }}>{x.category}</span></div>
-                    <div>₹{x.rate.toLocaleString()}</div>
-                    <div>{x.unit}</div>
-                  </div>
-                ))}
-                {getProfileItems(selectedProfile).length === 0 && <div style={{ color: "#666" }}>No uploaded catalog/quote found for this provider yet.</div>}
-              </div>
-            </div>
-
-            <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-              <button onClick={() => saveEnquiry(selectedProfile)} style={{ flex: 1, background: "#28a745", color: "white", border: 0, borderRadius: 8, padding: 10, cursor: "pointer" }}>Send Enquiry</button>
-              <button onClick={() => downloadProfileQuote(selectedProfile)} style={{ flex: 1, background: "#800020", color: "white", border: 0, borderRadius: 8, padding: 10, cursor: "pointer" }}>Download Uploaded Quote</button>
-            </div>
-
-            <button onClick={() => setSelectedProfile(null)} style={{ marginTop: 10, background: "#6b7280", color: "white", border: 0, borderRadius: 8, padding: 10, width: "100%", cursor: "pointer" }}>Close</button>
-          </div>
-        </div>
-      )}
-    </div>
+    showEnquiryModal && selectedItem && React.createElement("div", { style: styles.modal, onClick: function() { setShowEnquiryModal(false); } },
+      React.createElement("div", { style: styles.modalContent, onClick: function(e) { e.stopPropagation(); } },
+        React.createElement("h2", { style: { color: "#1a5f7a", marginBottom: "16px" } }, "Send Enquiry to ", selectedItem.businessName || selectedItem.name),
+        React.createElement("div", { style: { backgroundColor: "#f8f9fa", padding: "12px", borderRadius: "8px", marginBottom: "16px" } },
+          React.createElement("p", { style: { margin: "4px 0" } }, "⭐ Rating: ", renderStars(selectedItem.rating), " (", selectedItem.rating, ")"),
+          React.createElement("p", { style: { margin: "4px 0" } }, "📍 ", selectedItem.location),
+          React.createElement("p", { style: { margin: "4px 0" } }, "💰 ", selectedItem.priceRange || "Contact for pricing")
+        ),
+        React.createElement("div", null,
+          React.createElement("label", { style: styles.label }, "Your Name *"),
+          React.createElement("input", { type: "text", placeholder: "Enter your name", value: enquiryData.name, onChange: function(e) { setEnquiryData({...enquiryData, name: e.target.value}); }, style: styles.input })
+        ),
+        React.createElement("div", { style: styles.row2 },
+          React.createElement("div", null,
+            React.createElement("label", { style: styles.label }, "Phone Number *"),
+            React.createElement("input", { type: "tel", placeholder: "Your mobile number", value: enquiryData.phone, onChange: function(e) { setEnquiryData({...enquiryData, phone: e.target.value}); }, style: styles.input })
+          ),
+          React.createElement("div", null,
+            React.createElement("label", { style: styles.label }, "Location"),
+            React.createElement("input", { type: "text", placeholder: "Your city", value: enquiryData.location, onChange: function(e) { setEnquiryData({...enquiryData, location: e.target.value}); }, style: styles.input })
+          )
+        ),
+        React.createElement("div", null,
+          React.createElement("label", { style: styles.label }, "Requirement *"),
+          React.createElement("input", { type: "text", placeholder: "e.g., 500 bags, 1000 sq.ft, 10 labours", value: enquiryData.quantity, onChange: function(e) { setEnquiryData({...enquiryData, quantity: e.target.value}); }, style: styles.input })
+        ),
+        React.createElement("div", null,
+          React.createElement("label", { style: styles.label }, "Additional Details"),
+          React.createElement("textarea", { placeholder: "Any specific requirements...", value: enquiryData.requirement, onChange: function(e) { setEnquiryData({...enquiryData, requirement: e.target.value}); }, style: { ...styles.input, minHeight: "80px" } })
+        ),
+        React.createElement("button", { onClick: function() { openWhatsApp(selectedItem); }, style: { ...styles.button, marginTop: "16px" } }, "💬 Send Enquiry via WhatsApp")
+      )
+    )
   );
 }
-
-
-
-
-
-
-
-
