@@ -114,100 +114,33 @@ const router = useRouter();
     const areaFactor = constructionType === 'Commercial' ? 1.12 : constructionType === 'Industrial' ? 1.18 : 1;
     const floorsNum = Math.max(1, Number(floors || 1));
 
-    const spanFt = 12;
-    const gridX = Math.max(2, Math.ceil(Math.sqrt(footprintArea) / spanFt) + 1);
-    const gridY = Math.max(2, Math.ceil((footprintArea / Math.max(Math.sqrt(footprintArea), 1)) / spanFt) + 1);
-    const columnCount = Math.max(8, gridX * gridY);
-
-    const floorHeightFt = 10;
-    const footingLengthFt = floorsNum <= 1 ? 4 : floorsNum <= 2 ? 4.5 : floorsNum <= 3 ? 5 : floorsNum <= 5 ? 6 : 0;
-    const footingWidthFt = footingLengthFt;
-    const footingDepthFt = floorsNum <= 1 ? 1.5 : floorsNum <= 2 ? 1.75 : floorsNum <= 3 ? 2 : floorsNum <= 5 ? 2.5 : 0;
-
-    const excavationDepthFt = foundationType === 'Raft Foundation' ? 2.5 : footingDepthFt + 2.5;
-    const excavationCum = foundationType === 'Raft Foundation'
-      ? (footprintArea * excavationDepthFt) / 35.315
-      : (columnCount * (footingLengthFt + 1) * (footingWidthFt + 1) * excavationDepthFt) / 35.315;
-
-    const pccDepthFt = 0.33;
-    const pccCum = foundationType === 'Raft Foundation'
-      ? (footprintArea * pccDepthFt) / 35.315
-      : (columnCount * (footingLengthFt + 1) * (footingWidthFt + 1) * pccDepthFt) / 35.315;
-
-    const footingRccCum = foundationType === 'Raft Foundation'
-      ? (footprintArea * 1.0) / 35.315
-      : (columnCount * footingLengthFt * footingWidthFt * footingDepthFt) / 35.315;
-
-    const plinthBeamCum = (Math.sqrt(footprintArea) * 4 * 0.75 * 1.0) / 35.315;
-    const columnCum = (columnCount * 1.0 * 1.25 * floorHeightFt * floorsNum) / 35.315;
-    const beamCum = (footprintArea * floorsNum * 0.12) / 35.315;
-    const slabCum = (footprintArea * floorsNum * 0.42) / 35.315;
-
-    const foundationMasonryCum = foundationType === 'Raft Foundation' ? 0 : (columnCount * 2.5 * 2.5 * 1.5) / 35.315;
-    const rccCum = footingRccCum + plinthBeamCum + columnCum + beamCum + slabCum;
-
-    const backfillCum = Math.max(excavationCum - pccCum - footingRccCum - foundationMasonryCum, 0) * 0.85;
+    const columnCount = Math.max(8, Math.ceil(footprintArea / 150) + 4);
+    const excavationCum = foundationType === 'Raft Foundation' ? (footprintArea * 0.65) / 35.315 : (columnCount * 5 * 5 * 5.5) / 35.315;
+    const pccCum = foundationType === 'Raft Foundation' ? (footprintArea * 0.33) / 35.315 : (columnCount * 5.5 * 5.5 * 0.33) / 35.315;
+    const foundationMasonryCum = foundationType === 'Raft Foundation' ? 0 : (columnCount * 4.5 * 4.5 * 1.5) / 35.315;
+    const backfillCum = Math.max(excavationCum - pccCum - foundationMasonryCum, 0) * 0.85;
     const plinthProtectionCum = ((plotArea - footprintArea) * 0.33) / 35.315;
     const pccTotalCum = pccCum + plinthProtectionCum;
     const antiTermiteLtr = footprintArea / 100;
-
-    const shutteringSft =
-      (columnCount * floorHeightFt * floorsNum * 2 * (1 + 1.25)) +
-      (footprintArea * floorsNum * 1.25) +
-      (beamCum * 35.315 * 3.0);
-
-    const steelKg =
-      (footingRccCum * 35.315 * 2.8) +
-      (columnCum * 35.315 * 7.5) +
-      (beamCum * 35.315 * 6.5) +
-      (slabCum * 35.315 * 3.2);
-
+    const shutteringSft = totalBUA * (2.15 + floorsNum * 0.06);
+    const steelKg = totalBUA * structure.steelKgPerSft * areaFactor;
+    const rccCum = (totalBUA * structure.rccCftPerSft) / 35.315;
+    const cementBags = totalBUA * 0.40 * areaFactor;
     const lintelCum = (counts.totalDoors + counts.windows) * 5 * 0.75 * 0.3 / 35.315;
     const staircaseCum = Math.max(floorsNum - 1, 1) * 42 / 35.315;
     const sunshadeCum = counts.windows * 4.5 * 1.25 * 0.25 / 35.315;
-    const externalPerimeterFt = 2 * (plotLength + plotWidth);
-    const externalWallGrossSft = externalPerimeterFt * floorHeightFt * floorsNum;
-    const doorOpeningSft = counts.totalDoors * 21;
-    const windowOpeningSft = counts.windows * 18;
-    const ventilatorOpeningSft = counts.ventilators * 4;
-    const externalOpeningDeductionSft = (counts.mainDoors * 35) + windowOpeningSft + ventilatorOpeningSft;
-    const extWallAreaSft = Math.max(externalWallGrossSft - externalOpeningDeductionSft, 0);
-
-    const internalPartitionLengthFt =
-      (counts.bedroomsCount * 28) +
-      (counts.toiletsCount * 14) +
-      (counts.kitchensCount * 18) +
-      (counts.livingRooms * 20) +
-      (floorsNum * 18);
-
-    const intWallGrossSft = internalPartitionLengthFt * floorHeightFt;
-    const internalOpeningDeductionSft = Math.max(doorOpeningSft - (counts.mainDoors * 35), 0);
-    const intWallAreaSft = Math.max(intWallGrossSft - internalOpeningDeductionSft, 0);
-
-    const blockFaceSft = 1.333 * 0.667;
-    const sixInBlockNos = wallType === 'Concrete Blocks' ? Math.ceil((extWallAreaSft / blockFaceSft) * 1.05) : 0;
-    const fourInBlockNos = wallType === 'Concrete Blocks' ? Math.ceil((intWallAreaSft / blockFaceSft) * 1.05) : 0;
-
-    const brickWallThicknessFt = 0.75;
-    const brickVolCft = 0.75 * 0.375 * 0.25;
-    const clayBrickNos = wallType === 'Clay Bricks'
-      ? Math.ceil((((extWallAreaSft * brickWallThicknessFt) + (intWallAreaSft * 0.375)) / brickVolCft) * 1.08)
-      : 0;
-
-    const wallMasonryQty = wallType === 'Concrete Blocks' ? (sixInBlockNos + fourInBlockNos) : clayBrickNos;
-    const wallMasonryUom = 'Nos';
-    const wallMasonryDesc = wallType === 'Concrete Blocks'
-      ? `Concrete block masonry. 6 inch external blocks: ${sixInBlockNos}; 4 inch internal blocks: ${fourInBlockNos}. Openings deducted.`
-      : `Clay brick masonry. Brick nos calculated from wall volume with 8% wastage. Openings deducted.`;
-
-    const internalPlasterSft = (intWallAreaSft * 2) + extWallAreaSft;
-    const externalPlasterSft = extWallAreaSft;
-    const plasterSqm = ((internalPlasterSft + externalPlasterSft) * 1.05) / 10.764;
-
-    const flooringSft = totalBUA * 0.92;
-    const skirtingSft = totalBUA * 0.08;
-    const dadoSft = (counts.toiletsCount * 70) + (counts.kitchensCount * 50);
-    const flooringTotalSft = flooringSft + skirtingSft + dadoSft;
+    const extWallAreaSft = totalBUA * 0.90;
+    const intWallAreaSft = totalBUA * 0.55;
+    const sixInBlockNos = wallType === 'Concrete Blocks' ? extWallAreaSft / 0.89 : 0;
+    const fourInBlockNos = wallType === 'Concrete Blocks' ? intWallAreaSft / 0.89 : 0;
+    const clayBrickSqm = wallType === 'Clay Bricks' ? (extWallAreaSft + intWallAreaSft) / 10.764 : 0;
+    const wallMasonryQty = wallType === 'Concrete Blocks' ? (sixInBlockNos + fourInBlockNos) : clayBrickSqm;
+    const wallMasonryUom = wallType === 'Concrete Blocks' ? 'Nos' : 'Sqmtr';
+    const wallMasonryDesc = wallType === 'Concrete Blocks' ? 'Concrete block masonry: 6 inch external walls + 4 inch internal partitions as per wall area.' : 'Clay brick masonry in CM 1:6 as per wall area.';
+    const plasterSqm = (totalBUA * 3.4) / 10.764;
+    const flooringSft = totalBUA * 1.08;
+    const dadoSft = counts.toiletsCount * 55 + counts.kitchensCount * 45;
+    const flooringTotalSft = flooringSft + dadoSft;
     const kitchenRmt = counts.kitchensCount * 3.6;
     const parkingSft = Math.max(footprintArea * 0.35, plotArea * 0.18);
     const otherQty = 1;
@@ -215,20 +148,6 @@ const router = useRouter();
     const railingKg = (floorsNum * 75) + (totalBUA * 0.04) + (hasLift ? 75 : 0);
     const compoundWallSft = Math.max((2 * (plotLength + plotWidth) - 12) * 6, 0);
     const paintingSft = totalBUA * 3.5;
-
-    const rccDryVolumeCum = (rccCum + lintelCum + staircaseCum + sunshadeCum) * 1.54;
-    const pccDryVolumeCum = pccTotalCum * 1.54;
-    const plasterDryVolumeCum = (plasterSqm * 0.012) * 1.33;
-    const masonryMortarCum = wallType === 'Concrete Blocks'
-      ? (wallMasonryQty * 0.004)
-      : (wallMasonryQty * 0.0009);
-
-    const cementBagsRcc = rccDryVolumeCum * (1 / 5.5) * 28.8;
-    const cementBagsPcc = pccDryVolumeCum * (1 / 10) * 28.8;
-    const cementBagsPlaster = plasterDryVolumeCum * (1 / 5) * 28.8;
-    const cementBagsMasonry = masonryMortarCum * 1.33 * (1 / 7) * 28.8;
-
-    const cementBags = (cementBagsRcc + cementBagsPcc + cementBagsPlaster + cementBagsMasonry) * 1.05;
 
     const item = (sr: number, code: string, desc: string, uom: string, qty: number, mr: number, lr: number) => ({
       sr, code, desc, uom, qty: Number(qty || 0), matRate: Number(mr || 0), labRate: Number(lr || 0), amount: Number(qty || 0) * (Number(mr || 0) + Number(lr || 0))
@@ -282,49 +201,7 @@ const router = useRouter();
 
   const handleExportExcel = () => {
     if (!results) return;
-    const data = results.items.map((i: any) => ({
-      'Sr. No.': i.sr,
-      'Item Code': i.code,
-      Description: i.desc,
-      UOM: i.uom,
-      Quantity: formatNumber(i.qty),
-      'Mat. Rate': formatNumber(i.matRate),
-      'Lab. Rate': formatNumber(i.labRate),
-      'Total (₹)': formatNumber(i.amount)
-    }));
-
-    data.push({
-      'Sr. No.': '',
-      'Item Code': '',
-      Description: 'MATERIAL TOTAL',
-      UOM: '',
-      Quantity: '',
-      'Mat. Rate': '',
-      'Lab. Rate': '',
-      'Total (₹)': formatNumber(results.materialTotal)
-    });
-
-    data.push({
-      'Sr. No.': '',
-      'Item Code': '',
-      Description: 'LABOUR TOTAL',
-      UOM: '',
-      Quantity: '',
-      'Mat. Rate': '',
-      'Lab. Rate': '',
-      'Total (₹)': formatNumber(results.labourTotal)
-    });
-
-    data.push({
-      'Sr. No.': '',
-      'Item Code': '',
-      Description: 'GRAND TOTAL',
-      UOM: '',
-      Quantity: '',
-      'Mat. Rate': '',
-      'Lab. Rate': '',
-      'Total (₹)': formatNumber(results.grandTotal)
-    });
+    const data = results.items.map((i: any) => ({ 'Sr. No.': i.sr, 'Item Code': i.code, Description: i.desc, UOM: i.uom, Quantity: formatNumber(i.qty), 'Mat. Rate': formatNumber(i.matRate), 'Lab. Rate': formatNumber(i.labRate), 'Total (₹)': formatNumber(i.amount) }));
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Civil_BOQ');
@@ -428,14 +305,5 @@ const router = useRouter();
     )
   );
 }
-
-
-
-
-
-
-
-
-
 
 

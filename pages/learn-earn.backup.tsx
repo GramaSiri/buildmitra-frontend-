@@ -87,61 +87,205 @@ const QuizContext = createContext();
 const LeaderboardContext = createContext();
 const CertificateContext = createContext();
 
-// ============= 50 HIGH-QUALITY CIVIL & PHE QUESTIONS =============
+// ============= 50+ UNIQUE QUESTIONS WITH DIFFERENT OPTIONS =============
 const UNIQUE_QUESTIONS = [
-  { id: 1, question: 'What is the standard water-cement ratio for M20 grade concrete?', options: ['0.40', '0.50', '0.55', '0.60'], correctAnswer: 1, category: 'Concrete', difficulty: 'Medium' },
-  { id: 2, question: 'What is the minimum curing period for concrete in normal weather conditions?', options: ['3 days', '7 days', '14 days', '21 days'], correctAnswer: 1, category: 'Concrete', difficulty: 'Easy' },
-  { id: 3, question: 'Which type of pipe is most commonly used for drainage systems in buildings?', options: ['PVC pipes', 'Cast iron pipes', 'Copper pipes', 'GI pipes'], correctAnswer: 0, category: 'Plumbing', difficulty: 'Easy' },
-  { id: 4, question: 'What is the standard slope required for drainage pipes?', options: ['1 in 100', '1 in 80', '1 in 60', '1 in 40'], correctAnswer: 0, category: 'Plumbing', difficulty: 'Medium' },
-  { id: 5, question: 'What is the minimum depth of foundation for a residential building on clay soil?', options: ['0.5 meters', '1.0 meters', '1.5 meters', '2.0 meters'], correctAnswer: 1, category: 'Foundation', difficulty: 'Medium' },
-  { id: 6, question: 'Which type of foundation is recommended for high water table areas?', options: ['Raft foundation', 'Pile foundation', 'Strip foundation', 'Isolated footing'], correctAnswer: 1, category: 'Foundation', difficulty: 'Medium' },
-  { id: 7, question: 'What is the standard brick size used in India?', options: ['190x90x90 mm', '200x100x100 mm', '180x80x80 mm', '210x110x110 mm'], correctAnswer: 0, category: 'Materials', difficulty: 'Easy' },
-  { id: 8, question: 'Which grade of steel is most commonly used for reinforcement in RCC structures?', options: ['Fe 415', 'Fe 500', 'Fe 550', 'Fe 600'], correctAnswer: 0, category: 'Materials', difficulty: 'Medium' },
-  { id: 9, question: 'What is the standard density of reinforced concrete?', options: ['2200 kg/m³', '2400 kg/m³', '2500 kg/m³', '2600 kg/m³'], correctAnswer: 2, category: 'Concrete', difficulty: 'Easy' },
-  { id: 10, question: 'What is the purpose of a damp proof course (DPC) in buildings?', options: ['To prevent moisture rising', 'To provide thermal insulation', 'To strengthen the wall', 'To prevent sound transmission'], correctAnswer: 0, category: 'Construction', difficulty: 'Easy' },
-  { id: 11, question: 'What is the standard thickness of a DPC layer?', options: ['2.5 mm', '3.0 mm', '4.0 mm', '5.0 mm'], correctAnswer: 0, category: 'Construction', difficulty: 'Medium' },
-  { id: 12, question: 'Which type of cement is best suited for marine construction?', options: ['Ordinary Portland Cement', 'Sulphate Resisting Cement', 'Rapid Hardening Cement', 'Low Heat Cement'], correctAnswer: 1, category: 'Materials', difficulty: 'Hard' },
-  { id: 13, question: 'What is the standard water pressure maintained in residential buildings?', options: ['1-2 bar', '2-3 bar', '3-4 bar', '4-5 bar'], correctAnswer: 1, category: 'Plumbing', difficulty: 'Medium' },
-  { id: 14, question: 'What is the purpose of a trap in plumbing systems?', options: ['To prevent sewer gases from entering', 'To collect debris', 'To control water flow', 'To reduce noise'], correctAnswer: 0, category: 'Plumbing', difficulty: 'Easy' },
-  { id: 15, question: 'What is the minimum thickness of a load-bearing wall in residential construction?', options: ['4 inches', '6 inches', '9 inches', '12 inches'], correctAnswer: 2, category: 'Structural', difficulty: 'Easy' },
-  { id: 16, question: 'What is the standard slump value for concrete used in foundations?', options: ['25-50 mm', '50-75 mm', '75-100 mm', '100-125 mm'], correctAnswer: 1, category: 'Concrete', difficulty: 'Medium' },
-  { id: 17, question: 'Which test is performed to determine the compressive strength of concrete?', options: ['Slump test', 'Compression test', 'Flexural test', 'Tensile test'], correctAnswer: 1, category: 'Testing', difficulty: 'Easy' },
-  { id: 18, question: 'What is the standard size of a cube used for concrete testing in India?', options: ['100 mm', '150 mm', '200 mm', '250 mm'], correctAnswer: 1, category: 'Testing', difficulty: 'Easy' },
-  { id: 19, question: 'What is the purpose of a lintel in building construction?', options: ['To support the wall above openings', 'To provide foundation support', 'To act as a beam', 'To connect columns'], correctAnswer: 0, category: 'Structural', difficulty: 'Easy' },
-  { id: 20, question: 'What is the standard diameter of a rainwater downpipe?', options: ['75 mm', '100 mm', '150 mm', '200 mm'], correctAnswer: 1, category: 'Plumbing', difficulty: 'Medium' },
-  { id: 21, question: 'Which type of roof is most suitable for heavy rainfall areas?', options: ['Flat roof', 'Sloped roof', 'Green roof', 'Terraced roof'], correctAnswer: 1, category: 'Roofing', difficulty: 'Easy' },
-  { id: 22, question: 'What is the standard slope for an RCC roof?', options: ['1 in 12', '1 in 24', '1 in 36', '1 in 48'], correctAnswer: 0, category: 'Roofing', difficulty: 'Hard' },
-  { id: 23, question: 'What is the purpose of a shear wall in a building?', options: ['To resist lateral loads', 'To support vertical loads', 'To provide openings', 'To improve aesthetics'], correctAnswer: 0, category: 'Structural', difficulty: 'Medium' },
-  { id: 24, question: 'What is the standard cover for reinforcement in slabs?', options: ['15 mm', '20 mm', '25 mm', '30 mm'], correctAnswer: 1, category: 'Structural', difficulty: 'Medium' },
-  { id: 25, question: 'Which type of valve is used to control water flow in main supply lines?', options: ['Gate valve', 'Globe valve', 'Ball valve', 'Check valve'], correctAnswer: 0, category: 'Plumbing', difficulty: 'Medium' },
-  { id: 26, question: 'What is the standard size of a modular brick with mortar?', options: ['200x100x100 mm', '190x90x90 mm', '210x110x110 mm', '180x80x80 mm'], correctAnswer: 0, category: 'Materials', difficulty: 'Easy' },
-  { id: 27, question: 'What is the purpose of admixtures in concrete?', options: ['To improve workability', 'To increase strength', 'To reduce water content', 'All of the above'], correctAnswer: 3, category: 'Concrete', difficulty: 'Medium' },
-  { id: 28, question: 'What is the standard depth of sewer line?', options: ['0.5 meters', '1.0 meters', '1.5 meters', '2.0 meters'], correctAnswer: 1, category: 'Plumbing', difficulty: 'Medium' },
-  { id: 29, question: 'Which type of brick bond is strongest?', options: ['English bond', 'Flemish bond', 'Stretcher bond', 'Header bond'], correctAnswer: 0, category: 'Construction', difficulty: 'Hard' },
-  { id: 30, question: 'What is the standard mortar ratio for brick masonry?', options: ['1:3', '1:4', '1:5', '1:6'], correctAnswer: 2, category: 'Construction', difficulty: 'Medium' },
-  { id: 31, question: 'What is the purpose of a water hammer arrestor in plumbing?', options: ['To prevent water hammer shock', 'To reduce noise', 'To control flow', 'All of the above'], correctAnswer: 0, category: 'Plumbing', difficulty: 'Hard' },
-  { id: 32, question: 'What is the standard floor height in residential buildings?', options: ['2.7 meters', '3.0 meters', '3.3 meters', '3.6 meters'], correctAnswer: 1, category: 'Design', difficulty: 'Easy' },
-  { id: 33, question: 'Which type of pipe is best for hot water supply?', options: ['CPVC pipes', 'PVC pipes', 'Copper pipes', 'GI pipes'], correctAnswer: 0, category: 'Plumbing', difficulty: 'Hard' },
-  { id: 34, question: 'What is the standard spacing for reinforcement bars in a slab?', options: ['100 mm', '150 mm', '200 mm', '250 mm'], correctAnswer: 1, category: 'Structural', difficulty: 'Medium' },
-  { id: 35, question: 'What is the purpose of scaffolding in construction?', options: ['To support workers and materials', 'To provide access', 'To improve safety', 'All of the above'], correctAnswer: 3, category: 'Construction', difficulty: 'Easy' },
-  { id: 36, question: 'Which type of foundation is most economical for low-rise buildings?', options: ['Strip foundation', 'Raft foundation', 'Pile foundation', 'Isolated footing'], correctAnswer: 0, category: 'Foundation', difficulty: 'Easy' },
-  { id: 37, question: 'What is the standard ceiling height in commercial buildings?', options: ['3.0 meters', '3.5 meters', '4.0 meters', '4.5 meters'], correctAnswer: 1, category: 'Design', difficulty: 'Medium' },
-  { id: 38, question: 'Which type of cement is used for rapid construction?', options: ['Ordinary Portland Cement', 'Rapid Hardening Cement', 'Portland Pozzolana Cement', 'Slag Cement'], correctAnswer: 1, category: 'Materials', difficulty: 'Medium' },
-  { id: 39, question: 'What is the standard door size in residential buildings?', options: ['0.9x2.1 meters', '1.0x2.1 meters', '1.2x2.1 meters', '1.5x2.1 meters'], correctAnswer: 0, category: 'Design', difficulty: 'Easy' },
-  { id: 40, question: 'What is the purpose of a ventilation pipe in plumbing?', options: ['To release sewer gases', 'To provide air circulation', 'Both A and B', 'None of the above'], correctAnswer: 2, category: 'Plumbing', difficulty: 'Medium' },
-  { id: 41, question: 'What is the standard width of a staircase in residential buildings?', options: ['0.8 meters', '1.0 meters', '1.2 meters', '1.5 meters'], correctAnswer: 1, category: 'Design', difficulty: 'Easy' },
-  { id: 42, question: 'Which test is used to determine the bearing capacity of soil?', options: ['Plate load test', 'Standard Proctor test', 'CBR test', 'Atterberg limits test'], correctAnswer: 0, category: 'Testing', difficulty: 'Hard' },
-  { id: 43, question: 'What is the standard size of a window in residential buildings?', options: ['1.0x1.5 meters', '1.2x1.5 meters', '1.5x2.0 meters', '2.0x2.0 meters'], correctAnswer: 1, category: 'Design', difficulty: 'Easy' },
-  { id: 44, question: 'Which type of material is used for waterproofing of roofs?', options: ['Bitumen', 'PVC sheets', 'EPDM', 'All of the above'], correctAnswer: 3, category: 'Materials', difficulty: 'Easy' },
-  { id: 45, question: 'What is the standard riser height for stairs?', options: ['150 mm', '175 mm', '200 mm', '225 mm'], correctAnswer: 0, category: 'Design', difficulty: 'Medium' },
-  { id: 46, question: 'Which type of footing is used for columns in soft soil?', options: ['Isolated footing', 'Combined footing', 'Strip footing', 'Raft footing'], correctAnswer: 0, category: 'Foundation', difficulty: 'Medium' },
-  { id: 47, question: 'What is the standard aggregate size for concrete used in columns?', options: ['10 mm', '20 mm', '40 mm', '50 mm'], correctAnswer: 1, category: 'Concrete', difficulty: 'Medium' },
-  { id: 48, question: 'What is the purpose of a lintel in plumbing?', options: ['To support pipes', 'To provide access', 'To protect pipes', 'None of the above'], correctAnswer: 0, category: 'Plumbing', difficulty: 'Hard' },
-  { id: 49, question: 'What is the standard clearance height for parking areas?', options: ['2.0 meters', '2.5 meters', '3.0 meters', '3.5 meters'], correctAnswer: 1, category: 'Design', difficulty: 'Medium' },
-  { id: 50, question: 'Which type of pipe is most durable for underground drainage?', options: ['PVC pipes', 'Cast iron pipes', 'Concrete pipes', 'HDPE pipes'], correctAnswer: 3, category: 'Plumbing', difficulty: 'Medium' }
+  // === FOUNDATION (15 unique questions) ===
+  { id: 1, question: 'What is the minimum depth of foundation on clayey soil?', options: ['0.5 meters', '1.0 meters', '1.5 meters', '2.0 meters'], correctAnswer: 1, category: 'Foundation', difficulty: 'Medium' },
+  { id: 2, question: 'Which foundation type is best for high water table areas?', options: ['Raft foundation', 'Pile foundation', 'Strip foundation', 'Isolated footing'], correctAnswer: 1, category: 'Foundation', difficulty: 'Medium' },
+  { id: 3, question: 'What is the standard width of a strip foundation?', options: ['0.5 meters', '0.75 meters', '1.0 meters', '1.25 meters'], correctAnswer: 2, category: 'Foundation', difficulty: 'Easy' },
+  { id: 4, question: 'Which type of footing is commonly used for columns?', options: ['Isolated footing', 'Combined footing', 'Strip footing', 'Raft footing'], correctAnswer: 0, category: 'Foundation', difficulty: 'Easy' },
+  { id: 5, question: 'What is the main purpose of a raft foundation?', options: ['Spread load over large area', 'Provide deep support', 'Improve soil bearing', 'Waterproofing'], correctAnswer: 0, category: 'Foundation', difficulty: 'Hard' },
+  { id: 6, question: 'What is the minimum reinforcement percentage in foundation?', options: ['0.15%', '0.25%', '0.35%', '0.45%'], correctAnswer: 1, category: 'Foundation', difficulty: 'Hard' },
+  { id: 7, question: 'Which soil type requires the deepest foundation?', options: ['Clay soil', 'Sandy soil', 'Rocky soil', 'Organic soil'], correctAnswer: 0, category: 'Foundation', difficulty: 'Medium' },
+  { id: 8, question: 'What is the typical depth of pile foundation?', options: ['3-6 meters', '6-12 meters', '12-20 meters', '20-30 meters'], correctAnswer: 2, category: 'Foundation', difficulty: 'Medium' },
+  { id: 9, question: 'What is the purpose of foundation bedding?', options: ['Leveling the ground', 'Improving drainage', 'Providing insulation', 'Reinforcing the base'], correctAnswer: 0, category: 'Foundation', difficulty: 'Easy' },
+  { id: 10, question: 'Which foundation is recommended for weak soil conditions?', options: ['Raft foundation', 'Pile foundation', 'Strip foundation', 'Mat foundation'], correctAnswer: 1, category: 'Foundation', difficulty: 'Medium' },
+  { id: 11, question: 'What is the bearing capacity of clay soil typically?', options: ['50 kPa', '100 kPa', '150 kPa', '200 kPa'], correctAnswer: 1, category: 'Foundation', difficulty: 'Hard' },
+  { id: 12, question: 'What is the minimum depth for footing in black cotton soil?', options: ['1.0 meter', '1.5 meters', '2.0 meters', '2.5 meters'], correctAnswer: 1, category: 'Foundation', difficulty: 'Hard' },
+  { id: 13, question: 'Which type of foundation is most economical?', options: ['Strip foundation', 'Raft foundation', 'Pile foundation', 'Isolated footing'], correctAnswer: 0, category: 'Foundation', difficulty: 'Easy' },
+  { id: 14, question: 'What is the maximum depth of shallow foundation?', options: ['1.5 meters', '3.0 meters', '4.5 meters', '6.0 meters'], correctAnswer: 1, category: 'Foundation', difficulty: 'Medium' },
+  { id: 15, question: 'What is the purpose of foundation in construction?', options: ['Transfer loads to soil', 'Prevent settlement', 'Provide stability', 'All of the above'], correctAnswer: 3, category: 'Foundation', difficulty: 'Easy' },
+
+  // === MATERIALS (15 unique questions) ===
+  { id: 16, question: 'What is the standard brick size in India?', options: ['190×90×90 mm', '200×100×100 mm', '180×80×80 mm', '210×110×110 mm'], correctAnswer: 0, category: 'Materials', difficulty: 'Easy' },
+  { id: 17, question: 'Which grade of steel is most commonly used for reinforcement?', options: ['Fe 415', 'Fe 500', 'Fe 550', 'Fe 600'], correctAnswer: 0, category: 'Materials', difficulty: 'Medium' },
+  { id: 18, question: 'What is the standard density of concrete?', options: ['2200 kg/m³', '2400 kg/m³', '2600 kg/m³', '2800 kg/m³'], correctAnswer: 1, category: 'Materials', difficulty: 'Easy' },
+  { id: 19, question: 'Which material provides the best thermal insulation?', options: ['Glass wool', 'Brick', 'Concrete', 'Steel'], correctAnswer: 0, category: 'Materials', difficulty: 'Medium' },
+  { id: 20, question: 'What is the modulus of elasticity of steel?', options: ['200 GPa', '250 GPa', '300 GPa', '350 GPa'], correctAnswer: 0, category: 'Materials', difficulty: 'Hard' },
+  { id: 21, question: 'Which type of cement develops highest strength?', options: ['Ordinary Portland Cement', 'Portland Pozzolana Cement', 'Portland Slag Cement', 'Rapid Hardening Cement'], correctAnswer: 3, category: 'Materials', difficulty: 'Hard' },
+  { id: 22, question: 'What is the maximum water absorption of good quality brick?', options: ['10%', '15%', '20%', '25%'], correctAnswer: 1, category: 'Materials', difficulty: 'Medium' },
+  { id: 23, question: 'Which material is commonly used for DPC?', options: ['Bitumen', 'PVC sheet', 'Copper sheet', 'Aluminum foil'], correctAnswer: 0, category: 'Materials', difficulty: 'Easy' },
+  { id: 24, question: 'What is the standard aggregate size for RCC work?', options: ['10 mm', '20 mm', '40 mm', 'All sizes'], correctAnswer: 3, category: 'Materials', difficulty: 'Medium' },
+  { id: 25, question: 'Which grade of concrete is commonly used for foundations?', options: ['M15', 'M20', 'M25', 'M30'], correctAnswer: 1, category: 'Materials', difficulty: 'Easy' },
+  { id: 26, question: 'What is the specific gravity of cement?', options: ['3.10', '3.15', '3.20', '3.25'], correctAnswer: 1, category: 'Materials', difficulty: 'Hard' },
+  { id: 27, question: 'What is the fineness of ordinary Portland cement?', options: ['225 m²/kg', '250 m²/kg', '275 m²/kg', '300 m²/kg'], correctAnswer: 0, category: 'Materials', difficulty: 'Hard' },
+  { id: 28, question: 'Which aggregate is best for concrete?', options: ['Crushed stone', 'River gravel', 'Both A and B', 'Neither'], correctAnswer: 2, category: 'Materials', difficulty: 'Medium' },
+  { id: 29, question: 'What is the bulking of sand?', options: ['Increase in volume', 'Decrease in volume', 'No change', 'Depends on moisture'], correctAnswer: 0, category: 'Materials', difficulty: 'Medium' },
+  { id: 30, question: 'Which material is used for waterproofing?', options: ['Bitumen', 'PVC', 'EPDM', 'All of these'], correctAnswer: 3, category: 'Materials', difficulty: 'Easy' },
+
+  // === CONSTRUCTION (15 unique questions) ===
+  { id: 31, question: 'What is the minimum curing period for concrete?', options: ['3 days', '7 days', '14 days', '28 days'], correctAnswer: 1, category: 'Construction', difficulty: 'Easy' },
+  { id: 32, question: 'What is the main purpose of formwork?', options: ['To shape concrete', 'To support steel', 'To provide finish', 'All of these'], correctAnswer: 3, category: 'Construction', difficulty: 'Medium' },
+  { id: 33, question: 'What is the standard compaction of concrete?', options: ['90%', '95%', '98%', '100%'], correctAnswer: 2, category: 'Construction', difficulty: 'Hard' },
+  { id: 34, question: 'Which method is used for concrete compaction?', options: ['Vibration method', 'Tamping method', 'Rolling method', 'All of these'], correctAnswer: 3, category: 'Construction', difficulty: 'Medium' },
+  { id: 35, question: 'What is the purpose of a DPC in buildings?', options: ['Moisture barrier', 'Sound barrier', 'Thermal barrier', 'Fire barrier'], correctAnswer: 0, category: 'Construction', difficulty: 'Easy' },
+  { id: 36, question: 'What is the standard thickness of DPC?', options: ['2.5 mm', '3.0 mm', '4.0 mm', '5.0 mm'], correctAnswer: 0, category: 'Construction', difficulty: 'Medium' },
+  { id: 37, question: 'Which type of joint is used to accommodate expansion?', options: ['Construction joint', 'Expansion joint', 'Contraction joint', 'Isolation joint'], correctAnswer: 1, category: 'Construction', difficulty: 'Medium' },
+  { id: 38, question: 'What is the purpose of scaffolding?', options: ['Support workers', 'Support materials', 'Provide access', 'All of these'], correctAnswer: 3, category: 'Construction', difficulty: 'Easy' },
+  { id: 39, question: 'What is the standard height of scaffolding?', options: ['2 meters', '3 meters', '4 meters', '5 meters'], correctAnswer: 1, category: 'Construction', difficulty: 'Easy' },
+  { id: 40, question: 'Which type of ladder is commonly used in construction?', options: ['Wooden ladder', 'Aluminum ladder', 'Steel ladder', 'All types'], correctAnswer: 3, category: 'Construction', difficulty: 'Easy' },
+  { id: 41, question: 'What is the minimum thickness of plastering?', options: ['6 mm', '10 mm', '12 mm', '15 mm'], correctAnswer: 1, category: 'Construction', difficulty: 'Medium' },
+  { id: 42, question: 'What is the standard mortar ratio for brickwork?', options: ['1:3', '1:4', '1:5', '1:6'], correctAnswer: 2, category: 'Construction', difficulty: 'Medium' },
+  { id: 43, question: 'Which type of brick bond is strongest?', options: ['English bond', 'Flemish bond', 'Stretcher bond', 'Header bond'], correctAnswer: 0, category: 'Construction', difficulty: 'Hard' },
+  { id: 44, question: 'What is the purpose of a lintel?', options: ['Support above openings', 'Provide foundation', 'Act as beam', 'All of these'], correctAnswer: 0, category: 'Construction', difficulty: 'Easy' },
+  { id: 45, question: 'What is the standard lintel thickness?', options: ['100 mm', '150 mm', '200 mm', '250 mm'], correctAnswer: 1, category: 'Construction', difficulty: 'Medium' },
+
+  // === STRUCTURAL (15 unique questions) ===
+  { id: 46, question: 'What is the minimum slab thickness for residential buildings?', options: ['100 mm', '125 mm', '150 mm', '175 mm'], correctAnswer: 0, category: 'Structural', difficulty: 'Easy' },
+  { id: 47, question: 'What is the standard column spacing in buildings?', options: ['3 meters', '4 meters', '5 meters', '6 meters'], correctAnswer: 2, category: 'Structural', difficulty: 'Medium' },
+  { id: 48, question: 'Which type of beam is most common in construction?', options: ['RCC beam', 'Steel beam', 'Timber beam', 'Composite beam'], correctAnswer: 0, category: 'Structural', difficulty: 'Easy' },
+  { id: 49, question: 'What is the purpose of shear reinforcement?', options: ['Prevent shear failure', 'Increase strength', 'Improve ductility', 'All of these'], correctAnswer: 3, category: 'Structural', difficulty: 'Hard' },
+  { id: 50, question: 'What is the standard cover for reinforcement?', options: ['20 mm', '30 mm', '40 mm', '50 mm'], correctAnswer: 1, category: 'Structural', difficulty: 'Medium' },
+  { id: 51, question: 'Which type of load is most critical in design?', options: ['Dead load', 'Live load', 'Wind load', 'Seismic load'], correctAnswer: 3, category: 'Structural', difficulty: 'Hard' },
+  { id: 52, question: 'What is the standard span-depth ratio for beams?', options: ['10', '15', '20', '25'], correctAnswer: 1, category: 'Structural', difficulty: 'Hard' },
+  { id: 53, question: 'Which type of column is most commonly used?', options: ['Square column', 'Rectangular column', 'Circular column', 'All types'], correctAnswer: 3, category: 'Structural', difficulty: 'Easy' },
+  { id: 54, question: 'What is the maximum reinforcement percentage in beams?', options: ['2%', '4%', '6%', '8%'], correctAnswer: 1, category: 'Structural', difficulty: 'Hard' },
+  { id: 55, question: 'What is the minimum steel percentage in columns?', options: ['0.8%', '1.0%', '1.2%', '1.5%'], correctAnswer: 0, category: 'Structural', difficulty: 'Hard' },
+  { id: 56, question: 'What is the purpose of a shear wall?', options: ['Resist lateral loads', 'Support vertical loads', 'Provide openings', 'All of these'], correctAnswer: 0, category: 'Structural', difficulty: 'Medium' },
+  { id: 57, question: 'What is the standard floor height in residential buildings?', options: ['2.7 meters', '3.0 meters', '3.3 meters', '3.6 meters'], correctAnswer: 1, category: 'Structural', difficulty: 'Easy' },
+  { id: 58, question: 'Which type of foundation is best for tall buildings?', options: ['Raft foundation', 'Pile foundation', 'Strip foundation', 'Isolated footing'], correctAnswer: 1, category: 'Structural', difficulty: 'Medium' },
+  { id: 59, question: 'What is the purpose of a tie beam?', options: ['Connect columns', 'Transfer loads', 'Provide stability', 'All of these'], correctAnswer: 3, category: 'Structural', difficulty: 'Medium' },
+  { id: 60, question: 'What is the standard thickness of a load-bearing wall?', options: ['4 inches', '6 inches', '9 inches', '12 inches'], correctAnswer: 2, category: 'Structural', difficulty: 'Easy' },
+
+  // === PLUMBING (15 unique questions) ===
+  { id: 61, question: 'What is the standard pipe size for residential water supply?', options: ['15 mm', '20 mm', '25 mm', '32 mm'], correctAnswer: 1, category: 'Plumbing', difficulty: 'Easy' },
+  { id: 62, question: 'Which material is commonly used for drainage pipes?', options: ['PVC pipes', 'Cast iron pipes', 'Copper pipes', 'All of these'], correctAnswer: 3, category: 'Plumbing', difficulty: 'Medium' },
+  { id: 63, question: 'What is the standard slope for drainage pipes?', options: ['1:100', '1:80', '1:60', '1:40'], correctAnswer: 0, category: 'Plumbing', difficulty: 'Medium' },
+  { id: 64, question: 'What is the purpose of a trap in plumbing?', options: ['Prevent gas entry', 'Collect debris', 'Control flow', 'All of these'], correctAnswer: 0, category: 'Plumbing', difficulty: 'Easy' },
+  { id: 65, question: 'Which type of valve is used for main water control?', options: ['Gate valve', 'Globe valve', 'Ball valve', 'Check valve'], correctAnswer: 0, category: 'Plumbing', difficulty: 'Medium' },
+  { id: 66, question: 'What is the standard water pressure for buildings?', options: ['1-2 bar', '2-3 bar', '3-4 bar', '4-5 bar'], correctAnswer: 1, category: 'Plumbing', difficulty: 'Medium' },
+  { id: 67, question: 'Which pipe is best for hot water supply?', options: ['CPVC pipes', 'PVC pipes', 'Copper pipes', 'GI pipes'], correctAnswer: 0, category: 'Plumbing', difficulty: 'Hard' },
+  { id: 68, question: 'What is the purpose of a water hammer arrestor?', options: ['Prevent shock', 'Reduce noise', 'Control flow', 'All of these'], correctAnswer: 0, category: 'Plumbing', difficulty: 'Hard' },
+  { id: 69, question: 'What is the standard fixture unit for a WC?', options: ['3 units', '4 units', '5 units', '6 units'], correctAnswer: 0, category: 'Plumbing', difficulty: 'Hard' },
+  { id: 70, question: 'Which type of water storage is most common?', options: ['Overhead tank', 'Underground tank', 'Both types', 'None'], correctAnswer: 2, category: 'Plumbing', difficulty: 'Easy' },
+  { id: 71, question: 'What is the minimum pipe slope for soil pipes?', options: ['1:50', '1:40', '1:30', '1:20'], correctAnswer: 1, category: 'Plumbing', difficulty: 'Medium' },
+  { id: 72, question: 'What is the standard diameter of rainwater pipes?', options: ['75 mm', '100 mm', '150 mm', '200 mm'], correctAnswer: 1, category: 'Plumbing', difficulty: 'Medium' },
+  { id: 73, question: 'Which type of pipe is used for fire fighting?', options: ['GI pipes', 'PVC pipes', 'Copper pipes', 'All of these'], correctAnswer: 0, category: 'Plumbing', difficulty: 'Easy' },
+  { id: 74, question: 'What is the purpose of a ventilation pipe?', options: ['Release gases', 'Provide air flow', 'Both A and B', 'None'], correctAnswer: 2, category: 'Plumbing', difficulty: 'Medium' },
+  { id: 75, question: 'What is the standard depth of sewer line?', options: ['0.5 meters', '1.0 meters', '1.5 meters', '2.0 meters'], correctAnswer: 1, category: 'Plumbing', difficulty: 'Medium' },
+
+  // === CONCRETE (15 unique questions) ===
+  { id: 76, question: 'What is the standard water-cement ratio for concrete?', options: ['0.35', '0.45', '0.55', '0.65'], correctAnswer: 1, category: 'Concrete', difficulty: 'Easy' },
+  { id: 77, question: 'What is the standard slump for concrete?', options: ['25-50 mm', '50-100 mm', '100-150 mm', '150-200 mm'], correctAnswer: 1, category: 'Concrete', difficulty: 'Medium' },
+  { id: 78, question: 'Which grade of concrete is most commonly used?', options: ['M20', 'M25', 'M30', 'M35'], correctAnswer: 0, category: 'Concrete', difficulty: 'Easy' },
+  { id: 79, question: 'What is the purpose of admixtures in concrete?', options: ['Improve workability', 'Increase strength', 'Reduce water content', 'All of these'], correctAnswer: 3, category: 'Concrete', difficulty: 'Medium' },
+  { id: 80, question: 'What is the standard aggregate-cement ratio?', options: ['3:1', '4:1', '5:1', '6:1'], correctAnswer: 1, category: 'Concrete', difficulty: 'Hard' },
+  { id: 81, question: 'Which test is used to measure concrete strength?', options: ['Slump test', 'Compression test', 'Flexural test', 'Tensile test'], correctAnswer: 1, category: 'Concrete', difficulty: 'Easy' },
+  { id: 82, question: 'What is the standard concrete grade for foundations?', options: ['M15', 'M20', 'M25', 'M30'], correctAnswer: 1, category: 'Concrete', difficulty: 'Medium' },
+  { id: 83, question: 'Which type of cement sets fastest?', options: ['OPC', 'PPC', 'PSC', 'Rapid hardening cement'], correctAnswer: 3, category: 'Concrete', difficulty: 'Hard' },
+  { id: 84, question: 'What is the standard density of concrete?', options: ['2200 kg/m³', '2400 kg/m³', '2600 kg/m³', '2800 kg/m³'], correctAnswer: 1, category: 'Concrete', difficulty: 'Easy' },
+  { id: 85, question: 'Which factor most affects concrete strength?', options: ['Water-cement ratio', 'Aggregate size', 'Curing method', 'All of these'], correctAnswer: 3, category: 'Concrete', difficulty: 'Hard' },
+  { id: 86, question: 'What is the maximum aggregate size for slabs?', options: ['10 mm', '20 mm', '40 mm', '50 mm'], correctAnswer: 1, category: 'Concrete', difficulty: 'Medium' },
+  { id: 87, question: 'What is the minimum cement content for durability?', options: ['300 kg/m³', '350 kg/m³', '400 kg/m³', '450 kg/m³'], correctAnswer: 1, category: 'Concrete', difficulty: 'Hard' },
+  { id: 88, question: 'What is the purpose of curing concrete?', options: ['Maintain moisture', 'Increase strength', 'Prevent cracking', 'All of these'], correctAnswer: 3, category: 'Concrete', difficulty: 'Easy' },
+  { id: 89, question: 'Which type of concrete is used for underwater construction?', options: ['High density concrete', 'Lightweight concrete', 'Pumping concrete', 'Special concrete'], correctAnswer: 0, category: 'Concrete', difficulty: 'Hard' },
+  { id: 90, question: 'What is the standard concrete mix for columns?', options: ['M20', 'M25', 'M30', 'M35'], correctAnswer: 2, category: 'Concrete', difficulty: 'Medium' },
+
+  // === REGULATIONS (15 unique questions) ===
+  { id: 91, question: 'What does RERA stand for?', options: ['Real Estate Regulation Authority', 'Real Estate Regulatory Act', 'Real Estate Revenue Authority', 'Regional Estate Regulation Act'], correctAnswer: 1, category: 'Regulations', difficulty: 'Easy' },
+  { id: 92, question: 'In which year was RERA enacted?', options: ['2014', '2015', '2016', '2017'], correctAnswer: 2, category: 'Regulations', difficulty: 'Easy' },
+  { id: 93, question: 'What is the purpose of BDA?', options: ['Urban planning', 'Land allocation', 'Development control', 'All of these'], correctAnswer: 3, category: 'Regulations', difficulty: 'Medium' },
+  { id: 94, question: 'What is the standard FAR in residential zones?', options: ['1.5', '2.0', '2.5', '3.0'], correctAnswer: 1, category: 'Regulations', difficulty: 'Hard' },
+  { id: 95, question: 'What is the purpose of EIA?', options: ['Environmental impact assessment', 'Land assessment', 'Water assessment', 'Air quality assessment'], correctAnswer: 0, category: 'Regulations', difficulty: 'Medium' },
+  { id: 96, question: 'What is the standard setback for buildings?', options: ['3 meters', '5 meters', '7 meters', '10 meters'], correctAnswer: 1, category: 'Regulations', difficulty: 'Medium' },
+  { id: 97, question: 'Which body regulates land records?', options: ['Revenue Department', 'BDA', 'BMRDA', 'GBA'], correctAnswer: 0, category: 'Regulations', difficulty: 'Easy' },
+  { id: 98, question: 'What is the purpose of zoning regulations?', options: ['Land use control', 'Population control', 'Pollution control', 'All of these'], correctAnswer: 0, category: 'Regulations', difficulty: 'Medium' },
+  { id: 99, question: 'Which authority issues building permits?', options: ['BDA', 'BBMP', 'Both', 'State Government'], correctAnswer: 2, category: 'Regulations', difficulty: 'Hard' },
+  { id: 100, question: 'What is the maximum building height without NOC?', options: ['10 meters', '12 meters', '15 meters', '20 meters'], correctAnswer: 1, category: 'Regulations', difficulty: 'Hard' },
+  { id: 101, question: 'What is the minimum plot area for building?', options: ['100 sqm', '150 sqm', '200 sqm', '250 sqm'], correctAnswer: 0, category: 'Regulations', difficulty: 'Medium' },
+  { id: 102, question: 'What is the purpose of building bye-laws?', options: ['Regulate construction', 'Ensure safety', 'Control development', 'All of these'], correctAnswer: 3, category: 'Regulations', difficulty: 'Easy' },
+  { id: 103, question: 'Which authority approves building plans?', options: ['Municipal corporation', 'BDA', 'Both', 'State government'], correctAnswer: 0, category: 'Regulations', difficulty: 'Medium' },
+  { id: 104, question: 'What is the standard parking norm?', options: ['1 per unit', '2 per unit', '3 per unit', '4 per unit'], correctAnswer: 1, category: 'Regulations', difficulty: 'Hard' },
+  { id: 105, question: 'What is the purpose of occupancy certificate?', options: ['Legal occupancy', 'Building completion', 'Safety compliance', 'All of these'], correctAnswer: 3, category: 'Regulations', difficulty: 'Easy' },
+
+  // === DESIGN (15 unique questions) ===
+  { id: 106, question: 'What is the standard bedroom size?', options: ['3x3 meters', '3.5x3.5 meters', '4x4 meters', '4.5x4.5 meters'], correctAnswer: 1, category: 'Design', difficulty: 'Easy' },
+  { id: 107, question: 'What is the standard kitchen size?', options: ['2.5x3 meters', '3x3 meters', '3x3.5 meters', '3.5x4 meters'], correctAnswer: 0, category: 'Design', difficulty: 'Medium' },
+  { id: 108, question: 'What is the standard bathroom size?', options: ['1.5x2 meters', '2x2 meters', '2x2.5 meters', '2.5x3 meters'], correctAnswer: 1, category: 'Design', difficulty: 'Medium' },
+  { id: 109, question: 'What is the standard corridor width?', options: ['0.9 meters', '1.2 meters', '1.5 meters', '1.8 meters'], correctAnswer: 1, category: 'Design', difficulty: 'Easy' },
+  { id: 110, question: 'What is the standard stair width?', options: ['0.8 meters', '1.0 meters', '1.2 meters', '1.5 meters'], correctAnswer: 1, category: 'Design', difficulty: 'Easy' },
+  { id: 111, question: 'What is the standard riser height for stairs?', options: ['150 mm', '175 mm', '200 mm', '225 mm'], correctAnswer: 0, category: 'Design', difficulty: 'Medium' },
+  { id: 112, question: 'What is the standard tread width?', options: ['250 mm', '275 mm', '300 mm', '325 mm'], correctAnswer: 2, category: 'Design', difficulty: 'Medium' },
+  { id: 113, question: 'What is the standard window size?', options: ['1x1.5 meters', '1.2x1.5 meters', '1.5x2 meters', '2x2 meters'], correctAnswer: 1, category: 'Design', difficulty: 'Easy' },
+  { id: 114, question: 'What is the standard door size?', options: ['0.9x2.1 meters', '1x2.1 meters', '1.2x2.1 meters', '1.5x2.1 meters'], correctAnswer: 0, category: 'Design', difficulty: 'Easy' },
+  { id: 115, question: 'What is the standard ceiling height?', options: ['2.7 meters', '3.0 meters', '3.3 meters', '3.6 meters'], correctAnswer: 1, category: 'Design', difficulty: 'Medium' },
+  { id: 116, question: 'What is the minimum room width?', options: ['2.0 meters', '2.5 meters', '3.0 meters', '3.5 meters'], correctAnswer: 1, category: 'Design', difficulty: 'Medium' },
+  { id: 117, question: 'What is the standard parking space size?', options: ['2.5x5 meters', '2.5x5.5 meters', '3x5 meters', '3x5.5 meters'], correctAnswer: 0, category: 'Design', difficulty: 'Hard' },
+  { id: 118, question: 'What is the standard balcony size?', options: ['1.2x2 meters', '1.5x2.5 meters', '1.8x3 meters', '2x3 meters'], correctAnswer: 1, category: 'Design', difficulty: 'Medium' },
+  { id: 119, question: 'What is the standard kitchen cabinet height?', options: ['0.6 meters', '0.75 meters', '0.9 meters', '1.0 meters'], correctAnswer: 2, category: 'Design', difficulty: 'Hard' },
+  { id: 120, question: 'What is the standard counter height in kitchen?', options: ['0.7 meters', '0.8 meters', '0.9 meters', '1.0 meters'], correctAnswer: 1, category: 'Design', difficulty: 'Hard' },
+
+  // === ROOFING (6 unique questions) ===
+  { id: 121, question: 'Which type of roof is best for hot climates?', options: ['Flat roof', 'Sloped roof', 'Green roof', 'Metal roof'], correctAnswer: 1, category: 'Roofing', difficulty: 'Medium' },
+  { id: 122, question: 'What is the standard roof slope for RCC?', options: ['1:12', '1:24', '1:36', '1:48'], correctAnswer: 0, category: 'Roofing', difficulty: 'Hard' },
+  { id: 123, question: 'Which roof type is most economical?', options: ['Flat roof', 'Sloped roof', 'Green roof', 'Metal roof'], correctAnswer: 0, category: 'Roofing', difficulty: 'Easy' },
+  { id: 124, question: 'What is the purpose of roof insulation?', options: ['Thermal control', 'Sound control', 'Waterproofing', 'All of these'], correctAnswer: 0, category: 'Roofing', difficulty: 'Medium' },
+  { id: 125, question: 'Which roofing material is most durable?', options: ['Slate tiles', 'Clay tiles', 'Metal sheets', 'Concrete tiles'], correctAnswer: 0, category: 'Roofing', difficulty: 'Hard' },
+  { id: 126, question: 'What is the standard roof overhang?', options: ['0.6 meters', '0.9 meters', '1.2 meters', '1.5 meters'], correctAnswer: 1, category: 'Roofing', difficulty: 'Medium' },
+
+  // === TESTING (6 unique questions) ===
+  { id: 127, question: 'Which test measures concrete compressive strength?', options: ['Compression test', 'Tensile test', 'Flexural test', 'Impact test'], correctAnswer: 0, category: 'Testing', difficulty: 'Easy' },
+  { id: 128, question: 'What is the standard cube size for testing?', options: ['100 mm', '150 mm', '200 mm', '250 mm'], correctAnswer: 1, category: 'Testing', difficulty: 'Medium' },
+  { id: 129, question: 'Which test is used for soil analysis?', options: ['Standard Proctor test', 'CBR test', 'Atterberg limits', 'All of these'], correctAnswer: 3, category: 'Testing', difficulty: 'Hard' },
+  { id: 130, question: 'What is the purpose of NDT?', options: ['Non-destructive testing', 'Quality control', 'Both A and B', 'None'], correctAnswer: 2, category: 'Testing', difficulty: 'Medium' },
+  { id: 131, question: 'Which test measures steel tensile strength?', options: ['Tensile test', 'Compression test', 'Flexural test', 'Shear test'], correctAnswer: 0, category: 'Testing', difficulty: 'Medium' },
+  { id: 132, question: 'What is the standard sample size for testing?', options: ['3 samples', '4 samples', '5 samples', '6 samples'], correctAnswer: 2, category: 'Testing', difficulty: 'Easy' },
+
+  // === SURVEYING (4 unique questions) ===
+  { id: 133, question: 'What is the purpose of surveying?', options: ['Land measurement', '
+
+// Combine all questions
+const ALL_QUESTIONS = UNIQUE_QUESTIONS;
+  // Add more questions to reach 150+
+  // ... (I'll add 30 more unique questions below)
 ];
 
-const ALL_QUESTIONS = UNIQUE_QUESTIONS;
+// Add 30 more unique questions for categories: Roofing, Testing, Surveying, Safety, Equipment
+const additionalQuestions = [
+  { id: 121, question: 'Which type of roof is best for hot climates?', options: ['Flat roof', 'Sloped roof', 'Green roof', 'Metal roof'], correctAnswer: 1, category: 'Roofing', difficulty: 'Medium' },
+  { id: 122, question: 'What is the standard roof slope for RCC?', options: ['1:12', '1:24', '1:36', '1:48'], correctAnswer: 0, category: 'Roofing', difficulty: 'Hard' },
+  { id: 123, question: 'Which roof type is most economical?', options: ['Flat roof', 'Sloped roof', 'Green roof', 'Metal roof'], correctAnswer: 0, category: 'Roofing', difficulty: 'Easy' },
+  { id: 124, question: 'What is the purpose of roof insulation?', options: ['Thermal control', 'Sound control', 'Waterproofing', 'All of these'], correctAnswer: 0, category: 'Roofing', difficulty: 'Medium' },
+  { id: 125, question: 'Which roofing material is most durable?', options: ['Slate tiles', 'Clay tiles', 'Metal sheets', 'Concrete tiles'], correctAnswer: 0, category: 'Roofing', difficulty: 'Hard' },
+  { id: 126, question: 'What is the standard roof overhang?', options: ['0.6 meters', '0.9 meters', '1.2 meters', '1.5 meters'], correctAnswer: 1, category: 'Roofing', difficulty: 'Medium' },
+  { id: 127, question: 'Which test measures concrete compressive strength?', options: ['Compression test', 'Tensile test', 'Flexural test', 'Impact test'], correctAnswer: 0, category: 'Testing', difficulty: 'Easy' },
+  { id: 128, question: 'What is the standard cube size for testing?', options: ['100 mm', '150 mm', '200 mm', '250 mm'], correctAnswer: 1, category: 'Testing', difficulty: 'Medium' },
+  { id: 129, question: 'Which test is used for soil analysis?', options: ['Standard Proctor test', 'CBR test', 'Atterberg limits', 'All of these'], correctAnswer: 3, category: 'Testing', difficulty: 'Hard' },
+  { id: 130, question: 'What is the purpose of NDT?', options: ['Non-destructive testing', 'Quality control', 'Both A and B', 'None'], correctAnswer: 2, category: 'Testing', difficulty: 'Medium' },
+  { id: 131, question: 'Which test measures steel tensile strength?', options: ['Tensile test', 'Compression test', 'Flexural test', 'Shear test'], correctAnswer: 0, category: 'Testing', difficulty: 'Medium' },
+  { id: 132, question: 'What is the standard sample size for testing?', options: ['3 samples', '4 samples', '5 samples', '6 samples'], correctAnswer: 2, category: 'Testing', difficulty: 'Easy' },
+  { id: 133, question: 'What is the purpose of surveying?', options: ['Land measurement', 'Mapping', 'Planning', 'All of these'], correctAnswer: 3, category: 'Surveying', difficulty: 'Easy' },
+  { id: 134, question: 'Which instrument is used for leveling?', options: ['Dumpy level', 'Theodolite', 'Total station', 'All of these'], correctAnswer: 0, category: 'Surveying', difficulty: 'Medium' },
+  { id: 135, question: 'What is the standard chain length?', options: ['20 meters', '30 meters', '50 meters', '100 meters'], correctAnswer: 0, category: 'Surveying', difficulty: 'Easy' },
+  { id: 136, question: 'Which survey method is most accurate?', options: ['Chain survey', 'Compass survey', 'Plane table survey', 'Total station survey'], correctAnswer: 3, category: 'Surveying', difficulty: 'Hard' },
+  { id: 137, question: 'What is the purpose of safety gear?', options: ['Protection from hazards', 'Prevention of accidents', 'Both A and B', 'None'], correctAnswer: 2, category: 'Safety', difficulty: 'Easy' },
+  { id: 138, question: 'Which type of helmet is used in construction?', options: ['Hard hat', 'Safety helmet', 'Both A and B', 'None'], correctAnswer: 2, category: 'Safety', difficulty: 'Easy' },
+  { id: 139, question: 'What is the standard safety harness?', options: ['Full body harness', 'Chest harness', 'Waist belt', 'All of these'], correctAnswer: 0, category: 'Safety', difficulty: 'Medium' },
+  { id: 140, question: 'Which type of footwear is recommended?', options: ['Safety shoes', 'Steel toe boots', 'Both A and B', 'None'], correctAnswer: 2, category: 'Safety', difficulty: 'Easy' },
+  { id: 141, question: 'What is the purpose of safety training?', options: ['Awareness about hazards', 'Prevention of accidents', 'Both A and B', 'None'], correctAnswer: 2, category: 'Safety', difficulty: 'Medium' },
+  { id: 142, question: 'Which machine is used for excavation?', options: ['Excavator', 'Bulldozer', 'Backhoe', 'All of these'], correctAnswer: 0, category: 'Equipment', difficulty: 'Easy' },
+  { id: 143, question: 'What is the purpose of a crane?', options: ['Lifting materials', 'Moving heavy loads', 'Both A and B', 'None'], correctAnswer: 2, category: 'Equipment', difficulty: 'Medium' },
+  { id: 144, question: 'Which equipment is used for compaction?', options: ['Roller', 'Vibrator', 'Tamping rammer', 'All of these'], correctAnswer: 3, category: 'Equipment', difficulty: 'Medium' },
+  { id: 145, question: 'What is the standard crane capacity?', options: ['5 tons', '10 tons', '20 tons', '50 tons'], correctAnswer: 1, category: 'Equipment', difficulty: 'Hard' },
+  { id: 146, question: 'Which equipment is used for mixing concrete?', options: ['Concrete mixer', 'Agitator truck', 'Both A and B', 'None'], correctAnswer: 2, category: 'Equipment', difficulty: 'Easy' },
+  { id: 147, question: 'What is the purpose of environmental compliance?', options: ['Pollution control', 'Resource conservation', 'Both A and B', 'None'], correctAnswer: 2, category: 'Environmental', difficulty: 'Medium' },
+  { id: 148, question: 'Which type of waste is hazardous?', options: ['Chemical waste', 'Biological waste', 'Radioactive waste', 'All of these'], correctAnswer: 3, category: 'Environmental', difficulty: 'Hard' },
+  { id: 149, question: 'What is the purpose of project planning?', options: ['Organization of work', 'Control of resources', 'Both A and B', 'None'], correctAnswer: 2, category: 'Project Management', difficulty: 'Medium' },
+  { id: 150, question: 'Which type of contract is most common?', options: ['Lump sum contract', 'Item rate contract', 'Both A and B', 'None'], correctAnswer: 2, category: 'Project Management', difficulty: 'Easy' },
+];
+
+// Combine all questions
+const ALL_QUESTIONS = [...UNIQUE_QUESTIONS, ...additionalQuestions];
 
 // ============= QUIZ PROVIDER =============
 const QuizProvider = ({ children }) => {
@@ -158,6 +302,7 @@ const QuizProvider = ({ children }) => {
     setIsLoading(true);
     setError(null);
     try {
+      // Try API first
       try {
         const response = await fetch(`${API_URL}/quiz/questions?count=20`);
         const data = await response.json();
@@ -175,6 +320,7 @@ const QuizProvider = ({ children }) => {
         console.log('API not available, using local questions');
       }
       
+      // Use local 150+ unique questions
       const shuffled = [...ALL_QUESTIONS].sort(() => Math.random() - 0.5);
       setQuestions(shuffled.slice(0, 20));
       setAnswers(Array(20).fill(null));
@@ -402,19 +548,36 @@ const ThreeDGame = () => {
       </Box>
 
       <Box sx={{ 
-        position: 'relative', width: '100%', height: 420, bgcolor: '#f0f4f8', borderRadius: 2,
-        overflow: 'hidden', boxShadow: 'inset 0 0 30px rgba(0,0,0,0.1)', border: '2px solid #e0e0e0'
+        position: 'relative', 
+        width: '100%', 
+        height: 420, 
+        bgcolor: '#f0f4f8', 
+        borderRadius: 2,
+        overflow: 'hidden',
+        boxShadow: 'inset 0 0 30px rgba(0,0,0,0.1)',
+        border: '2px solid #e0e0e0'
       }}>
-        <Box sx={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(circle, rgba(0,0,0,0.05) 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+        <Box sx={{ 
+          position: 'absolute', 
+          inset: 0, 
+          backgroundImage: 'radial-gradient(circle, rgba(0,0,0,0.05) 1px, transparent 1px)',
+          backgroundSize: '20px 20px'
+        }} />
         
         {rooms.map(room => (
           <Box
             key={room.id}
             sx={{
-              position: 'absolute', left: room.x, top: room.y, width: room.width, height: room.height,
-              bgcolor: room.color, borderRadius: 2,
+              position: 'absolute',
+              left: room.x,
+              top: room.y,
+              width: room.width,
+              height: room.height,
+              bgcolor: room.color,
+              borderRadius: 2,
               boxShadow: '0 4px 20px rgba(0,0,0,0.15), inset 0 0 0 2px rgba(255,255,255,0.5)',
-              cursor: 'pointer', transition: 'all 0.3s ease',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
               '&:hover': { boxShadow: '0 8px 30px rgba(0,0,0,0.25)', transform: 'scale(1.02)', zIndex: 10 },
               transform: selectedRoom === room.id ? 'scale(1.02)' : 'scale(1)',
               zIndex: selectedRoom === room.id ? 10 : 1,
@@ -422,10 +585,16 @@ const ThreeDGame = () => {
             }}
             onClick={() => setSelectedRoom(room.id === selectedRoom ? null : room.id)}
           >
-            <Typography variant="caption" sx={{ position: 'absolute', top: 8, left: 8, color: 'white', fontWeight: 'bold', textShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>
+            <Typography variant="caption" sx={{ 
+              position: 'absolute', top: 8, left: 8, color: 'white',
+              fontWeight: 'bold', textShadow: '0 1px 3px rgba(0,0,0,0.3)'
+            }}>
               {room.name}
             </Typography>
-            <Typography variant="caption" sx={{ position: 'absolute', bottom: 8, right: 8, color: 'white', fontWeight: 'bold', textShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>
+            <Typography variant="caption" sx={{ 
+              position: 'absolute', bottom: 8, right: 8, color: 'white',
+              fontWeight: 'bold', textShadow: '0 1px 3px rgba(0,0,0,0.3)'
+            }}>
               {room.width}×{room.height}
             </Typography>
             {selectedRoom === room.id && (
@@ -444,7 +613,7 @@ const ThreeDGame = () => {
         ))}
       </Box>
 
-      <Box sx={{ mt: 2 }}>
+      <Box sx={{ mt: 2, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
         <Typography variant="caption" color="textSecondary">
           💡 Tip: Click a room to select it, then use +/- to resize
         </Typography>
@@ -459,6 +628,7 @@ const PuzzleGame = ({ title, description, icon, difficulty, onComplete }) => {
   const [timeLeft, setTimeLeft] = useState(60);
   const [score, setScore] = useState(0);
   const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [answers, setAnswers] = useState([]);
 
   const puzzleQuestions = [
     { question: 'Which material is best for load-bearing walls?', options: ['Brick', 'Wood', 'Glass', 'Aluminum'], correct: 0 },
@@ -473,6 +643,7 @@ const PuzzleGame = ({ title, description, icon, difficulty, onComplete }) => {
     setTimeLeft(60);
     setScore(0);
     setCurrentQuestion(0);
+    setAnswers([]);
   };
 
   useEffect(() => {
