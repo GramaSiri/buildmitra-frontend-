@@ -236,59 +236,19 @@ export default function Login() {
     localStorage.setItem("buyerProjects", JSON.stringify([]));
   };
 
-  const handleLogin = async (e) => {
+  const handleLogin = (e) => {
     e.preventDefault();
     setError("");
     setSuccess("");
     setLoading(true);
-
+    
     if (typeof window === "undefined") {
       setLoading(false);
       return;
     }
-
+    
     localStorage.removeItem("loggedInUser");
-
-    const loginId = formData.phone || formData.email;
-    const apiBase = "http://localhost:5000";
-
-    try {
-      const res = await fetch(`${apiBase}/api/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          phone: formData.phone,
-          email: formData.email,
-          password: formData.password
-        })
-      });
-
-      const data = await res.json();
-
-      if (data.success && data.user) {
-        const loggedInUser = data.user;
-
-        localStorage.setItem("loggedInUser", JSON.stringify(loggedInUser));
-        localStorage.setItem("userName", loggedInUser.name);
-        localStorage.setItem("userRole", loggedInUser.role);
-        localStorage.setItem("uniqueCode", loggedInUser.uniqueCode);
-        sessionStorage.setItem("justLoggedIn", "true");
-
-        setSuccess(`✅ Login successful! Welcome ${loggedInUser.name}!`);
-        setTimeout(() => redirectToDashboard(loggedInUser.role), 800);
-        return;
-      }
-
-      if (data.error) {
-        setError("❌ " + data.error);
-        setLoading(false);
-        return;
-      }
-    } catch (apiError) {
-      console.warn("Backend login unavailable, using local fallback:", apiError);
-    }
-
-    // Local fallback for existing beta users
+    
     const users = JSON.parse(localStorage.getItem("users") || "[]");
     const user = users.find(u => {
       const phoneMatch = u.phone === formData.phone;
@@ -296,13 +256,12 @@ export default function Login() {
       const phoneAsEmail = formData.phone && u.email === formData.phone;
       return (phoneMatch || emailMatch || phoneAsEmail) && u.password === formData.password;
     });
-
+    
     if (user) {
       if (!user.uniqueCode) {
         user.uniqueCode = generateUniqueCode(user.role, users);
         localStorage.setItem("users", JSON.stringify(users));
       }
-
       const loggedInUser = {
         userId: user.userId,
         uniqueCode: user.uniqueCode,
@@ -312,20 +271,21 @@ export default function Login() {
         role: user.role,
         location: user.location || "Bengaluru"
       };
-
+      
       localStorage.setItem("loggedInUser", JSON.stringify(loggedInUser));
       localStorage.setItem("userName", user.name);
       localStorage.setItem("userRole", user.role);
       localStorage.setItem("uniqueCode", user.uniqueCode);
       sessionStorage.setItem("justLoggedIn", "true");
-
+      
       setSuccess(`✅ Login successful! Welcome ${user.name}!`);
-      setTimeout(() => redirectToDashboard(user.role), 800);
+      setTimeout(() => redirectToDashboard(user.role), 1000);
     } else {
       setError("❌ Invalid phone/email or password. Please try again.");
       setLoading(false);
     }
   };
+
   const handleRegister = (e) => {
     e.preventDefault();
     setError("");
@@ -638,14 +598,6 @@ export default function Login() {
               style: styles.input
             })
           ),
-          React.createElement("div", {
-            style: { textAlign: "right", marginBottom: "15px", marginTop: "-8px" }
-          },
-            React.createElement("span", {
-              style: styles.link,
-              onClick: () => router.push("/forgot-password")
-            }, "Forgot Password?")
-          ),
           React.createElement("button", { 
             type: "submit", 
             style: { ...styles.button, ...(loading ? styles.buttonDisabled : {}) },
@@ -787,10 +739,5 @@ React.createElement("button", {
     )
   );
 }
-
-
-
-
-
 
 

@@ -244,98 +244,6 @@ app.get('/api/user/status', (req, res) => {
   });
 });
 
-
-// ================= USER LOGIN API =================
-app.post('/api/login', (req, res) => {
-  const { phone, email, password } = req.body || {};
-  const loginId = phone || email;
-
-  if (!loginId || !password) {
-    return res.status(400).json({ success: false, error: 'Phone/email and password are required' });
-  }
-
-  db.get(
-    `SELECT id, name, phone, email, role, status, password FROM users WHERE phone = ? OR email = ?`,
-    [loginId, loginId],
-    (err, user) => {
-      if (err) return res.status(500).json({ success: false, error: err.message });
-      if (!user) return res.status(401).json({ success: false, error: 'User not found in backend database. Please register once again.' });
-      if (String(user.password) !== String(password)) return res.status(401).json({ success: false, error: 'Invalid password.' });
-
-      if (user.status !== 'approved') {
-        return res.status(403).json({
-          success: false,
-          error: user.status === 'pending' ? 'Your account is pending admin approval.' : 'Your account is not active.',
-          status: user.status
-        });
-      }
-
-      const prefixMap = { buyer:'BUY', supplier:'SUP', contractor:'CON', machinery:'MAC', labour:'LAB', realestate:'REA', admin:'ADM' };
-      const uniqueCode = `${prefixMap[user.role] || 'USR'}-${String(user.id).padStart(4,'0')}`;
-
-      res.json({
-        success: true,
-        message: 'Login successful',
-        user: {
-          userId: user.id,
-          uniqueCode,
-          name: user.name,
-          phone: user.phone,
-          email: user.email || '',
-          role: user.role,
-          status: user.status,
-          location: 'Bengaluru'
-        }
-      });
-    }
-  );
-});
-
-// ================= FORGOT PASSWORD API - BETA OTP =================
-app.post('/api/forgot-password', (req, res) => {
-  const { phone } = req.body || {};
-
-  if (!phone) {
-    return res.status(400).json({ success: false, error: 'Phone number required' });
-  }
-
-  db.get(`SELECT id, name, phone FROM users WHERE phone = ?`, [phone], (err, user) => {
-    if (err) return res.status(500).json({ success: false, error: err.message });
-    if (!user) return res.status(404).json({ success: false, error: 'User not found' });
-
-    const otp = '123456'; // beta OTP
-    db.run(`UPDATE users SET reset_otp = ? WHERE phone = ?`, [otp, phone], function(updateErr) {
-      if (updateErr) return res.status(500).json({ success: false, error: updateErr.message });
-      res.json({ success: true, message: 'OTP generated successfully. Beta OTP is 123456', betaOtp: otp });
-    });
-  });
-});
-
-app.post('/api/reset-password', (req, res) => {
-  const { phone, otp, newPassword } = req.body || {};
-
-  if (!phone || !otp || !newPassword) {
-    return res.status(400).json({ success: false, error: 'Phone, OTP and new password are required' });
-  }
-
-  if (String(newPassword).length < 6) {
-    return res.status(400).json({ success: false, error: 'Password must be at least 6 characters' });
-  }
-
-  db.get(`SELECT id, reset_otp FROM users WHERE phone = ?`, [phone], (err, user) => {
-    if (err) return res.status(500).json({ success: false, error: err.message });
-    if (!user) return res.status(404).json({ success: false, error: 'User not found' });
-
-    if (String(user.reset_otp || '') !== String(otp)) {
-      return res.status(401).json({ success: false, error: 'Invalid OTP' });
-    }
-
-    db.run(`UPDATE users SET password = ?, reset_otp = NULL WHERE phone = ?`, [newPassword, phone], function(updateErr) {
-      if (updateErr) return res.status(500).json({ success: false, error: updateErr.message });
-      res.json({ success: true, message: 'Password reset successful' });
-    });
-  });
-});
 // ================= ADMIN: GET PENDING USERS =================
 app.get('/api/admin/users', authenticateAdmin, (req, res) => {
   const { status } = req.query;
@@ -505,8 +413,3 @@ app.listen(PORT, () => {
   console.log('GET    /api/rates/:category/:item_name');
   console.log('\n===================================\n');
 });
-
-
-
-
-
