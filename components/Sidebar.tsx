@@ -201,6 +201,8 @@ export default function Sidebar({ children, currentPath }) {
   const [hoveredItem, setHoveredItem] = useState(null);
   const [hoveredMain, setHoveredMain] = useState(null);
   const [hoveredLogout, setHoveredLogout] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   const [open, setOpen] = useState({
     dashboards: true,
@@ -273,6 +275,23 @@ export default function Sidebar({ children, currentPath }) {
     { name: "Pricing", icon: "💰", path: "/pricing" }
   ];
 
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth <= 768;
+      setIsMobile(mobile);
+      if (mobile && !currentPath?.includes("dashboard")) {
+        setShowMobileMenu(false);
+      }
+      if (mobile && currentPath?.includes("dashboard")) {
+        setShowMobileMenu(true);
+      }
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, [currentPath]);
+
   // ---------------- GET CURRENT USER ----------------
   const [mounted, setMounted] = useState(false);
 const [userName, setUserName] = useState("Guest");
@@ -297,6 +316,124 @@ useEffect(() => {
 
 if (!mounted) {
   return null;
+}
+
+const mobileDashboardPath =
+  userRole?.toLowerCase() === "buyer" ? "/buyer-dashboard" :
+  userRole?.toLowerCase() === "supplier" ? "/supplier-dashboard" :
+  userRole?.toLowerCase() === "admin" ? "/admin-dashboard" :
+  "/contractor-dashboard";
+
+const mobileTabs = [
+  { name: dashboardName, icon: dashboardIcon, path: mobileDashboardPath },
+  ...otherTabs,
+  ...calculatorTabs,
+  ...boqTabs
+];
+
+if (isMobile) {
+  return (
+    <div style={{ minHeight: "100vh", background: "#f0f2f5" }}>
+      {showMobileMenu ? (
+        <div style={{ padding: "12px" }}>
+          <div style={{
+            background: "linear-gradient(135deg,#1a1a2e,#16213e)",
+            color: "white",
+            borderRadius: "14px",
+            padding: "14px",
+            marginBottom: "12px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center"
+          }}>
+            <div>
+              <div style={{ fontSize: "18px", fontWeight: "bold" }}>🏗️ BuildMitra</div>
+              <div style={{ fontSize: "12px", color: "#ffb366" }}>{userName} • {userRole}</div>
+            </div>
+            <button
+              onClick={() => {
+                clearBuildMitraSession();
+                router.push("/login");
+              }}
+              style={{
+                background: "#e74c3c",
+                color: "white",
+                border: 0,
+                borderRadius: "8px",
+                padding: "8px 10px",
+                fontWeight: "bold"
+              }}
+            >
+              Logout
+            </button>
+          </div>
+
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: "10px"
+          }}>
+            {mobileTabs.map((tab, i) => (
+              <button
+                key={i}
+                onClick={() => {
+                  setShowMobileMenu(false);
+                  go(tab.path);
+                }}
+                style={{
+                  background: currentPath === tab.path ? "#ff7a00" : "white",
+                  color: currentPath === tab.path ? "white" : "#1a1a2e",
+                  border: "1px solid #ddd",
+                  borderRadius: "14px",
+                  padding: "14px 8px",
+                  minHeight: "86px",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                  fontWeight: "bold",
+                  fontSize: "11px",
+                  cursor: "pointer"
+                }}
+              >
+                <div style={{ fontSize: "26px", marginBottom: "6px" }}>{tab.icon}</div>
+                <div>{tab.name}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div>
+          <div style={{
+            position: "sticky",
+            top: 0,
+            zIndex: 999,
+            background: "#1a1a2e",
+            color: "white",
+            padding: "10px",
+            display: "flex",
+            alignItems: "center",
+            gap: "10px"
+          }}>
+            <button
+              onClick={() => setShowMobileMenu(true)}
+              style={{
+                background: "#ff7a00",
+                color: "white",
+                border: 0,
+                borderRadius: "8px",
+                padding: "8px 12px",
+                fontWeight: "bold"
+              }}
+            >
+              ☰ Menu
+            </button>
+            <b>BuildMitra</b>
+          </div>
+          <div style={{ width: "100%", minHeight: "100vh" }}>
+            {children}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 return (
@@ -475,6 +612,7 @@ return (
     </div>
   );
 }
+
 
 
 
