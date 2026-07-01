@@ -278,7 +278,7 @@ const [activeTab, setActiveTab] = useState("overview");
     propertyData.totalAmount = results.totalAmount || propertyData.totalAmount;
     propertyData.totalAreaAcres = results.totalAreaAcres || 0;
     
-    const newProperty = {
+    const newProperty = { listingType: activeTab === "rental" ? "Rental" : activeTab === "buy" ? "Buy" : "Sell",
       id: Date.now(),
       type: propertyType,
       title: formData.get("title"),
@@ -395,6 +395,10 @@ const [activeTab, setActiveTab] = useState("overview");
   const tabs = [
     { id: "overview", name: "Overview", icon: "📊" },
     { id: "properties", name: "Properties", icon: "🏠" },
+    { id: "rental", name: "Rental", icon: "🏘️" },
+    { id: "buy", name: "Buy", icon: "🛒" },
+    { id: "sell", name: "Sell", icon: "🏷️" },
+    { id: "affiliate", name: "Affiliate", icon: "🤝" },
     { id: "analytics", name: "Analytics", icon: "📈" }
   ];
 
@@ -431,43 +435,172 @@ const [activeTab, setActiveTab] = useState("overview");
     );
   };
 
-  const renderProperties = () => {
+  const renderProperties = (mode = "all") => {
+    const titleMap = {
+      all: "All Properties",
+      rental: "Rental Properties",
+      buy: "Properties for Buy",
+      sell: "Properties for Sell"
+    };
+
+    const filtered = properties.filter((p) => {
+      const listingType = String(p.listingType || "Sell").toLowerCase();
+      if (mode === "rental") return listingType.includes("rental") || listingType.includes("rent");
+      if (mode === "buy") return listingType.includes("buy") || listingType.includes("sell") || listingType.includes("sale");
+      if (mode === "sell") return listingType.includes("sell") || listingType.includes("sale");
+      return true;
+    });
+
     return React.createElement("div", null,
-      React.createElement("button", { onClick: () => setShowPropertyModal(true), style: styles.button }, "+ Add Property"),
+      React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 } },
+        React.createElement("h2", { style: { margin: 0, color: "#1a5f7a" } }, titleMap[mode] || "Properties"),
+        React.createElement("button", { onClick: () => setShowPropertyModal(true), style: styles.button }, "+ Add Property")
+      ),
       React.createElement("div", { style: { marginTop: "16px" } },
-        properties.map(p =>
-          React.createElement("div", { key: p.id, style: styles.card },
-            React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "start", flexWrap: "wrap" } },
-              React.createElement("div", null,
-                React.createElement("h3", { style: { margin: "0 0 4px 0" } }, p.title),
-                React.createElement("p", { style: { margin: "4px 0", fontSize: "12px", color: "#666" } }, p.location, " | ", p.type),
-                React.createElement("p", { style: { margin: "4px 0", fontSize: "12px" } }, "📐 ", p.totalArea || p.plotArea || "N/A", " sq.ft")
-              ),
-              React.createElement("div", { style: { textAlign: "right" } },
-                React.createElement("div", { style: { fontSize: "24px", fontWeight: "bold", color: "#1a5f7a" } }, formatPrice(p.totalAmount || 0)),
-                React.createElement("span", { style: { ...styles.statusBadge, backgroundColor: p.status === "Available" ? "#d1fae5" : "#fed7aa", color: p.status === "Available" ? "#065f46" : "#92400e" } }, p.status),
-                React.createElement("br", null),
-                React.createElement("select", { 
-                  value: p.status, 
-                  onChange: (e) => updatePropertyStatus(p.id, e.target.value),
-                  style: { marginTop: "4px", padding: "4px", borderRadius: "4px", border: "1px solid #ddd" }
-                },
-                  React.createElement("option", null, "Available"),
-                  React.createElement("option", null, "Booked"),
-                  React.createElement("option", null, "Sold")
+        filtered.length === 0
+          ? React.createElement("div", { style: styles.card }, "No properties found in this tab. Add a new property.")
+          : filtered.map(p =>
+            React.createElement("div", { key: p.id, style: styles.card },
+              React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "start", flexWrap: "wrap" } },
+                React.createElement("div", null,
+                  React.createElement("h3", { style: { margin: "0 0 4px 0" } }, p.title),
+                  React.createElement("p", { style: { margin: "4px 0", fontSize: "12px", color: "#666" } }, p.location, " | ", p.type, " | ", p.listingType || "Sell"),
+                  React.createElement("p", { style: { margin: "4px 0", fontSize: "12px" } }, "📐 ", p.totalArea || p.plotArea || "N/A", " sq.ft")
+                ),
+                React.createElement("div", { style: { textAlign: "right" } },
+                  React.createElement("div", { style: { fontSize: "24px", fontWeight: "bold", color: "#1a5f7a" } }, formatPrice(p.totalAmount || 0)),
+                  React.createElement("span", { style: { ...styles.statusBadge, backgroundColor: p.status === "Available" ? "#d1fae5" : "#fed7aa", color: p.status === "Available" ? "#065f46" : "#92400e" } }, p.status),
+                  React.createElement("br", null),
+                  React.createElement("select", {
+                    value: p.status,
+                    onChange: (e) => updatePropertyStatus(p.id, e.target.value),
+                    style: { marginTop: "4px", padding: "4px", borderRadius: "4px", border: "1px solid #ddd" }
+                  },
+                    React.createElement("option", null, "Available"),
+                    React.createElement("option", null, "Booked"),
+                    React.createElement("option", null, "Sold"),
+                    React.createElement("option", null, "Rented")
+                  )
                 )
+              ),
+              React.createElement("p", { style: { fontSize: "12px", color: "#666", marginTop: "8px" } }, p.description),
+              React.createElement("div", { style: { marginTop: "12px", display: "flex", gap: "8px", flexWrap: "wrap" } },
+                React.createElement("button", { onClick: () => window.open(`https://wa.me/${p.contactNumber || "9876543210"}?text=Hi, I'm interested in ${p.title}`, "_blank"), style: styles.buttonSuccess }, "📱 Enquire")
               )
-            ),
-            React.createElement("p", { style: { fontSize: "12px", color: "#666", marginTop: "8px" } }, p.description),
-            React.createElement("div", { style: { marginTop: "12px", display: "flex", gap: "8px", flexWrap: "wrap" } },
-              React.createElement("button", { onClick: () => window.open(`https://wa.me/${p.contactNumber || "9876543210"}?text=Hi, I'm interested in ${p.title}`, "_blank"), style: styles.buttonSuccess }, "📱 Enquire")
             )
           )
-        )
       )
     );
   };
 
+  const renderAffiliate = () => {
+    const layouts = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("bm_realestate_layouts") || "[]") : [];
+    const plots = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("bm_realestate_plots") || "[]") : [];
+
+    const saveLayout = () => {
+      const get = (id) => ((document.getElementById(id) || {}) as any).value || "";
+      const layout = {
+        id: Date.now(),
+        layoutName: get("layoutName"),
+        developerName: get("developerName"),
+        reraNo: get("reraNo"),
+        location: get("layoutLocation"),
+        googleMap: get("googleMap"),
+        brochureUrl: get("brochureUrl"),
+        masterPlanUrl: get("masterPlanUrl"),
+        imageUrls: get("imageUrls"),
+        videoUrl: get("videoUrl"),
+        droneVideoUrl: get("droneVideoUrl"),
+        amenities: get("amenities"),
+        authority: get("authority"),
+        contactPerson: get("contactPerson"),
+        phone: get("layoutPhone"),
+        website: get("website"),
+        ratePerSft: Number(get("ratePerSft") || 0),
+        discount: get("discount"),
+        offer: get("offer"),
+        status: "Live",
+        featured: true,
+        createdAt: new Date().toISOString()
+      };
+      const all = [layout, ...layouts];
+      localStorage.setItem("bm_realestate_layouts", JSON.stringify(all));
+      alert("Layout uploaded to Real Estate Hub.");
+      window.location.reload();
+    };
+
+    const savePlot = () => {
+      const get = (id) => ((document.getElementById(id) || {}) as any).value || "";
+      const area = Number(get("plotArea") || 0);
+      const rate = Number(get("plotRate") || 0);
+      const plot = {
+        id: Date.now(),
+        layoutName: get("plotLayoutName"),
+        plotNo: get("plotNo"),
+        facing: get("plotFacing"),
+        dimensions: get("plotDimensions"),
+        area,
+        ratePerSft: rate,
+        totalAmount: area * rate,
+        offerPrice: get("plotOfferPrice"),
+        discount: get("plotDiscount"),
+        status: get("plotStatus") || "Available",
+        remarks: get("plotRemarks"),
+        createdAt: new Date().toISOString()
+      };
+      const all = [plot, ...plots];
+      localStorage.setItem("bm_realestate_plots", JSON.stringify(all));
+      alert("Plot inventory updated in Real Estate Hub.");
+      window.location.reload();
+    };
+
+    return React.createElement("div", null,
+      React.createElement("div", { style: styles.card },
+        React.createElement("h2", { style: { color: "#1a5f7a", marginTop: 0 } }, "🏘️ BuildMitra Marketing Partner - Layout Upload"),
+        React.createElement("p", null, "Upload layout details here. These details will display publicly in Real Estate Hub."),
+        React.createElement("div", { style: styles.grid2 },
+          [
+            ["layoutName", "Layout Name"], ["developerName", "Developer / Owner Name"], ["reraNo", "RERA No"],
+            ["layoutLocation", "Location"], ["googleMap", "Google Map Link"], ["brochureUrl", "Brochure PDF Link"],
+            ["masterPlanUrl", "Master Plan PDF Link"], ["imageUrls", "Image / Photo URLs comma separated"],
+            ["videoUrl", "Video Link"], ["droneVideoUrl", "Drone Video Link"], ["amenities", "Amenities"],
+            ["authority", "Approval Authority"], ["contactPerson", "Contact Person"], ["layoutPhone", "WhatsApp / Phone"],
+            ["website", "Website"], ["ratePerSft", "Rate per SFT"], ["discount", "Discount"], ["offer", "Offer"]
+          ].map(([id, ph]) => React.createElement("input", { key: id, id, placeholder: ph, style: styles.input }))
+        ),
+        React.createElement("button", { style: styles.button, onClick: saveLayout }, "+ Add New Layout to Hub")
+      ),
+
+      React.createElement("div", { style: styles.card },
+        React.createElement("h2", { style: { color: "#1a5f7a", marginTop: 0 } }, "📍 Plot Inventory - Available / Sold / Booked"),
+        React.createElement("div", { style: styles.grid3 },
+          [
+            ["plotLayoutName", "Layout Name"], ["plotNo", "Plot No"], ["plotFacing", "Facing"],
+            ["plotDimensions", "Dimensions"], ["plotArea", "Area SFT"], ["plotRate", "Rate/SFT"],
+            ["plotOfferPrice", "Offer Price"], ["plotDiscount", "Discount"], ["plotStatus", "Available / Booked / Sold"],
+            ["plotRemarks", "Remarks"]
+          ].map(([id, ph]) => React.createElement("input", { key: id, id, placeholder: ph, style: styles.input }))
+        ),
+        React.createElement("button", { style: styles.button, onClick: savePlot }, "+ Add Plot to This Layout")
+      ),
+
+      React.createElement("div", { style: styles.card },
+        React.createElement("h2", null, "📋 Uploaded Layouts"),
+        layouts.length === 0 ? React.createElement("p", null, "No layouts uploaded yet.") :
+          layouts.map(l => React.createElement("div", { key: l.id, style: { padding: 10, borderBottom: "1px solid #eee" } },
+            React.createElement("b", null, l.layoutName), " - ", l.location, " - ₹", l.ratePerSft, "/sft"
+          ))
+      ),
+
+      React.createElement("div", { style: styles.card },
+        React.createElement("h2", null, "📍 Plot List"),
+        plots.length === 0 ? React.createElement("p", null, "No plots added yet.") :
+          plots.map(p => React.createElement("div", { key: p.id, style: { padding: 10, borderBottom: "1px solid #eee" } },
+            React.createElement("b", null, "Plot ", p.plotNo), " - ", p.layoutName, " - ", p.status, " - ₹", p.ratePerSft, "/sft"
+          ))
+      )
+    );
+  };
   const renderAnalytics = () => {
     const totalProperties = properties.length;
     const totalValue = properties.reduce((sum, p) => sum + (p.totalAmount || 0), 0);
@@ -515,7 +648,11 @@ const [activeTab, setActiveTab] = useState("overview");
   const renderContent = () => {
     switch(activeTab) {
       case "overview": return renderOverview();
-      case "properties": return renderProperties();
+      case "properties": return renderProperties("all");
+      case "rental": return renderProperties("rental");
+      case "buy": return renderProperties("buy");
+      case "sell": return renderProperties("sell");
+      case "affiliate": return renderAffiliate();
       case "analytics": return renderAnalytics();
       default: return renderOverview();
     }
@@ -619,5 +756,9 @@ const [activeTab, setActiveTab] = useState("overview");
     )
   );
 }
+
+
+
+
 
 

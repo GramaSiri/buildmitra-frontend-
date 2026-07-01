@@ -266,12 +266,11 @@ export default function Sidebar({ children, currentPath }) {
 
   // ---------------- OTHER MODULES ----------------
   const otherTabs = [
-    { name: "Marketplace", icon: "🛒", path: "/marketplace" },
-    { name: "Admin Dashboard", icon: "👑", path: "/admin-dashboard" },
+    { name: "Marketplace", icon: "🛒", path: "/marketplace" },    
     { name: "DRG", icon: "📐", path: "/drg" },
     { name: "Layout Plans", icon: "🗺️", path: "/layout-plans" },
     { name: "Learn & Earn", icon: "📚", path: "/learn-earn" },
-    { name: "Real Estate", icon: "🏠", path: "/realestate-dashboard" },
+    { name: "Real Estate Hub", icon: "🏘️", path: "/realestate-hub" },
     { name: "Pricing", icon: "💰", path: "/pricing" }
   ];
 
@@ -322,6 +321,9 @@ const mobileDashboardPath =
   userRole?.toLowerCase() === "buyer" ? "/buyer-dashboard" :
   userRole?.toLowerCase() === "supplier" ? "/supplier-dashboard" :
   userRole?.toLowerCase() === "admin" ? "/admin-dashboard" :
+  userRole?.toLowerCase() === "realestate" ? "/realestate-dashboard" :
+  userRole?.toLowerCase() === "machinery" ? "/machinehire-dashboard" :
+  userRole?.toLowerCase() === "labour" ? "/laboursupply-dashboard" :
   "/contractor-dashboard";
 
 const mobileTabs = [
@@ -511,6 +513,12 @@ return (
         go("/supplier-dashboard");
       } else if (userRole?.toLowerCase() === "admin") {
         go("/admin-dashboard");
+      } else if (userRole?.toLowerCase() === "realestate") {
+        go("/realestate-dashboard");
+      } else if (userRole?.toLowerCase() === "machinery") {
+        go("/machinehire-dashboard");
+      } else if (userRole?.toLowerCase() === "labour") {
+        go("/laboursupply-dashboard");
       } else {
         go("/contractor-dashboard");
       }
@@ -612,6 +620,10 @@ return (
     </div>
   );
 }
+
+
+
+
 
 
 

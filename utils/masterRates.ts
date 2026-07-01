@@ -60,3 +60,60 @@ export const rateStatusMessage = (rates: Record<string, MasterRateResult>) => {
   if (!missing.length) return "";
   return `Admin master rate missing for: ${missing.join(", ")}. Fallback rate used.`;
 };
+
+export const syncApprovedRatesFromBackend = async (
+  apiBase: string = "http://localhost:5000"
+): Promise<{ success: boolean; count: number; error?: string }> => {
+  if (typeof window === "undefined") return { success: false, count: 0, error: "Browser only" };
+
+  try {
+    const res = await fetch(`${apiBase}/api/rates/approved`);
+    if (!res.ok) throw new Error(`Rate API failed: ${res.status}`);
+
+    const rows = await res.json();
+    const list = Array.isArray(rows) ? rows : rows.rates || rows.data || [];
+
+    const materialRates: any[] = [];
+    const labourRates: any[] = [];
+    const serviceRates: any[] = [];
+    const equipmentRates: any[] = [];
+
+    list.forEach((r: any) => {
+      const category = String(r.category || "").toLowerCase();
+      const row = {
+        code: r.code || r.item_code || "",
+        item: r.item_name || r.itemName || r.item || r.name || "",
+        itemName: r.item_name || r.itemName || r.item || r.name || "",
+        category: r.category || "",
+        unit: r.unit || "",
+        rate: Number(r.price || r.rate || r.unitRate || 0),
+        price: Number(r.price || r.rate || r.unitRate || 0),
+        source: "backend-approved",
+        updatedAt: r.updated_at || r.updatedAt || new Date().toISOString()
+      };
+
+      if (!row.rate || row.rate <= 0) return;
+
+      if (category.includes("labour") || category.includes("labor")) {
+        labourRates.push(row);
+      } else if (category.includes("service")) {
+        serviceRates.push(row);
+      } else if (category.includes("equipment") || category.includes("machine") || category.includes("machinery")) {
+        equipmentRates.push(row);
+      } else {
+        materialRates.push(row);
+      }
+    });
+
+    if (materialRates.length) localStorage.setItem("bm_material_rates", JSON.stringify(materialRates));
+    if (labourRates.length) localStorage.setItem("bm_labour_rates", JSON.stringify(labourRates));
+    if (serviceRates.length) localStorage.setItem("bm_service_rates", JSON.stringify(serviceRates));
+    if (equipmentRates.length) localStorage.setItem("bm_equipment_rates", JSON.stringify(equipmentRates));
+
+    localStorage.setItem("bm_rates_last_sync", new Date().toISOString());
+
+    return { success: true, count: list.length };
+  } catch (err: any) {
+    return { success: false, count: 0, error: err?.message || "Rate sync failed" };
+  }
+};

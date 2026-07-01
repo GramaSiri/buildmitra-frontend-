@@ -4,14 +4,14 @@ import {
   ThemeProvider, createTheme, CssBaseline, AppBar, Toolbar, Typography,
   Tabs, Tab, Box, Container, IconButton, Badge, Card, CardContent,
   LinearProgress, Alert, Snackbar, CircularProgress, RadioGroup,
-  FormControlLabel, Radio, Button, Grid, Chip, Divider,
+   Radio, Button, Grid, Chip, Divider,
   List, ListItem, ListItemText, ListItemIcon, Paper, Table, TableBody,
   TableCell, TableContainer, TableHead, TableRow, Avatar, Accordion,
   AccordionSummary, AccordionDetails, Fab, useTheme, useMediaQuery,
   ToggleButton, ToggleButtonGroup, TextField, InputAdornment,
   Link, Dialog, DialogTitle, DialogContent, DialogActions,
-  Stepper, Step, StepLabel, CardMedia
-} from '@mui/material';
+  Stepper, Step, StepLabel, CardMedia, Checkbox, Select, MenuItem, InputLabel, FormControl
+, FormControlLabel } from '@mui/material';
 import {
   Quiz as QuizIcon, School as SchoolIcon, Games as GamesIcon,
   Gavel as GavelIcon, EmojiEvents as EmojiEventsIcon,
@@ -23,17 +23,25 @@ import {
   LocationCity as LocationCityIcon, GetApp as GetAppIcon,
   Star as StarIcon, ThreeDRotation as ThreeDRotationIcon,
   DragHandle as DragHandleIcon, Straighten as StraightenIcon,
-  Agriculture as AgricultureIcon,
-  SettingsEthernet as SettingsEthernetIcon, Dashboard as DashboardIcon,
-  Window as WindowIcon,
+  Agriculture as AgricultureIcon, SettingsEthernet as SettingsEthernetIcon,
+  Dashboard as DashboardIcon, Window as WindowIcon,
   AddCircle as AddCircleIcon, Close as CloseIcon,
   ArrowForward as ArrowForwardIcon, ArrowBack as ArrowBackIcon,
-  CheckCircle as CheckCircleIcon,
-  Construction as ConstructionIcon,
+  CheckCircle as CheckCircleIcon, Construction as ConstructionIcon,
   Chair as InteriorIcon, Article as ArticleIcon, Podcasts as PodcastsIcon,
   YouTube as YouTubeIcon, Search as SearchIcon, OpenInNew as OpenInNewIcon,
-  Build as BuildIcon, DesignServices as DesignServicesIcon
+  Build as BuildIcon, DesignServices as DesignServicesIcon,
+  Calculate as CalculateIcon, People as PeopleIcon,
+  Verified as VerifiedIcon, TrendingUp as TrendingUpIcon,
+  SupportAgent as SupportAgentIcon, Handshake as HandshakeIcon,
+  Business as BusinessIcon, LocationOn as LocationOnIcon,
+  Phone as PhoneIcon, Email as EmailIcon, AttachMoney as AttachMoneyIcon,
+  SquareFoot as SquareFootIcon, Bed as BedIcon, Bathtub as BathtubIcon,
+  Layers as LayersIcon, Category as CategoryIcon, Image as ImageIcon,
+  Foundation as FoundationIcon, Engineering as EngineeringIcon,
+  Science as ScienceIcon
 } from '@mui/icons-material';
+import FormulaGallery from '../components/FormulaGallery';
 
 // ============= API CONFIGURATION =============
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
@@ -87,7 +95,7 @@ const QuizContext = createContext();
 const LeaderboardContext = createContext();
 const CertificateContext = createContext();
 
-// ============= 50 HIGH-QUALITY CIVIL & PHE QUESTIONS =============
+// ============= 20 UNIQUE CIVIL & PHE QUESTIONS =============
 const UNIQUE_QUESTIONS = [
   { id: 1, question: 'What is the standard water-cement ratio for M20 grade concrete?', options: ['0.40', '0.50', '0.55', '0.60'], correctAnswer: 1, category: 'Concrete', difficulty: 'Medium' },
   { id: 2, question: 'What is the minimum curing period for concrete in normal weather conditions?', options: ['3 days', '7 days', '14 days', '21 days'], correctAnswer: 1, category: 'Concrete', difficulty: 'Easy' },
@@ -95,50 +103,20 @@ const UNIQUE_QUESTIONS = [
   { id: 4, question: 'What is the standard slope required for drainage pipes?', options: ['1 in 100', '1 in 80', '1 in 60', '1 in 40'], correctAnswer: 0, category: 'Plumbing', difficulty: 'Medium' },
   { id: 5, question: 'What is the minimum depth of foundation for a residential building on clay soil?', options: ['0.5 meters', '1.0 meters', '1.5 meters', '2.0 meters'], correctAnswer: 1, category: 'Foundation', difficulty: 'Medium' },
   { id: 6, question: 'Which type of foundation is recommended for high water table areas?', options: ['Raft foundation', 'Pile foundation', 'Strip foundation', 'Isolated footing'], correctAnswer: 1, category: 'Foundation', difficulty: 'Medium' },
-  { id: 7, question: 'What is the standard brick size used in India?', options: ['190x90x90 mm', '200x100x100 mm', '180x80x80 mm', '210x110x110 mm'], correctAnswer: 0, category: 'Materials', difficulty: 'Easy' },
+  { id: 7, question: 'What is the standard brick size used in India?', options: ['190×90×90 mm', '200×100×100 mm', '180×80×80 mm', '210×110×110 mm'], correctAnswer: 0, category: 'Materials', difficulty: 'Easy' },
   { id: 8, question: 'Which grade of steel is most commonly used for reinforcement in RCC structures?', options: ['Fe 415', 'Fe 500', 'Fe 550', 'Fe 600'], correctAnswer: 0, category: 'Materials', difficulty: 'Medium' },
   { id: 9, question: 'What is the standard density of reinforced concrete?', options: ['2200 kg/m³', '2400 kg/m³', '2500 kg/m³', '2600 kg/m³'], correctAnswer: 2, category: 'Concrete', difficulty: 'Easy' },
   { id: 10, question: 'What is the purpose of a damp proof course (DPC) in buildings?', options: ['To prevent moisture rising', 'To provide thermal insulation', 'To strengthen the wall', 'To prevent sound transmission'], correctAnswer: 0, category: 'Construction', difficulty: 'Easy' },
-  { id: 11, question: 'What is the standard thickness of a DPC layer?', options: ['2.5 mm', '3.0 mm', '4.0 mm', '5.0 mm'], correctAnswer: 0, category: 'Construction', difficulty: 'Medium' },
-  { id: 12, question: 'Which type of cement is best suited for marine construction?', options: ['Ordinary Portland Cement', 'Sulphate Resisting Cement', 'Rapid Hardening Cement', 'Low Heat Cement'], correctAnswer: 1, category: 'Materials', difficulty: 'Hard' },
-  { id: 13, question: 'What is the standard water pressure maintained in residential buildings?', options: ['1-2 bar', '2-3 bar', '3-4 bar', '4-5 bar'], correctAnswer: 1, category: 'Plumbing', difficulty: 'Medium' },
-  { id: 14, question: 'What is the purpose of a trap in plumbing systems?', options: ['To prevent sewer gases from entering', 'To collect debris', 'To control water flow', 'To reduce noise'], correctAnswer: 0, category: 'Plumbing', difficulty: 'Easy' },
-  { id: 15, question: 'What is the minimum thickness of a load-bearing wall in residential construction?', options: ['4 inches', '6 inches', '9 inches', '12 inches'], correctAnswer: 2, category: 'Structural', difficulty: 'Easy' },
-  { id: 16, question: 'What is the standard slump value for concrete used in foundations?', options: ['25-50 mm', '50-75 mm', '75-100 mm', '100-125 mm'], correctAnswer: 1, category: 'Concrete', difficulty: 'Medium' },
-  { id: 17, question: 'Which test is performed to determine the compressive strength of concrete?', options: ['Slump test', 'Compression test', 'Flexural test', 'Tensile test'], correctAnswer: 1, category: 'Testing', difficulty: 'Easy' },
-  { id: 18, question: 'What is the standard size of a cube used for concrete testing in India?', options: ['100 mm', '150 mm', '200 mm', '250 mm'], correctAnswer: 1, category: 'Testing', difficulty: 'Easy' },
-  { id: 19, question: 'What is the purpose of a lintel in building construction?', options: ['To support the wall above openings', 'To provide foundation support', 'To act as a beam', 'To connect columns'], correctAnswer: 0, category: 'Structural', difficulty: 'Easy' },
-  { id: 20, question: 'What is the standard diameter of a rainwater downpipe?', options: ['75 mm', '100 mm', '150 mm', '200 mm'], correctAnswer: 1, category: 'Plumbing', difficulty: 'Medium' },
-  { id: 21, question: 'Which type of roof is most suitable for heavy rainfall areas?', options: ['Flat roof', 'Sloped roof', 'Green roof', 'Terraced roof'], correctAnswer: 1, category: 'Roofing', difficulty: 'Easy' },
-  { id: 22, question: 'What is the standard slope for an RCC roof?', options: ['1 in 12', '1 in 24', '1 in 36', '1 in 48'], correctAnswer: 0, category: 'Roofing', difficulty: 'Hard' },
-  { id: 23, question: 'What is the purpose of a shear wall in a building?', options: ['To resist lateral loads', 'To support vertical loads', 'To provide openings', 'To improve aesthetics'], correctAnswer: 0, category: 'Structural', difficulty: 'Medium' },
-  { id: 24, question: 'What is the standard cover for reinforcement in slabs?', options: ['15 mm', '20 mm', '25 mm', '30 mm'], correctAnswer: 1, category: 'Structural', difficulty: 'Medium' },
-  { id: 25, question: 'Which type of valve is used to control water flow in main supply lines?', options: ['Gate valve', 'Globe valve', 'Ball valve', 'Check valve'], correctAnswer: 0, category: 'Plumbing', difficulty: 'Medium' },
-  { id: 26, question: 'What is the standard size of a modular brick with mortar?', options: ['200x100x100 mm', '190x90x90 mm', '210x110x110 mm', '180x80x80 mm'], correctAnswer: 0, category: 'Materials', difficulty: 'Easy' },
-  { id: 27, question: 'What is the purpose of admixtures in concrete?', options: ['To improve workability', 'To increase strength', 'To reduce water content', 'All of the above'], correctAnswer: 3, category: 'Concrete', difficulty: 'Medium' },
-  { id: 28, question: 'What is the standard depth of sewer line?', options: ['0.5 meters', '1.0 meters', '1.5 meters', '2.0 meters'], correctAnswer: 1, category: 'Plumbing', difficulty: 'Medium' },
-  { id: 29, question: 'Which type of brick bond is strongest?', options: ['English bond', 'Flemish bond', 'Stretcher bond', 'Header bond'], correctAnswer: 0, category: 'Construction', difficulty: 'Hard' },
-  { id: 30, question: 'What is the standard mortar ratio for brick masonry?', options: ['1:3', '1:4', '1:5', '1:6'], correctAnswer: 2, category: 'Construction', difficulty: 'Medium' },
-  { id: 31, question: 'What is the purpose of a water hammer arrestor in plumbing?', options: ['To prevent water hammer shock', 'To reduce noise', 'To control flow', 'All of the above'], correctAnswer: 0, category: 'Plumbing', difficulty: 'Hard' },
-  { id: 32, question: 'What is the standard floor height in residential buildings?', options: ['2.7 meters', '3.0 meters', '3.3 meters', '3.6 meters'], correctAnswer: 1, category: 'Design', difficulty: 'Easy' },
-  { id: 33, question: 'Which type of pipe is best for hot water supply?', options: ['CPVC pipes', 'PVC pipes', 'Copper pipes', 'GI pipes'], correctAnswer: 0, category: 'Plumbing', difficulty: 'Hard' },
-  { id: 34, question: 'What is the standard spacing for reinforcement bars in a slab?', options: ['100 mm', '150 mm', '200 mm', '250 mm'], correctAnswer: 1, category: 'Structural', difficulty: 'Medium' },
-  { id: 35, question: 'What is the purpose of scaffolding in construction?', options: ['To support workers and materials', 'To provide access', 'To improve safety', 'All of the above'], correctAnswer: 3, category: 'Construction', difficulty: 'Easy' },
-  { id: 36, question: 'Which type of foundation is most economical for low-rise buildings?', options: ['Strip foundation', 'Raft foundation', 'Pile foundation', 'Isolated footing'], correctAnswer: 0, category: 'Foundation', difficulty: 'Easy' },
-  { id: 37, question: 'What is the standard ceiling height in commercial buildings?', options: ['3.0 meters', '3.5 meters', '4.0 meters', '4.5 meters'], correctAnswer: 1, category: 'Design', difficulty: 'Medium' },
-  { id: 38, question: 'Which type of cement is used for rapid construction?', options: ['Ordinary Portland Cement', 'Rapid Hardening Cement', 'Portland Pozzolana Cement', 'Slag Cement'], correctAnswer: 1, category: 'Materials', difficulty: 'Medium' },
-  { id: 39, question: 'What is the standard door size in residential buildings?', options: ['0.9x2.1 meters', '1.0x2.1 meters', '1.2x2.1 meters', '1.5x2.1 meters'], correctAnswer: 0, category: 'Design', difficulty: 'Easy' },
-  { id: 40, question: 'What is the purpose of a ventilation pipe in plumbing?', options: ['To release sewer gases', 'To provide air circulation', 'Both A and B', 'None of the above'], correctAnswer: 2, category: 'Plumbing', difficulty: 'Medium' },
-  { id: 41, question: 'What is the standard width of a staircase in residential buildings?', options: ['0.8 meters', '1.0 meters', '1.2 meters', '1.5 meters'], correctAnswer: 1, category: 'Design', difficulty: 'Easy' },
-  { id: 42, question: 'Which test is used to determine the bearing capacity of soil?', options: ['Plate load test', 'Standard Proctor test', 'CBR test', 'Atterberg limits test'], correctAnswer: 0, category: 'Testing', difficulty: 'Hard' },
-  { id: 43, question: 'What is the standard size of a window in residential buildings?', options: ['1.0x1.5 meters', '1.2x1.5 meters', '1.5x2.0 meters', '2.0x2.0 meters'], correctAnswer: 1, category: 'Design', difficulty: 'Easy' },
-  { id: 44, question: 'Which type of material is used for waterproofing of roofs?', options: ['Bitumen', 'PVC sheets', 'EPDM', 'All of the above'], correctAnswer: 3, category: 'Materials', difficulty: 'Easy' },
-  { id: 45, question: 'What is the standard riser height for stairs?', options: ['150 mm', '175 mm', '200 mm', '225 mm'], correctAnswer: 0, category: 'Design', difficulty: 'Medium' },
-  { id: 46, question: 'Which type of footing is used for columns in soft soil?', options: ['Isolated footing', 'Combined footing', 'Strip footing', 'Raft footing'], correctAnswer: 0, category: 'Foundation', difficulty: 'Medium' },
-  { id: 47, question: 'What is the standard aggregate size for concrete used in columns?', options: ['10 mm', '20 mm', '40 mm', '50 mm'], correctAnswer: 1, category: 'Concrete', difficulty: 'Medium' },
-  { id: 48, question: 'What is the purpose of a lintel in plumbing?', options: ['To support pipes', 'To provide access', 'To protect pipes', 'None of the above'], correctAnswer: 0, category: 'Plumbing', difficulty: 'Hard' },
-  { id: 49, question: 'What is the standard clearance height for parking areas?', options: ['2.0 meters', '2.5 meters', '3.0 meters', '3.5 meters'], correctAnswer: 1, category: 'Design', difficulty: 'Medium' },
-  { id: 50, question: 'Which type of pipe is most durable for underground drainage?', options: ['PVC pipes', 'Cast iron pipes', 'Concrete pipes', 'HDPE pipes'], correctAnswer: 3, category: 'Plumbing', difficulty: 'Medium' }
+  { id: 11, question: 'Which type of cement is best suited for marine construction?', options: ['Ordinary Portland Cement', 'Sulphate Resisting Cement', 'Rapid Hardening Cement', 'Low Heat Cement'], correctAnswer: 1, category: 'Materials', difficulty: 'Hard' },
+  { id: 12, question: 'What is the standard water pressure maintained in residential buildings?', options: ['1-2 bar', '2-3 bar', '3-4 bar', '4-5 bar'], correctAnswer: 1, category: 'Plumbing', difficulty: 'Medium' },
+  { id: 13, question: 'What is the purpose of a trap in plumbing systems?', options: ['To prevent sewer gases from entering', 'To collect debris', 'To control water flow', 'To reduce noise'], correctAnswer: 0, category: 'Plumbing', difficulty: 'Easy' },
+  { id: 14, question: 'What is the minimum thickness of a load-bearing wall in residential construction?', options: ['4 inches', '6 inches', '9 inches', '12 inches'], correctAnswer: 2, category: 'Structural', difficulty: 'Easy' },
+  { id: 15, question: 'Which test is performed to determine the compressive strength of concrete?', options: ['Slump test', 'Compression test', 'Flexural test', 'Tensile test'], correctAnswer: 1, category: 'Testing', difficulty: 'Easy' },
+  { id: 16, question: 'What is the standard size of a cube used for concrete testing in India?', options: ['100 mm', '150 mm', '200 mm', '250 mm'], correctAnswer: 1, category: 'Testing', difficulty: 'Easy' },
+  { id: 17, question: 'What is the purpose of a lintel in building construction?', options: ['To support the wall above openings', 'To provide foundation support', 'To act as a beam', 'To connect columns'], correctAnswer: 0, category: 'Structural', difficulty: 'Easy' },
+  { id: 18, question: 'What is the standard diameter of a rainwater downpipe?', options: ['75 mm', '100 mm', '150 mm', '200 mm'], correctAnswer: 1, category: 'Plumbing', difficulty: 'Medium' },
+  { id: 19, question: 'Which type of roof is most suitable for heavy rainfall areas?', options: ['Flat roof', 'Sloped roof', 'Green roof', 'Terraced roof'], correctAnswer: 1, category: 'Roofing', difficulty: 'Easy' },
+  { id: 20, question: 'What is the purpose of a shear wall in a building?', options: ['To resist lateral loads', 'To support vertical loads', 'To provide openings', 'To improve aesthetics'], correctAnswer: 0, category: 'Structural', difficulty: 'Medium' }
 ];
 
 const ALL_QUESTIONS = UNIQUE_QUESTIONS;
@@ -243,8 +221,7 @@ const LeaderboardProvider = ({ children }) => {
     { id: 2, userName: 'Priya Sharma', score: 95, date: '2026-06-27', certificateId: 'CERT002' },
     { id: 3, userName: 'Amit Singh', score: 90, date: '2026-06-26', certificateId: null },
     { id: 4, userName: 'Sneha Patel', score: 85, date: '2026-06-25', certificateId: null },
-    { id: 5, userName: 'Vikram Reddy', score: 80, date: '2026-06-24', certificateId: null },
-  ]);
+    { id: 5, userName: 'Vikram Reddy', score: 80, date: '2026-06-24', certificateId: null }]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -347,8 +324,7 @@ const ThreeDGame = () => {
     { id: 1, name: 'Living Room', x: 80, y: 80, width: 180, height: 140, color: '#FF6B6B' },
     { id: 2, name: 'Kitchen', x: 320, y: 80, width: 140, height: 110, color: '#4ECDC4' },
     { id: 3, name: 'Bedroom', x: 80, y: 270, width: 160, height: 150, color: '#45B7D1' },
-    { id: 4, name: 'Bathroom', x: 310, y: 250, width: 110, height: 90, color: '#96CEB4' },
-  ]);
+    { id: 4, name: 'Bathroom', x: 310, y: 250, width: 110, height: 90, color: '#96CEB4' }]);
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [score, setScore] = useState(0);
   const [moves, setMoves] = useState(0);
@@ -465,8 +441,7 @@ const PuzzleGame = ({ title, description, icon, difficulty, onComplete }) => {
     { question: 'What is the standard brick size in India?', options: ['190×90×90mm', '200×100×100mm', '180×80×80mm', '210×110×110mm'], correct: 0 },
     { question: 'Which type of foundation is strongest?', options: ['Raft', 'Pile', 'Strip', 'Isolated'], correct: 1 },
     { question: 'What is the minimum curing time for concrete?', options: ['3 days', '7 days', '14 days', '28 days'], correct: 1 },
-    { question: 'Which roof is best for tropical climate?', options: ['Flat', 'Sloped', 'Green', 'Metal'], correct: 1 },
-  ];
+    { question: 'Which roof is best for tropical climate?', options: ['Flat', 'Sloped', 'Green', 'Metal'], correct: 1 }];
 
   const startGame = () => {
     setGameState('playing');
@@ -579,8 +554,11 @@ const MainLayout = ({ children, activeTab, setActiveTab }) => {
     { label: 'Puzzle Games', icon: <GamesIcon />, value: 4 },
     { label: 'New Materials', icon: <NewReleasesIcon />, value: 5 },
     { label: 'Guidelines', icon: <GavelIcon />, value: 6 },
-    { label: 'Leaderboard', icon: <EmojiEventsIcon />, value: 7 },
-  ];
+    { label: 'Real Estate', icon: <HomeIcon />, value: 7 },
+    { label: 'Formulas', icon: <CalculateIcon />, value: 8 },
+    { label: 'Leaderboard', icon: <EmojiEventsIcon />, value: 9 }];
+
+// Admin Dashboard is hidden from sidebar. Access via: /admin-dashboard
 
   const handleChange = (event, newValue) => {
     setActiveTab(newValue);
@@ -885,8 +863,7 @@ const EducationTab = () => {
     { id: 3, title: 'Reinforced Concrete Design Basics', category: 'Structural', url: 'https://www.youtube.com/embed/4L8rRZaZ4Pc', duration: '18:20', views: '950K' },
     { id: 4, title: 'Sustainable Building Materials Guide', category: 'Materials', url: 'https://www.youtube.com/embed/9QX_QdWOK0E', duration: '14:10', views: '720K' },
     { id: 5, title: 'Smart Home Automation in India', category: 'Technology', url: 'https://www.youtube.com/embed/HhQeZPp0T6c', duration: '16:45', views: '1.1M' },
-    { id: 6, title: 'Green Building Certification Process', category: 'Sustainability', url: 'https://www.youtube.com/embed/z7P0cJHBQvY', duration: '20:30', views: '680K' },
-  ];
+    { id: 6, title: 'Green Building Certification Process', category: 'Sustainability', url: 'https://www.youtube.com/embed/z7P0cJHBQvY', duration: '20:30', views: '680K' }];
 
   const filteredVideos = videos.filter(v => 
     v.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -954,8 +931,7 @@ const ExpertTalksTab = () => {
     { id: 1, name: 'Dr. Niranjan Hiranandani', role: 'MD, Hiranandani Group', topic: 'Future of Indian Real Estate', image: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=200', date: '2026-06-28' },
     { id: 2, name: 'Ar. Hafeez Contractor', role: 'Renowned Architect', topic: 'Sustainable Construction in India', image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200', date: '2026-06-25' },
     { id: 3, name: 'Mr. Rajesh Agarwal', role: 'CEO, L&T Construction', topic: 'Technology in Construction', image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200', date: '2026-06-22' },
-    { id: 4, name: 'Dr. Jagan Shah', role: 'Urban Planning Expert', topic: 'Smart City Development', image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200', date: '2026-06-20' },
-  ];
+    { id: 4, name: 'Dr. Jagan Shah', role: 'Urban Planning Expert', topic: 'Smart City Development', image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200', date: '2026-06-20' }];
 
   const articles = [
     { id: 1, title: 'The Rise of Smart Cities in India', magazine: 'Construction World', link: 'https://www.constructionworld.in/' },
@@ -963,8 +939,7 @@ const ExpertTalksTab = () => {
     { id: 3, title: 'Architectural Trends 2026', magazine: 'Architecture + Design', link: 'https://www.architectureplusdesign.in/' },
     { id: 4, title: 'Real Estate Market Outlook 2026', magazine: 'Realty Plus', link: 'https://www.realtyplusmag.com/' },
     { id: 5, title: 'Concrete Technology Innovations', magazine: 'Indian Concrete Journal', link: 'https://www.icjonline.com/' },
-    { id: 6, title: 'Infrastructure Development in India', magazine: 'Infrastructure Today', link: 'https://www.infrastructuretoday.co.in/' },
-  ];
+    { id: 6, title: 'Infrastructure Development in India', magazine: 'Infrastructure Today', link: 'https://www.infrastructuretoday.co.in/' }];
 
   return (
     <Box>
@@ -1072,8 +1047,7 @@ const PuzzleGamesTab = () => {
     { id: 'foundation', title: 'Foundation & Footings', icon: <BuildIcon sx={{ fontSize: 48 }} />, difficulty: 'Medium', description: 'Test your knowledge of building foundations!' },
     { id: 'materials', title: 'Construction Materials', icon: <ConstructionIcon sx={{ fontSize: 48 }} />, difficulty: 'Easy', description: 'Identify different construction materials!' },
     { id: 'plumbing', title: 'Plumbing Systems', icon: <DesignServicesIcon sx={{ fontSize: 48 }} />, difficulty: 'Hard', description: 'Challenge your plumbing knowledge!' },
-    { id: 'structural', title: 'Structural Design', icon: <ArchitectureIcon sx={{ fontSize: 48 }} />, difficulty: 'Hard', description: 'Test your structural engineering skills!' },
-  ];
+    { id: 'structural', title: 'Structural Design', icon: <ArchitectureIcon sx={{ fontSize: 48 }} />, difficulty: 'Hard', description: 'Test your structural engineering skills!' }];
 
   const handleGameComplete = (gameId, score) => {
     setCompletedGames({ ...completedGames, [gameId]: true });
@@ -1123,8 +1097,7 @@ const NewMaterialsTab = () => {
     { id: 3, name: 'Carbon-Negative Cement', description: 'Cement that absorbs CO2 during curing', type: 'Materials', hot: true, date: '2026-06-22', link: 'https://www.icjonline.com/carbon-negative-cement' },
     { id: 4, name: 'AI Construction Management Platform', description: 'AI-powered platform for real-time project monitoring', type: 'Technology', hot: false, date: '2026-06-20', link: 'https://www.constructionworld.in/ai-construction' },
     { id: 5, name: 'Green Insulation Panels', description: 'Eco-friendly insulation from recycled materials', type: 'Materials', hot: true, date: '2026-06-18', link: 'https://www.indianbuilder.in/green-insulation' },
-    { id: 6, name: '3D Printed Building Components', description: 'Revolutionary 3D printed components for rapid construction', type: 'Technology', hot: true, date: '2026-06-15', link: 'https://www.architectureplusdesign.in/3d-printing' },
-  ];
+    { id: 6, name: '3D Printed Building Components', description: 'Revolutionary 3D printed components for rapid construction', type: 'Technology', hot: true, date: '2026-06-15', link: 'https://www.architectureplusdesign.in/3d-printing' }];
 
   return (
     <Box>
@@ -1186,8 +1159,7 @@ const GuidelinesTab = () => {
       sections: [
         { title: 'Registration Requirements', content: 'All real estate projects must be registered with RERA before marketing or selling.' },
         { title: 'Buyer Protection', content: 'RERA ensures timely possession, quality construction, and financial transparency.' },
-        { title: 'Project Disclosure', content: 'Developers must disclose all project details including layout plans and approvals.' },
-      ]
+        { title: 'Project Disclosure', content: 'Developers must disclose all project details including layout plans and approvals.' }]
     },
     {
       id: 'bda',
@@ -1197,8 +1169,7 @@ const GuidelinesTab = () => {
       sections: [
         { title: 'Land Use Regulations', content: 'Properties must comply with BDA land use classifications and zoning regulations.' },
         { title: 'Building Approval', content: 'All building plans must be approved by BDA with proper documentation.' },
-        { title: 'Property Tax', content: 'BDA property tax must be paid annually.' },
-      ]
+        { title: 'Property Tax', content: 'BDA property tax must be paid annually.' }]
     },
     {
       id: 'gba',
@@ -1207,8 +1178,7 @@ const GuidelinesTab = () => {
       officialWebsite: 'https://www.gba.gov.in/',
       sections: [
         { title: 'GBA Registration', content: 'All building construction projects must register with GBA.' },
-        { title: 'Construction Standards', content: 'Buildings must adhere to structural safety and quality standards.' },
-      ]
+        { title: 'Construction Standards', content: 'Buildings must adhere to structural safety and quality standards.' }]
     },
     {
       id: 'bmrda',
@@ -1217,8 +1187,7 @@ const GuidelinesTab = () => {
       officialWebsite: 'https://bmrda.karnataka.gov.in/',
       sections: [
         { title: 'Metropolitan Planning', content: 'BMRDA oversees development in the metropolitan area.' },
-        { title: 'Infrastructure Standards', content: 'Development must meet infrastructure standards.' },
-      ]
+        { title: 'Infrastructure Standards', content: 'Development must meet infrastructure standards.' }]
     },
     {
       id: 'revenue',
@@ -1227,8 +1196,7 @@ const GuidelinesTab = () => {
       officialWebsite: 'https://landrecords.karnataka.gov.in/',
       sections: [
         { title: 'Land Revenue Records', content: 'Maintain up-to-date land revenue records.' },
-        { title: 'Land Classification', content: 'Understand classification of land for different uses.' },
-      ]
+        { title: 'Land Classification', content: 'Understand classification of land for different uses.' }]
     },
     {
       id: 'industrial',
@@ -1237,8 +1205,7 @@ const GuidelinesTab = () => {
       officialWebsite: 'https://www.kiadb.in/',
       sections: [
         { title: 'Industrial Land Acquisition', content: 'Guidelines for acquiring industrial land.' },
-        { title: 'Industrial Development', content: 'Requirements for developing industrial land.' },
-      ]
+        { title: 'Industrial Development', content: 'Requirements for developing industrial land.' }]
     }
   ];
 
@@ -1306,6 +1273,34 @@ const GuidelinesTab = () => {
           </Box>
         </CardContent>
       </Card>
+    </Box>
+  );
+};
+
+// ============= REAL ESTATE TAB =============
+const RealEstateTab = () => {
+  return (
+    <Box>
+      <Typography variant="h4" gutterBottom fontWeight="bold" sx={{ 
+        background: 'linear-gradient(135deg, #00695c, #00897b)',
+        WebkitBackgroundClip: 'text',
+        WebkitTextFillColor: 'transparent'
+      }}>
+        🏠 Real Estate Marketplace
+      </Typography>
+      <Typography variant="body1" sx={{ mt: 2, color: 'textSecondary' }}>
+        Buy, Sell, Rent properties and connect with affiliate partners.
+      </Typography>
+      <Alert severity="info" sx={{ mt: 2 }}>
+        📌 Real Estate features are available. Click "View Dashboard" to manage properties.
+      </Alert>
+      <Button 
+        variant="contained" 
+        sx={{ mt: 2, bgcolor: '#00695c' }}
+        onClick={() => window.location.href = '/real-estate'}
+      >
+        View Real Estate Dashboard
+      </Button>
     </Box>
   );
 };
@@ -1412,7 +1407,9 @@ export default function LearnEarnPage() {
       case 4: return <PuzzleGamesTab />;
       case 5: return <NewMaterialsTab />;
       case 6: return <GuidelinesTab />;
-      case 7: return <LeaderboardTab />;
+      case 7: return <RealEstateTab />;
+      case 8: return <FormulaGallery />;
+      case 9: return <LeaderboardTab />;
       default: return <QuizTab />;
     }
   };
@@ -1432,3 +1429,5 @@ export default function LearnEarnPage() {
     </ThemeProvider>
   );
 }
+
+

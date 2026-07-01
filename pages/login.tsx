@@ -256,11 +256,7 @@ export default function Login() {
       const res = await fetch(`${apiBase}/api/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          phone: formData.phone,
-          email: formData.email,
-          password: formData.password
-        })
+        body: JSON.stringify({ email: formData.email || formData.phone, password: formData.password })
       });
 
       const data = await res.json();
@@ -787,6 +783,8 @@ React.createElement("button", {
     )
   );
 }
+
+
 
 
 

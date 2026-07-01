@@ -4,6 +4,18 @@ const API = "http://localhost:5000/api";
 import { logoutToLogin } from "../utils/session";
 
 export default function AdminDashboard() {
+  React.useEffect(() => {
+    try {
+      const user = JSON.parse(localStorage.getItem("loggedInUser") || "{}");
+      const role = String(user.role || localStorage.getItem("userRole") || "").toLowerCase();
+      if (role !== "admin") {
+        alert("Admin access only");
+        window.location.href = "/login";
+      }
+    } catch {
+      window.location.href = "/login";
+    }
+  }, []);
 const loadLocalData = (key, fallback) => {
     if (typeof window === "undefined") return fallback;
     try {
@@ -934,6 +946,7 @@ useEffect(() => { localStorage.setItem("bm_service_rates", JSON.stringify(servic
     )
   );
 }
+
 
 
 
