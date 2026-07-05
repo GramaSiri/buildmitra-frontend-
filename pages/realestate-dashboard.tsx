@@ -2,11 +2,13 @@ import React, { useState, useEffect } from "react";
 import { logoutToLogin } from "../utils/session";
 
 export default function RealEstateDashboard() {
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
 const [activeTab, setActiveTab] = useState("overview");
   const [showPropertyModal, setShowPropertyModal] = useState(false);
   const [showEnquiryModal, setShowEnquiryModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState(null);
+  const [selectedEnquiry, setSelectedEnquiry] = useState(null);
   const [editProperty, setEditProperty] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
   const [selectedDocument, setSelectedDocument] = useState(null);
@@ -16,8 +18,50 @@ const [activeTab, setActiveTab] = useState("overview");
   const [propertyType, setPropertyType] = useState("plot");
   const [calculatedTotal, setCalculatedTotal] = useState(0);
   const [calculatedArea, setCalculatedArea] = useState(0);
+  const [liveEnquiries, setLiveEnquiries] = useState([]);
+  const [quoteAmount, setQuoteAmount] = useState("");
+  const [quoteMessage, setQuoteMessage] = useState("");
   
   const [properties, setProperties] = useState([]);
+
+  const getCurrentAppUser = () => {
+    try {
+      return JSON.parse(localStorage.getItem("currentUser") || localStorage.getItem("loggedInUser") || localStorage.getItem("user") || "{}");
+    } catch {
+      return {};
+    }
+  };
+
+  const mapMongoEnquiry = (e) => ({
+    id: e._id,
+    enquiryCode: e.enquiryCode,
+    date: e.createdAt ? e.createdAt.split("T")[0] : "",
+    buyerName: e.buyerName || "",
+    buyerPhone: e.buyerPhone || "",
+    itemName: e.itemName || e.itemType || "Real Estate",
+    quantity: e.quantity || "",
+    location: e.location || "",
+    requirement: e.specification || e.message || "",
+    status: e.status || "Pending",
+    quotedAmount: e.quotedAmount || "",
+    quoteMessage: e.quoteMessage || ""
+  });
+
+  const loadLiveEnquiries = async () => {
+    try {
+      const currentUser = getCurrentAppUser();
+      const providerUserCode = currentUser.userCode || currentUser.userId || currentUser.uniqueCode || "";
+      if (!providerUserCode) {
+        setLiveEnquiries([]);
+        return;
+      }
+      const res = await fetch(API_BASE + "/api/enquiry?providerUserCode=" + encodeURIComponent(providerUserCode));
+      const data = await res.json();
+      if (data.success) setLiveEnquiries((data.enquiries || []).map(mapMongoEnquiry));
+    } catch (err) {
+      console.log("Real estate enquiries not loaded", err);
+    }
+  };
 
   // Property type fields configuration with ALL types
   const getPropertyFields = (type) => {
@@ -176,8 +220,10 @@ const [activeTab, setActiveTab] = useState("overview");
 
   useEffect(() => {
     setIsClient(true);
-    const name = localStorage.getItem("userName") || "Real Estate Agent";
+    const currentUser = getCurrentAppUser();
+    const name = currentUser.name || localStorage.getItem("userName") || "Real Estate Agent";
     setUserName(name);
+    loadLiveEnquiries();
     
     const saved = localStorage.getItem("realEstateProperties");
     if (saved) {
@@ -356,6 +402,34 @@ const [activeTab, setActiveTab] = useState("overview");
     setProperties(properties.map(p => p.id === id ? { ...p, status } : p));
   };
 
+  const sendQuote = async () => {
+    if (!selectedEnquiry || !quoteAmount) return alert("Enter quote amount");
+    try {
+      const res = await fetch(API_BASE + "/api/enquiry/" + selectedEnquiry.id + "/quote", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ quotedAmount: Number(quoteAmount), quoteMessage: quoteMessage || "Please contact us for property details" })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) return alert(data.message || "Quote could not be sent");
+      await loadLiveEnquiries();
+      setShowEnquiryModal(false);
+      setSelectedEnquiry(null);
+      setQuoteAmount("");
+      setQuoteMessage("");
+      alert("Quote sent!");
+    } catch (err) {
+      console.log("Real estate quote failed", err);
+      alert("Quote could not be sent");
+    }
+  };
+
+  const whatsappBuyer = (enquiry) => {
+    const phone = String(enquiry.buyerPhone || "").replace(/[^0-9]/g, "");
+    const message = `Hello ${enquiry.buyerName},\n\nThank you for your enquiry about ${enquiry.itemName} at ${enquiry.location}.\n\n${enquiry.quoteMessage || "Please contact us for details."}`;
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, "_blank");
+  };
+
   const styles = {
     container: { padding: "20px", backgroundColor: "#f0f2f5", minHeight: "100vh" },
     header: { backgroundColor: "#1a5f7a", color: "white", padding: "16px 20px", borderRadius: "12px", marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" },
@@ -398,6 +472,7 @@ const [activeTab, setActiveTab] = useState("overview");
     { id: "rental", name: "Rental", icon: "🏘️" },
     { id: "buy", name: "Buy", icon: "🛒" },
     { id: "sell", name: "Sell", icon: "🏷️" },
+    { id: "enquiries", name: "Enquiries", icon: "💬" },
     { id: "affiliate", name: "Affiliate", icon: "🤝" },
     { id: "analytics", name: "Analytics", icon: "📈" }
   ];
@@ -645,6 +720,43 @@ const [activeTab, setActiveTab] = useState("overview");
     );
   };
 
+  const renderEnquiries = () => React.createElement("div", { style: styles.card },
+    React.createElement("div", { style: styles.cardTitle }, "Marketplace Enquiries"),
+    React.createElement("div", { style: { overflowX: "auto" } },
+      React.createElement("table", { style: styles.table },
+        React.createElement("thead", null,
+          React.createElement("tr", null,
+            React.createElement("th", { style: styles.th }, "Date"),
+            React.createElement("th", { style: styles.th }, "Buyer"),
+            React.createElement("th", { style: styles.th }, "Requirement"),
+            React.createElement("th", { style: styles.th }, "Location"),
+            React.createElement("th", { style: styles.th }, "Status"),
+            React.createElement("th", { style: styles.th }, "Quote"),
+            React.createElement("th", { style: styles.th }, "Action")
+          )
+        ),
+        React.createElement("tbody", null,
+          liveEnquiries.length === 0 ? React.createElement("tr", null,
+            React.createElement("td", { colSpan: 7, style: { ...styles.td, textAlign: "center" } }, "No live enquiries yet.")
+          ) : liveEnquiries.map((e) =>
+            React.createElement("tr", { key: e.id },
+              React.createElement("td", { style: styles.td }, e.date),
+              React.createElement("td", { style: styles.td }, e.buyerName, React.createElement("br", null), React.createElement("span", { style: { fontSize: "10px" } }, e.buyerPhone)),
+              React.createElement("td", { style: styles.td }, e.itemName, React.createElement("br", null), React.createElement("span", { style: { fontSize: "10px" } }, e.quantity || e.requirement)),
+              React.createElement("td", { style: styles.td }, e.location),
+              React.createElement("td", { style: styles.td }, e.status),
+              React.createElement("td", { style: styles.td }, e.quotedAmount ? React.createElement("span", null, "₹", Number(e.quotedAmount).toLocaleString()) : "-"),
+              React.createElement("td", { style: styles.td },
+                e.status !== "Quoted" && React.createElement("button", { onClick: () => { setSelectedEnquiry(e); setShowEnquiryModal(true); }, style: styles.buttonSuccess }, "Send Quote"),
+                React.createElement("button", { onClick: () => whatsappBuyer(e), style: { ...styles.button, marginLeft: "8px" } }, "WhatsApp")
+              )
+            )
+          )
+        )
+      )
+    )
+  );
+
   const renderContent = () => {
     switch(activeTab) {
       case "overview": return renderOverview();
@@ -652,6 +764,7 @@ const [activeTab, setActiveTab] = useState("overview");
       case "rental": return renderProperties("rental");
       case "buy": return renderProperties("buy");
       case "sell": return renderProperties("sell");
+      case "enquiries": return renderEnquiries();
       case "affiliate": return renderAffiliate();
       case "analytics": return renderAnalytics();
       default: return renderOverview();
@@ -673,12 +786,27 @@ const [activeTab, setActiveTab] = useState("overview");
         React.createElement("div", { style: styles.welcomeText }, "👋 Welcome, ", userName),
         React.createElement("p", { style: styles.headerSub }, "Manage properties, track enquiries, and close deals")
       ),
-        React.createElement("button", { onClick: logoutToLogin, style: { backgroundColor: "#dc3545", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer" } }, "🚪 Logout")
+        React.createElement("div", { style: { display: "flex", gap: "10px", flexWrap: "wrap" } },
+          React.createElement("button", { onClick: () => setActiveTab("overview"), style: { backgroundColor: "#ffffff", color: "#1a5f7a", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer" } }, "Dashboard"),
+          React.createElement("button", { onClick: () => window.location.href = "/marketplace", style: { backgroundColor: "#17a2b8", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer" } }, "Marketplace"),
+          React.createElement("button", { onClick: () => setActiveTab("enquiries"), style: { backgroundColor: "#28a745", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer" } }, "Enquiries"),
+          React.createElement("button", { onClick: logoutToLogin, style: { backgroundColor: "#dc3545", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer" } }, "🚪 Logout")
+        )
     ),
     React.createElement("div", { style: styles.tabContainer },
       tabs.map(tab => React.createElement("div", { key: tab.id, onClick: () => setActiveTab(tab.id), style: { ...styles.tab, ...(activeTab === tab.id ? styles.activeTab : {}) } }, tab.icon, " ", tab.name))
     ),
     renderContent(),
+
+    showEnquiryModal && selectedEnquiry && React.createElement("div", { style: styles.modal, onClick: () => setShowEnquiryModal(false) },
+      React.createElement("div", { style: styles.modalContent, onClick: (e) => e.stopPropagation() },
+        React.createElement("h2", { style: { color: "#1a5f7a" } }, "Send Quote"),
+        React.createElement("p", null, selectedEnquiry.itemName, " - ", selectedEnquiry.quantity || selectedEnquiry.requirement),
+        React.createElement("input", { type: "number", placeholder: "Quoted Amount (₹)", value: quoteAmount, onChange: (e) => setQuoteAmount(e.target.value), style: styles.input }),
+        React.createElement("textarea", { placeholder: "Message", value: quoteMessage, onChange: (e) => setQuoteMessage(e.target.value), style: styles.textarea }),
+        React.createElement("button", { onClick: sendQuote, style: { ...styles.buttonSuccess, width: "100%" } }, "Send Quote")
+      )
+    ),
     
     // Add Property Modal
     showPropertyModal && React.createElement("div", { style: styles.modal, onClick: () => setShowPropertyModal(false) },

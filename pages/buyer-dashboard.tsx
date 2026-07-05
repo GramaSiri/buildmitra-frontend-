@@ -4,6 +4,7 @@ import { DEFAULT_PROJECT_PERMISSIONS, getLoggedInUser, migrateLegacyProjects, sa
 import { logoutToLogin } from "../utils/session";
 
 export default function BuyerDashboard() {
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
 const isReadOnly = false;
   const denyContractorEdit = () => {
     alert("Buyer access is read-only. Project records can only be updated by the assigned contractor.");
@@ -43,6 +44,7 @@ const isReadOnly = false;
   const [extraWork, setExtraWork] = useState({ description: "", quantity: "", rate: "", amount: "", unit: "Nos", status: "Pending" });
   const [newLabour, setNewLabour] = useState({ name: "", role: "", dailyWage: "", daysPresent: "", paymentAmount: "", status: "Present" });
   const [labourPaymentHistory, setLabourPaymentHistory] = useState([]);
+  const [sentEnquiries, setSentEnquiries] = useState<any[]>([]);
 
   const calculateBUA = (length: number, width: number, floors: number) => {
     const setback = (length + width) / 2 * 0.1;
@@ -180,6 +182,47 @@ const isReadOnly = false;
       window.removeEventListener("storage", loadAssignedProjects);
       window.removeEventListener("buildmitraProjectsUpdated", loadAssignedProjects);
     };
+  }, []);
+
+  const getCurrentAppUser = () => {
+    try {
+      return JSON.parse(localStorage.getItem("currentUser") || localStorage.getItem("loggedInUser") || localStorage.getItem("user") || "{}");
+    } catch {
+      return {};
+    }
+  };
+
+  useEffect(() => {
+    const loadSentEnquiries = async () => {
+      try {
+        const currentUser = getCurrentAppUser();
+        const buyerUserCode = currentUser.userCode || currentUser.userId || currentUser.uniqueCode || "";
+        if (!buyerUserCode) {
+          setSentEnquiries([]);
+          return;
+        }
+        const res = await fetch(API_BASE + "/api/enquiry?buyerUserCode=" + encodeURIComponent(buyerUserCode));
+        const data = await res.json();
+        if (data.success) {
+          setSentEnquiries((data.enquiries || []).map((e: any) => ({
+            id: e._id,
+            enquiryCode: e.enquiryCode,
+            date: e.createdAt ? e.createdAt.split("T")[0] : "",
+            providerName: e.providerName || "",
+            providerRole: e.providerRole || "",
+            itemName: e.itemName || e.itemType || "",
+            quantity: e.quantity || "",
+            status: e.status || "Pending",
+            quotedAmount: e.quotedAmount || "",
+            quoteMessage: e.quoteMessage || "",
+            quotedDate: e.quotedDate || ""
+          })));
+        }
+      } catch (err) {
+        console.log("Buyer enquiries not loaded", err);
+      }
+    };
+    loadSentEnquiries();
   }, []);
 
   const [newProject, setNewProject] = useState({ 
@@ -857,11 +900,12 @@ const isReadOnly = false;
     { id: "extrawork", name: "Extra Works" },
     { id: "labour", name: "Labour" },
     { id: "quotations", name: "Quotations" },
+    { id: "enquiries", name: "Enquiries" },
     { id: "reports", name: "Reports" }
   ];
 
   const visibleTabs = tabs.filter((tab) => {
-    const permissionByTab = { dashboard: "projectSummary", projects: "projectSummary", milestones: "milestones", payments: "payments", inventory: "inventory", progress: "siteMedia", labour: "labour", quotations: "quotations", reports: "reports" };
+    const permissionByTab = { dashboard: "projectSummary", projects: "projectSummary", milestones: "milestones", payments: "payments", inventory: "inventory", progress: "siteMedia", labour: "labour", quotations: "quotations", enquiries: "projectSummary", reports: "reports" };
     const permission = permissionByTab[tab.id];
     return !permission || projectPermissions[permission] !== false;
   });
@@ -1147,6 +1191,38 @@ const isReadOnly = false;
     )
   );
 
+  const renderEnquiries = () => React.createElement("div", { style: styles.card },
+    React.createElement("div", { style: styles.cardTitle }, "Marketplace Enquiries"),
+    React.createElement("div", { style: { overflowX: "auto" } },
+      React.createElement("table", { style: styles.table },
+        React.createElement("thead", null,
+          React.createElement("tr", null,
+            React.createElement("th", { style: styles.th }, "Date"),
+            React.createElement("th", { style: styles.th }, "Provider"),
+            React.createElement("th", { style: styles.th }, "Item"),
+            React.createElement("th", { style: styles.th }, "Quantity"),
+            React.createElement("th", { style: styles.th }, "Status"),
+            React.createElement("th", { style: styles.th }, "Quote")
+          )
+        ),
+        React.createElement("tbody", null,
+          sentEnquiries.length === 0 ? React.createElement("tr", null,
+            React.createElement("td", { colSpan: 6, style: { ...styles.td, textAlign: "center" } }, "No marketplace enquiries sent yet.")
+          ) : sentEnquiries.map((e) =>
+            React.createElement("tr", { key: e.id },
+              React.createElement("td", { style: styles.td }, e.date),
+              React.createElement("td", { style: styles.td }, e.providerName, React.createElement("br", null), React.createElement("span", { style: { fontSize: "10px" } }, e.providerRole)),
+              React.createElement("td", { style: styles.td }, e.itemName),
+              React.createElement("td", { style: styles.td }, e.quantity),
+              React.createElement("td", { style: styles.td }, e.status),
+              React.createElement("td", { style: styles.td }, e.quotedAmount ? React.createElement("span", null, "₹", Number(e.quotedAmount).toLocaleString(), e.quoteMessage ? " - " + e.quoteMessage : "") : "-")
+            )
+          )
+        )
+      )
+    )
+  );
+
   const renderExtraWorks = () => React.createElement("div", null,
     React.createElement("div", { style: { marginBottom: "12px", color: "#666" } }, "Extra work details supplied by the contractor"),
     React.createElement("div", { style: styles.card },
@@ -1320,7 +1396,7 @@ const isReadOnly = false;
   );
 
   const renderContent = () => {
-    const permissionByTab = { dashboard: "projectSummary", projects: "projectSummary", milestones: "milestones", payments: "payments", inventory: "inventory", progress: "siteMedia", labour: "labour", quotations: "quotations", reports: "reports" };
+    const permissionByTab = { dashboard: "projectSummary", projects: "projectSummary", milestones: "milestones", payments: "payments", inventory: "inventory", progress: "siteMedia", labour: "labour", quotations: "quotations", enquiries: "projectSummary", reports: "reports" };
     const requiredPermission = permissionByTab[activeTab];
     if (requiredPermission && projectPermissions[requiredPermission] === false) {
       return React.createElement("div", { style: styles.card }, "Contractor has not enabled this section for your view.");
@@ -1335,6 +1411,7 @@ const isReadOnly = false;
       case "extrawork": return renderExtraWorks();
       case "labour": return renderLabour();
       case "quotations": return renderQuotations();
+      case "enquiries": return renderEnquiries();
       case "reports": return renderReports();
       default: return renderDashboard();
     }
@@ -1348,9 +1425,13 @@ const isReadOnly = false;
           getLoggedInUser()?.uniqueCode && React.createElement("button", { onClick: () => navigator.clipboard?.writeText(getLoggedInUser()?.uniqueCode || ""), style: { marginLeft: "8px", padding: "3px 8px", border: 0, borderRadius: "4px", cursor: "pointer" } }, "Copy Code")
         )
       ),
-      React.createElement("div", null,
+      React.createElement("div", { style: { display: "flex", gap: "8px", flexWrap: "wrap" } },
+        React.createElement("button", { onClick: () => setActiveTab("dashboard"), style: styles.button }, "Dashboard"),
+        React.createElement("button", { onClick: () => window.location.href = "/marketplace", style: styles.buttonInfo }, "Marketplace"),
+        React.createElement("button", { onClick: () => setActiveTab("enquiries"), style: styles.buttonSuccess }, "Enquiries"),
+        React.createElement("button", { onClick: () => setActiveTab("quotations"), style: styles.buttonWarning }, "Quotes"),
         React.createElement("button", { onClick: () => checkAndRun('calculator_export', 'buyer-dashboard', shareWhatsApp), style: styles.buttonSuccess }, "📱 Share Update"),
-        React.createElement("button", { onClick: logoutToLogin, style: { ...styles.button, backgroundColor: "#dc3545", marginLeft: "8px" } }, "🚪 Logout")
+        React.createElement("button", { onClick: logoutToLogin, style: { ...styles.button, backgroundColor: "#dc3545" } }, "🚪 Logout")
       )
     ),
     React.createElement("div", { style: styles.card },

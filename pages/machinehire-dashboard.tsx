@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import * as XLSX from 'xlsx';
 import { logoutToLogin } from "../utils/session";
 
 export default function MachineHireDashboard() {
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
 const [activeTab, setActiveTab] = useState("dashboard");
   const [showAddMachineModal, setShowAddMachineModal] = useState(false);
   const [showRentalModal, setShowRentalModal] = useState(false);
@@ -53,10 +54,47 @@ const [activeTab, setActiveTab] = useState("dashboard");
     { id: "INV-001", rentalId: 1, machineName: "Excavator Mini", clientName: "Rajesh Sharma", projectName: "Sunrise Villa", period: "Feb 1-15, 2024", totalDays: 14, dailyRate: 6200, operatorCost: 800, totalAmount: 86800, status: "Pending", date: "2024-02-16", dueDate: "2024-03-02" }
   ]);
 
-  const [enquiries, setEnquiries] = useState([
-    { id: 1, client: "Ramesh Gupta", mobile: "+919876544444", machine: "JCB 3DX", duration: "15 days", message: "Need JCB for excavation work", status: "Pending", date: "2024-02-15" },
-    { id: 2, client: "Construction Corp", mobile: "+919876555555", machine: "Concrete Mixer", duration: "30 days", message: "Need for commercial project", status: "Pending", date: "2024-02-16" }
-  ]);
+  const [enquiries, setEnquiries] = useState([]);
+
+  const getCurrentAppUser = () => {
+    try {
+      return JSON.parse(localStorage.getItem("currentUser") || localStorage.getItem("loggedInUser") || localStorage.getItem("user") || "{}");
+    } catch {
+      return {};
+    }
+  };
+
+  const mapMongoEnquiry = (e) => ({
+    id: e._id,
+    enquiryCode: e.enquiryCode,
+    client: e.buyerName || "",
+    mobile: e.buyerPhone || "",
+    machine: e.itemName || e.itemType || "Machine",
+    duration: e.quantity || "",
+    message: e.specification || e.message || "",
+    status: e.status || "Pending",
+    date: e.createdAt ? e.createdAt.split("T")[0] : ""
+  });
+
+  const loadLiveEnquiries = async () => {
+    try {
+      const currentUser = getCurrentAppUser();
+      const providerUserCode = currentUser.userCode || currentUser.userId || currentUser.uniqueCode || "";
+      if (!providerUserCode) {
+        setEnquiries([]);
+        return;
+      }
+      const res = await fetch(API_BASE + "/api/enquiry?providerUserCode=" + encodeURIComponent(providerUserCode));
+      const data = await res.json();
+      if (data.success) setEnquiries((data.enquiries || []).map(mapMongoEnquiry));
+    } catch (err) {
+      console.log("Machine enquiries not loaded", err);
+    }
+  };
+
+  useEffect(() => {
+    loadLiveEnquiries();
+  }, []);
 
   const handleLogout = () => {
     if (confirm("Logout?")) logoutToLogin();
@@ -185,17 +223,27 @@ const [activeTab, setActiveTab] = useState("dashboard");
     alert(`Invoice ${newInvoice.id} generated for ₹${rental.totalAmount}`);
   };
 
-  const sendQuote = () => {
+  const sendQuote = async () => {
     if (!selectedEnquiry || !quotePrice) return alert("Enter rate");
-    const machine = machines.find(m => m.name === selectedEnquiry.machine);
-    const total = quotePrice * parseInt(selectedEnquiry.duration);
-    const message = `*MACHINE RENTAL QUOTATION*%0A%0AClient: ${selectedEnquiry.client}%0AMachine: ${selectedEnquiry.machine}%0ADuration: ${selectedEnquiry.duration} days%0ARate: ₹${quotePrice}/day%0ATotal: ₹${total}%0A%0A${quoteMsg || "Please confirm"}%0A%0A- Equipment Rentals`;
-    window.open(`https://wa.me/${selectedEnquiry.mobile}?text=${message}`, "_blank");
-    setEnquiries(enquiries.map(e => e.id === selectedEnquiry.id ? { ...e, status: "Replied" } : e));
-    setShowEnquiryModal(false);
-    setQuotePrice("");
-    setQuoteMsg("");
-    alert("Quote sent!");
+    try {
+      const res = await fetch(API_BASE + "/api/enquiry/" + selectedEnquiry.id + "/quote", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ quotedAmount: Number(quotePrice), quoteMessage: quoteMsg || "Please confirm" })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) return alert(data.message || "Quote could not be sent");
+      const message = `MACHINE RENTAL QUOTATION\n\nClient: ${selectedEnquiry.client}\nMachine: ${selectedEnquiry.machine}\nDuration: ${selectedEnquiry.duration}\nRate: ₹${quotePrice}\n\n${quoteMsg || "Please confirm"}`;
+      window.open(`https://wa.me/${String(selectedEnquiry.mobile || "").replace(/[^0-9]/g, "")}?text=${encodeURIComponent(message)}`, "_blank");
+      await loadLiveEnquiries();
+      setShowEnquiryModal(false);
+      setQuotePrice("");
+      setQuoteMsg("");
+      alert("Quote sent!");
+    } catch (err) {
+      console.log("Machine quote failed", err);
+      alert("Quote could not be sent");
+    }
   };
 
   const shareCatalog = () => {
@@ -269,6 +317,9 @@ const [activeTab, setActiveTab] = useState("dashboard");
         React.createElement("p", { style: styles.headerSub }, "Manage Equipment, Rentals & Maintenance")
       ),
       React.createElement("div", { style: { display: "flex", gap: "10px" } },
+        React.createElement("button", { onClick: () => setActiveTab("dashboard"), style: { ...styles.buttonInfo } }, "Dashboard"),
+        React.createElement("button", { onClick: () => setActiveTab("enquiries"), style: { ...styles.buttonSuccess } }, "Enquiries"),
+        React.createElement("button", { onClick: () => setActiveTab("enquiries"), style: { ...styles.button } }, "Quotes"),
         React.createElement("button", { onClick: shareCatalog, style: { ...styles.buttonSuccess } }, "Share Catalog"),
         React.createElement("button", { onClick: () => navigateTo("/marketplace"), style: { backgroundColor: "#17a2b8", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer" } }, "Marketplace"),
         React.createElement("button", { onClick: handleLogout, style: { backgroundColor: "#dc3545", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer" } }, "Logout")

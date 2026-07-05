@@ -3,6 +3,7 @@ import * as XLSX from 'xlsx';
 import { logoutToLogin } from "../utils/session";
 
 export default function SupplierDashboard() {
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
 const [userName, setUserName] = useState("Supplier");
   const [userId, setUserId] = useState(null);
   const [isClient, setIsClient] = useState(false);
@@ -35,15 +36,49 @@ const [userName, setUserName] = useState("Supplier");
   useEffect(() => {
     setIsClient(true);
     
-    const user = localStorage.getItem("loggedInUser");
+    const user = localStorage.getItem("currentUser") || localStorage.getItem("loggedInUser") || localStorage.getItem("user");
     if (user) {
       const userData = JSON.parse(user);
       setUserName(userData.name);
       setUserId(userData.userId);
       console.log("✅ User loaded with userId:", userData.userId);
       loadUserData(userData.userId);
+      loadLiveQuoteRequests(userData);
     }
   }, []);
+
+  const mapMongoQuoteRequest = (e) => ({
+    id: e._id,
+    enquiryCode: e.enquiryCode,
+    date: e.createdAt ? e.createdAt.split("T")[0] : "",
+    customerName: e.buyerName || "",
+    customerMobile: e.buyerPhone || "",
+    itemName: e.itemName || e.itemType || "Material",
+    quantity: e.quantity || "",
+    location: e.location || "",
+    requirement: e.specification || e.message || "",
+    status: e.status || "Pending",
+    quotedPrice: e.quotedAmount || "",
+    notes: e.quoteMessage || ""
+  });
+
+  const loadLiveQuoteRequests = async (userData) => {
+    try {
+      const providerUserCode = userData.userCode || userData.userId || userData.uniqueCode || "";
+      if (!providerUserCode) {
+        setQuoteRequests([]);
+        return;
+      }
+      const res = await fetch(API_BASE + "/api/enquiry?providerUserCode=" + encodeURIComponent(providerUserCode));
+      const data = await res.json();
+      if (data.success) {
+        setQuoteRequests((data.enquiries || []).map(mapMongoQuoteRequest));
+        setSupplierInfo((info) => ({ ...info, totalEnquiries: (data.enquiries || []).length }));
+      }
+    } catch (err) {
+      console.log("Supplier enquiries not loaded", err);
+    }
+  };
 
   const loadUserData = (uid) => {
     // Load supplier info
@@ -370,27 +405,34 @@ const [userName, setUserName] = useState("Supplier");
     alert(`Order ${status}`);
   };
 
-  const submitQuote = (enquiryId) => {
+  const submitQuote = async (enquiryId) => {
     if (!quoteResponse.price) {
       alert("Please enter your price");
       return;
     }
-    const updatedQuotes = quoteRequests.map(q => 
-      q.id === enquiryId ? { 
-        ...q, 
-        status: "Quoted", 
-        quotedPrice: quoteResponse.price, 
-        deliveryDate: quoteResponse.deliveryDate,
-        notes: quoteResponse.notes,
-        quotedDate: new Date().toISOString().split("T")[0]
-      } : q
-    );
-    setQuoteRequests(updatedQuotes);
-    localStorage.setItem("supplierQuotes_" + userId, JSON.stringify(updatedQuotes));
-    setShowQuoteModal(false);
-    setQuoteResponse({ price: "", deliveryDate: "", notes: "" });
-    setSupplierInfo({ ...supplierInfo, totalEnquiries: supplierInfo.totalEnquiries + 1 });
-    alert("Quote sent!");
+    try {
+      const res = await fetch(API_BASE + "/api/enquiry/" + enquiryId + "/quote", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          quotedAmount: Number(quoteResponse.price),
+          quoteMessage: quoteResponse.notes || "Please contact us for quote details"
+        })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        alert(data.message || "Quote could not be sent");
+        return;
+      }
+      const currentUser = JSON.parse(localStorage.getItem("currentUser") || localStorage.getItem("loggedInUser") || "{}");
+      await loadLiveQuoteRequests(currentUser);
+      setShowQuoteModal(false);
+      setQuoteResponse({ price: "", deliveryDate: "", notes: "" });
+      alert("Quote sent!");
+    } catch (err) {
+      console.log("Supplier quote failed", err);
+      alert("Quote could not be sent");
+    }
   };
 
   // Render functions
@@ -475,13 +517,49 @@ const [userName, setUserName] = useState("Supplier");
     );
   };
 
+  const renderQuoteRequests = () => React.createElement("div", { style: styles.card },
+    React.createElement("div", { style: styles.cardTitle }, "Quote Requests"),
+    React.createElement("div", { style: { overflowX: "auto" } },
+      React.createElement("table", { style: styles.table },
+        React.createElement("thead", null,
+          React.createElement("tr", null,
+            React.createElement("th", { style: styles.th }, "Date"),
+            React.createElement("th", { style: styles.th }, "Customer"),
+            React.createElement("th", { style: styles.th }, "Item"),
+            React.createElement("th", { style: styles.th }, "Quantity"),
+            React.createElement("th", { style: styles.th }, "Details"),
+            React.createElement("th", { style: styles.th }, "Status"),
+            React.createElement("th", { style: styles.th }, "Action")
+          )
+        ),
+        React.createElement("tbody", null,
+          quoteRequests.length === 0 ? React.createElement("tr", null,
+            React.createElement("td", { colSpan: 7, style: { ...styles.td, textAlign: "center" } }, "No live enquiries yet.")
+          ) : quoteRequests.map((q) =>
+            React.createElement("tr", { key: q.id },
+              React.createElement("td", { style: styles.td }, q.date),
+              React.createElement("td", { style: styles.td }, q.customerName, React.createElement("br", null), React.createElement("span", { style: { fontSize: "10px" } }, q.customerMobile)),
+              React.createElement("td", { style: styles.td }, q.itemName),
+              React.createElement("td", { style: styles.td }, q.quantity),
+              React.createElement("td", { style: styles.td }, q.requirement || "-"),
+              React.createElement("td", { style: styles.td }, q.status),
+              React.createElement("td", { style: styles.td },
+                q.status !== "Quoted" && React.createElement("button", { onClick: () => { setSelectedQuoteRequest(q); setShowQuoteModal(true); }, style: styles.buttonSuccess }, "Send Quote")
+              )
+            )
+          )
+        )
+      )
+    )
+  );
+
   const renderContent = () => {
     switch(activeTab) {
       case "overview": return renderOverview();
       case "products": return renderProducts();
       case "offers": return React.createElement("div", { style: styles.card }, React.createElement("div", { style: styles.cardTitle }, "Offers"), React.createElement("button", { onClick: () => setShowOfferModal(true), style: styles.button }, "+ Create Offer"));
       case "orders": return React.createElement("div", { style: styles.card }, React.createElement("div", { style: styles.cardTitle }, "Orders"));
-      case "quotes": return React.createElement("div", { style: styles.card }, React.createElement("div", { style: styles.cardTitle }, "Quote Requests"));
+      case "quotes": return renderQuoteRequests();
       case "analytics": return React.createElement("div", { style: styles.card }, React.createElement("div", { style: styles.cardTitle }, "Analytics"));
       default: return renderOverview();
     }
@@ -502,7 +580,13 @@ const [userName, setUserName] = useState("Supplier");
         React.createElement("div", { style: styles.welcomeText }, "👋 Welcome, ", userName),
         React.createElement("p", { style: styles.headerSub }, "Manage products, offers, orders, and enquiries")
       ),
+      React.createElement("div", { style: { display: "flex", gap: "8px", flexWrap: "wrap" } },
+        React.createElement("button", { onClick: () => setActiveTab("overview"), style: styles.buttonInfo }, "Dashboard"),
+        React.createElement("button", { onClick: () => window.location.href = "/marketplace", style: styles.buttonInfo }, "Marketplace"),
+        React.createElement("button", { onClick: () => setActiveTab("quotes"), style: styles.buttonSuccess }, "Enquiries"),
+        React.createElement("button", { onClick: () => setActiveTab("quotes"), style: styles.buttonWarning }, "Quotes"),
         React.createElement("button", { onClick: logoutToLogin, style: { ...styles.buttonDanger } }, "🚪 Logout")
+      )
     ),
     React.createElement("div", { style: styles.tabContainer },
       tabs.map(tab => React.createElement("div", { key: tab.id, onClick: () => setActiveTab(tab.id), style: { ...styles.tab, ...(activeTab === tab.id ? styles.activeTab : {}) } }, tab.icon, " ", tab.name))
@@ -569,6 +653,17 @@ const [userName, setUserName] = useState("Supplier");
           React.createElement("input", { type: "number", placeholder: "e.g., 10", value: newOffer.discount, onChange: (e) => setNewOffer({...newOffer, discount: e.target.value}), style: styles.input })
         ),
         React.createElement("button", { onClick: addOffer, style: { ...styles.buttonSuccess, width: "100%" } }, "Publish Offer")
+      )
+    ),
+
+    showQuoteModal && selectedQuoteRequest && React.createElement("div", { style: styles.modal, onClick: () => setShowQuoteModal(false) },
+      React.createElement("div", { style: styles.modalContent, onClick: (e) => e.stopPropagation() },
+        React.createElement("h2", null, "Send Quote"),
+        React.createElement("p", null, selectedQuoteRequest.itemName, " - ", selectedQuoteRequest.quantity),
+        React.createElement("input", { type: "number", placeholder: "Quoted Amount (₹)", value: quoteResponse.price, onChange: (e) => setQuoteResponse({...quoteResponse, price: e.target.value}), style: styles.input }),
+        React.createElement("input", { type: "date", value: quoteResponse.deliveryDate, onChange: (e) => setQuoteResponse({...quoteResponse, deliveryDate: e.target.value}), style: styles.input }),
+        React.createElement("textarea", { placeholder: "Message", value: quoteResponse.notes, onChange: (e) => setQuoteResponse({...quoteResponse, notes: e.target.value}), style: styles.textarea }),
+        React.createElement("button", { onClick: () => submitQuote(selectedQuoteRequest.id), style: { ...styles.buttonSuccess, width: "100%" } }, "Send Quote")
       )
     )
   );

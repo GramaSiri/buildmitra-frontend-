@@ -9,13 +9,20 @@ export default function Login() {
   const router = useRouter();
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
-    name: "",
-    phone: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-    role: "buyer"
-  });
+  name: "",
+  phone: "",
+  email: "",
+  companyName: "",
+  gstNo: "",
+  officePhone: "",
+  address: "",
+  city: "",
+  state: "",
+  pincode: "",
+  password: "",
+  confirmPassword: "",
+  role: "buyer"
+});
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [registeredCode, setRegisteredCode] = useState("");
@@ -38,13 +45,47 @@ export default function Login() {
 
 }, []);
 
+  const normalizeRole = (role) => {
+    const value = String(role || "").toLowerCase().replace(/\s+/g, "");
+    if (value === "labour") return "laboursupply";
+    if (value === "machinery" || value === "machine") return "machinehire";
+    if (value === "user") return "buyer";
+    return value;
+  };
+
+  const saveCurrentUser = (user) => {
+    const businessRole = normalizeRole(user.businessRole || user.role);
+    const currentUser = {
+      ...user,
+      userCode: user.userCode || user.uniqueCode || user.code || "",
+      userId: user.userId || user.id || user._id || "",
+      name: user.name || "",
+      phone: user.phone || "",
+      role: businessRole,
+      businessRole: businessRole,
+      companyName: user.companyName || "",
+      city: user.city || user.location || ""
+    };
+    localStorage.setItem("currentUser", JSON.stringify(currentUser));
+    localStorage.setItem("loggedInUser", JSON.stringify(currentUser));
+    localStorage.setItem("user", JSON.stringify(currentUser));
+    localStorage.setItem("userName", currentUser.name || "");
+    localStorage.setItem("userPhone", currentUser.phone || "");
+    localStorage.setItem("userEmail", currentUser.email || "");
+    localStorage.setItem("userCode", currentUser.userCode || "");
+    localStorage.setItem("userRole", currentUser.businessRole || currentUser.role || "");
+    localStorage.setItem("uniqueCode", currentUser.userCode || "");
+    return currentUser;
+  };
+
   const redirectToDashboard = (role) => {
-    switch(role) {
+    switch(normalizeRole(role)) {
+      case "admin": router.push("/admin-dashboard"); break;
       case "buyer": router.push("/buyer-dashboard"); break;
       case "supplier": router.push("/supplier-dashboard"); break;
       case "contractor": router.push("/contractor-dashboard"); break;
-      case "machinery": router.push("/machinehire-dashboard"); break;
-      case "labour": router.push("/laboursupply-dashboard"); break;
+      case "machinehire": router.push("/machinehire-dashboard"); break;
+      case "laboursupply": router.push("/laboursupply-dashboard"); break;
       case "realestate": router.push("/realestate-dashboard"); break;
       default: router.push("/buyer-dashboard");
     }
@@ -253,7 +294,7 @@ export default function Login() {
     const apiBase = "http://localhost:5000";
 
     try {
-      const res = await fetch(`${apiBase}/api/login`, {
+      const res = await fetch(`${apiBase}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: formData.email || formData.phone, password: formData.password })
@@ -262,13 +303,12 @@ export default function Login() {
       const data = await res.json();
 
       if (data.success && data.user) {
-        const loggedInUser = data.user;
-
-        localStorage.setItem("loggedInUser", JSON.stringify(loggedInUser));
-        localStorage.setItem("userName", loggedInUser.name);
-        localStorage.setItem("userRole", loggedInUser.role);
-        localStorage.setItem("uniqueCode", loggedInUser.uniqueCode);
-        sessionStorage.setItem("justLoggedIn", "true");
+        const loggedInUser = saveCurrentUser({
+          ...data.user,
+          uniqueCode: data.user.uniqueCode || data.user.userCode || data.user.code || "",
+          role: data.user.businessRole || data.user.role || "",
+          city: data.user.city || data.user.location || ""
+        });
 
         setSuccess(`✅ Login successful! Welcome ${loggedInUser.name}!`);
         setTimeout(() => redirectToDashboard(loggedInUser.role), 800);
@@ -299,20 +339,19 @@ export default function Login() {
         localStorage.setItem("users", JSON.stringify(users));
       }
 
-      const loggedInUser = {
+      const loggedInUser = saveCurrentUser({
         userId: user.userId,
-        uniqueCode: user.uniqueCode,
+        userCode: user.userCode || user.uniqueCode,
+        uniqueCode: user.userCode || user.uniqueCode,
         name: user.name,
         phone: user.phone,
         email: user.email || "",
         role: user.role,
-        location: user.location || "Bengaluru"
-      };
-
-      localStorage.setItem("loggedInUser", JSON.stringify(loggedInUser));
-      localStorage.setItem("userName", user.name);
-      localStorage.setItem("userRole", user.role);
-      localStorage.setItem("uniqueCode", user.uniqueCode);
+        businessRole: user.businessRole || user.role,
+        companyName: user.companyName || "",
+        city: user.city || user.location || "Bengaluru",
+        location: user.location || user.city || "Bengaluru"
+      });
       sessionStorage.setItem("justLoggedIn", "true");
 
       setSuccess(`✅ Login successful! Welcome ${user.name}!`);
@@ -704,6 +743,40 @@ export default function Login() {
               "Role",
               React.createElement("span", { style: styles.labelRequired }, " *")
             ),
+                      React.createElement("div", null,
+            React.createElement("label", { style: styles.label }, "GST No (Optional)"),
+            React.createElement("input", {
+              type: "text",
+              name: "gstNo",
+              placeholder: "Enter GST number",
+              value: formData.gstNo,
+              onChange: handleInputChange,
+              style: styles.input
+            })
+          ),
+
+            React.createElement("div", null,
+            React.createElement("label", { style: styles.label }, "Address (Optional)"),
+            React.createElement("input", {
+              type: "text",
+              name: "address",
+              placeholder: "Enter address",
+              value: formData.address,
+              onChange: handleInputChange,
+              style: styles.input
+            })
+          ),
+          React.createElement("div", null,
+            React.createElement("label", { style: styles.label }, "Pincode (Optional)"),
+            React.createElement("input", {
+              type: "text",
+              name: "pincode",
+              placeholder: "Enter pincode",
+              value: formData.pincode,
+              onChange: handleInputChange,
+              style: styles.input
+            })
+          ),
             React.createElement("select", {
               name: "role",
               value: formData.role,
@@ -777,16 +850,12 @@ React.createElement("button", {
             React.createElement("span", { 
               style: styles.link, 
               onClick: () => { setIsLogin(true); setError(""); setSuccess(""); }
-            }, "Login Here")
+                       }, "Login Here")
           )
         )
     )
   );
 }
-
-
-
-
 
 
 

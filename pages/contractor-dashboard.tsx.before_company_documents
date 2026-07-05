@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from "react";
-
-const API_BASE = "http://localhost:5000/api";
 import { exportProjectReport } from "../utils/reporting";
 import {
   DEFAULT_PROJECT_PERMISSIONS,
@@ -52,13 +50,6 @@ const [showProjectModal, setShowProjectModal] = useState(false);
   const [loggedInUser, setLoggedInUser] = useState<any>(null);
   const [newInventoryItem, setNewInventoryItem] = useState({ material: "", supplier: "", invoiceNo: "", invoiceDate: "", orderedQty: "", receivedQty: "", consumedQty: "", unit: "bags", rate: "" });
   const [newProjectQuote, setNewProjectQuote] = useState({ quoteNo: "", date: new Date().toISOString().split("T")[0], description: "", amount: "", status: "Draft", remarks: "" });
-  const [companyDocs, setCompanyDocs] = useState(() => {
-    try { return JSON.parse(localStorage.getItem("contractorCompanyDocs") || "[]"); } catch { return []; }
-  });
-  const [companyQuotes, setCompanyQuotes] = useState(() => {
-    try { return JSON.parse(localStorage.getItem("contractorCompanyQuotes") || "[]"); } catch { return []; }
-  });
-
   const [companyProfile, setCompanyProfile] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem("contractorCompanyProfile") || "null") || {
@@ -156,86 +147,8 @@ useEffect(() => {
   const [completedProjects, setCompletedProjects] = useState<any[]>([]);
 
   const [enquiries, setEnquiries] = useState<any[]>([]);
-  const [enquiriesLoading, setEnquiriesLoading] = useState(false);
 
   const [myQuotes, setMyQuotes] = useState<any[]>([]);
-
-  const getCurrentAppUser = () => {
-    try {
-      const user = JSON.parse(localStorage.getItem("currentUser") || localStorage.getItem("loggedInUser") || localStorage.getItem("user") || "{}");
-      const identityText = [
-        user.userCode,
-        user.uniqueCode,
-        user.name,
-        user.companyName,
-        user.email,
-        user.phone
-      ].join(" ").toLowerCase();
-      if (identityText.includes("9343726656") || identityText.includes("rr construction") || identityText.includes("rrbeta") || identityText.includes("con-000001")) {
-        return { ...user, userCode: "CON-000001", businessRole: user.businessRole || "contractor", role: user.role || "contractor" };
-      }
-      return user;
-    } catch {
-      return {};
-    }
-  };
-
-  const mapMongoEnquiry = (e) => ({
-    id: e._id,
-    enquiryCode: e.enquiryCode,
-    date: e.createdAt ? e.createdAt.split("T")[0] : "",
-    projectType: e.itemName || e.itemType || "Construction Work",
-    itemType: e.itemType || "",
-    itemName: e.itemName || "",
-    location: e.location || "",
-    customerName: e.buyerName || "",
-    customerMobile: e.buyerPhone || "",
-    budget: e.quantity || "Call",
-    quantity: e.quantity || "",
-    unit: e.unit || "",
-    status: e.status === "quoted" ? "Quoted" : e.status || "Pending",
-    requirement: e.specification || e.message || "",
-    quotedAmount: e.quotedAmount || "",
-    quoteMessage: e.quoteMessage || ""
-  });
-
-  const fetchLiveEnquiries = async () => {
-    setEnquiriesLoading(true);
-    try {
-      const currentUser = getCurrentAppUser();
-      const providerUserCode = currentUser.userCode || currentUser.userId || currentUser.uniqueCode || "";
-      if (!providerUserCode) {
-        setEnquiries([]);
-        setEnquiriesLoading(false);
-        return;
-      }
-
-      let res = await fetch(API_BASE + "/enquiry?providerUserCode=" + encodeURIComponent(providerUserCode));
-      let data = await res.json();
-
-      if (!data.success) {
-        res = await fetch(API_BASE + "/enquiry");
-        data = await res.json();
-      }
-
-      if (data.success) {
-        const liveRows = (data.enquiries || []).filter((e) => String(e.providerUserCode || "") === String(providerUserCode));
-        console.log("BuildMitra contractor enquiry debug", {
-          loggedInContractor: currentUser,
-          contractorUserCode: providerUserCode,
-          fetchedEnquiryCount: (data.enquiries || []).length,
-          matchingEnquiryCount: liveRows.length,
-          firstProviderUserCodes: (data.enquiries || []).slice(0, 3).map((e) => e.providerUserCode)
-        });
-        setEnquiries(liveRows.map(mapMongoEnquiry));
-      }
-    } catch (err) {
-      console.log("Mongo enquiries not loaded", err);
-      setEnquiries([]);
-    } finally {
-      setEnquiriesLoading(false);
-    }
-  };
 
   // Load saved contractor data
   useEffect(() => {
@@ -245,7 +158,10 @@ useEffect(() => {
       setCompletedProjects(JSON.parse(savedCompletedProjects));
     }
 
-    fetchLiveEnquiries();
+    const savedEnquiries = localStorage.getItem("contractorEnquiries");
+    if (savedEnquiries) {
+      setEnquiries(JSON.parse(savedEnquiries));
+    }
 
     const savedQuotes = localStorage.getItem("contractorQuotes");
     if (savedQuotes) {
@@ -264,7 +180,13 @@ useEffect(() => {
   );
 }, [completedProjects]);
 
-// MongoDB enquiries are loaded from backend.
+useEffect(() => {
+  localStorage.setItem(
+    "contractorEnquiries",
+    JSON.stringify(enquiries)
+  );
+}, [enquiries]);
+
 useEffect(() => {
   localStorage.setItem(
     "contractorQuotes",
@@ -478,7 +400,7 @@ useEffect(() => {
       buyerName: buyer?.name || "",
       contractorId: loggedInUser.userId ?? loggedInUser.id,
       contractorName: loggedInUser.name || contractorInfo.companyName,
-      contractorCode: (loggedInUser.uniqueCode || loggedInUser.userCode) || contractorInfo.uniqueCode,
+      contractorCode: loggedInUser.uniqueCode || contractorInfo.uniqueCode,
       plotLength: parseFloat(newProject.plotLength) || 0,
       plotWidth: parseFloat(newProject.plotWidth) || 0,
       plotArea,
@@ -732,47 +654,35 @@ useEffect(() => {
     return { daysPresent, totalPayment };
   };
 
-  const sendQuote = async (enquiryId) => {
+  const sendQuote = (enquiryId) => {
     if (!quoteResponse.amount) {
       alert("Please enter quote amount");
       return;
     }
-    try {
-      const res = await fetch(API_BASE + "/enquiry/" + enquiryId + "/quote", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          quotedAmount: Number(quoteResponse.amount),
-          quoteMessage: quoteResponse.message || "Please contact us for quote details"
-        })
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        alert(data.message || "Quote could not be sent");
-        return;
-      }
-      setMyQuotes([...myQuotes, {
-        id: myQuotes.length + 1,
-        projectType: enquiries.find(e => e.id === enquiryId)?.projectType,
-        quoteAmount: parseFloat(quoteResponse.amount),
-        validity: quoteResponse.deliveryDate,
-        status: "Active",
-        createdAt: new Date().toISOString().split("T")[0]
-      }]);
-      setShowQuoteModal(false);
-      setQuoteResponse({ amount: "", message: "", deliveryDate: "" });
-      await fetchLiveEnquiries();
-      alert("Quote sent successfully!");
-    } catch (err) {
-      console.log("Quote update failed", err);
-      alert("Quote could not be sent");
-    }
+    setEnquiries(enquiries.map(e => 
+      e.id === enquiryId ? { 
+        ...e, 
+        status: "Quoted", 
+        quotedAmount: parseFloat(quoteResponse.amount),
+        quotedDate: new Date().toISOString().split("T")[0]
+      } : e
+    ));
+    setMyQuotes([...myQuotes, {
+      id: myQuotes.length + 1,
+      projectType: enquiries.find(e => e.id === enquiryId)?.projectType,
+      quoteAmount: parseFloat(quoteResponse.amount),
+      validity: quoteResponse.deliveryDate,
+      status: "Active",
+      createdAt: new Date().toISOString().split("T")[0]
+    }]);
+    setShowQuoteModal(false);
+    setQuoteResponse({ amount: "", message: "", deliveryDate: "" });
+    alert("Quote sent successfully!");
   };
 
   const whatsAppResponse = (enquiry) => {
-    const phoneNumber = String(enquiry.customerMobile || "").replace(/[^0-9]/g, "");
-    const message = `Hello ${enquiry.customerName},\n\nThank you for your enquiry about ${enquiry.projectType} at ${enquiry.location}.\n\nPlease contact us for more details:\n${contractorInfo.phone}\n\nRegards,\n${contractorInfo.companyName}`;
-    window.open(`https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`, "_blank");
+    const message = `Hello ${enquiry.customerName},%0A%0AThank you for your enquiry about ${enquiry.projectType} at ${enquiry.location}.%0A%0APlease contact us for more details:%0A📞 ${contractorInfo.phone}%0A%0ARegards,%0A${contractorInfo.companyName}`;
+    window.open(`https://wa.me/${enquiry.customerMobile}?text=${message}`, "_blank");
   };
 
   const shareProgress = (project) => {
@@ -1373,33 +1283,25 @@ useEffect(() => {
           React.createElement("thead", null,
             React.createElement("tr", null,
               React.createElement("th", { style: styles.th }, "Date"),
-              React.createElement("th", { style: styles.th }, "Enquiry Code"),
-              React.createElement("th", { style: styles.th }, "Item / Requirement"),
+              React.createElement("th", { style: styles.th }, "Project"),
               React.createElement("th", { style: styles.th }, "Location"),
-              React.createElement("th", { style: styles.th }, "Customer Name"),
-              React.createElement("th", { style: styles.th }, "Customer Phone"),
-              React.createElement("th", { style: styles.th }, "Quantity + Unit"),
+              React.createElement("th", { style: styles.th }, "Customer"),
+              React.createElement("th", { style: styles.th }, "Budget"),
               React.createElement("th", { style: styles.th }, "Status"),
               React.createElement("th", { style: styles.th }, "Action")
             )
           ),
           React.createElement("tbody", null,
-            enquiriesLoading ? React.createElement("tr", null,
-              React.createElement("td", { colSpan: 8, style: { ...styles.td, textAlign: "center", color: "#666" } }, "Loading enquiries...")
-            ) : enquiries.length === 0 ? React.createElement("tr", null,
-              React.createElement("td", { colSpan: 8, style: { ...styles.td, textAlign: "center", color: "#666" } }, "No enquiries received yet.")
-            ) : enquiries.map(e =>
+            enquiries.map(e =>
               React.createElement("tr", { key: e.id },
-                React.createElement("td", { style: styles.td }, e.date),
-                React.createElement("td", { style: styles.td }, e.enquiryCode || "-"),
-                React.createElement("td", { style: styles.td }, e.projectType, React.createElement("br", null), React.createElement("span", { style: { fontSize: "10px", color: "#666" } }, e.requirement || "")),
+                React.createElement("td", { style: styles.td }, e.createdAt),
+                React.createElement("td", { style: styles.td }, e.projectType),
                 React.createElement("td", { style: styles.td }, e.location),
-                React.createElement("td", { style: styles.td }, e.customerName),
-                React.createElement("td", { style: styles.td }, e.customerMobile),
-                React.createElement("td", { style: styles.td }, e.quantity || e.budget, e.unit ? " " + e.unit : ""),
-                React.createElement("td", { style: styles.td }, React.createElement("span", { style: { ...styles.statusBadge, backgroundColor: String(e.status).toLowerCase() === "new" || e.status === "Pending" ? "#ffe8cc" : "#d1fae5", color: String(e.status).toLowerCase() === "new" || e.status === "Pending" ? "#cc7b00" : "#065f46" } }, e.status)),
+                React.createElement("td", { style: styles.td }, e.customerName, React.createElement("br", null), React.createElement("span", { style: { fontSize: "10px" } }, e.customerMobile)),
+                React.createElement("td", { style: styles.td }, e.budget),
+                React.createElement("td", { style: styles.td }, React.createElement("span", { style: { ...styles.statusBadge, backgroundColor: e.status === "Pending" ? "#ffe8cc" : "#d1fae5", color: e.status === "Pending" ? "#cc7b00" : "#065f46" } }, e.status)),
                 React.createElement("td", { style: styles.td },
-                  (String(e.status).toLowerCase() === "new" || e.status === "Pending") && React.createElement("button", { onClick: () => { setSelectedEnquiry(e); setShowQuoteModal(true); }, style: styles.buttonSuccess }, "Send Quote"),
+                  e.status === "Pending" && React.createElement("button", { onClick: () => { setSelectedEnquiry(e); setShowQuoteModal(true); }, style: styles.buttonSuccess }, "Send Quote"),
                   React.createElement("button", { onClick: () => whatsAppResponse(e), style: { ...styles.buttonInfo, marginLeft: "8px" } }, "📱 WhatsApp")
                 )
               )
@@ -1461,46 +1363,6 @@ useEffect(() => {
     );
   };
 
-  const addCompanyDoc = (e, docType) => {
-    const file = e.target.files && e.target.files[0];
-    if (!file) return;
-    const visibility = "Public";
-    const doc = {
-      id: "DOC-" + Date.now(),
-      type: docType,
-      title: file.name.replace(/\.[^/.]+$/, ""),
-      fileName: file.name,
-      fileSize: file.size,
-      fileType: file.type,
-      fileUrl: URL.createObjectURL(file),
-      visibility,
-      uploadedAt: new Date().toISOString().split("T")[0]
-    };
-    const updated = [...companyDocs, doc];
-    setCompanyDocs(updated);
-    localStorage.setItem("contractorCompanyDocs", JSON.stringify(updated));
-    alert(docType + " uploaded successfully.");
-  };
-
-  const addCompanyQuote = () => {
-    const title = prompt("Quotation title:", "Villa Construction Quotation");
-    if (!title) return;
-    const quoteType = prompt("Quote Type: Company Letterhead / BuildMitra Format", "Company Letterhead") || "Company Letterhead";
-    const visibility = prompt("Visibility: Public / Private / Enquiry Only", "Public") || "Public";
-    const quote = {
-      id: "QTN-" + Date.now(),
-      title,
-      quoteType,
-      fileName: title + ".pdf",
-      visibility,
-      uploadedAt: new Date().toISOString().split("T")[0]
-    };
-    const updated = [...companyQuotes, quote];
-    setCompanyQuotes(updated);
-    localStorage.setItem("contractorCompanyQuotes", JSON.stringify(updated));
-    alert("Quotation saved. PDF upload/generation will be connected next.");
-  };
-
   const saveCompanyProfile = () => {
     localStorage.setItem("contractorCompanyProfile", JSON.stringify(companyProfile));
     alert("Company Profile saved successfully.");
@@ -1548,64 +1410,6 @@ useEffect(() => {
           React.createElement("option", null, "Enquiry Only")
         ),
 
-        React.createElement("h3", null, "Documents Upload"),
-        React.createElement("div", { style: { display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "12px" } },
-          React.createElement("label", { style: styles.buttonInfo }, "+ Company Profile PDF", React.createElement("input", { type: "file", accept: ".pdf,.jpg,.jpeg,.png,.doc,.docx", onChange: (e) => addCompanyDoc(e, "Company Profile PDF"), style: { display: "none" } })),
-          React.createElement("label", { style: styles.buttonInfo }, "+ Brochure", React.createElement("input", { type: "file", accept: ".pdf,.jpg,.jpeg,.png,.doc,.docx", onChange: (e) => addCompanyDoc(e, "Brochure"), style: { display: "none" } })),
-          React.createElement("label", { style: styles.buttonInfo }, "+ GST", React.createElement("input", { type: "file", accept: ".pdf,.jpg,.jpeg,.png", onChange: (e) => addCompanyDoc(e, "GST Certificate"), style: { display: "none" } })),
-          React.createElement("label", { style: styles.buttonInfo }, "+ PAN", React.createElement("input", { type: "file", accept: ".pdf,.jpg,.jpeg,.png", onChange: (e) => addCompanyDoc(e, "PAN Card"), style: { display: "none" } })),
-          React.createElement("label", { style: styles.buttonInfo }, "+ Trade Licence", React.createElement("input", { type: "file", accept: ".pdf,.jpg,.jpeg,.png", onChange: (e) => addCompanyDoc(e, "Trade Licence"), style: { display: "none" } })),
-          React.createElement("label", { style: styles.buttonInfo }, "+ MSME", React.createElement("input", { type: "file", accept: ".pdf,.jpg,.jpeg,.png", onChange: (e) => addCompanyDoc(e, "MSME Certificate"), style: { display: "none" } })),
-          React.createElement("label", { style: styles.buttonInfo }, "+ ISO", React.createElement("input", { type: "file", accept: ".pdf,.jpg,.jpeg,.png", onChange: (e) => addCompanyDoc(e, "ISO Certificate"), style: { display: "none" } })),
-          React.createElement("label", { style: styles.buttonInfo }, "+ Awards", React.createElement("input", { type: "file", accept: ".pdf,.jpg,.jpeg,.png", onChange: (e) => addCompanyDoc(e, "Awards / Certificates"), style: { display: "none" } }))
-        ),
-        React.createElement("table", { style: styles.table },
-          React.createElement("thead", null,
-            React.createElement("tr", null,
-              React.createElement("th", { style: styles.th }, "Type"),
-              React.createElement("th", { style: styles.th }, "Title"),
-              React.createElement("th", { style: styles.th }, "File"),
-              React.createElement("th", { style: styles.th }, "Visibility"),
-              React.createElement("th", { style: styles.th }, "Date")
-            )
-          ),
-          React.createElement("tbody", null,
-            companyDocs.map(d => React.createElement("tr", { key: d.id },
-              React.createElement("td", { style: styles.td }, d.type),
-              React.createElement("td", { style: styles.td }, d.title),
-              React.createElement("td", { style: styles.td }, d.fileName),
-              React.createElement("td", { style: styles.td }, d.visibility),
-              React.createElement("td", { style: styles.td }, d.uploadedAt)
-            ))
-          )
-        ),
-
-        React.createElement("h3", null, "Quotation Upload"),
-        React.createElement("div", { style: { display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "12px" } },
-          React.createElement("button", { onClick: addCompanyQuote, style: styles.buttonSuccess }, "+ Upload Own Letterhead Quote"),
-          React.createElement("button", { onClick: addCompanyQuote, style: styles.button }, "+ BuildMitra Format Quote")
-        ),
-        React.createElement("table", { style: styles.table },
-          React.createElement("thead", null,
-            React.createElement("tr", null,
-              React.createElement("th", { style: styles.th }, "Quotation"),
-              React.createElement("th", { style: styles.th }, "Type"),
-              React.createElement("th", { style: styles.th }, "File"),
-              React.createElement("th", { style: styles.th }, "Visibility"),
-              React.createElement("th", { style: styles.th }, "Date")
-            )
-          ),
-          React.createElement("tbody", null,
-            companyQuotes.map(q => React.createElement("tr", { key: q.id },
-              React.createElement("td", { style: styles.td }, q.title),
-              React.createElement("td", { style: styles.td }, q.quoteType),
-              React.createElement("td", { style: styles.td }, q.fileName),
-              React.createElement("td", { style: styles.td }, q.visibility),
-              React.createElement("td", { style: styles.td }, q.uploadedAt)
-            ))
-          )
-        ),
-
         React.createElement("button", { onClick: saveCompanyProfile, style: { ...styles.buttonSuccess, width: "100%", marginTop: "12px" } }, "Save Company Profile")
       )
     );
@@ -1633,17 +1437,13 @@ useEffect(() => {
     React.createElement("div", { style: styles.header },
       React.createElement("div", null,
         React.createElement("h1", { style: styles.headerTitle }, "🏗️ Contractor Dashboard"),
-        React.createElement("p", { style: styles.headerSub }, "Contractor Code: ", (loggedInUser?.uniqueCode || loggedInUser?.userCode) || contractorInfo.uniqueCode || "Not assigned", " | ", loggedInUser?.name || contractorInfo.ownerName || contractorInfo.companyName, " ",
-          ((loggedInUser?.uniqueCode || loggedInUser?.userCode) || contractorInfo.uniqueCode) && React.createElement("button", { onClick: () => navigator.clipboard?.writeText((loggedInUser?.uniqueCode || loggedInUser?.userCode) || contractorInfo.uniqueCode), style: { marginLeft: "8px", padding: "3px 8px", border: 0, borderRadius: "4px", cursor: "pointer" } }, "Copy Code")
+        React.createElement("p", { style: styles.headerSub }, "Contractor Code: ", loggedInUser?.uniqueCode || contractorInfo.uniqueCode || "Not assigned", " | ", loggedInUser?.name || contractorInfo.ownerName || contractorInfo.companyName, " ",
+          (loggedInUser?.uniqueCode || contractorInfo.uniqueCode) && React.createElement("button", { onClick: () => navigator.clipboard?.writeText(loggedInUser?.uniqueCode || contractorInfo.uniqueCode), style: { marginLeft: "8px", padding: "3px 8px", border: 0, borderRadius: "4px", cursor: "pointer" } }, "Copy Code")
         )
       ),
-      React.createElement("div", { style: { display: "flex", gap: "8px", flexWrap: "wrap" } },
-        React.createElement("button", { onClick: () => setActiveTab("overview"), style: styles.buttonInfo }, "Dashboard"),
-        React.createElement("button", { onClick: () => window.location.href = "/marketplace", style: styles.buttonInfo }, "Marketplace"),
-        React.createElement("button", { onClick: () => setActiveTab("enquiries"), style: styles.buttonSuccess }, "Enquiries"),
-        React.createElement("button", { onClick: () => setActiveTab("quotes"), style: styles.buttonWarning }, "Quotes"),
+      React.createElement("div", null,
         React.createElement("button", { onClick: () => window.open("https://wa.me/919876543210", "_blank"), style: styles.buttonSuccess }, "📱 Share"),
-        React.createElement("button", { onClick: logoutToLogin, style: styles.buttonDanger }, "🚪 Logout")
+        React.createElement("button", { onClick: logoutToLogin, style: { ...styles.buttonDanger, marginLeft: "8px" } }, "🚪 Logout")
       )
     ),
     React.createElement("div", { style: styles.tabContainer },
@@ -1889,3 +1689,19 @@ useEffect(() => {
     )
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

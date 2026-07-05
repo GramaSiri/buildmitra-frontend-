@@ -34,12 +34,9 @@ const loadLocalData = (key, fallback) => {
   const [extensionDays, setExtensionDays] = useState(30);
   const [newPlan, setNewPlan] = useState({ name: "", monthly: 0, yearly: 0, features: "" });
   const [newUser, setNewUser] = useState({ name: "", email: "", mobile: "", role: "buyer" });
-  const [userSearch, setUserSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState("all");
-  const [mongoEnquiries, setMongoEnquiries] = useState([]);
 
   const [users, setUsers] = useState(() => loadLocalData("users", []));
-
+ 
     const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
   useEffect(() => {
@@ -76,33 +73,6 @@ const loadLocalData = (key, fallback) => {
     };
 
     loadMongoUsers();
-  }, []);
-
-  useEffect(() => {
-    const loadMongoEnquiries = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/api/enquiry`);
-        const data = await res.json();
-        if (data.success && Array.isArray(data.enquiries)) {
-          setMongoEnquiries(data.enquiries.map((e) => ({
-            id: e._id,
-            enquiryCode: e.enquiryCode || "",
-            buyer: e.buyerName || "",
-            buyerPhone: e.buyerPhone || "",
-            provider: e.providerName || "",
-            providerRole: e.providerRole || "",
-            providerUserCode: e.providerUserCode || "",
-            itemName: e.itemName || e.itemType || "",
-            status: e.status || "Pending",
-            date: e.createdAt ? e.createdAt.split("T")[0] : ""
-          })));
-        }
-      } catch (err) {
-        console.error("Mongo enquiries load failed:", err);
-      }
-    };
-
-    loadMongoEnquiries();
   }, []);
   const [plans, setPlans] = useState([
     { id: 1, name: "Basic", monthly: 250, yearly: 2500, features: ["Export reports", "Basic support", "1 user account"], status: "active" },
@@ -556,29 +526,8 @@ useEffect(() => { localStorage.setItem("bm_service_rates", JSON.stringify(servic
     alert(`${type} report exported!`);
   };
 
-  const filteredUsers = users.filter(u => {
-    const q = userSearch.toLowerCase().trim();
-    const matchesSearch =
-      !q ||
-      String(u.name || "").toLowerCase().includes(q) ||
-      String(u.email || "").toLowerCase().includes(q) ||
-      String(u.mobile || "").toLowerCase().includes(q) ||
-      String(u.userCode || "").toLowerCase().includes(q);
-
-    const matchesRole =
-      roleFilter === "all" ||
-      String(u.role || "").toLowerCase() === roleFilter;
-
-    return matchesSearch && matchesRole;
-  });
-
   const totalUsers = users.length;
   const activeSubscriptions = users.filter(u => u.plan !== "None" && u.status === "Active").length;
-  const activeUsers = users.filter(u => u.status === "Active").length;
-  const blockedUsers = users.filter(u => u.status === "Blocked").length;
-  const verifiedUsers = users.filter(u => u.kyc === "Verified").length;
-  const marketplaceVisibleUsers = users.filter(u => u.marketplace === "Visible").length;
-  const totalEnquiries = mongoEnquiries.length;
   const totalRevenue = transactions.reduce((sum, t) => sum + t.amount, 0);
   const pendingKYC = users.filter(u => u.kyc === "Pending").length;
   const totalMasterRates = materialRates.length + labourRates.length + equipmentRates.length + serviceRates.length;
@@ -623,7 +572,6 @@ useEffect(() => { localStorage.setItem("bm_service_rates", JSON.stringify(servic
   { id: "subscriptions", name: "Subscriptions" },
   { id: "payments", name: "Payments & QR" },
   { id: "crm", name: "CRM" },
-  { id: "enquiries", name: "Enquiries" },
 
   { id: "masterRates", name: "Master Rates" },
   { id: "marketplaceApproval", name: "Marketplace Approval" },
@@ -649,11 +597,6 @@ useEffect(() => { localStorage.setItem("bm_service_rates", JSON.stringify(servic
       React.createElement("div", { style: styles.card }, React.createElement("div", { style: styles.statValue }, activeSubscriptions), React.createElement("div", { style: styles.statLabel }, "Active Subs")),
       React.createElement("div", { style: styles.card }, React.createElement("div", { style: styles.statValue }, "₹", (totalRevenue/1000).toFixed(0), "K"), React.createElement("div", { style: styles.statLabel }, "Revenue")),
       React.createElement("div", { style: styles.card }, React.createElement("div", { style: styles.statValue }, pendingKYC), React.createElement("div", { style: styles.statLabel }, "Pending KYC")),
-      React.createElement("div", { style: styles.card }, React.createElement("div", { style: styles.statValue }, activeUsers), React.createElement("div", { style: styles.statLabel }, "Active Users")),
-      React.createElement("div", { style: styles.card }, React.createElement("div", { style: styles.statValue }, blockedUsers), React.createElement("div", { style: styles.statLabel }, "Blocked Users")),
-      React.createElement("div", { style: styles.card }, React.createElement("div", { style: styles.statValue }, verifiedUsers), React.createElement("div", { style: styles.statLabel }, "Verified Users")),
-      React.createElement("div", { style: styles.card }, React.createElement("div", { style: styles.statValue }, marketplaceVisibleUsers), React.createElement("div", { style: styles.statLabel }, "Marketplace Visible")),
-      React.createElement("div", { style: styles.card }, React.createElement("div", { style: styles.statValue }, totalEnquiries), React.createElement("div", { style: styles.statLabel }, "Enquiries")),
       React.createElement("div", { style: styles.card }, React.createElement("div", { style: styles.statValue }, totalMasterRates), React.createElement("div", { style: styles.statLabel }, "Master Rates"))
     ),
 
@@ -681,80 +624,23 @@ useEffect(() => { localStorage.setItem("bm_service_rates", JSON.stringify(servic
       )
     ),
 
-    activeTab === "enquiries" && React.createElement("div", { style: styles.card },
-      React.createElement("div", { style: styles.cardTitle }, "MongoDB Enquiries"),
-      React.createElement("div", { style: { overflowX: "auto" } },
-        React.createElement("table", { style: styles.table },
-          React.createElement("thead", null,
-            React.createElement("tr", null,
-              React.createElement("th", { style: styles.th }, "Code"),
-              React.createElement("th", { style: styles.th }, "Buyer"),
-              React.createElement("th", { style: styles.th }, "Provider"),
-              React.createElement("th", { style: styles.th }, "Role"),
-              React.createElement("th", { style: styles.th }, "Requirement"),
-              React.createElement("th", { style: styles.th }, "Status"),
-              React.createElement("th", { style: styles.th }, "Date")
-            )
-          ),
-          React.createElement("tbody", null,
-            mongoEnquiries.length === 0 ? React.createElement("tr", null,
-              React.createElement("td", { colSpan: 7, style: { ...styles.td, textAlign: "center" } }, "No MongoDB enquiries found.")
-            ) : mongoEnquiries.map((e) =>
-              React.createElement("tr", { key: e.id },
-                React.createElement("td", { style: styles.td }, e.enquiryCode),
-                React.createElement("td", { style: styles.td }, e.buyer, React.createElement("br", null), React.createElement("span", { style: { fontSize: "10px" } }, e.buyerPhone)),
-                React.createElement("td", { style: styles.td }, e.provider, React.createElement("br", null), React.createElement("span", { style: { fontSize: "10px" } }, e.providerUserCode)),
-                React.createElement("td", { style: styles.td }, e.providerRole),
-                React.createElement("td", { style: styles.td }, e.itemName),
-                React.createElement("td", { style: styles.td }, e.status),
-                React.createElement("td", { style: styles.td }, e.date)
-              )
-            )
-          )
-        )
-      )
-    ),
-
     activeTab === "users" && React.createElement("div", { style: styles.card },
       React.createElement("div", { style: styles.cardTitle }, "User Management"),
       React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: "16px", flexWrap: "wrap", gap: "8px" } },
         React.createElement("button", { onClick: () => setShowUserModal(true), style: styles.button }, "+ Add User"),
-        React.createElement("button", { onClick: () => exportReport("users"), style: { ...styles.buttonInfo } }, " Export Users"),
-        React.createElement("div", { style: { display: "flex", gap: "10px", marginTop: "12px", marginBottom: "12px", flexWrap: "wrap" } },
-          React.createElement("input", {
-            placeholder: "Search name, phone, email, user code",
-            value: userSearch,
-            onChange: (e) => setUserSearch(e.target.value),
-            style: { padding: "10px", border: "1px solid #ddd", borderRadius: "6px", minWidth: "280px" }
-          }),
-          React.createElement("select", {
-            value: roleFilter,
-            onChange: (e) => setRoleFilter(e.target.value),
-            style: { padding: "10px", border: "1px solid #ddd", borderRadius: "6px" }
-          },
-            React.createElement("option", { value: "all" }, "All Roles"),
-            React.createElement("option", { value: "admin" }, "Admin"),
-            React.createElement("option", { value: "buyer" }, "Buyer"),
-            React.createElement("option", { value: "contractor" }, "Contractor"),
-            React.createElement("option", { value: "supplier" }, "Supplier"),
-            React.createElement("option", { value: "labour" }, "Labour"),
-            React.createElement("option", { value: "machinery" }, "Machinery"),
-            React.createElement("option", { value: "realestate" }, "Real Estate")
-          ),
-          React.createElement("span", { style: { padding: "10px", fontWeight: "bold" } }, "Showing: ", filteredUsers.length, " / ", users.length)
-        )
+        React.createElement("button", { onClick: () => exportReport("users"), style: { ...styles.buttonInfo } }, " Export Users")
       ),
       React.createElement("div", { style: { overflowX: "auto" } },
         React.createElement("table", { style: styles.table },
           React.createElement("thead", null,
             React.createElement("tr", null,
-              React.createElement("th", { style: styles.th }, "Name"), React.createElement("th", { style: styles.th }, "User Code"), React.createElement("th", { style: styles.th }, "Phone"), React.createElement("th", { style: styles.th }, "Role"),
+              React.createElement("th", { style: styles.th }, "Name"), React.createElement("th", { style: styles.th }, "Role"),
               React.createElement("th", { style: styles.th }, "Plan"), React.createElement("th", { style: styles.th }, "Expiry"),
-              React.createElement("th", { style: styles.th }, "KYC"), React.createElement("th", { style: styles.th }, "Status"), React.createElement("th", { style: styles.th }, "Marketplace"), React.createElement("th", { style: styles.th }, "Action")
+              React.createElement("th", { style: styles.th }, "KYC"), React.createElement("th", { style: styles.th }, "Status"), React.createElement("th", { style: styles.th }, "Action")
             )
           ),
           React.createElement("tbody", null,
-            filteredUsers.map(u => React.createElement("tr", { key: u.id },
+            users.map(u => React.createElement("tr", { key: u.id },
               React.createElement("td", { style: styles.td }, u.name),
               React.createElement("td", { style: styles.td }, u.role),
               React.createElement("td", { style: styles.td },
@@ -853,39 +739,6 @@ useEffect(() => { localStorage.setItem("bm_service_rates", JSON.stringify(servic
     ),
 
     activeTab === "crm" && React.createElement("div", { style: styles.card },
-      React.createElement("div", { style: styles.cardTitle }, "CRM - Live User Directory"),
-      React.createElement("div", { style: { overflowX: "auto" } },
-        React.createElement("table", { style: styles.table },
-          React.createElement("thead", null,
-            React.createElement("tr", null,
-              React.createElement("th", { style: styles.th }, "User Code"),
-              React.createElement("th", { style: styles.th }, "Name"),
-              React.createElement("th", { style: styles.th }, "Phone"),
-              React.createElement("th", { style: styles.th }, "Role"),
-              React.createElement("th", { style: styles.th }, "Status"),
-              React.createElement("th", { style: styles.th }, "KYC"),
-              React.createElement("th", { style: styles.th }, "Marketplace"),
-              React.createElement("th", { style: styles.th }, "Action")
-            )
-          ),
-          React.createElement("tbody", null,
-            users.map(u => React.createElement("tr", { key: "crm-"+u.id },
-              React.createElement("td", { style: styles.td }, u.userCode || "-"),
-              React.createElement("td", { style: styles.td }, u.name || "-"),
-              React.createElement("td", { style: styles.td }, u.mobile || "-"),
-              React.createElement("td", { style: styles.td }, u.role || "-"),
-              React.createElement("td", { style: styles.td }, u.status || "-"),
-              React.createElement("td", { style: styles.td }, u.kyc || "-"),
-              React.createElement("td", { style: styles.td }, u.marketplace || "-"),
-              React.createElement("td", { style: styles.td },
-                React.createElement("button", { onClick: () => window.open("tel:" + (u.mobile || "")), style: styles.buttonInfo }, "Call"),
-                React.createElement("button", { onClick: () => window.open("https://wa.me/91" + String(u.mobile || "").replace(/\D/g, "")), style: { ...styles.buttonSuccess, marginLeft: "6px" } }, "WhatsApp")
-              )
-            ))
-          )
-        )
-      )
-    ) || false && React.createElement("div", { style: styles.card },
       React.createElement("div", { style: styles.cardTitle }, "Support Tickets (", tickets.length, ")"),
       React.createElement("div", { style: { overflowX: "auto" } },
         React.createElement("table", { style: styles.table },
@@ -1075,67 +928,17 @@ useEffect(() => { localStorage.setItem("bm_service_rates", JSON.stringify(servic
     ),
 
     activeTab === "marketplaceApproval" && React.createElement("div", { style: styles.card },
-      React.createElement("div", { style: styles.cardTitle }, "Marketplace Approval - Providers"),
-      React.createElement("p", { style: { color: "#666" } }, "Control provider marketplace visibility."),
-      React.createElement("div", { style: { overflowX: "auto" } },
-        React.createElement("table", { style: styles.table },
-          React.createElement("thead", null,
-            React.createElement("tr", null,
-              React.createElement("th", { style: styles.th }, "User Code"),
-              React.createElement("th", { style: styles.th }, "Provider"),
-              React.createElement("th", { style: styles.th }, "Phone"),
-              React.createElement("th", { style: styles.th }, "Role"),
-              React.createElement("th", { style: styles.th }, "KYC"),
-              React.createElement("th", { style: styles.th }, "Marketplace"),
-              React.createElement("th", { style: styles.th }, "Action")
-            )
-          ),
-          React.createElement("tbody", null,
-            users.filter(u => ["supplier","contractor","labour","machinery","realestate"].includes(String(u.role || "").toLowerCase())).map(u =>
-              React.createElement("tr", { key: "mp-"+u.id },
-                React.createElement("td", { style: styles.td }, u.userCode || "-"),
-                React.createElement("td", { style: styles.td }, u.name || "-"),
-                React.createElement("td", { style: styles.td }, u.mobile || "-"),
-                React.createElement("td", { style: styles.td }, u.role || "-"),
-                React.createElement("td", { style: styles.td }, u.kyc || "-"),
-                React.createElement("td", { style: styles.td }, u.marketplace || "Hidden"),
-                React.createElement("td", { style: styles.td },
-                  React.createElement("button", { onClick: () => toggleMarketplace(u.id, u.marketplace), style: u.marketplace === "Visible" ? styles.buttonDanger : styles.buttonSuccess }, u.marketplace === "Visible" ? "Hide" : "Show")
-                )
-              )
-            )
-          )
-        )
-      )
+      React.createElement("div", { style: styles.cardTitle }, "Marketplace Approval Control"),
+      React.createElement("p", null, "Supplier/contractor products will be verified here before marketplace display."),
+      React.createElement("p", { style: { color: "#666" } }, "Current pending approvals: ", supplierApprovals.length),
+      React.createElement("div", null, "Rule: product names and base rates should come from Admin Master Rates. Supplier can provide stock, location, delivery time, images and discount/premium only.")
     ),
 
     activeTab === "projectControl" && React.createElement("div", { style: styles.card },
       React.createElement("div", { style: styles.cardTitle }, "Project Control & Permission Engine"),
-      React.createElement("p", { style: { color: "#666" } }, "Live project assignments from MongoDB users."),
-      React.createElement("div", { style: { overflowX: "auto" } },
-        React.createElement("table", { style: styles.table },
-          React.createElement("thead", null,
-            React.createElement("tr", null,
-              React.createElement("th", { style: styles.th }, "User Code"),
-              React.createElement("th", { style: styles.th }, "Name"),
-              React.createElement("th", { style: styles.th }, "Phone"),
-              React.createElement("th", { style: styles.th }, "Role"),
-              React.createElement("th", { style: styles.th }, "Assigned Projects"),
-              React.createElement("th", { style: styles.th }, "Access Role")
-            )
-          ),
-          React.createElement("tbody", null,
-            users.map(u => React.createElement("tr", { key: "proj-"+u.id },
-              React.createElement("td", { style: styles.td }, u.userCode || "-"),
-              React.createElement("td", { style: styles.td }, u.name || "-"),
-              React.createElement("td", { style: styles.td }, u.mobile || "-"),
-              React.createElement("td", { style: styles.td }, u.role || "-"),
-              React.createElement("td", { style: styles.td }, (u.assignedProjects || []).length ? (u.assignedProjects || []).map(p => p.projectName || p.projectCode).join(", ") : "No Project"),
-              React.createElement("td", { style: styles.td }, (u.assignedProjects || []).length ? (u.assignedProjects || []).map(p => p.accessRole || "-").join(", ") : "-")
-            ))
-          )
-        )
-      )
+      React.createElement("p", null, "This will control which user can see which project."),
+      React.createElement("p", { style: { color: "#666" } }, "Example: Master Villa → Reddy only, Test Villa → Raju only."),
+      React.createElement("p", null, "Backend will later enforce these permissions permanently.")
     ),
 
     activeTab === "reports" && React.createElement("div", { style: styles.card },
@@ -1199,6 +1002,7 @@ useEffect(() => { localStorage.setItem("bm_service_rates", JSON.stringify(servic
     )
   );
 }
+
 
 
 

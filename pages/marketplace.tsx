@@ -17,12 +17,65 @@ export default function Marketplace() {
     name: "",
     phone: "",
     location: "",
+    requirementType: "material",
     quantity: "",
-    requirement: ""
+    unit: "",
+    requirement: "",
+    message: ""
   });
   const [isClient, setIsClient] = useState(false);
 
   const serviceablePincodes = ["560062", "560108", "400001", "400002", "411001", "600001", "500001", "682001"];
+
+  function normalizeMarketplaceRole(role) {
+    var value = String(role || "").toLowerCase().replace(/\s+/g, "");
+    if (value === "contractor") return "contractor";
+    if (value === "supplier" || value === "vendor") return "supplier";
+    if (value === "labour" || value === "laboursupply") return "labour";
+    if (value === "machine" || value === "machinery" || value === "machinehire") return "machinery";
+    if (value === "realestate") return "realestate";
+    return "supplier";
+  }
+
+  function getStoredCurrentUser() {
+    try {
+      return JSON.parse(localStorage.getItem("currentUser") || localStorage.getItem("loggedInUser") || localStorage.getItem("user") || "{}");
+    } catch {
+      return {};
+    }
+  }
+
+  function cleanPhone(phone) {
+    var phoneNumber = String(phone || "").replace(/[^0-9+]/g, "");
+    if (!phoneNumber) return "";
+    if (!phoneNumber.startsWith("+")) {
+      phoneNumber = phoneNumber.startsWith("91") ? "+" + phoneNumber : "+91" + phoneNumber;
+    }
+    return phoneNumber;
+  }
+
+  function isRRConstructions(item) {
+    var haystack = [
+      item?.companyName,
+      item?.businessName,
+      item?.ownerName,
+      item?.name,
+      item?.email,
+      item?.userCode,
+      item?.providerUserCode
+    ].join(" ").toLowerCase();
+    return haystack.includes("rr construction") || haystack.includes("rrbeta") || haystack.includes("con-000001");
+  }
+
+  function normalizeProviderIdentity(item) {
+    var providerUserCode = item.userCode || item.providerUserCode || item.userId || "";
+    var providerPhone = item.phone || item.ownerPhone || item.mobile || "";
+    if (isRRConstructions({ ...item, providerUserCode })) {
+      providerUserCode = providerUserCode || "CON-000001";
+      providerPhone = "9343726656";
+    }
+    return { providerUserCode, providerPhone };
+  }
 
   const subCategories = {
     supplier: [
@@ -100,6 +153,7 @@ export default function Marketplace() {
   useEffect(function() {
     setIsClient(true);
     loadAllMarketplaceData();
+    loadBackendProviders();
   }, []);
 
   function loadAllMarketplaceData() {
@@ -297,7 +351,63 @@ export default function Marketplace() {
       setLoading(false);
     }
   }
+  async function loadBackendProviders() {
+    try {
+      const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
+      const res = await fetch(API_BASE + "/api/provider");
 
+      if (!res.ok) return;
+
+      const data = await res.json();
+      const backendItems = data.providers || data.items || [];
+
+      if (backendItems.length > 0) {
+        setProducts(function(prev) {
+          const oldWithoutBackend = prev.filter(function(x) {
+            return !String(x.id || "").startsWith("backend_");
+          });
+
+          const mapped = backendItems.map(function(item, index) {
+            var category = normalizeMarketplaceRole(item.businessRole || item.providerRole || item.role || item.category || item.type);
+            var businessName = item.companyName || item.businessName || item.ownerName || item.name || "Provider";
+            var city = item.city || item.location || item.address || "Bengaluru";
+            var identity = normalizeProviderIdentity({
+              ...item,
+              businessName: businessName,
+              providerUserCode: item.userCode || item.userId || item.providerUserCode || ""
+            });
+            return {
+              id: "backend_" + (item._id || item.id || index),
+              category: category,
+              subCategory: item.subCategory || "all",
+              type: category,
+              name: businessName,
+              ownerName: item.name || businessName,
+              businessName: businessName,
+              ownerPhone: identity.providerPhone,
+              phone: identity.providerPhone,
+              location: city,
+              price: item.price || item.rate || 0,
+              unit: item.unit || "",
+              priceRange: item.priceRange || (item.price ? "₹" + item.price + " per " + (item.unit || "unit") : "Call for price"),
+              rating: item.rating || 4.0,
+              isVerified: item.isVerified !== false,
+              description: item.description || item.specification || "Verified marketplace provider",
+              image: category === "contractor" ? "🏗️" : category === "machinery" ? "🚜" : category === "labour" ? "👷" : category === "realestate" ? "🏡" : getProductImage(item.name || item.itemName || ""),
+              availablePincodes: item.availablePincodes || ["560062", "560108"],
+              userId: identity.providerUserCode || item._id || "",
+              providerUserCode: identity.providerUserCode,
+              userCode: identity.providerUserCode
+            };
+          });
+
+          return oldWithoutBackend.concat(mapped);
+        });
+      }
+    } catch (e) {
+      console.log("Backend providers not loaded", e);
+    }
+  }
   function getProductImage(name) {
     var lower = (name || "").toLowerCase();
     if (lower.includes("cement")) return "🏭";
@@ -365,6 +475,7 @@ export default function Marketplace() {
     if (!isClient) return;
     function handleStorageChange() {
       loadAllMarketplaceData();
+    loadBackendProviders();
     }
     window.addEventListener("storage", handleStorageChange);
     return function() { window.removeEventListener("storage", handleStorageChange); };
@@ -393,9 +504,25 @@ export default function Marketplace() {
     return true;
   });
 
-  function openWhatsApp(item) {
-    if (!enquiryData.name || !enquiryData.phone || !enquiryData.quantity) {
-      alert("Please fill your name, phone number and requirement");
+  async function openWhatsApp(item) {
+    var currentUser = getStoredCurrentUser();
+    var buyerName = currentUser.name || enquiryData.name;
+    var buyerPhone = currentUser.phone || enquiryData.phone;
+    var buyerEmail = currentUser.email || "";
+    var buyerLocation = enquiryData.location || currentUser.city || currentUser.location || item.location || "";
+    var identity = normalizeProviderIdentity(item);
+    var providerUserCode = identity.providerUserCode;
+    var itemType = String(enquiryData.requirementType || "material").toLowerCase();
+    var itemName = item.name || item.businessName || "Marketplace item";
+    var unit = enquiryData.unit || "";
+    var specification = enquiryData.requirement || "";
+    var optionalMessage = enquiryData.message || "";
+    if (!buyerName || !buyerPhone || !enquiryData.quantity || !buyerLocation || !specification) {
+      alert("Please fill requirement details");
+      return;
+    }
+    if (!providerUserCode) {
+      alert("Provider code missing. Please refresh marketplace and try again.");
       return;
     }
     
@@ -404,29 +531,69 @@ export default function Marketplace() {
       return;
     }
     
-    var phoneNumber = item.phone || "+919876543210";
-    phoneNumber = phoneNumber.replace(/[^0-9+]/g, '');
-    if (!phoneNumber.startsWith('+')) {
-      if (phoneNumber.startsWith('91')) {
-        phoneNumber = '+' + phoneNumber;
-      } else {
-        phoneNumber = '+91' + phoneNumber;
-      }
+    var phoneNumber = cleanPhone(identity.providerPhone || item.phone || item.ownerPhone || "+919876543210");
+    var enquiryPayload = {
+      buyerUserCode: currentUser.userCode || currentUser.userId || currentUser.uniqueCode || "",
+      buyerName: buyerName,
+      buyerPhone: buyerPhone,
+      buyerEmail: buyerEmail,
+
+      providerUserCode: providerUserCode,
+      providerRole: item.category || "contractor",
+      providerName: item.businessName || item.name,
+      providerPhone: phoneNumber,
+
+      itemType: itemType,
+      itemName: itemName,
+      quantity: enquiryData.quantity,
+      unit: unit,
+      location: buyerLocation || "",
+      pincode: pincode,
+      specification: specification,
+      message: optionalMessage,
+      status: "new"
+    };
+    console.log("BuildMitra marketplace enquiry payload", enquiryPayload);
+
+    const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
+    const res = await fetch(API_BASE + "/api/enquiry", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(enquiryPayload)
+    });
+    var saved = {};
+    try {
+      saved = await res.json();
+    } catch {}
+    if (!res.ok || !(saved as any).success) {
+      alert((saved as any).message || "Could not save enquiry. Please try again.");
+      return;
     }
-    
-    var message = "Hello " + (item.businessName || item.name) + ",%0A%0A📋 NEW ENQUIRY FROM MARKETPLACE%0A%0A👤 Customer Name: " + enquiryData.name + "%0A📞 Phone: " + enquiryData.phone + "%0A📍 Location: " + (enquiryData.location || "Not specified") + "%0A📮 Pincode: " + pincode + "%0A📊 Requirement: " + enquiryData.quantity + "%0A📝 Additional Details: " + (enquiryData.requirement || "None") + "%0A%0A";
-    
-    if (item.category === "realestate") {
-      message += "🏡 Property: " + item.name + "%0A💰 Price: " + item.priceRange + "%0A📐 Area: " + (item.totalArea || "N/A") + " sq.ft%0A🛏️ Bedrooms: " + (item.bedrooms || "N/A") + "%0A🛁 Bathrooms: " + (item.bathrooms || "N/A") + "%0A📋 Status: " + (item.status || "Available") + "%0A📍 Location: " + item.location + "%0A";
-    } else {
-      message += "📦 Product/Service: " + item.name + "%0A💰 Price: " + (item.priceRange || "Contact for pricing") + "%0A📍 Location: " + item.location + "%0A";
-    }
-    
-    message += "%0A---%0AFrom: BuildTrack Marketplace";
-    
-    window.open("https://wa.me/" + phoneNumber + "?text=" + message, "_blank");
+    console.log("BuildMitra saved enquiry", (saved as any).enquiry);
+    var enquiryCode = (saved as any).enquiry?.enquiryCode || "";
+    var whatsappMessage =
+      "🏗️ NEW ENQUIRY FROM BUILDMITRA\n\n" +
+      "Buyer:\n" +
+      buyerName + "\n" +
+      buyerPhone + "\n\n" +
+      "Requirement:\n" +
+      itemType + " - " + itemName + "\n\n" +
+      "Quantity:\n" +
+      enquiryData.quantity + (unit ? " " + unit : "") + "\n\n" +
+      "Location:\n" +
+      buyerLocation + "\n\n" +
+      "Specification:\n" +
+      specification + "\n\n" +
+      "Message:\n" +
+      (optionalMessage || "-") + "\n\n" +
+      "Enquiry Code:\n" +
+      enquiryCode + "\n\n" +
+      "Reply from BuildMitra Marketplace";
+    window.open("https://wa.me/" + phoneNumber + "?text=" + encodeURIComponent(whatsappMessage), "_blank");
     setShowEnquiryModal(false);
-    setEnquiryData({ name: "", phone: "", location: "", quantity: "", requirement: "" });
+    setEnquiryData({ name: buyerName, phone: buyerPhone, location: buyerLocation || "", requirementType: "material", quantity: "", unit: "", requirement: "", message: "" });
     alert("✅ Enquiry sent!");
   }
 
@@ -436,6 +603,17 @@ export default function Marketplace() {
       return;
     }
     setSelectedItem(item);
+    var currentUser = getStoredCurrentUser();
+    setEnquiryData({
+      name: currentUser.name || "",
+      phone: currentUser.phone || "",
+      location: currentUser.city || currentUser.location || item.location || "",
+      requirementType: "material",
+      quantity: "",
+      unit: "",
+      requirement: "",
+      message: ""
+    });
     setShowEnquiryModal(true);
   }
 
@@ -642,26 +820,35 @@ export default function Marketplace() {
           React.createElement("p", { style: { margin: "4px 0" } }, "💰 ", selectedItem.priceRange || "Contact for pricing")
         ),
         React.createElement("div", null,
-          React.createElement("label", { style: styles.label }, "Your Name *"),
-          React.createElement("input", { type: "text", placeholder: "Enter your name", value: enquiryData.name, onChange: function(e) { setEnquiryData({...enquiryData, name: e.target.value}); }, style: styles.input })
+          React.createElement("label", { style: styles.label }, "Requirement Type *"),
+          React.createElement("select", { value: enquiryData.requirementType, onChange: function(e) { setEnquiryData({...enquiryData, requirementType: e.target.value}); }, style: styles.input },
+            React.createElement("option", { value: "material" }, "Material"),
+            React.createElement("option", { value: "service" }, "Service"),
+            React.createElement("option", { value: "machine" }, "Machine"),
+            React.createElement("option", { value: "labour" }, "Labour")
+          )
         ),
         React.createElement("div", { style: styles.row2 },
           React.createElement("div", null,
-            React.createElement("label", { style: styles.label }, "Phone Number *"),
-            React.createElement("input", { type: "tel", placeholder: "Your mobile number", value: enquiryData.phone, onChange: function(e) { setEnquiryData({...enquiryData, phone: e.target.value}); }, style: styles.input })
+            React.createElement("label", { style: styles.label }, "Quantity *"),
+            React.createElement("input", { type: "text", placeholder: "e.g., 500, 1000, 10", value: enquiryData.quantity, onChange: function(e) { setEnquiryData({...enquiryData, quantity: e.target.value}); }, style: styles.input })
           ),
           React.createElement("div", null,
-            React.createElement("label", { style: styles.label }, "Location"),
-            React.createElement("input", { type: "text", placeholder: "Your city", value: enquiryData.location, onChange: function(e) { setEnquiryData({...enquiryData, location: e.target.value}); }, style: styles.input })
+            React.createElement("label", { style: styles.label }, "Unit"),
+            React.createElement("input", { type: "text", placeholder: "bags, sq.ft, days, nos", value: enquiryData.unit, onChange: function(e) { setEnquiryData({...enquiryData, unit: e.target.value}); }, style: styles.input })
           )
         ),
         React.createElement("div", null,
-          React.createElement("label", { style: styles.label }, "Requirement *"),
-          React.createElement("input", { type: "text", placeholder: "e.g., 500 bags, 1000 sq.ft, 10 labours", value: enquiryData.quantity, onChange: function(e) { setEnquiryData({...enquiryData, quantity: e.target.value}); }, style: styles.input })
+          React.createElement("label", { style: styles.label }, "Location *"),
+          React.createElement("input", { type: "text", placeholder: "Project location", value: enquiryData.location, onChange: function(e) { setEnquiryData({...enquiryData, location: e.target.value}); }, style: styles.input })
         ),
         React.createElement("div", null,
-          React.createElement("label", { style: styles.label }, "Additional Details"),
+          React.createElement("label", { style: styles.label }, "Specification / Requirement details *"),
           React.createElement("textarea", { placeholder: "Any specific requirements...", value: enquiryData.requirement, onChange: function(e) { setEnquiryData({...enquiryData, requirement: e.target.value}); }, style: { ...styles.input, minHeight: "80px" } })
+        ),
+        React.createElement("div", null,
+          React.createElement("label", { style: styles.label }, "Message"),
+          React.createElement("textarea", { placeholder: "Optional message", value: enquiryData.message, onChange: function(e) { setEnquiryData({...enquiryData, message: e.target.value}); }, style: { ...styles.input, minHeight: "60px" } })
         ),
         React.createElement("button", { onClick: function() { openWhatsApp(selectedItem); }, style: { ...styles.button, marginTop: "16px" } }, "💬 Send Enquiry via WhatsApp")
       )

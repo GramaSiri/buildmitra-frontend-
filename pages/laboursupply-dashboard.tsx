@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import * as XLSX from 'xlsx';
 import { logoutToLogin } from "../utils/session";
 
 export default function LabourSupplyDashboard() {
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
 const [activeTab, setActiveTab] = useState("dashboard");
   const [showWorkerModal, setShowWorkerModal] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
@@ -10,6 +11,7 @@ const [activeTab, setActiveTab] = useState("dashboard");
   const [showRateModal, setShowRateModal] = useState(false);
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [selectedWorker, setSelectedWorker] = useState(null);
+  const [selectedEnquiry, setSelectedEnquiry] = useState(null);
   const [selectedProject, setSelectedProject] = useState(1);
   const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().split("T")[0]);
   const [quotePrice, setQuotePrice] = useState("");
@@ -45,10 +47,48 @@ const [activeTab, setActiveTab] = useState("dashboard");
     { id: 4, skill: "Electrician", baseRate: 900, overtimeRate: 135, notes: "Certified only" }
   ]);
 
-  const [enquiries, setEnquiries] = useState([
-    { id: 1, client: "Ramesh Gupta", mobile: "+919876555555", requirement: "Mason", quantity: 5, duration: "15 days", message: "Need masons for foundation work", status: "Pending" },
-    { id: 2, client: "Construction Corp", mobile: "+919876566666", requirement: "Electrician", quantity: 3, duration: "30 days", message: "Need certified electricians", status: "Pending" }
-  ]);
+  const [enquiries, setEnquiries] = useState([]);
+
+  const getCurrentAppUser = () => {
+    try {
+      return JSON.parse(localStorage.getItem("currentUser") || localStorage.getItem("loggedInUser") || localStorage.getItem("user") || "{}");
+    } catch {
+      return {};
+    }
+  };
+
+  const mapMongoEnquiry = (e) => ({
+    id: e._id,
+    enquiryCode: e.enquiryCode,
+    client: e.buyerName || "",
+    mobile: e.buyerPhone || "",
+    requirement: e.itemName || e.itemType || "Labour",
+    quantity: e.quantity || "",
+    duration: e.quantity || "",
+    message: e.specification || e.message || "",
+    status: e.status || "Pending",
+    date: e.createdAt ? e.createdAt.split("T")[0] : ""
+  });
+
+  const loadLiveEnquiries = async () => {
+    try {
+      const currentUser = getCurrentAppUser();
+      const providerUserCode = currentUser.userCode || currentUser.userId || currentUser.uniqueCode || "";
+      if (!providerUserCode) {
+        setEnquiries([]);
+        return;
+      }
+      const res = await fetch(API_BASE + "/api/enquiry?providerUserCode=" + encodeURIComponent(providerUserCode));
+      const data = await res.json();
+      if (data.success) setEnquiries((data.enquiries || []).map(mapMongoEnquiry));
+    } catch (err) {
+      console.log("Labour enquiries not loaded", err);
+    }
+  };
+
+  useEffect(() => {
+    loadLiveEnquiries();
+  }, []);
 
   const [invoices, setInvoices] = useState([
     { id: "INV-001", client: "Rajesh Sharma", project: "Sunrise Villa", amount: 28000, date: "2024-01-31", status: "Paid" }
@@ -138,16 +178,27 @@ const [activeTab, setActiveTab] = useState("dashboard");
     alert("Rate added!");
   };
 
-  const sendQuote = () => {
+  const sendQuote = async () => {
     if (!selectedEnquiry || !quotePrice) return alert("Enter rate");
-    const total = quotePrice * selectedEnquiry.quantity * parseInt(selectedEnquiry.duration);
-    const message = `*LABOUR QUOTATION*%0A%0AClient: ${selectedEnquiry.client}%0ARequirement: ${selectedEnquiry.quantity} ${selectedEnquiry.requirement}(s)%0ADuration: ${selectedEnquiry.duration} days%0ARate: ₹${quotePrice}/day%0ATotal: ₹${total}%0A%0A${quoteMsg || "Please confirm"}%0A%0A- ABC Manpower Services`;
-    window.open(`https://wa.me/${selectedEnquiry.mobile}?text=${message}`, "_blank");
-    setEnquiries(enquiries.map(e => e.id === selectedEnquiry.id ? { ...e, status: "Replied" } : e));
-    setShowEnquiryModal(false);
-    setQuotePrice("");
-    setQuoteMsg("");
-    alert("Quote sent!");
+    try {
+      const res = await fetch(API_BASE + "/api/enquiry/" + selectedEnquiry.id + "/quote", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ quotedAmount: Number(quotePrice), quoteMessage: quoteMsg || "Please confirm" })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) return alert(data.message || "Quote could not be sent");
+      const message = `LABOUR QUOTATION\n\nClient: ${selectedEnquiry.client}\nRequirement: ${selectedEnquiry.quantity} ${selectedEnquiry.requirement}\nRate: ₹${quotePrice}\n\n${quoteMsg || "Please confirm"}`;
+      window.open(`https://wa.me/${String(selectedEnquiry.mobile || "").replace(/[^0-9]/g, "")}?text=${encodeURIComponent(message)}`, "_blank");
+      await loadLiveEnquiries();
+      setShowEnquiryModal(false);
+      setQuotePrice("");
+      setQuoteMsg("");
+      alert("Quote sent!");
+    } catch (err) {
+      console.log("Labour quote failed", err);
+      alert("Quote could not be sent");
+    }
   };
 
   const shareRateCard = () => {
@@ -235,6 +286,9 @@ const [activeTab, setActiveTab] = useState("dashboard");
         React.createElement("p", { style: styles.headerSub }, "Manage Workers, Attendance, Assignments & Rates")
       ),
       React.createElement("div", { style: { display: "flex", gap: "10px" } },
+        React.createElement("button", { onClick: () => setActiveTab("dashboard"), style: { ...styles.buttonInfo } }, "Dashboard"),
+        React.createElement("button", { onClick: () => setActiveTab("enquiries"), style: { ...styles.buttonSuccess } }, "Enquiries"),
+        React.createElement("button", { onClick: () => setActiveTab("enquiries"), style: { ...styles.button } }, "Quotes"),
         React.createElement("button", { onClick: shareRateCard, style: { ...styles.buttonSuccess } }, "Share Rate Card"),
         React.createElement("button", { onClick: () => navigateTo("/marketplace"), style: { backgroundColor: "#17a2b8", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer" } }, "Marketplace"),
         React.createElement("button", { onClick: handleLogout, style: { backgroundColor: "#dc3545", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer" } }, "Logout")
