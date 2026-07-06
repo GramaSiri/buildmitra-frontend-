@@ -219,54 +219,8 @@ export default function Marketplace() {
       setListings(mapped);
       if (!mapped.length) setError("");
     } catch (err: any) {
-      console.error("Approved listings load failed:", err);
-
-      let adminMaterialRates: any[] = [];
-
-      try {
-        adminMaterialRates = JSON.parse(localStorage.getItem("bm_material_rates") || "[]");
-      } catch {
-        adminMaterialRates = [];
-      }
-
-      const localMaterialListings = adminMaterialRates
-        .filter((r) => r && (r.item || r.itemName) && r.unit)
-        .map((r, index) =>
-          mapListing(
-            {
-              listingId: r.id || r.code || `local-material-${index}`,
-              rateId: r.code || r.id || `RATE-${index}`,
-              itemType: "material",
-              category: "material",
-              subCategory: r.subCategory || r.category || "material",
-              itemName: r.itemName || r.item,
-              providerUserCode: "ADMIN-MATERIAL",
-              providerRole: "supplier",
-              providerName: "BuildMitra Admin Approved Rate",
-              providerPhone: "",
-              rate: r.rate || r.price || r.unitRate || 0,
-              unit: r.unit,
-              location: r.location || "Bengaluru",
-              pincode: r.pincode || "",
-              imageUrl: r.imageUrl || "",
-              status: "approved",
-              description: [r.code, r.brand, r.specification].filter(Boolean).join(" | ") || "Admin approved material rate",
-              code: r.code,
-              brand: r.brand,
-              specification: r.specification,
-              createdAt: r.createdAt || new Date().toISOString()
-            },
-            index
-          )
-        );
-
-      if (localMaterialListings.length > 0) {
-        setListings(localMaterialListings);
-        setError("Backend unavailable. Showing Admin uploaded material rates from this browser.");
-      } else {
-        setError("Backend approved listings are unavailable. Showing demo listings only.");
-        setListings(demoListings);
-      }
+      setError("Backend approved listings are unavailable. Showing demo listings only.");
+      setListings(demoListings);
     } finally {
       setLoading(false);
     }
@@ -603,4 +557,3 @@ export default function Marketplace() {
     )
   );
 }
-

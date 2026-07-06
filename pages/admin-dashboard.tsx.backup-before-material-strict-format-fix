@@ -346,11 +346,7 @@ useEffect(() => { localStorage.setItem("bm_service_rates", JSON.stringify(servic
 
   const downloadTemplate = (type) => {
     let data = [];
-    if (type === "materials") data = [
-  { Code: "", Category: "Cement", SubCategory: "OPC", ItemName: "Cement UltraTech OPC 53 Grade", Brand: "UltraTech", Specification: "OPC 53 Grade", Unit: "Bag", Rate: 420, GST: 28, Status: "Active" },
-  { Code: "", Category: "Cement", SubCategory: "OPC", ItemName: "Cement Birla Super OPC 53 Grade", Brand: "Birla", Specification: "OPC 53 Grade", Unit: "Bag", Rate: 415, GST: 28, Status: "Active" },
-  { Code: "", Category: "Steel", SubCategory: "TMT", ItemName: "TMT Steel Tata Fe500", Brand: "Tata", Specification: "Fe500", Unit: "Kg", Rate: 62, GST: 18, Status: "Active" }
-];
+    if (type === "materials") data = [{ Category: "Cement", SubCategory: "OPC", ItemName: "OPC 53 Grade", Brand: "UltraTech", Unit: "Bag", Rate: 420, GST: 28, Status: "Active" }];
     if (type === "labour") data = [{ Trade: "Mason", Category: "Skilled", Unit: "Day", Rate: 1200, Status: "Active" }];
     if (type === "services") data = [{ Module: "Paint Calculator", Service: "Fresh Paint Labour", Unit: "SFT", Rate: 5, Status: "Active" }];
     if (type === "equipment") data = [{ Equipment: "JCB", Unit: "Hour", Rate: 1800, Status: "Active" }];
@@ -399,21 +395,15 @@ useEffect(() => { localStorage.setItem("bm_service_rates", JSON.stringify(servic
 
       if (type === "materials") {
         const mapped = rows.map((r, i) => {
-          let code = pick(r, ["Code", "code", "Material Code", "MaterialCode", "Item Code", "ItemCode"]);
+          const code = pick(r, ["Code", "code", "Item Code", "ItemCode"]);
           const itemName = pick(r, ["Item Name", "ItemName", "Item", "item", "Description", "Material", "Service"]);
           const category = pick(r, ["Category", "category", "Module", "module"]) || "General";
           const subCategory = pick(r, ["SubCategory", "Sub Category", "subCategory"]);
-          const brand = pick(r, ["Brand", "brand", "Make", "make", "Company", "company", "Manufacturer", "manufacturer"]);
-          const specification = pick(r, ["Specification", "Spec", "specification", "Specs", "Description", "description", "Grade", "grade"]);
+          const brand = pick(r, ["Brand", "brand"]);
+          const specification = pick(r, ["Specification", "Spec", "specification", "Specs"]);
           const unit = pick(r, ["Unit", "unit", "UOM", "uom", "Units", "units"]);
-          const rate = toNumber(pick(r, ["Rate", "rate", "Basic Rate", "BasicRate", "Unit Rate", "UnitRate", "Material Rate", "MaterialRate", "Price", "price", "Amount", "amount", "Unit Price", "UnitPrice"]));
+          const rate = toNumber(pick(r, ["Rate", "rate", "Material Rate", "MaterialRate", "UnitRate", "Unit Rate", "Basic Rate"]));
           const status = pick(r, ["Status", "status"]) || "Active";
-          if (!code) {
-            const clean = (v) => String(v || "").replace(/[^a-zA-Z]/g, "").toUpperCase();
-            const itemPart = clean(itemName || category).slice(0, 3).padEnd(3, "X");
-            const brandPart = clean(brand || itemName).slice(0, 1).padEnd(1, "X");
-            code = itemPart + brandPart + String(Date.now() + i).slice(-6);
-          }
 
           return {
             id: Date.now() + i,
@@ -437,19 +427,13 @@ useEffect(() => { localStorage.setItem("bm_service_rates", JSON.stringify(servic
 
       if (type === "labour") {
         const mapped = rows.map((r, i) => {
-          let code = pick(r, ["Code", "code", "Material Code", "MaterialCode", "Item Code", "ItemCode"]);
+          const code = pick(r, ["Code", "code", "Item Code", "ItemCode"]);
           const itemName = pick(r, ["Item Name", "ItemName", "Item", "Trade", "trade", "Description", "Service"]);
           const category = pick(r, ["Category", "category", "Module", "module"]) || "General";
           const description = pick(r, ["Description", "description", "Work Description"]);
           const unit = pick(r, ["Unit", "unit", "UOM", "uom"]);
           const rate = toNumber(pick(r, ["Rate", "rate", "Labour Rate", "LabourRate", "UnitRate", "Unit Rate"]));
           const status = pick(r, ["Status", "status"]) || "Active";
-          if (!code) {
-            const clean = (v) => String(v || "").replace(/[^a-zA-Z]/g, "").toUpperCase();
-            const itemPart = clean(itemName || category).slice(0, 3).padEnd(3, "X");
-            const brandPart = clean(brand || itemName).slice(0, 1).padEnd(1, "X");
-            code = itemPart + brandPart + String(Date.now() + i).slice(-6);
-          }
 
           return {
             id: Date.now() + i,
@@ -470,7 +454,7 @@ useEffect(() => { localStorage.setItem("bm_service_rates", JSON.stringify(servic
 
       if (type === "services") {
         const mapped = rows.map((r, i) => {
-          let code = pick(r, ["Code", "code", "Material Code", "MaterialCode", "Item Code", "ItemCode"]);
+          const code = pick(r, ["Code", "code", "Item Code", "ItemCode"]);
           const itemName = pick(r, ["Item Name", "ItemName", "Service", "service", "Item", "Description", "Material"]);
           const module = pick(r, ["Module", "module", "Category", "category"]) || "BOQ";
           const category = pick(r, ["Category", "category"]) || module;
@@ -478,12 +462,6 @@ useEffect(() => { localStorage.setItem("bm_service_rates", JSON.stringify(servic
           const unit = pick(r, ["Unit", "unit", "UOM", "uom"]);
           const rate = toNumber(pick(r, ["Rate", "rate", "Labour Rate", "LabourRate", "Service Rate", "ServiceRate", "UnitRate", "Unit Rate"]));
           const status = pick(r, ["Status", "status"]) || "Active";
-          if (!code) {
-            const clean = (v) => String(v || "").replace(/[^a-zA-Z]/g, "").toUpperCase();
-            const itemPart = clean(itemName || category).slice(0, 3).padEnd(3, "X");
-            const brandPart = clean(brand || itemName).slice(0, 1).padEnd(1, "X");
-            code = itemPart + brandPart + String(Date.now() + i).slice(-6);
-          }
 
           return {
             id: Date.now() + i,
@@ -505,17 +483,11 @@ useEffect(() => { localStorage.setItem("bm_service_rates", JSON.stringify(servic
 
       if (type === "equipment") {
         const mapped = rows.map((r, i) => {
-          let code = pick(r, ["Code", "code", "Material Code", "MaterialCode", "Item Code", "ItemCode"]);
+          const code = pick(r, ["Code", "code", "Item Code", "ItemCode"]);
           const itemName = pick(r, ["Item Name", "ItemName", "Equipment", "Item", "Description"]);
           const unit = pick(r, ["Unit", "unit", "UOM", "uom"]);
           const rate = toNumber(pick(r, ["Rate", "rate", "UnitRate", "Unit Rate"]));
           const status = pick(r, ["Status", "status"]) || "Active";
-          if (!code) {
-            const clean = (v) => String(v || "").replace(/[^a-zA-Z]/g, "").toUpperCase();
-            const itemPart = clean(itemName || category).slice(0, 3).padEnd(3, "X");
-            const brandPart = clean(brand || itemName).slice(0, 1).padEnd(1, "X");
-            code = itemPart + brandPart + String(Date.now() + i).slice(-6);
-          }
 
           return {
             id: Date.now() + i,
@@ -1222,8 +1194,6 @@ useEffect(() => { localStorage.setItem("bm_service_rates", JSON.stringify(servic
     )
   );
 }
-
-
 
 
 
