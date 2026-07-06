@@ -3,6 +3,7 @@ import * as XLSX from 'xlsx';
 import { usePaymentBarrier } from '../hooks/usePaymentBarrier';
 import { useRouter } from 'next/router';
 import { useRates } from '../contexts/RateContext';
+import { getMasterRate } from "../utils/masterRates";
 
 const styles = {
   container: { maxWidth: '100%', margin: 0, padding: '12px', backgroundColor: '#f5f0e8', minHeight: '100vh', boxSizing: 'border-box' },
@@ -123,13 +124,13 @@ const router = useRouter();
   const [results, setResults] = useState(null);
   const [generated, setGenerated] = useState(false);
   
-  const labourRate = rates?.labour_tiles || 15;
-  const cementRate = rates?.cement || 400;
-  const sandRate = rates?.sand || 55;
+  const labourRate = getMasterRate(["tile fixing labour", "tile labour", "flooring labour"], rates?.labour_tiles || 15, ["bm_labour_rates", "bm_service_rates"]).rate;
+  const cementRate = getMasterRate(["cement", "opc", "ppc"], rates?.cement || 400).rate;
+  const sandRate = getMasterRate(["m sand", "sand"], rates?.sand || 55).rate;
 
   const getTileRate = (flooringType) => {
     const info = flooringTypes[flooringType];
-    return rates?.[info.rateKey] || info.defaultRate;
+    return getMasterRate([flooringType, info.rateKey, flooringType.replace("Tiles", "Tile")], rates?.[info.rateKey] || info.defaultRate).rate;
   };
 
   const addRoom = () => {
@@ -279,22 +280,11 @@ const router = useRouter();
     // Mortar Calculation for total area
     const totalAreaForMortar = totalFloorArea + totalSkirtingArea + totalCladdingArea + totalToiletArea;
     const mortarVolumeCft = totalAreaForMortar * (mortarThickness / 12);
-    const mortarVolumeCum = mortarVolumeCft / 35.315;
-    
-    let cementBags = 0, sandCft = 0;
-    if (mortarRatio === '1:3') {
-      cementBags = mortarVolumeCum * 10.8;
-      sandCft = mortarVolumeCum * 0.9 * 35.315;
-    } else if (mortarRatio === '1:4') {
-      cementBags = mortarVolumeCum * 8.5;
-      sandCft = mortarVolumeCum * 0.95 * 35.315;
-    } else if (mortarRatio === '1:5') {
-      cementBags = mortarVolumeCum * 7.2;
-      sandCft = mortarVolumeCum * 1.0 * 35.315;
-    } else {
-      cementBags = mortarVolumeCum * 6.2;
-      sandCft = mortarVolumeCum * 1.05 * 35.315;
-    }
+    const dryMortarCft = mortarVolumeCft * 1.33 * (1 + Number(wastage || 0) / 100);
+    const [cementPart, sandPart] = mortarRatio.split(':').map(Number);
+    const totalPart = cementPart + sandPart;
+    const cementBags = totalPart > 0 ? (dryMortarCft * (cementPart / totalPart)) / 1.25 : 0;
+    const sandCft = totalPart > 0 ? dryMortarCft * (sandPart / totalPart) : 0;
     
     const cementCost = cementBags * cementRate;
     const sandCost = sandCft * sandRate;

@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import * as XLSX from 'xlsx';
 import { usePaymentBarrier } from '../hooks/usePaymentBarrier';
 import { useRates } from '../contexts/RateContext';
+import { getMasterRate } from "../utils/masterRates";
 
 const styles = {
   container: { maxWidth: '100%', margin: 0, padding: '12px', backgroundColor: '#f5f0e8', minHeight: '100vh', boxSizing: 'border-box' },
@@ -79,18 +80,19 @@ const router = useRouter();
 
   const getRate = () => {
     const rateName = blockInfo.rateName;
-    if (rateName === 'brick') return rates?.brick || 8;
-    if (rateName === 'block') return rates?.block || 45;
-    if (rateName === 'aac') return rates?.aac || 80;
-    if (rateName === 'interlock') return rates?.interlock || 35;
-    if (rateName === 'hollow') return rates?.hollow || 50;
-    return rates?.solid || 60;
+    if (rateName === 'brick') return getMasterRate(["brick", "clay brick"], rates?.brick || 8).rate;
+    if (rateName === 'block') return getMasterRate(["concrete block", "block"], rates?.block || 45).rate;
+    if (rateName === 'aac') return getMasterRate(["aac"], rates?.aac || 80).rate;
+    if (rateName === 'interlock') return getMasterRate(["interlock"], rates?.interlock || 35).rate;
+    if (rateName === 'hollow') return getMasterRate(["hollow block"], rates?.hollow || 50).rate;
+    return getMasterRate(["solid block"], rates?.solid || 60).rate;
   };
 
   const blockRate = getRate();
-  const cementRate = rates?.cement || 400;
-  const sandRate = rates?.sand || 55;
-  const labourRate = rates?.labour_brickwork || 12;
+  const cementRate = getMasterRate(["cement", "opc", "ppc"], rates?.cement || 400).rate;
+  const sandRate = getMasterRate(["m sand", "sand"], rates?.sand || 55).rate;
+  const labourRate = getMasterRate(["brickwork labour", "blockwork labour", "masonry labour", "brick labour"], rates?.labour_brickwork || 12, ["bm_labour_rates", "bm_service_rates"]).rate;
+  const waterRate = getMasterRate(["water"], 0.5, ["bm_service_rates", "bm_material_rates"]).rate;
 
   const addOpening = () => {
     if (newOpening.length > 0 && newOpening.width > 0 && newOpening.nos > 0) {
@@ -136,7 +138,7 @@ const router = useRouter();
     const blockCost = totalBlocks * blockRate;
     const cementCost = cementBags * cementRate;
     const sandCost = sandCft * sandRate;
-    const waterCost = waterLtr * 0.5;
+    const waterCost = waterLtr * waterRate;
 
     const materialTotal = blockCost + cementCost + sandCost + waterCost;
     const labourCost = netArea * labourRate;

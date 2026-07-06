@@ -9,90 +9,104 @@ const fmt = (n: any) =>
 
 const kgPerM = (dia: number) => (dia * dia) / 162;
 
-export default function PileFoundationCalculator() {
-  
+export default function LintelCalculator() {
   const { checkAndRun } = usePaymentBarrier();
-const router = useRouter();
+  const router = useRouter();
 
-  const [pileNos, setPileNos] = useState(1);
-  const [diameter, setDiameter] = useState(1);
-  const [length, setLength] = useState(15);
-  const [unit, setUnit] = useState("Feet");
+  const [lintelNos, setLintelNos] = useState(4);
+  const [length, setLength] = useState(5);
+  const [width, setWidth] = useState(9);
+  const [depth, setDepth] = useState(6);
+  const [dimensionUnit, setDimensionUnit] = useState("Feet/Inch");
   const [grade, setGrade] = useState("M20");
-  const [cover, setCover] = useState(50);
+  const [cover, setCover] = useState(25);
   const [wastage, setWastage] = useState(3);
-  const [mainDia, setMainDia] = useState(16);
-  const [mainNos, setMainNos] = useState(8);
-  const [tieDia, setTieDia] = useState(8);
-  const [tieSpacing, setTieSpacing] = useState(150);
+  const [mainDia, setMainDia] = useState(12);
+  const [mainNos, setMainNos] = useState(4);
+  const [stirrupDia, setStirrupDia] = useState(8);
+  const [stirrupSpacing, setStirrupSpacing] = useState(150);
+  const [bearingLengthMm, setBearingLengthMm] = useState(150);
   const [result, setResult] = useState<any>(null);
 
-  const cement = getMasterRate(["cement", "opc", "ppc"], 0);
-  const sand = getMasterRate(["m sand", "sand"], 0);
-  const agg20 = getMasterRate(["20mm aggregate", "ca1"], 0);
-  const agg12 = getMasterRate(["12mm aggregate", "ca2"], 0);
-  const steel = getMasterRate(["steel", "tmt"], 0);
-  const binding = getMasterRate(["binding wire"], 0);
-  const coverBlock = getMasterRate(["cover block", "spacer"], 0);
-  const boring = getMasterRate(["pile boring", "boring"], 0, ["bm_service_rates", "bm_material_rates"]);
-  const labour = getMasterRate(["pile labour", "rcc labour", "concrete labour"], 0, ["bm_labour_rates", "bm_service_rates"]);
+  const cement = getMasterRate(["cement", "opc", "ppc"], 400);
+  const sand = getMasterRate(["m sand", "sand"], 55);
+  const agg20 = getMasterRate(["20mm aggregate", "ca1"], 50);
+  const agg12 = getMasterRate(["12mm aggregate", "ca2"], 48);
+  const steel = getMasterRate(["steel", "tmt", "rebar"], 68);
+  const binding = getMasterRate(["binding wire"], 80);
+  const coverBlock = getMasterRate(["cover block", "spacer"], 5);
+  const shuttering = getMasterRate(["shuttering labour", "centering labour", "shuttering"], 45, ["bm_labour_rates", "bm_service_rates", "bm_material_rates"]);
+  const labour = getMasterRate(["lintel labour", "rcc labour", "concrete labour"], 1000, ["bm_labour_rates", "bm_service_rates"]);
+  const water = getMasterRate(["water"], 0.5, ["bm_service_rates", "bm_material_rates"]);
+
+  const mix = (selectedGrade: string) => {
+    if (selectedGrade === "M25") return { cementBags: 8.7, sandCft: 13.8, agg20Cft: 17.0, agg12Cft: 11.3, waterLtr: 165 };
+    if (selectedGrade === "M30") return { cementBags: 9.3, sandCft: 12.7, agg20Cft: 16.2, agg12Cft: 10.8, waterLtr: 160 };
+    return { cementBags: 8.0, sandCft: 14.83, agg20Cft: 17.8, agg12Cft: 11.87, waterLtr: 170 };
+  };
 
   const calc = () => {
-    const diaM = unit === "Feet" ? diameter * 0.3048 : diameter;
-    const lenM = unit === "Feet" ? length * 0.3048 : length;
-
-    const concreteCum = Math.PI * Math.pow(diaM / 2, 2) * lenM * pileNos;
+    const lenM = dimensionUnit === "Meter/MM" ? Number(length || 0) : Number(length || 0) * 0.3048;
+    const widthM = dimensionUnit === "Meter/MM" ? Number(width || 0) / 1000 : Number(width || 0) * 0.0254;
+    const depthM = dimensionUnit === "Meter/MM" ? Number(depth || 0) / 1000 : Number(depth || 0) * 0.0254;
+    const nos = Math.max(Number(lintelNos || 0), 0);
+    const concreteCum = lenM * widthM * depthM * nos;
     const concreteCft = concreteCum * 35.315;
+    const concreteMix = mix(grade);
+    const wastageFactor = 1 + Number(wastage || 0) / 100;
 
-    const cementBags = concreteCum * 7.5 * (1 + wastage / 100);
-    const sandCft = concreteCum * 14.83 * (1 + wastage / 100);
-    const agg20Cft = concreteCum * 17.8 * (1 + wastage / 100);
-    const agg12Cft = concreteCum * 11.87 * (1 + wastage / 100);
+    const cementBags = concreteCum * concreteMix.cementBags * wastageFactor;
+    const sandCft = concreteCum * concreteMix.sandCft * wastageFactor;
+    const agg20Cft = concreteCum * concreteMix.agg20Cft * wastageFactor;
+    const agg12Cft = concreteCum * concreteMix.agg12Cft * wastageFactor;
+    const waterLtr = concreteCum * concreteMix.waterLtr;
 
-    const mainLengthM = lenM * mainNos * pileNos;
-    const mainSteelKg = mainLengthM * kgPerM(mainDia) * (1 + wastage / 100);
+    const bearingM = Number(bearingLengthMm || 0) / 1000;
+    const mainLengthEachM = lenM + 2 * bearingM;
+    const mainSteelKg = mainLengthEachM * Number(mainNos || 0) * nos * kgPerM(Number(mainDia || 0)) * wastageFactor;
 
-    const clearDiaM = Math.max(diaM - 2 * cover / 1000, 0.05);
-    const tieLengthEachM = Math.PI * clearDiaM + (2 * 10 * tieDia) / 1000;
-    const tieNosEachPile = Math.floor((lenM * 1000) / tieSpacing) + 1;
-    const tieSteelKg = tieLengthEachM * tieNosEachPile * pileNos * kgPerM(tieDia) * (1 + wastage / 100);
+    const clearW = Math.max(widthM - 2 * Number(cover || 0) / 1000, 0.01);
+    const clearD = Math.max(depthM - 2 * Number(cover || 0) / 1000, 0.01);
+    const stirrupLengthEachM = 2 * clearW + 2 * clearD + (2 * 10 * Number(stirrupDia || 0)) / 1000;
+    const stirrupNosEach = Math.floor((lenM * 1000) / Math.max(Number(stirrupSpacing || 1), 1)) + 1;
+    const stirrupSteelKg = stirrupLengthEachM * stirrupNosEach * nos * kgPerM(Number(stirrupDia || 0)) * wastageFactor;
 
-    const totalSteelKg = mainSteelKg + tieSteelKg;
+    const totalSteelKg = mainSteelKg + stirrupSteelKg;
     const bindingKg = totalSteelKg * 0.01;
-    const coverBlocks = Math.ceil(pileNos * tieNosEachPile * 0.25);
+    const coverBlocks = Math.ceil(nos * Math.max(stirrupNosEach, 1) * 0.5);
+    const shutteringAreaSft = ((2 * (lenM * depthM)) + (lenM * widthM)) * nos * 10.764;
 
-    const boringM = lenM * pileNos;
-
-    const materialTotal =
-      cementBags * cement.rate +
-      sandCft * sand.rate +
-      agg20Cft * agg20.rate +
-      agg12Cft * agg12.rate +
-      totalSteelKg * steel.rate +
-      bindingKg * binding.rate +
-      coverBlocks * coverBlock.rate +
-      boringM * boring.rate;
-
+    const cementCost = cementBags * cement.rate;
+    const sandCost = sandCft * sand.rate;
+    const aggCost = agg20Cft * agg20.rate + agg12Cft * agg12.rate;
+    const steelCost = totalSteelKg * steel.rate;
+    const bindingCost = bindingKg * binding.rate;
+    const coverBlockCost = coverBlocks * coverBlock.rate;
+    const shutteringCost = shutteringAreaSft * shuttering.rate;
+    const waterCost = waterLtr * water.rate;
+    const materialTotal = cementCost + sandCost + aggCost + steelCost + bindingCost + coverBlockCost + waterCost;
     const labourCost = concreteCum * labour.rate;
-    const grandTotal = materialTotal + labourCost;
+    const grandTotal = materialTotal + labourCost + shutteringCost;
 
     const rows: any[] = [
-      ["Concrete Volume", concreteCft, "CFT", ""],
-      ["Cement", cementBags, "bags", cementBags * cement.rate],
-      ["M Sand", sandCft, "CFT", sandCft * sand.rate],
-      ["CA1 + CA2 Aggregate", agg20Cft + agg12Cft, "CFT", agg20Cft * agg20.rate + agg12Cft * agg12.rate],
-      [`Steel ${mainDia}mm Main Bars (${mainNos} nos/pile)`, mainSteelKg, "kg", mainSteelKg * steel.rate],
-      [`Steel ${tieDia}mm Circular Ties @ ${tieSpacing}mm`, tieSteelKg, "kg", tieSteelKg * steel.rate],
-      ["Total Steel", totalSteelKg, "kg", totalSteelKg * steel.rate],
-      ["Binding Wire", bindingKg, "kg", bindingKg * binding.rate],
-      ["Cover Blocks / Spacers", coverBlocks, "Nos", coverBlocks * coverBlock.rate],
-      ["Pile Boring", boringM, "RMT", boringM * boring.rate],
+      ["No. of Lintels", nos, "Nos", ""],
+      ["Lintel Concrete Volume", concreteCft, "CFT", ""],
+      ["Shuttering Area (sides + bottom)", shutteringAreaSft, "SFT", shutteringCost],
+      ["Cement", cementBags, "bags", cementCost],
+      ["M Sand", sandCft, "CFT", sandCost],
+      ["CA1 + CA2 Aggregate", agg20Cft + agg12Cft, "CFT", aggCost],
+      [`Steel ${mainDia}mm Main Bars (${mainNos} nos/lintel)`, mainSteelKg, "kg", mainSteelKg * steel.rate],
+      [`Steel ${stirrupDia}mm Stirrups @ ${stirrupSpacing}mm`, stirrupSteelKg, "kg", stirrupSteelKg * steel.rate],
+      ["Total Steel", totalSteelKg, "kg", steelCost],
+      ["Binding Wire", bindingKg, "kg", bindingCost],
+      ["Cover Blocks / Spacers", coverBlocks, "Nos", coverBlockCost],
+      ["Water", waterLtr, "Ltr", waterCost],
       ["Material Total", "", "", materialTotal],
-      ["Labour", concreteCum, "CUM", labourCost],
+      ["Labour RCC", concreteCum, "CUM", labourCost],
       ["GRAND TOTAL", "", "", grandTotal],
     ];
 
-    setResult({ concreteCft, cementBags, totalSteelKg, boringM, grandTotal, rows });
+    setResult({ concreteCft, cementBags, totalSteelKg, shutteringAreaSft, grandTotal, rows });
   };
 
   const exportExcel = () => {
@@ -104,13 +118,13 @@ const router = useRouter();
       Cost: typeof r[3] === "number" ? "₹" + fmt(r[3]) : "-"
     })));
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Pile Foundation");
-    XLSX.writeFile(wb, "Pile_Foundation.xlsx");
+    XLSX.utils.book_append_sheet(wb, ws, "Lintel");
+    XLSX.writeFile(wb, "Lintel.xlsx");
   };
 
   const share = () => {
     if (!result) return;
-    window.open(`https://wa.me/?text=${encodeURIComponent(`Pile Foundation Estimate\nConcrete: ${fmt(result.concreteCft)} CFT\nCement: ${fmt(result.cementBags)} bags\nSteel: ${fmt(result.totalSteelKg)} kg\nBoring: ${fmt(result.boringM)} RMT\nTotal: ₹${fmt(result.grandTotal)}`)}`, "_blank");
+    window.open(`https://wa.me/?text=${encodeURIComponent(`Lintel Estimate\nConcrete: ${fmt(result.concreteCft)} CFT\nCement: ${fmt(result.cementBags)} bags\nSteel: ${fmt(result.totalSteelKg)} kg\nShuttering: ${fmt(result.shutteringAreaSft)} SFT\nTotal: ₹${fmt(result.grandTotal)}`)}`, "_blank");
   };
 
   const styles: any = {
@@ -125,27 +139,28 @@ const router = useRouter();
     td: { padding: 6, borderBottom: "1px solid #eee" }
   };
 
-  const rateMsg = rateStatusMessage({ cement, sand, agg20, agg12, steel, boring, labour });
+  const rateMsg = rateStatusMessage({ cement, sand, agg20, agg12, steel, shuttering, labour, water });
 
   return (
     <div style={styles.page}>
       <div style={styles.header}>
         <button onClick={() => router.push("/calculators")} style={{ background: "transparent", color: "white", border: 0, fontSize: 22 }}>←</button>
-        <h2>🥧 Pile Foundation Calculator</h2>
+        <h2>🚪 Lintel Calculator</h2>
       </div>
 
       <div style={styles.card}>
-        💰 Admin Rates: Cement ₹{cement.rate}/bag | Steel ₹{steel.rate}/kg | Boring ₹{boring.rate}/RMT | Labour ₹{labour.rate}/CUM
+        💰 Admin Rates: Cement ₹{cement.rate}/bag | Steel ₹{steel.rate}/kg | Shuttering ₹{shuttering.rate}/SFT | Labour ₹{labour.rate}/CUM
         {rateMsg && <div style={{ color: "#856404" }}>{rateMsg}</div>}
       </div>
 
       <div style={styles.card}>
-        <h3>📐 Pile Inputs</h3>
+        <h3>📐 Lintel Inputs</h3>
         <div style={styles.grid}>
-          <div><label style={styles.label}>No. of Piles</label><input style={styles.input} type="number" value={pileNos} onChange={e => setPileNos(parseFloat(e.target.value) || 0)} /></div>
-          <div><label style={styles.label}>Diameter</label><input style={styles.input} type="number" value={diameter} onChange={e => setDiameter(parseFloat(e.target.value) || 0)} /></div>
+          <div><label style={styles.label}>No. of Lintels</label><input style={styles.input} type="number" value={lintelNos} onChange={e => setLintelNos(parseFloat(e.target.value) || 0)} /></div>
           <div><label style={styles.label}>Length</label><input style={styles.input} type="number" value={length} onChange={e => setLength(parseFloat(e.target.value) || 0)} /></div>
-          <div><label style={styles.label}>Unit</label><select style={styles.input} value={unit} onChange={e => setUnit(e.target.value)}><option>Feet</option><option>Meter</option></select></div>
+          <div><label style={styles.label}>Width</label><input style={styles.input} type="number" value={width} onChange={e => setWidth(parseFloat(e.target.value) || 0)} /></div>
+          <div><label style={styles.label}>Depth</label><input style={styles.input} type="number" value={depth} onChange={e => setDepth(parseFloat(e.target.value) || 0)} /></div>
+          <div><label style={styles.label}>Unit</label><select style={styles.input} value={dimensionUnit} onChange={e => setDimensionUnit(e.target.value)}><option>Feet/Inch</option><option>Meter/MM</option></select></div>
           <div><label style={styles.label}>Grade</label><select style={styles.input} value={grade} onChange={e => setGrade(e.target.value)}><option>M20</option><option>M25</option><option>M30</option></select></div>
           <div><label style={styles.label}>Cover (mm)</label><input style={styles.input} type="number" value={cover} onChange={e => setCover(parseFloat(e.target.value) || 0)} /></div>
           <div><label style={styles.label}>Wastage (%)</label><input style={styles.input} type="number" value={wastage} onChange={e => setWastage(parseFloat(e.target.value) || 0)} /></div>
@@ -157,8 +172,9 @@ const router = useRouter();
         <div style={styles.grid}>
           <div><label style={styles.label}>Main Bar Dia (mm)</label><input style={styles.input} type="number" value={mainDia} onChange={e => setMainDia(parseFloat(e.target.value) || 0)} /></div>
           <div><label style={styles.label}>Main Bar Nos</label><input style={styles.input} type="number" value={mainNos} onChange={e => setMainNos(parseFloat(e.target.value) || 0)} /></div>
-          <div><label style={styles.label}>Tie Dia (mm)</label><input style={styles.input} type="number" value={tieDia} onChange={e => setTieDia(parseFloat(e.target.value) || 0)} /></div>
-          <div><label style={styles.label}>Tie Spacing (mm)</label><input style={styles.input} type="number" value={tieSpacing} onChange={e => setTieSpacing(parseFloat(e.target.value) || 0)} /></div>
+          <div><label style={styles.label}>Stirrup Dia (mm)</label><input style={styles.input} type="number" value={stirrupDia} onChange={e => setStirrupDia(parseFloat(e.target.value) || 0)} /></div>
+          <div><label style={styles.label}>Stirrup Spacing (mm)</label><input style={styles.input} type="number" value={stirrupSpacing} onChange={e => setStirrupSpacing(parseFloat(e.target.value) || 0)} /></div>
+          <div><label style={styles.label}>Bearing Each Side (mm)</label><input style={styles.input} type="number" value={bearingLengthMm} onChange={e => setBearingLengthMm(parseFloat(e.target.value) || 0)} /></div>
         </div>
       </div>
 
@@ -190,4 +206,3 @@ const router = useRouter();
     </div>
   );
 }
-

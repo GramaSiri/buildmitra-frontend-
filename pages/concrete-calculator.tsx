@@ -3,6 +3,7 @@ import * as XLSX from 'xlsx';
 import { useRouter } from 'next/router';
 import { useRates } from '../contexts/RateContext';
 import { usePaymentBarrier } from '../hooks/usePaymentBarrier';
+import { getMasterRate } from "../utils/masterRates";
 
 const styles = {
   container: { maxWidth: '100%', margin: 0, padding: '12px', backgroundColor: '#f5f0e8', minHeight: '100vh', boxSizing: 'border-box' },
@@ -54,6 +55,19 @@ export default function ConcretePage() {
   const [results, setResults] = useState(null);
   const [generated, setGenerated] = useState(false);
 
+  const cementRate = getMasterRate(["cement", "opc", "ppc"], rates?.cement || 400).rate;
+  const sandRate = getMasterRate(["m sand", "sand"], rates?.sand || 55).rate;
+  const agg20Rate = getMasterRate(["20mm aggregate", "20 mm aggregate", "ca1"], rates?.aggregate20 || 50).rate;
+  const agg12Rate = getMasterRate(["12mm aggregate", "12 mm aggregate", "ca2"], rates?.aggregate12 || 48).rate;
+  const waterRate = getMasterRate(["water"], rates?.water || 0.5, ["bm_service_rates", "bm_material_rates"]).rate;
+  const labourRate = getMasterRate(["concrete labour", "rcc labour", "labour concrete"], rates?.labour_concrete || 1000, ["bm_labour_rates", "bm_service_rates"]).rate;
+
+  const concreteMix = {
+    M20: { cementBags: 8.0, sandCft: 14.83, agg20Cft: 17.8, agg12Cft: 11.87, waterLtr: 170 },
+    M25: { cementBags: 8.7, sandCft: 13.8, agg20Cft: 17.0, agg12Cft: 11.3, waterLtr: 165 },
+    M30: { cementBags: 9.3, sandCft: 12.7, agg20Cft: 16.2, agg12Cft: 10.8, waterLtr: 160 }
+  };
+
   const calculateResults = () => {
     let L = unit === 'feet' ? length * 0.3048 : length;
     let W = unit === 'feet' ? width * 0.3048 : width;
@@ -62,41 +76,24 @@ export default function ConcretePage() {
     const volumeCum = L * W * T;
     const volumeCft = volumeCum * 35.315;
     
-    let cement, sand, aggregate20, aggregate12;
-    if (concreteGrade === 'M20') {
-      cement = volumeCum * 7.5;
-      sand = volumeCum * 0.42;
-      aggregate20 = volumeCum * 0.5;
-      aggregate12 = volumeCum * 0.34;
-    } else if (concreteGrade === 'M25') {
-      cement = volumeCum * 8.2;
-      sand = volumeCum * 0.4;
-      aggregate20 = volumeCum * 0.48;
-      aggregate12 = volumeCum * 0.32;
-    } else {
-      cement = volumeCum * 8.8;
-      sand = volumeCum * 0.38;
-      aggregate20 = volumeCum * 0.45;
-      aggregate12 = volumeCum * 0.31;
-    }
+    const mix = concreteMix[concreteGrade] || concreteMix.M20;
+    const wastageFactor = 1 + Number(wastage || 0) / 100;
+    const cementWithWastage = volumeCum * mix.cementBags * wastageFactor;
+    const sandCft = volumeCum * mix.sandCft * wastageFactor;
+    const agg20Cft = volumeCum * mix.agg20Cft * wastageFactor;
+    const agg12Cft = volumeCum * mix.agg12Cft * wastageFactor;
+    const waterLtr = volumeCum * mix.waterLtr;
     
-    const sandCft = sand * 35.315;
-    const agg20Cft = aggregate20 * 35.315;
-    const agg12Cft = aggregate12 * 35.315;
-    
-    const cementWithWastage = cement * (1 + wastage/100);
-    const waterLtr = cementWithWastage * 50 * 0.45;
-    
-    const cementCost = cementWithWastage * (rates?.cement || 400);
-    const sandCost = sandCft * (rates?.sand || 55);
-    const agg20Cost = agg20Cft * (rates?.aggregate20 || 50);
-    const agg12Cost = agg12Cft * (rates?.aggregate12 || 48);
-    const waterCost = waterLtr * (rates?.water || 0.5);
+    const cementCost = cementWithWastage * cementRate;
+    const sandCost = sandCft * sandRate;
+    const agg20Cost = agg20Cft * agg20Rate;
+    const agg12Cost = agg12Cft * agg12Rate;
+    const waterCost = waterLtr * waterRate;
     
     const materialTotal = cementCost + sandCost + agg20Cost + agg12Cost + waterCost;
     
     // Labour for concrete works (per CUM)
-    const labourPerCum = rates?.labour_concrete || 1000;
+    const labourPerCum = labourRate;
     const labourCost = volumeCum * labourPerCum;
     
     const grandTotal = materialTotal + labourCost;
@@ -120,7 +117,7 @@ export default function ConcretePage() {
         profit: formatNumber(labourBreakdown.profit),
         total: formatNumber(labourBreakdown.total)
       },
-      rates: { cement: rates?.cement || 400, sand: rates?.sand || 55, steel: rates?.steel || 68 }
+      rates: { cement: cementRate, sand: sandRate, steel: rates?.steel || 68 }
     };
   };
 
@@ -173,8 +170,8 @@ export default function ConcretePage() {
     ),
     
     React.createElement('div', { style: styles.rateInfo },
-      React.createElement('span', null, `💰 Material Rates: Cement ₹${rates?.cement || 400}/bag | Sand ₹${rates?.sand || 55}/CFT`),
-      React.createElement('div', null, React.createElement('small', null, `👷 Labour: ₹${rates?.labour_concrete || 1000}/CUM`))
+      React.createElement('span', null, `💰 Material Rates: Cement ₹${cementRate}/bag | Sand ₹${sandRate}/CFT`),
+      React.createElement('div', null, React.createElement('small', null, `👷 Labour: ₹${labourRate}/CUM`))
     ),
     
     React.createElement('div', { style: styles.sectionTitle }, '📐 Concrete Dimensions'),

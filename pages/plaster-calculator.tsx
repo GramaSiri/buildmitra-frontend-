@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { getMasterRate, rateStatusMessage } from "../utils/masterRates";
+import { usePaymentBarrier } from "../hooks/usePaymentBarrier";
 
 type Opening = { name: string; length: number; width: number; nos: number };
 
@@ -51,18 +52,19 @@ const [nos, setNos] = useState(2);
   const cement = getMasterRate(["cement", "opc", "ppc"], 400);
   const sand = getMasterRate(["sand"], 55);
   const labour = getMasterRate(["plaster labour", "plaster"], 10, ["bm_labour_rates", "bm_service_rates"]);
-  const waterRate = 0.5;
+  const water = getMasterRate(["water"], 0.5, ["bm_service_rates", "bm_material_rates"]);
+  const waterRate = water.rate;
 
   const calc = useMemo(() => {
     const wallArea = Number(nos || 0) * Number(length || 0) * Number(height || 0);
     const openingArea = openings.reduce((s, o) => s + Number(o.length || 0) * Number(o.width || 0) * Number(o.nos || 0), 0);
 
     const multiplier = plasterType === "Both Side Wall Plaster" ? 2 : 1;
-    const netBeforeWastage = Math.max((wallArea - openingArea) * multiplier, 0);
-    const netArea = netBeforeWastage * (1 + Number(wastage || 0) / 100);
+    const netArea = Math.max((wallArea - openingArea) * multiplier, 0);
+    const materialFactor = 1 + Number(wastage || 0) / 100;
 
     const thicknessFt = Number(thicknessMm || 0) / 304.8;
-    const wetVolumeCft = netArea * thicknessFt;
+    const wetVolumeCft = netArea * thicknessFt * materialFactor;
     const dryVolumeCft = wetVolumeCft * 1.33;
 
     const [cementPart, sandPart] = mortarRatio.split(":").map(Number);
@@ -80,7 +82,7 @@ const [nos, setNos] = useState(2);
     const totalCost = materialTotal + labourCost;
 
     return { wallArea, openingArea, netArea, cementBags, sandCft, waterLtr, cementCost, sandCost, waterCost, labourCost, materialTotal, totalCost };
-  }, [nos, length, height, openings, plasterType, thicknessMm, mortarRatio, wastage, cement.rate, sand.rate, labour.rate]);
+  }, [nos, length, height, openings, plasterType, thicknessMm, mortarRatio, wastage, cement.rate, sand.rate, labour.rate, waterRate]);
 
   const addOpening = () => {
     if (!opening.name || !opening.length || !opening.width || !opening.nos) return alert("Fill opening details");
@@ -131,9 +133,9 @@ Total: ₹${calc.totalCost.toFixed(2)}`);
       <p style={{ background: "#800020", color: "white", padding: 12, borderRadius: 12, display: "inline-block" }}>
         💰 Cement ₹{cement.rate}/bag | Sand ₹{sand.rate}/CFT | Labour ₹{labour.rate}/sqft
       </p>
-      {rateStatusMessage({ cement, sand, labour }) && (
+      {rateStatusMessage({ cement, sand, labour, water }) && (
         <div style={{ ...card, background: "#fff3cd", color: "#856404" }}>
-          {rateStatusMessage({ cement, sand, labour })}
+          {rateStatusMessage({ cement, sand, labour, water })}
         </div>
       )}
 

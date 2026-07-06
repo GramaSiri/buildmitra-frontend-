@@ -72,15 +72,15 @@ const router = useRouter();
   const [results, setResults] = useState(null);
   const [generated, setGenerated] = useState(false);
 
-  const cementRate = getMasterRate(["cement", "opc", "ppc"], 0);
-  const sandRate = getMasterRate(["m sand", "sand"], 0);
-  const agg20Rate = getMasterRate(["20mm aggregate", "20 mm aggregate", "ca1"], 0);
-  const agg12Rate = getMasterRate(["12mm aggregate", "12 mm aggregate", "ca2"], 0);
-  const steelRate = getMasterRate(["steel", "tmt", "rebar"], 0);
-  const bindingWireRate = getMasterRate(["binding wire"], 0);
-  const coverBlockRate = getMasterRate(["cover block"], 0);
-  const waterRate = getMasterRate(["water"], 0, ["bm_service_rates", "bm_material_rates"]);
-  const labourRate = getMasterRate(["rcc labour", "column labour", "concrete labour"], 0, ["bm_labour_rates", "bm_service_rates"]);
+  const cementRate = getMasterRate(["cement", "opc", "ppc"], 400);
+  const sandRate = getMasterRate(["m sand", "sand"], 55);
+  const agg20Rate = getMasterRate(["20mm aggregate", "20 mm aggregate", "ca1"], 50);
+  const agg12Rate = getMasterRate(["12mm aggregate", "12 mm aggregate", "ca2"], 48);
+  const steelRate = getMasterRate(["steel", "tmt", "rebar"], 68);
+  const bindingWireRate = getMasterRate(["binding wire"], 80);
+  const coverBlockRate = getMasterRate(["cover block"], 5);
+  const waterRate = getMasterRate(["water"], 0.5, ["bm_service_rates", "bm_material_rates"]);
+  const labourRate = getMasterRate(["rcc labour", "column labour", "concrete labour"], 1000, ["bm_labour_rates", "bm_service_rates"]);
 
   const calculateResults = () => {
     // Convert dimensions to meters
