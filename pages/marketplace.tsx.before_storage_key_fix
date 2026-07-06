@@ -160,35 +160,6 @@ export default function Marketplace() {
     try {
       var allItems = [];
       var users = JSON.parse(localStorage.getItem("users") || "[]");
-
-      // BuildMitra generic supplierProducts fallback
-      try {
-        var genericSupplierProducts = JSON.parse(localStorage.getItem("supplierProducts") || "[]");
-        if (Array.isArray(genericSupplierProducts) && genericSupplierProducts.length > 0) {
-          genericSupplierProducts.forEach(function(p) {
-            supplierItems.push({
-              ...p,
-              id: p.id || ("GEN-SUP-" + Math.random()),
-              type: p.itemType || "material",
-              itemType: p.itemType || "material",
-              category: p.category || "Materials",
-              name: p.name || p.productName || p.itemName || "Supplier Product",
-              itemName: p.itemName || p.name || p.productName || "Supplier Product",
-              ownerName: p.ownerName || p.supplierName || p.providerName || p.shopName || "Supplier",
-              businessName: p.businessName || p.ownerName || p.supplierName || p.providerName || "Supplier",
-              providerRole: p.providerRole || "supplier",
-              providerUserCode: p.providerUserCode || p.supplierUserCode || p.userCode || p.userId || "",
-              userCode: p.providerUserCode || p.supplierUserCode || p.userCode || p.userId || "",
-              phone: p.providerPhone || p.supplierPhone || p.ownerPhone || p.phone || "",
-              price: p.price || 0,
-              unit: p.unit || "piece",
-              description: p.description || p.specification || ""
-            });
-          });
-        }
-      } catch (e) {
-        console.warn("Could not read generic supplierProducts", e);
-      }
       var allKeys = Object.keys(localStorage);
       var productKeys = allKeys.filter(function(key) {
         return key.startsWith("supplierProducts_") && key !== "supplierProducts_undefined";

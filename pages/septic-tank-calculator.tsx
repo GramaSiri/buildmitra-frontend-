@@ -21,16 +21,16 @@ const router = useRouter();
   const [wastage, setWastage] = useState(3);
   const [result, setResult] = useState<any>(null);
 
-  const cement = getMasterRate(["cement", "opc", "ppc"], 0);
-  const sand = getMasterRate(["m sand", "sand"], 0);
-  const agg20 = getMasterRate(["20mm aggregate", "ca1"], 0);
-  const agg12 = getMasterRate(["12mm aggregate", "ca2"], 0);
-  const steel = getMasterRate(["steel", "tmt"], 0);
-  const block = getMasterRate(["6 inch block", "concrete block"], 0);
-  const stone = getMasterRate(["size stone", "stone masonry"], 0);
-  const binding = getMasterRate(["binding wire"], 0);
-  const pvc = getMasterRate(["pvc pipe", "110mm pvc pipe", "75mm pvc pipe"], 0);
-  const labour = getMasterRate(["septic tank labour", "masonry labour", "rcc labour"], 0, ["bm_labour_rates", "bm_service_rates"]);
+  const cement = getMasterRate(["cement", "opc", "ppc"], 400);
+  const sand = getMasterRate(["m sand", "sand"], 55);
+  const agg20 = getMasterRate(["20mm aggregate", "ca1"], 50);
+  const agg12 = getMasterRate(["12mm aggregate", "ca2"], 48);
+  const steel = getMasterRate(["steel", "tmt"], 68);
+  const block = getMasterRate(["6 inch block", "concrete block"], 45);
+  const stone = getMasterRate(["size stone", "stone masonry"], 1200);
+  const binding = getMasterRate(["binding wire"], 80);
+  const pvc = getMasterRate(["pvc pipe", "110mm pvc pipe", "75mm pvc pipe"], 120);
+  const labour = getMasterRate(["septic tank labour", "masonry labour", "rcc labour"], 1000, ["bm_labour_rates", "bm_service_rates"]);
 
   const calc = () => {
     const L = unit === "Meter" ? length * 3.28084 : length;

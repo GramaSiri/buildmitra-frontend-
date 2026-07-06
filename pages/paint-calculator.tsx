@@ -88,16 +88,16 @@ const router = useRouter();
   const [results, setResults] = useState<any>(null);
   const [generated, setGenerated] = useState(false);
 
-  const puttyRate = getMasterRate(["wall putty", "putty"], 0);
-  const primerRate = getMasterRate(["primer"], 0);
-  const emulsionRate = getMasterRate(["emulsion paint", "emulsion"], 0);
-  const royalRate = getMasterRate(["royal paint", "premium paint", "royal"], 0);
-  const exteriorRate = getMasterRate(["exterior paint", "weatherproof paint", "weather proof"], 0);
-  const enamelRate = getMasterRate(["enamel paint", "enamel"], 0);
-  const ceilingRate = getMasterRate(["ceiling paint", "ceiling"], 0);
-  const textureRate = getMasterRate(["texture paint", "texture"], 0);
-  const designRate = getMasterRate(["design paint", "stencil paint", "design"], 0);
-  const labourRate = getMasterRate(["painting labour", "paint labour", "labour painting"], 0, ["bm_labour_rates", "bm_service_rates"]);
+  const puttyRate = getMasterRate(["wall putty", "putty"], 28);
+  const primerRate = getMasterRate(["primer"], 120);
+  const emulsionRate = getMasterRate(["emulsion paint", "emulsion"], 220);
+  const royalRate = getMasterRate(["royal paint", "premium paint", "royal"], 350);
+  const exteriorRate = getMasterRate(["exterior paint", "weatherproof paint", "weather proof"], 280);
+  const enamelRate = getMasterRate(["enamel paint", "enamel"], 260);
+  const ceilingRate = getMasterRate(["ceiling paint", "ceiling"], 180);
+  const textureRate = getMasterRate(["texture paint", "texture"], 90);
+  const designRate = getMasterRate(["design paint", "stencil paint", "design"], 120);
+  const labourRate = getMasterRate(["painting labour", "paint labour", "labour painting"], finishType === "Repaint" ? 8 : 12, ["bm_labour_rates", "bm_service_rates"]);
 
   const rateMsg = rateStatusMessage({
     putty: puttyRate,

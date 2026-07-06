@@ -120,7 +120,7 @@ const router = useRouter();
   const calculateResults = () => {
     const wallAreaSqft = length * height * wallNos;
     const totalOpeningArea = openings.reduce((sum, opening) => sum + opening.area, 0);
-    const netArea = wallAreaSqft - totalOpeningArea;
+    const netArea = Math.max(wallAreaSqft - totalOpeningArea, 0);
     
     const mortarInch = Number(mortarThicknessMm || 0) / 25.4;
     const moduleLengthIn = blockInfo.length + mortarInch;
@@ -147,7 +147,8 @@ const router = useRouter();
     const blockCost = totalBlocks * blockRate;
     const cementCost = cementBags * cementRate;
     const sandCost = sandCft * sandRate;
-    const waterCost = waterLtr * 0.5;
+    const waterRate = getMasterRate(["water"], 0.5, ["bm_service_rates", "bm_material_rates"]).rate;
+    const waterCost = waterLtr * waterRate;
     
     const materialTotal = blockCost + cementCost + sandCost + waterCost;
     const labourCost = netArea * labourRate;

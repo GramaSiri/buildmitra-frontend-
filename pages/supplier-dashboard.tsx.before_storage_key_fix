@@ -138,12 +138,8 @@ const [userName, setUserName] = useState("Supplier");
     }
     
     // Get current user info
-    const user =
-      JSON.parse(localStorage.getItem("currentUser") || "null") ||
-      JSON.parse(localStorage.getItem("loggedInUser") || "null") ||
-      JSON.parse(localStorage.getItem("user") || "{}");
-    const supplierInfoData =
-      JSON.parse(localStorage.getItem("supplierInfo_" + (user.userCode || user.userId || user.id || user.phone || userId || "supplier")) || "{}");
+    const user = JSON.parse(localStorage.getItem("loggedInUser") || "{}");
+    const supplierInfoData = JSON.parse(localStorage.getItem("supplierInfo_" + user.userId) || "{}");
     
     // CRITICAL: Get the correct owner name
     const ownerName = supplierInfoData.shopName || user.name || "Supplier";
@@ -204,12 +200,8 @@ const [userName, setUserName] = useState("Supplier");
         const jsonData = XLSX.utils.sheet_to_json(firstSheet);
         
         // Get current user info
-        const user =
-      JSON.parse(localStorage.getItem("currentUser") || "null") ||
-      JSON.parse(localStorage.getItem("loggedInUser") || "null") ||
-      JSON.parse(localStorage.getItem("user") || "{}");
-        const supplierInfoData =
-      JSON.parse(localStorage.getItem("supplierInfo_" + (user.userCode || user.userId || user.id || user.phone || userId || "supplier")) || "{}");
+        const user = JSON.parse(localStorage.getItem("loggedInUser") || "{}");
+        const supplierInfoData = JSON.parse(localStorage.getItem("supplierInfo_" + user.userId) || "{}");
         const ownerName = supplierInfoData.shopName || user.name || "Supplier";
         const ownerPhone = supplierInfoData.phone || user.phone || "";
         

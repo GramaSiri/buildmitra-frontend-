@@ -20,15 +20,15 @@ const router = useRouter();
   const [paintCoats, setPaintCoats] = useState(2);
   const [result, setResult] = useState<any>(null);
 
-  const steel = getMasterRate(["steel", "structural steel", "ms steel"], 0);
-  const tile = getMasterRate(["mangalore tile", "mangalore tiles", "clay tile"], 0);
-  const sheet = getMasterRate(["roof sheet", "gi sheet", "colour coated sheet"], 0);
-  const bolt = getMasterRate(["bolt", "fastener"], 0);
-  const anchorBolt = getMasterRate(["anchor bolt"], 0);
-  const welding = getMasterRate(["welding"], 0, ["bm_service_rates", "bm_material_rates"]);
-  const primer = getMasterRate(["red oxide", "steel primer", "primer"], 0);
-  const paint = getMasterRate(["enamel paint", "steel paint", "metal paint"], 0);
-  const labour = getMasterRate(["roof truss labour", "fabrication labour", "steel labour"], 0, ["bm_labour_rates", "bm_service_rates"]);
+  const steel = getMasterRate(["steel", "structural steel", "ms steel"], 68);
+  const tile = getMasterRate(["mangalore tile", "mangalore tiles", "clay tile"], 45);
+  const sheet = getMasterRate(["roof sheet", "gi sheet", "colour coated sheet"], 90);
+  const bolt = getMasterRate(["bolt", "fastener"], 8);
+  const anchorBolt = getMasterRate(["anchor bolt"], 120);
+  const welding = getMasterRate(["welding"], 25, ["bm_service_rates", "bm_material_rates"]);
+  const primer = getMasterRate(["red oxide", "steel primer", "primer"], 120);
+  const paint = getMasterRate(["enamel paint", "steel paint", "metal paint"], 260);
+  const labour = getMasterRate(["roof truss labour", "fabrication labour", "steel labour"], 8, ["bm_labour_rates", "bm_service_rates"]);
 
   const getAutoSection = () => {
     if (width <= 20) {

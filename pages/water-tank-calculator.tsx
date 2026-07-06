@@ -22,18 +22,18 @@ const router = useRouter();
   const [wastage, setWastage] = useState(3);
   const [result, setResult] = useState<any>(null);
 
-  const cement = getMasterRate(["cement", "opc", "ppc"], 0);
-  const sand = getMasterRate(["m sand", "sand"], 0);
-  const agg20 = getMasterRate(["20mm aggregate", "20 mm aggregate", "ca1"], 0);
-  const agg12 = getMasterRate(["12mm aggregate", "12 mm aggregate", "ca2"], 0);
-  const steel = getMasterRate(["steel", "tmt", "rebar"], 0);
-  const block = getMasterRate(["6 inch block", "6\" block", "concrete block"], 0);
-  const brick = getMasterRate(["brick", "clay brick"], 0);
-  const binding = getMasterRate(["binding wire"], 0);
-  const waterproof = getMasterRate(["waterproofing", "water proofing"], 0, ["bm_service_rates", "bm_material_rates"]);
-  const foodPaint = getMasterRate(["food grade paint", "tank paint"], 0, ["bm_service_rates", "bm_material_rates"]);
-  const frp = getMasterRate(["frp cover", "tank cover"], 0, ["bm_service_rates", "bm_material_rates"]);
-  const labour = getMasterRate(["water tank labour", "rcc labour", "concrete labour"], 0, ["bm_labour_rates", "bm_service_rates"]);
+  const cement = getMasterRate(["cement", "opc", "ppc"], 400);
+  const sand = getMasterRate(["m sand", "sand"], 55);
+  const agg20 = getMasterRate(["20mm aggregate", "20 mm aggregate", "ca1"], 50);
+  const agg12 = getMasterRate(["12mm aggregate", "12 mm aggregate", "ca2"], 48);
+  const steel = getMasterRate(["steel", "tmt", "rebar"], 68);
+  const block = getMasterRate(["6 inch block", "6\" block", "concrete block"], 45);
+  const brick = getMasterRate(["brick", "clay brick"], 8);
+  const binding = getMasterRate(["binding wire"], 80);
+  const waterproof = getMasterRate(["waterproofing", "water proofing"], 45, ["bm_service_rates", "bm_material_rates"]);
+  const foodPaint = getMasterRate(["food grade paint", "tank paint"], 35, ["bm_service_rates", "bm_material_rates"]);
+  const frp = getMasterRate(["frp cover", "tank cover"], 250, ["bm_service_rates", "bm_material_rates"]);
+  const labour = getMasterRate(["water tank labour", "rcc labour", "concrete labour"], 1000, ["bm_labour_rates", "bm_service_rates"]);
 
   const calc = () => {
     const L = unit === "Meter" ? length * 3.28084 : length;

@@ -27,15 +27,15 @@ const router = useRouter();
   const [tieSpacing, setTieSpacing] = useState(150);
   const [result, setResult] = useState<any>(null);
 
-  const cement = getMasterRate(["cement", "opc", "ppc"], 0);
-  const sand = getMasterRate(["m sand", "sand"], 0);
-  const agg20 = getMasterRate(["20mm aggregate", "ca1"], 0);
-  const agg12 = getMasterRate(["12mm aggregate", "ca2"], 0);
-  const steel = getMasterRate(["steel", "tmt"], 0);
-  const binding = getMasterRate(["binding wire"], 0);
-  const coverBlock = getMasterRate(["cover block", "spacer"], 0);
-  const boring = getMasterRate(["pile boring", "boring"], 0, ["bm_service_rates", "bm_material_rates"]);
-  const labour = getMasterRate(["pile labour", "rcc labour", "concrete labour"], 0, ["bm_labour_rates", "bm_service_rates"]);
+  const cement = getMasterRate(["cement", "opc", "ppc"], 400);
+  const sand = getMasterRate(["m sand", "sand"], 55);
+  const agg20 = getMasterRate(["20mm aggregate", "ca1"], 50);
+  const agg12 = getMasterRate(["12mm aggregate", "ca2"], 48);
+  const steel = getMasterRate(["steel", "tmt"], 68);
+  const binding = getMasterRate(["binding wire"], 80);
+  const coverBlock = getMasterRate(["cover block", "spacer"], 5);
+  const boring = getMasterRate(["pile boring", "boring"], 450, ["bm_service_rates", "bm_material_rates"]);
+  const labour = getMasterRate(["pile labour", "rcc labour", "concrete labour"], 1000, ["bm_labour_rates", "bm_service_rates"]);
 
   const calc = () => {
     const diaM = unit === "Feet" ? diameter * 0.3048 : diameter;

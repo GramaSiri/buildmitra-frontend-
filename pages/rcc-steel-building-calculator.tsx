@@ -18,14 +18,14 @@ const router = useRouter();
   const [buaFactor, setBuaFactor] = useState(0.85);
   const [floorHeight, setFloorHeight] = useState(10);
 
-  const cement = getMasterRate(["cement", "opc", "ppc"], 0);
-  const sand = getMasterRate(["m sand", "sand"], 0);
-  const ca20 = getMasterRate(["20mm aggregate", "20 mm aggregate", "ca1", "coarse aggregate 20"], 0);
-  const ca12 = getMasterRate(["12mm aggregate", "12 mm aggregate", "ca2", "coarse aggregate 12"], 0);
-  const steel = getMasterRate(["steel", "tmt", "rebar"], 0);
-  const block6 = getMasterRate(["6 inch block", "6\" block", "concrete block 6", "6 block"], 0);
-  const block4 = getMasterRate(["4 inch block", "4\" block", "concrete block 4", "4 block"], 0);
-  const labour = getMasterRate(["civil labour", "rcc labour", "construction labour"], 0, ["bm_labour_rates", "bm_service_rates"]);
+  const cement = getMasterRate(["cement", "opc", "ppc"], 400);
+  const sand = getMasterRate(["m sand", "sand"], 55);
+  const ca20 = getMasterRate(["20mm aggregate", "20 mm aggregate", "ca1", "coarse aggregate 20"], 50);
+  const ca12 = getMasterRate(["12mm aggregate", "12 mm aggregate", "ca2", "coarse aggregate 12"], 48);
+  const steel = getMasterRate(["steel", "tmt", "rebar"], 68);
+  const block6 = getMasterRate(["6 inch block", "6\" block", "concrete block 6", "6 block"], 45);
+  const block4 = getMasterRate(["4 inch block", "4\" block", "concrete block 4", "4 block"], 35);
+  const labour = getMasterRate(["civil labour", "rcc labour", "construction labour"], 1000, ["bm_labour_rates", "bm_service_rates"]);
 
   const result = useMemo(() => {
     const plotArea = plotL * plotW;
