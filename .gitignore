@@ -19,3 +19,5 @@ buildmitra/
 *.tmp
 contractor-full.txt
 all_calculators.txt
+.vercel
+.env*
