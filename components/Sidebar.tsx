@@ -335,110 +335,104 @@ const mobileTabs = [
 
 if (isMobile) {
   return (
-    <div style={{ minHeight: "100vh", background: "#f0f2f5" }}>
-      {showMobileMenu ? (
-        <div style={{ padding: "12px" }}>
-          <div style={{
-            background: "linear-gradient(135deg,#1a1a2e,#16213e)",
-            color: "white",
-            borderRadius: "14px",
-            padding: "14px",
-            marginBottom: "12px",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center"
-          }}>
-            <div>
-              <div style={{ fontSize: "18px", fontWeight: "bold" }}>🏗️ BuildMitra</div>
-              <div style={{ fontSize: "12px", color: "#ffb366" }}>{userName} • {userRole}</div>
-            </div>
-            <button
-              onClick={() => {
-                clearBuildMitraSession();
-                router.push("/login");
-              }}
-              style={{
-                background: "#e74c3c",
-                color: "white",
-                border: 0,
-                borderRadius: "8px",
-                padding: "8px 10px",
-                fontWeight: "bold"
-              }}
-            >
-              Logout
-            </button>
-          </div>
-
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap: "10px"
-          }}>
-            {mobileTabs.map((tab, i) => (
-              <button
-                key={i}
-                onClick={() => {
-                  setShowMobileMenu(false);
-                  go(tab.path);
-                }}
-                style={{
-                  background: currentPath === tab.path ? "#ff7a00" : "white",
-                  color: currentPath === tab.path ? "white" : "#1a1a2e",
-                  border: "1px solid #ddd",
-                  borderRadius: "14px",
-                  padding: "14px 8px",
-                  minHeight: "86px",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                  fontWeight: "bold",
-                  fontSize: "11px",
-                  cursor: "pointer"
-                }}
-              >
-                <div style={{ fontSize: "26px", marginBottom: "6px" }}>{tab.icon}</div>
-                <div>{tab.name}</div>
-              </button>
-            ))}
-          </div>
-        </div>
-      ) : (
+    <div style={{
+      minHeight: "100vh",
+      background: "#f3f4f6",
+      width: "100%"
+    }}>
+      <div style={{
+        position: "sticky",
+        top: 0,
+        zIndex: 1000,
+        background: "#1a1a2e",
+        color: "#ffffff",
+        padding: "12px 14px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        boxShadow: "0 2px 10px rgba(0,0,0,0.18)"
+      }}>
         <div>
-          <div style={{
-            position: "sticky",
-            top: 0,
-            zIndex: 999,
-            background: "#1a1a2e",
-            color: "white",
-            padding: "10px",
-            display: "flex",
-            alignItems: "center",
-            gap: "10px"
-          }}>
+          <div style={{ fontSize: 20, fontWeight: 900 }}>🏗️ BuildMitra</div>
+          <div style={{ fontSize: 11, opacity: 0.8 }}>Build Smarter. Save Bigger.</div>
+        </div>
+
+        <button
+          type="button"
+          onClick={logout}
+          style={{
+            border: 0,
+            borderRadius: 8,
+            padding: "8px 10px",
+            background: "#ef4444",
+            color: "#ffffff",
+            fontWeight: 800
+          }}
+        >
+          Logout
+        </button>
+      </div>
+
+      <div style={{
+        padding: "12px",
+        background: "#ffffff",
+        borderBottom: "1px solid #e5e7eb"
+      }}>
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+          gap: "10px"
+        }}>
+          {mobileTabs.map((tab, i) => (
             <button
-              onClick={() => setShowMobileMenu(true)}
+              key={`${tab.path}-${i}`}
+              type="button"
+              onClick={() => go(tab.path)}
               style={{
-                background: "#ff7a00",
-                color: "white",
-                border: 0,
-                borderRadius: "8px",
-                padding: "8px 12px",
-                fontWeight: "bold"
+                minHeight: "82px",
+                border: currentPath === tab.path
+                  ? "2px solid #ff7a00"
+                  : "1px solid #e5e7eb",
+                borderRadius: "12px",
+                background: currentPath === tab.path ? "#fff7ed" : "#ffffff",
+                padding: "9px 5px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "6px",
+                color: "#111827",
+                cursor: "pointer",
+                boxShadow: "0 2px 7px rgba(0,0,0,0.06)"
               }}
             >
-              ☰ Menu
+              <span style={{ fontSize: "25px", lineHeight: 1 }}>{tab.icon}</span>
+              <span style={{
+                fontSize: "10px",
+                lineHeight: 1.15,
+                fontWeight: 800,
+                textAlign: "center",
+                overflowWrap: "anywhere"
+              }}>
+                {tab.name}
+              </span>
             </button>
-            <b>BuildMitra</b>
-          </div>
-          <div style={{ width: "100%", minHeight: "100vh" }}>
-            {children}
-          </div>
+          ))}
         </div>
-      )}
+      </div>
+
+      <main style={{
+        width: "100%",
+        minWidth: 0,
+        overflowX: "hidden"
+      }}>
+        {children}
+      </main>
     </div>
   );
 }
 
-return (
+  return (
 
   <div style={{ display: "flex" }}>
       {/* SIDEBAR */}
@@ -620,6 +614,7 @@ return (
     </div>
   );
 }
+
 
 
 
