@@ -1639,6 +1639,7 @@ useEffect(() => {
       ),
       React.createElement("div", { style: { display: "flex", gap: "8px", flexWrap: "wrap" } },
         React.createElement("button", { onClick: () => setActiveTab("overview"), style: styles.buttonInfo }, "Dashboard"),
+        React.createElement("button", { onClick: () => window.location.href = "/provider-select-items", style: styles.buttonSuccess }, "Select Items & Rates"),
         React.createElement("button", { onClick: () => window.location.href = "/marketplace", style: styles.buttonInfo }, "Marketplace"),
         React.createElement("button", { onClick: () => setActiveTab("enquiries"), style: styles.buttonSuccess }, "Enquiries"),
         React.createElement("button", { onClick: () => setActiveTab("quotes"), style: styles.buttonWarning }, "Quotes"),

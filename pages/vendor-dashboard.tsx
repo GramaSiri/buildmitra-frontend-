@@ -211,6 +211,7 @@ const [activeTab, setActiveTab] = useState("dashboard");
       ),
       React.createElement("div", { style: { display: "flex", gap: "10px" } },
         React.createElement("button", { onClick: () => checkAndRun('calculator_export', 'vendor-dashboard', shareWhatsApp), style: { ...styles.buttonSuccess } }, " WhatsApp"),
+        React.createElement("button", { onClick: () => navigateTo("/provider-select-items"), style: { backgroundColor: "#28a745", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer" } }, "Select Items & Rates"),
         React.createElement("button", { onClick: () => navigateTo("/marketplace"), style: { backgroundColor: "#17a2b8", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer" } }, "Marketplace"),
         React.createElement("button", { onClick: handleLogout, style: { backgroundColor: "#dc3545", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer" } }, "Logout")
       )

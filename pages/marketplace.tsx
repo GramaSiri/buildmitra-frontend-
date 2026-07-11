@@ -1,606 +1,311 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/router";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000";
-
-type Listing = {
-  listingId: string;
-  rateId: string;
-  itemType: string;
-  category: string;
-  subCategory: string;
-  itemName: string;
-  title: string;
-  providerUserCode: string;
-  providerRole: string;
-  providerName: string;
-  providerPhone: string;
-  rate: number;
-  unit: string;
-  location: string;
-  pincode: string;
-  serviceArea: string;
-  imageUrl: string;
-  status: string;
-  description: string;
-  createdAt: string;
-  isDemo?: boolean;
-};
-
-type EnquiryForm = {
-  buyerName: string;
-  buyerPhone: string;
-  itemType: string;
-  itemName: string;
-  quantity: string;
-  unit: string;
-  location: string;
-  pincode: string;
-  specification: string;
-  message: string;
-};
-
-const emptyEnquiry: EnquiryForm = {
-  buyerName: "",
-  buyerPhone: "",
-  itemType: "material",
-  itemName: "",
-  quantity: "",
-  unit: "",
-  location: "",
-  pincode: "",
-  specification: "",
-  message: ""
-};
-
-const normalizeText = (value: any) => String(value || "").trim();
-
-const normalizeCategory = (value: any) => {
-  const text = normalizeText(value).toLowerCase().replace(/\s+/g, "");
-  if (["material", "materials", "supplier", "vendor"].includes(text)) return "material";
-  if (["service", "services", "contractor", "realestate"].includes(text)) return "service";
-  if (["machine", "machinery", "machinehire", "equipment"].includes(text)) return "machine";
-  if (["labour", "labor", "laboursupply", "worker"].includes(text)) return "labour";
-  return "material";
-};
-
-const normalizeProviderRole = (value: any, itemType: string) => {
-  const text = normalizeText(value).toLowerCase().replace(/\s+/g, "");
-  if (["contractor", "supplier", "vendor", "machinehire", "laboursupply", "realestate"].includes(text)) return text;
-  if (text === "machine" || text === "machinery") return "machinehire";
-  if (text === "labour" || text === "labor") return "laboursupply";
-  if (itemType === "service") return "contractor";
-  if (itemType === "machine") return "machinehire";
-  if (itemType === "labour") return "laboursupply";
-  return "supplier";
-};
-
-const cleanPhone = (phone: any) => {
-  let value = String(phone || "").replace(/[^0-9+]/g, "");
-  if (!value) return "";
-  if (!value.startsWith("+")) value = value.startsWith("91") ? `+${value}` : `+91${value}`;
-  return value;
-};
-
-const displayPhone = (phone: any) => String(phone || "").replace(/[^0-9]/g, "");
-
-const formatRate = (rate: any, unit: any) => {
-  const amount = Number(rate || 0);
-  if (!amount) return "Rate on request";
-  const suffix = normalizeText(unit) ? ` / ${unit}` : "";
-  return `₹${amount.toLocaleString("en-IN")}${suffix}`;
-};
-
-const createEnquiryCode = () => `ENQ-${Date.now().toString(36).toUpperCase()}`;
-
-const getStoredCurrentUser = () => {
-  if (typeof window === "undefined") return {};
-  const keys = ["currentUser", "loggedInUser", "user", "bm_user_profile"];
-  for (const key of keys) {
-    try {
-      const value = JSON.parse(localStorage.getItem(key) || "{}");
-      if (value && Object.keys(value).length) return value;
-    } catch {}
-  }
-  return {};
-};
-
-const getListingImage = (listing: Partial<Listing>) => {
-  if (listing.imageUrl) return listing.imageUrl;
-  const haystack = `${listing.itemName || ""} ${listing.title || ""} ${listing.category || ""} ${listing.itemType || ""}`.toLowerCase();
-  if (haystack.includes("cement")) return "/images/marketplace/cement.jpg";
-  if (haystack.includes("steel") || haystack.includes("tmt")) return "/images/marketplace/steel.jpg";
-  if (haystack.includes("brick") || haystack.includes("block")) return "/images/marketplace/bricks.jpg";
-  if (haystack.includes("tile") || haystack.includes("granite") || haystack.includes("marble")) return "/images/marketplace/tiles.jpg";
-  if (haystack.includes("paint") || haystack.includes("putty") || haystack.includes("primer")) return "/images/marketplace/paint.jpg";
-  if (haystack.includes("electrical") || haystack.includes("wire") || haystack.includes("switch")) return "/images/marketplace/electrical.jpg";
-  if (haystack.includes("plumbing") || haystack.includes("pipe") || haystack.includes("sanitary")) return "/images/marketplace/plumbing.jpg";
-  if (haystack.includes("jcb") || haystack.includes("excavator") || haystack.includes("mixer") || haystack.includes("crane") || listing.itemType === "machine") return "/images/marketplace/machine.jpg";
-  if (haystack.includes("mason") || haystack.includes("carpenter") || haystack.includes("electrician") || haystack.includes("plumber") || listing.itemType === "labour") return "/images/marketplace/labour.jpg";
-  if (listing.itemType === "service") return "/images/marketplace/service.jpg";
-  return "/images/marketplace/placeholder.jpg";
-};
-
-const mapListing = (raw: any, index: number): Listing => {
-  const itemType = normalizeCategory(raw.itemType || raw.category || raw.type || raw.providerRole);
-  const providerRole = normalizeProviderRole(raw.providerRole || raw.role || raw.businessRole || raw.providerType, itemType);
-  const itemName = normalizeText(raw.itemName || raw.title || raw.name || raw.service || raw.item || raw.material || raw.productName) || "Approved Marketplace Listing";
-  const providerName = normalizeText(raw.providerName || raw.companyName || raw.businessName || raw.supplierName || raw.ownerName || raw.name) || "BuildMitra Provider";
-  const listingId = normalizeText(raw.listingId || raw._id || raw.id || raw.rateId) || `approved-${index}`;
-  const pincode = normalizeText(raw.pincode || raw.pinCode || raw.servicePincode);
-  const serviceArea = normalizeText(raw.serviceArea || raw.availablePincodes || raw.coverageArea);
-  return {
-    listingId,
-    rateId: normalizeText(raw.rateId || raw.rateCode || raw.code || raw._id || raw.id),
-    itemType,
-    category: itemType,
-    subCategory: normalizeText(raw.subCategory || raw.materialCategory || raw.serviceCategory || "all").toLowerCase() || "all",
-    itemName,
-    title: itemName,
-    providerUserCode: normalizeText(raw.providerUserCode || raw.userCode || raw.supplierUserCode || raw.contractorUserCode || raw.userId),
-    providerRole,
-    providerName,
-    providerPhone: cleanPhone(raw.providerPhone || raw.phone || raw.ownerPhone || raw.mobile || raw.contactNumber),
-    rate: Number(raw.rate || raw.price || raw.unitRate || raw.amount || 0),
-    unit: normalizeText(raw.unit || raw.uom || raw.rateUnit),
-    location: normalizeText(raw.location || raw.city || raw.address || raw.district) || "Location not specified",
-    pincode,
-    serviceArea,
-    imageUrl: normalizeText(raw.imageUrl || raw.image || raw.photoUrl || raw.productImage),
-    status: normalizeText(raw.status || raw.approvalStatus || "approved").toLowerCase(),
-    description: normalizeText(raw.description || raw.specification || raw.details || raw.category),
-    createdAt: normalizeText(raw.createdAt || raw.updatedAt || raw.approvedAt) || new Date().toISOString()
-  };
-};
-
-const demoListings: Listing[] = [
-  mapListing({
-    listingId: "demo-cement",
-    itemType: "material",
-    itemName: "Demo OPC Cement",
-    providerRole: "supplier",
-    providerName: "Demo Approved Supplier",
-    providerPhone: "",
-    rate: 420,
-    unit: "bag",
-    location: "Bengaluru",
-    pincode: "560001",
-    status: "approved",
-    description: "Demo listing shown because backend approved listings are unavailable."
-  }, 0),
-  mapListing({
-    listingId: "demo-jcb",
-    itemType: "machine",
-    itemName: "Demo JCB Hire",
-    providerRole: "machinehire",
-    providerName: "Demo Machine Hire",
-    providerPhone: "",
-    rate: 1800,
-    unit: "hour",
-    location: "Bengaluru",
-    pincode: "560001",
-    status: "approved",
-    description: "Demo listing shown because backend approved listings are unavailable."
-  }, 1)
-].map((item) => ({ ...item, isDemo: true }));
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
 
 export default function Marketplace() {
-  const router = useRouter();
-  const [listings, setListings] = useState<Listing[]>([]);
+  const [listings, setListings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
-  const [selectedLocation, setSelectedLocation] = useState("all");
-  const [sortBy, setSortBy] = useState("newest");
-  const [showEnquiryModal, setShowEnquiryModal] = useState(false);
-  const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
-  const [enquiryData, setEnquiryData] = useState<EnquiryForm>(emptyEnquiry);
-  const [submitting, setSubmitting] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
-  const [isClient, setIsClient] = useState(false);
+  const [filters, setFilters] = useState({ search: "", itemType: "", category: "", subCategory: "", brand: "", city: "", area: "", pincode: "", minPrice: "", maxPrice: "", sort: "newest" });
+
+  const [showEnquiry, setShowEnquiry] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [enquiry, setEnquiry] = useState({
+    buyerName: "",
+    buyerPhone: "",
+    itemType: "material",
+    quantity: "",
+    unit: "",
+    location: "",
+    specification: "",
+    message: "",
+    pincode: "",
+  });
+
+  const query = useMemo(() => {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) params.set(key, value);
+    });
+    return params.toString();
+  }, [filters]);
 
   useEffect(() => {
-    setIsClient(true);
-    fetchApprovedListings();
-  }, []);
-
-  async function fetchApprovedListings() {
-    setLoading(true);
-    setError("");
-    try {
-      const res = await fetch(`${API_BASE}/api/marketplace/approved`);
-      if (!res.ok) throw new Error(`Marketplace API failed with ${res.status}`);
-      const data = await res.json();
-      const rawListings = Array.isArray(data) ? data : data.listings || data.items || data.data || [];
-      const mapped = rawListings
-        .map(mapListing)
-        .filter((item: Listing) => ["approved", "active"].includes(item.status));
-      setListings(mapped);
-      if (!mapped.length) setError("");
-    } catch (err: any) {
-      console.error("Approved listings load failed:", err);
-
-      let adminMaterialRates: any[] = [];
-
+    const load = async () => {
+      setLoading(true);
       try {
-        adminMaterialRates = JSON.parse(localStorage.getItem("bm_material_rates") || "[]");
+        const res = await fetch(`${API_BASE}/api/provider/marketplace-listings?${query}`);
+        const data = await res.json();
+        setListings(data.listings || []);
       } catch {
-        adminMaterialRates = [];
+        setListings([]);
+      } finally {
+        setLoading(false);
       }
-
-      const localMaterialListings = adminMaterialRates
-        .filter((r) => r && (r.item || r.itemName) && r.unit)
-        .map((r, index) =>
-          mapListing(
-            {
-              listingId: r.id || r.code || `local-material-${index}`,
-              rateId: r.code || r.id || `RATE-${index}`,
-              itemType: "material",
-              category: "material",
-              subCategory: r.subCategory || r.category || "material",
-              itemName: r.itemName || r.item,
-              providerUserCode: "ADMIN-MATERIAL",
-              providerRole: "supplier",
-              providerName: "BuildMitra Admin Approved Rate",
-              providerPhone: "",
-              rate: r.rate || r.price || r.unitRate || 0,
-              unit: r.unit,
-              location: r.location || "Bengaluru",
-              pincode: r.pincode || "",
-              imageUrl: r.imageUrl || "",
-              status: "approved",
-              description: [r.code, r.brand, r.specification].filter(Boolean).join(" | ") || "Admin approved material rate",
-              code: r.code,
-              brand: r.brand,
-              specification: r.specification,
-              createdAt: r.createdAt || new Date().toISOString()
-            },
-            index
-          )
-        );
-
-      if (localMaterialListings.length > 0) {
-        setListings(localMaterialListings);
-        setError("Backend unavailable. Showing Admin uploaded material rates from this browser.");
-      } else {
-        setError("Backend approved listings are unavailable. Showing demo listings only.");
-        setListings(demoListings);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const locations = useMemo(() => {
-    const unique = Array.from(new Set(listings.map((item) => item.location).filter(Boolean)));
-    return ["all", ...unique];
-  }, [listings]);
-
-  const filteredListings = useMemo(() => {
-    const query = searchTerm.toLowerCase();
-    const filtered = listings.filter((item) => {
-      if (selectedCategory !== "all" && item.itemType !== selectedCategory) return false;
-      if (selectedLocation !== "all" && item.location !== selectedLocation) return false;
-      if (query) {
-        const text = `${item.itemName} ${item.providerName} ${item.providerRole} ${item.location} ${item.description}`.toLowerCase();
-        if (!text.includes(query)) return false;
-      }
-      return true;
-    });
-    return filtered.sort((a, b) => {
-      if (sortBy === "priceLow") return Number(a.rate || 0) - Number(b.rate || 0);
-      if (sortBy === "priceHigh") return Number(b.rate || 0) - Number(a.rate || 0);
-      return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
-    });
-  }, [listings, searchTerm, selectedCategory, selectedLocation, sortBy]);
-
-  function openEnquiryModal(listing: Listing) {
-    const currentUser: any = getStoredCurrentUser();
-    setSelectedListing(listing);
-    setSuccessMessage("");
-    setEnquiryData({
-      buyerName: currentUser.name || currentUser.fullName || "",
-      buyerPhone: currentUser.phone || currentUser.mobile || "",
-      itemType: listing.itemType,
-      itemName: listing.itemName,
-      quantity: "",
-      unit: listing.unit,
-      location: currentUser.city || currentUser.location || "",
-      pincode: currentUser.pincode || "",
-      specification: "",
-      message: ""
-    });
-    setShowEnquiryModal(true);
-  }
-
-  function viewProfile(listing: Listing) {
-    if (!listing.providerUserCode) {
-      alert("Provider profile is not available yet.");
-      return;
-    }
-    const roleRoutes: Record<string, string> = {
-      contractor: "contractor-public",
-      supplier: "supplier-public",
-      vendor: "vendor-public",
-      machinehire: "machinehire-public",
-      laboursupply: "laboursupply-public",
-      realestate: "realestate-public"
     };
-    const base = roleRoutes[listing.providerRole];
-    if (!base) {
-      alert("Provider profile is not available yet.");
-      return;
-    }
-    router.push(`/${base}/${listing.providerUserCode}`);
-  }
+    load();
+  }, [query]);
 
-  async function submitEnquiry() {
-    if (!selectedListing || submitting) return;
-    const buyerName = normalizeText(enquiryData.buyerName);
-    const buyerPhone = normalizeText(enquiryData.buyerPhone);
-    const quantity = normalizeText(enquiryData.quantity);
-    const location = normalizeText(enquiryData.location);
-    const itemName = normalizeText(enquiryData.itemName);
-    if (!buyerName || !buyerPhone || !itemName || !quantity || !location) {
-      alert("Please fill buyer name, phone, requirement, quantity/work details and location.");
-      return;
-    }
+  const cleanPhone = (phone: string) => String(phone || "").replace(/\D/g, "").replace(/^91/, "");
 
-    const currentUser: any = getStoredCurrentUser();
-    const enquiry = {
-      enquiryCode: createEnquiryCode(),
-      buyerUserCode: normalizeText(currentUser.userCode || currentUser.buyerUserCode || currentUser.userId || currentUser.uniqueCode),
-      buyerName,
-      buyerPhone,
-      itemType: enquiryData.itemType,
-      itemName,
-      providerUserCode: selectedListing.providerUserCode,
-      providerRole: selectedListing.providerRole,
-      providerName: selectedListing.providerName,
-      providerPhone: selectedListing.providerPhone,
-      listingId: selectedListing.listingId,
-      rateId: selectedListing.rateId,
-      quotedRate: selectedListing.rate,
-      unit: enquiryData.unit,
-      quantity,
-      location,
-      pincode: enquiryData.pincode,
-      specification: enquiryData.specification,
-      message: enquiryData.message,
-      status: "new",
-      source: "marketplace",
-      createdAt: new Date().toISOString()
-    };
-
-    setSubmitting(true);
-    try {
-      const res = await fetch(`${API_BASE}/api/enquiries`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(enquiry)
-      });
-      const saved = await res.json().catch(() => ({}));
-      if (!res.ok || saved?.success === false) throw new Error(saved?.message || "Enquiry save failed");
-
-      const savedEnquiry = saved.enquiry || saved.data || enquiry;
-      setSuccessMessage("Enquiry saved successfully.");
-      setShowEnquiryModal(false);
-      setSelectedListing(null);
-      setEnquiryData(emptyEnquiry);
-
-      if (selectedListing.providerPhone) {
-        const text = [
-          "BuildMitra New Enquiry",
-          "",
-          `Enquiry Code: ${savedEnquiry.enquiryCode || enquiry.enquiryCode}`,
-          `Customer Name: ${buyerName}`,
-          `Phone: ${buyerPhone}`,
-          `Location: ${location}`,
-          `Pincode: ${enquiryData.pincode || "-"}`,
-          `Requirement: ${itemName}`,
-          `Category: ${enquiryData.itemType}`,
-          `Quantity / Work Details: ${quantity}${enquiryData.unit ? ` ${enquiryData.unit}` : ""}`,
-          `Additional Details: ${enquiryData.specification || enquiryData.message || "-"}`,
-          `Product / Service: ${selectedListing.itemName}`,
-          `Rate: ${formatRate(selectedListing.rate, selectedListing.unit)}`,
-          `Provider: ${selectedListing.providerName}`,
-          "Source: BuildMitra Marketplace"
-        ].join("\n");
-        window.open(`https://wa.me/${displayPhone(selectedListing.providerPhone)}?text=${encodeURIComponent(text)}`, "_blank");
-      } else {
-        alert("Enquiry saved successfully. Provider phone not available for WhatsApp.");
-      }
-    } catch (err) {
-      if (typeof window !== "undefined") {
-        const key = "buildmitra_enquiries_pending_sync";
-        let existing: any[] = [];
-        try {
-          const parsed = JSON.parse(localStorage.getItem(key) || "[]");
-          existing = Array.isArray(parsed) ? parsed : [];
-        } catch {}
-        localStorage.setItem(key, JSON.stringify([...existing, enquiry]));
-      }
-      setSuccessMessage("Backend save failed. Enquiry saved for pending sync.");
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  const categories = [
-    { id: "all", name: "All" },
-    { id: "material", name: "Material" },
-    { id: "service", name: "Service" },
-    { id: "machine", name: "Machine" },
-    { id: "labour", name: "Labour" }
-  ];
-
-  const styles: Record<string, any> = {
-    container: { padding: "20px", backgroundColor: "#f0f2f5", minHeight: "100vh" },
-    header: { backgroundColor: "#1a5f7a", color: "white", padding: "16px 20px", borderRadius: "12px", marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" },
-    headerTitle: { margin: 0, fontSize: "20px" },
-    headerSub: { margin: "5px 0 0", fontSize: "12px", opacity: 0.9 },
-    notice: { backgroundColor: "#fff3cd", border: "1px solid #ffc107", padding: "12px", borderRadius: "8px", color: "#856404", marginBottom: "16px" },
-    success: { backgroundColor: "#d1fae5", border: "1px solid #34d399", padding: "12px", borderRadius: "8px", color: "#065f46", marginBottom: "16px" },
-    searchBar: { display: "flex", gap: "12px", marginBottom: "20px", flexWrap: "wrap" },
-    searchInput: { flex: 1, minWidth: "220px", padding: "12px", border: "1px solid #ddd", borderRadius: "8px", fontSize: "14px" },
-    select: { padding: "10px", border: "1px solid #ddd", borderRadius: "8px", fontSize: "14px", minWidth: "150px" },
-    categoryContainer: { display: "flex", gap: "12px", marginBottom: "20px", flexWrap: "wrap" },
-    categoryBtn: { padding: "10px 24px", backgroundColor: "white", border: "1px solid #ddd", borderRadius: "8px", cursor: "pointer", fontWeight: "500" },
-    categoryBtnActive: { backgroundColor: "#1a5f7a", color: "white", border: "none" },
-    grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "20px" },
-    card: { backgroundColor: "white", borderRadius: "12px", padding: "16px", boxShadow: "0 2px 8px rgba(0,0,0,0.1)", overflow: "hidden" },
-    image: { width: "100%", height: "170px", objectFit: "cover", borderRadius: "10px", backgroundColor: "#eef2f7", marginBottom: "12px" },
-    badge: { display: "inline-block", padding: "4px 12px", borderRadius: "20px", fontSize: "11px", fontWeight: "500", marginRight: "8px" },
-    verifiedBadge: { backgroundColor: "#d1fae5", color: "#065f46" },
-    demoBadge: { backgroundColor: "#fff3cd", color: "#856404" },
-    categoryBadge: { backgroundColor: "#e0e7ff", color: "#3730a3" },
-    button: { backgroundColor: "#25D366", color: "white", padding: "10px 16px", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold", width: "100%", marginTop: "8px" },
-    buttonOutline: { backgroundColor: "#1a5f7a", color: "white", padding: "10px 16px", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold", width: "100%", marginTop: "8px" },
-    loading: { textAlign: "center", padding: "60px", fontSize: "18px", color: "#666" },
-    modal: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 },
-    modalContent: { backgroundColor: "white", borderRadius: "16px", padding: "24px", width: "90%", maxWidth: "620px", maxHeight: "85vh", overflow: "auto" },
-    input: { width: "100%", padding: "10px", border: "1px solid #ddd", borderRadius: "8px", marginBottom: "12px", boxSizing: "border-box" },
-    label: { display: "block", marginBottom: "6px", fontWeight: "600", fontSize: "12px", color: "#333" },
-    row2: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "12px" },
-    supplierName: { fontSize: "16px", fontWeight: "bold", color: "#1a5f7a", marginBottom: "8px" }
+  const sendWhatsApp = (item: any) => {
+    sendEnquiry(item);
   };
 
-  if (!isClient || loading) {
-    return React.createElement("div", { style: styles.container },
-      React.createElement("div", { style: styles.loading }, "Loading marketplace...")
-    );
-  }
+  const sendEnquiry = (item: any) => {
+    const user =
+      typeof window !== "undefined"
+        ? JSON.parse(localStorage.getItem("user") || "{}")
+        : {};
 
-  return React.createElement("div", { style: styles.container },
-    React.createElement("div", { style: styles.header },
-      React.createElement("div", null,
-        React.createElement("h1", { style: styles.headerTitle }, "BuildMitra Marketplace"),
-        React.createElement("p", { style: styles.headerSub }, "Admin-approved listings, buyer enquiries, provider profile navigation and WhatsApp support")
-      ),
-      React.createElement("button", { onClick: () => router.push("/"), style: { backgroundColor: "#dc3545", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer" } }, "Exit")
-    ),
+    setSelectedItem(item);
 
-    error && React.createElement("div", { style: styles.notice }, error),
-    successMessage && React.createElement("div", { style: styles.success }, successMessage),
+    setEnquiry({
+      buyerName: user.name || "",
+      buyerPhone: user.phone || "",
+      itemType: item.itemType || "material",
+      quantity: "",
+      unit: item.unit || "",
+      location: "",
+      specification: "",
+      message: "",
+    pincode: "",
+  });
 
-    React.createElement("div", { style: styles.searchBar },
-      React.createElement("input", {
-        type: "text",
-        placeholder: "Search by item, service, provider or location",
-        value: searchTerm,
-        onChange: (e: any) => setSearchTerm(e.target.value),
-        style: styles.searchInput
+    setShowEnquiry(true);
+  };
+
+  const submitEnquiry = async () => {
+    if (!selectedItem) return;
+    if (!enquiry.buyerName || !enquiry.buyerPhone || !enquiry.location || !enquiry.pincode) {
+      alert("Please fill name, phone, delivery address/location and pincode.");
+      return;
+    }
+
+    const res = await fetch(`${API_BASE}/api/enquiry`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        providerUserCode: selectedItem.providerUserCode,
+        providerName: selectedItem.providerName,
+        providerPhone: selectedItem.providerPhone,
+        itemName: selectedItem.itemName,
+        listingCode: selectedItem.listingCode,
+        masterItemCode: selectedItem.masterItemCode,
+        buyerName: enquiry.buyerName,
+        buyerPhone: enquiry.buyerPhone,
+        itemType: enquiry.itemType,
+        quantity: enquiry.quantity,
+        unit: enquiry.unit,
+        location: enquiry.location,
+        pincode: enquiry.pincode,
+        specification: enquiry.specification,
+        message: enquiry.message || `Marketplace enquiry for ${selectedItem.itemName}`,
       }),
-      React.createElement("select", { value: selectedLocation, onChange: (e: any) => setSelectedLocation(e.target.value), style: styles.select },
-        locations.map((location) => React.createElement("option", { key: location, value: location }, location === "all" ? "All Locations" : location))
-      ),
-      React.createElement("select", { value: sortBy, onChange: (e: any) => setSortBy(e.target.value), style: styles.select },
-        React.createElement("option", { value: "newest" }, "Newest"),
-        React.createElement("option", { value: "priceLow" }, "Price Low-High"),
-        React.createElement("option", { value: "priceHigh" }, "Price High-Low")
-      )
-    ),
+    });
 
-    React.createElement("div", { style: styles.categoryContainer },
-      categories.map((cat) => React.createElement("button", {
-        key: cat.id,
-        onClick: () => setSelectedCategory(cat.id),
-        style: { ...styles.categoryBtn, ...(selectedCategory === cat.id ? styles.categoryBtnActive : {}) }
-      }, cat.name))
-    ),
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.success) {
+      const phone = cleanPhone(selectedItem.providerPhone);
+      const enquiryCode = data.enquiry?.enquiryCode || "";
+      const PUBLIC_URL = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+      const replyQuoteLink = `${PUBLIC_URL}/quick-quote?enquiryCode=${enquiryCode}`;
+      const rejectLink = `${PUBLIC_URL}/quick-quote?enquiryCode=${enquiryCode}&action=reject`;
 
-    filteredListings.length === 0 ?
-      React.createElement("div", { style: { textAlign: "center", padding: "60px", color: "#666", backgroundColor: "white", borderRadius: "12px" } }, "No approved marketplace listings found.") :
-      React.createElement("div", { style: styles.grid },
-        filteredListings.map((item) => React.createElement("div", { key: item.listingId, style: styles.card },
-          React.createElement("img", {
-            src: getListingImage(item),
-            alt: item.itemName,
-            style: styles.image,
-            onError: (e: any) => { e.currentTarget.style.display = "none"; }
-          }),
-          React.createElement("div", { style: styles.supplierName }, item.itemName),
-          React.createElement("div", { style: { marginBottom: "10px" } },
-            React.createElement("span", { style: { ...styles.badge, ...styles.categoryBadge } }, item.itemType),
-            ["approved", "active"].includes(item.status) && React.createElement("span", { style: { ...styles.badge, ...styles.verifiedBadge } }, "Verified"),
-            item.isDemo && React.createElement("span", { style: { ...styles.badge, ...styles.demoBadge } }, "Demo")
-          ),
-          React.createElement("p", { style: { margin: "6px 0", fontWeight: 600 } }, item.providerName),
-          React.createElement("p", { style: { margin: "4px 0", fontSize: "12px", color: "#555" } }, "Role: ", item.providerRole || "-"),
-          React.createElement("p", { style: { margin: "8px 0", fontSize: "18px", fontWeight: "bold", color: "#1a5f7a" } }, formatRate(item.rate, item.unit)),
-          React.createElement("p", { style: { margin: "4px 0", fontSize: "12px" } }, "Location: ", item.location, item.pincode ? ` - ${item.pincode}` : ""),
-          React.createElement("p", { style: { minHeight: "36px", margin: "8px 0", fontSize: "12px", color: "#666" } }, item.description || "Approved BuildMitra marketplace listing"),
-          React.createElement("div", { style: { display: "flex", gap: "8px", marginTop: "12px" } },
-            React.createElement("button", { onClick: () => openEnquiryModal(item), style: { ...styles.button, padding: "8px" } }, "Send Enquiry"),
-            React.createElement("button", { onClick: () => viewProfile(item), style: { ...styles.buttonOutline, padding: "8px" } }, "View Profile")
-          )
-        ))
-      ),
+      const whatsappMessage =
+`Hello ${selectedItem.providerName || "Supplier"},
 
-    showEnquiryModal && selectedListing && React.createElement("div", { style: styles.modal, onClick: () => !submitting && setShowEnquiryModal(false) },
-      React.createElement("div", { style: styles.modalContent, onClick: (e: any) => e.stopPropagation() },
-        React.createElement("h2", { style: { color: "#1a5f7a", marginBottom: "16px" } }, "Send Enquiry"),
-        React.createElement("div", { style: { backgroundColor: "#f8f9fa", padding: "12px", borderRadius: "8px", marginBottom: "16px" } },
-          React.createElement("p", { style: { margin: "4px 0" } }, "Product / Service: ", selectedListing.itemName),
-          React.createElement("p", { style: { margin: "4px 0" } }, "Provider: ", selectedListing.providerName),
-          React.createElement("p", { style: { margin: "4px 0" } }, "Rate: ", formatRate(selectedListing.rate, selectedListing.unit))
-        ),
-        React.createElement("div", { style: styles.row2 },
-          React.createElement("div", null,
-            React.createElement("label", { style: styles.label }, "Buyer Name *"),
-            React.createElement("input", { value: enquiryData.buyerName, onChange: (e: any) => setEnquiryData({ ...enquiryData, buyerName: e.target.value }), style: styles.input })
-          ),
-          React.createElement("div", null,
-            React.createElement("label", { style: styles.label }, "Buyer Phone *"),
-            React.createElement("input", { value: enquiryData.buyerPhone, onChange: (e: any) => setEnquiryData({ ...enquiryData, buyerPhone: e.target.value }), style: styles.input })
-          )
-        ),
-        React.createElement("div", { style: styles.row2 },
-          React.createElement("div", null,
-            React.createElement("label", { style: styles.label }, "Item Type *"),
-            React.createElement("select", { value: enquiryData.itemType, onChange: (e: any) => setEnquiryData({ ...enquiryData, itemType: e.target.value }), style: styles.input },
-              React.createElement("option", { value: "material" }, "Material"),
-              React.createElement("option", { value: "service" }, "Service"),
-              React.createElement("option", { value: "machine" }, "Machine"),
-              React.createElement("option", { value: "labour" }, "Labour")
-            )
-          ),
-          React.createElement("div", null,
-            React.createElement("label", { style: styles.label }, "Requirement *"),
-            React.createElement("input", { value: enquiryData.itemName, onChange: (e: any) => setEnquiryData({ ...enquiryData, itemName: e.target.value }), style: styles.input })
-          )
-        ),
-        React.createElement("div", { style: styles.row2 },
-          React.createElement("div", null,
-            React.createElement("label", { style: styles.label }, "Quantity / Work Details *"),
-            React.createElement("input", { value: enquiryData.quantity, onChange: (e: any) => setEnquiryData({ ...enquiryData, quantity: e.target.value }), style: styles.input })
-          ),
-          React.createElement("div", null,
-            React.createElement("label", { style: styles.label }, "Unit"),
-            React.createElement("input", { value: enquiryData.unit, onChange: (e: any) => setEnquiryData({ ...enquiryData, unit: e.target.value }), style: styles.input })
-          )
-        ),
-        React.createElement("div", { style: styles.row2 },
-          React.createElement("div", null,
-            React.createElement("label", { style: styles.label }, "Location *"),
-            React.createElement("input", { value: enquiryData.location, onChange: (e: any) => setEnquiryData({ ...enquiryData, location: e.target.value }), style: styles.input })
-          ),
-          React.createElement("div", null,
-            React.createElement("label", { style: styles.label }, "Pincode"),
-            React.createElement("input", { value: enquiryData.pincode, onChange: (e: any) => setEnquiryData({ ...enquiryData, pincode: e.target.value }), style: styles.input })
-          )
-        ),
-        React.createElement("label", { style: styles.label }, "Specification / Additional Details"),
-        React.createElement("textarea", { value: enquiryData.specification, onChange: (e: any) => setEnquiryData({ ...enquiryData, specification: e.target.value }), style: { ...styles.input, minHeight: "80px" } }),
-        React.createElement("label", { style: styles.label }, "Message"),
-        React.createElement("textarea", { value: enquiryData.message, onChange: (e: any) => setEnquiryData({ ...enquiryData, message: e.target.value }), style: { ...styles.input, minHeight: "60px" } }),
-        React.createElement("div", { style: { display: "flex", gap: "12px", marginTop: "10px" } },
-          React.createElement("button", { disabled: submitting, onClick: submitEnquiry, style: { ...styles.button, opacity: submitting ? 0.7 : 1 } }, submitting ? "Saving..." : "Submit Enquiry"),
-          React.createElement("button", { disabled: submitting, onClick: () => setShowEnquiryModal(false), style: { ...styles.buttonOutline, backgroundColor: "#6c757d" } }, "Close")
-        )
-      )
-    )
+🏗️ NEW BUILDMITRA ENQUIRY
+
+Customer: ${enquiry.buyerName}
+Phone: ${enquiry.buyerPhone}
+
+Type: ${enquiry.itemType}
+Item: ${selectedItem.itemName}
+Quantity: ${enquiry.quantity || "-"} ${enquiry.unit || ""}
+Delivery Address/Location: ${enquiry.location}
+Pincode: ${enquiry.pincode}
+Specification: ${enquiry.specification || "-"}
+Message: ${enquiry.message || "-"}
+
+Please send quotation with rate, delivery, included/excluded items and extra charges if any.
+
+✅ Reply Quote:
+${replyQuoteLink}
+
+❌ Reject Enquiry:
+${rejectLink}
+
+📞 Buyer Phone:
+${enquiry.buyerPhone}`;
+
+      if (!phone) {
+        alert("Provider WhatsApp number is missing.");
+        return;
+      }
+
+      const waUrl = `https://wa.me/91${phone}?text=${encodeURIComponent(whatsappMessage)}`;
+      window.open(waUrl, "_blank");
+      setShowEnquiry(false);
+      alert("Enquiry saved and WhatsApp opened.");
+    } else {
+      alert(data.message || "Could not send enquiry.");
+    }
+  };
+
+  return (
+    <div style={styles.page}>
+      <div style={styles.header}>
+        <h1 style={styles.title}>BuildMitra Marketplace</h1>
+        <p style={styles.subtitle}>Approved providers with master-item linked rates.</p>
+      </div>
+
+      <div style={styles.filters}>
+        <input style={styles.input} placeholder="Search item, provider, brand" value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} />
+        <select style={styles.input} value={filters.itemType} onChange={(e) => setFilters({ ...filters, itemType: e.target.value })}>
+          <option value="">All types</option>
+          <option value="material">Material</option>
+          <option value="service">Contractor service</option>
+          <option value="labour">Labour</option>
+          <option value="machine">Machine</option>
+          <option value="vendor">Vendor product</option>
+        </select>
+        <input style={styles.input} placeholder="Category" value={filters.category} onChange={(e) => setFilters({ ...filters, category: e.target.value })} />
+        <input style={styles.input} placeholder="Subcategory" value={filters.subCategory} onChange={(e) => setFilters({ ...filters, subCategory: e.target.value })} />
+        <input style={styles.input} placeholder="Brand" value={filters.brand} onChange={(e) => setFilters({ ...filters, brand: e.target.value })} />
+        <input style={styles.input} placeholder="City" value={filters.city} onChange={(e) => setFilters({ ...filters, city: e.target.value })} />
+        <input style={styles.input} placeholder="Area" value={filters.area} onChange={(e) => setFilters({ ...filters, area: e.target.value })} />
+        <input style={styles.input} placeholder="PIN code" value={filters.pincode} onChange={(e) => setFilters({ ...filters, pincode: e.target.value })} />
+        <input style={styles.input} placeholder="Min price" value={filters.minPrice} onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })} />
+        <input style={styles.input} placeholder="Max price" value={filters.maxPrice} onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })} />
+        <select style={styles.input} value={filters.sort} onChange={(e) => setFilters({ ...filters, sort: e.target.value })}>
+          <option value="newest">Newest</option>
+          <option value="lowest">Lowest price</option>
+        </select>
+        <button style={styles.clear} onClick={() => setFilters({ search: "", itemType: "", category: "", subCategory: "", brand: "", city: "", area: "", pincode: "", minPrice: "", maxPrice: "", sort: "newest" })}>Clear</button>
+      </div>
+
+      <div style={styles.count}>Showing <strong>{listings.length}</strong> approved listings</div>
+
+      {loading ? (
+        <div style={styles.empty}>Loading marketplace...</div>
+      ) : listings.length === 0 ? (
+        <div style={styles.empty}>No approved listings found.</div>
+      ) : (
+        <div style={styles.grid}>
+          {listings.map((item) => (
+            <div key={item._id || item.listingCode} style={styles.card}>
+              <div style={styles.providerRow}>
+                <div>
+                  <div style={styles.providerName}>{item.providerName || "Verified Provider"}</div>
+                  <div style={styles.verified}>Verified BuildMitra Provider</div>
+                </div>
+                <button style={styles.profileBtn} onClick={() => window.location.href = `/public-profile/${item.providerUserCode}`}>View Profile</button>
+              </div>
+
+              <img src={item.imageUrl} alt={item.itemName} style={styles.image} />
+
+              <div style={styles.body}>
+                <h2 style={styles.item}>{item.itemName}</h2>
+                <div style={styles.meta}>{item.brand || item.category || "BuildMitra item"} {item.category ? `- ${item.category}` : ""}</div>
+                <div style={styles.price}>Rs {Number(item.rate || 0).toLocaleString()} <span style={styles.unit}>/ {item.unit || "unit"}</span></div>
+                <div style={styles.location}>{item.providerCity || item.location || "-"} {item.providerArea ? `, ${item.providerArea}` : ""} {item.providerPincode ? `- ${item.providerPincode}` : ""}</div>
+              </div>
+
+              <div style={styles.actions}>
+                <button style={styles.whatsapp} onClick={() => sendWhatsApp(item)}>WhatsApp Enquiry</button>
+                <button style={styles.secondary} onClick={() => sendEnquiry(item)}>Send Enquiry</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {showEnquiry && selectedItem && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modalBox}>
+            <h2 style={{ marginTop: 0 }}>Send Enquiry</h2>
+            <p><b>{selectedItem.itemName}</b></p>
+
+            <input style={styles.input} placeholder="Your Name" value={enquiry.buyerName} onChange={(e) => setEnquiry({ ...enquiry, buyerName: e.target.value })} />
+            <br /><br />
+            <input style={styles.input} placeholder="Phone" value={enquiry.buyerPhone} onChange={(e) => setEnquiry({ ...enquiry, buyerPhone: e.target.value })} />
+            <br /><br />
+            <select style={styles.input} value={enquiry.itemType} onChange={(e) => setEnquiry({ ...enquiry, itemType: e.target.value })}>
+              <option value="material">Material</option>
+              <option value="service">Service</option>
+              <option value="machine">Machine</option>
+              <option value="labour">Labour</option>
+            </select>
+            <br /><br />
+            <input style={styles.input} placeholder="Quantity" value={enquiry.quantity} onChange={(e) => setEnquiry({ ...enquiry, quantity: e.target.value })} />
+            <br /><br />
+            <input style={styles.input} placeholder="Unit" value={enquiry.unit} onChange={(e) => setEnquiry({ ...enquiry, unit: e.target.value })} />
+            <br /><br />
+            <input style={styles.input} placeholder="Delivery Address / Location" value={enquiry.location} onChange={(e) => setEnquiry({ ...enquiry, location: e.target.value })} />
+            <br /><br />
+            <input style={styles.input} placeholder="Pincode" value={enquiry.pincode} onChange={(e) => setEnquiry({ ...enquiry, pincode: e.target.value })} />
+            <br /><br />
+            <textarea style={{ ...styles.input, width: "100%", minHeight: 80 }} placeholder="Specification / Message" value={enquiry.message} onChange={(e) => setEnquiry({ ...enquiry, message: e.target.value })} />
+
+            <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+              <button type="button" style={styles.whatsapp} onClick={submitEnquiry}>Submit & Open WhatsApp</button>
+              <button type="button" style={styles.secondary} onClick={() => setShowEnquiry(false)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
+
+const styles: Record<string, React.CSSProperties> = {
+  page: { minHeight: "100vh", background: "#f5f7fb", padding: 24, fontFamily: "Arial, sans-serif", color: "#111827" },
+  header: { maxWidth: 1250, margin: "0 auto 18px" },
+  title: { margin: 0, fontSize: 34, fontWeight: 900 },
+  subtitle: { marginTop: 8, color: "#6b7280", fontSize: 16 },
+  filters: { maxWidth: 1250, margin: "0 auto 14px", background: "#fff", padding: 16, borderRadius: 8, display: "grid", gridTemplateColumns: "2fr repeat(5, 1fr)", gap: 10, border: "1px solid #e5e7eb" },
+  input: { padding: "11px 12px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 14, background: "#fff" },
+  clear: { padding: "11px 14px", borderRadius: 8, border: 0, background: "#ef4444", color: "#fff", fontWeight: 800, cursor: "pointer" },
+  count: { maxWidth: 1250, margin: "0 auto 16px", color: "#374151" },
+  grid: { maxWidth: 1250, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 18 },
+  card: { background: "#fff", borderRadius: 8, border: "1px solid #e5e7eb", overflow: "hidden", boxShadow: "0 2px 10px rgba(0,0,0,0.05)" },
+  providerRow: { display: "flex", justifyContent: "space-between", gap: 12, padding: 14, borderBottom: "1px solid #eef0f4" },
+  providerName: { fontSize: 17, fontWeight: 900 },
+  verified: { fontSize: 12, color: "#138a4e", marginTop: 3 },
+  profileBtn: { border: "1px solid #155eef", background: "#fff", color: "#155eef", borderRadius: 8, padding: "8px 10px", fontWeight: 800, cursor: "pointer" },
+  image: { width: "100%", height: 190, objectFit: "cover", background: "#eef2f7" },
+  body: { padding: 14 },
+  item: { margin: "0 0 8px", fontSize: 20, lineHeight: 1.25 },
+  meta: { color: "#4b5563", fontSize: 14 },
+  price: { marginTop: 12, fontSize: 24, fontWeight: 900, color: "#087443" },
+  unit: { fontSize: 14, color: "#374151", fontWeight: 500 },
+  location: { marginTop: 8, color: "#4b5563", fontSize: 14 },
+  actions: { display: "flex", gap: 10, padding: 14, borderTop: "1px solid #eef0f4" },
+  whatsapp: { flex: 1, border: 0, background: "#16a34a", color: "#fff", borderRadius: 8, padding: 11, fontWeight: 900, cursor: "pointer" },
+  secondary: { flex: 1, border: "1px solid #d1d5db", background: "#fff", borderRadius: 8, padding: 11, fontWeight: 800, cursor: "pointer" },
+  empty: { maxWidth: 1250, margin: "0 auto", background: "#fff", padding: 24, borderRadius: 8, border: "1px solid #e5e7eb" },
+  modalOverlay: {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(0,0,0,0.45)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 9999,
+    padding: 16,
+  },
+  modalBox: {
+    background: "#fff",
+    borderRadius: 16,
+    padding: 22,
+    width: "100%",
+    maxWidth: 520,
+    boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
+  },
+};
+
+
+
+
+
+
 

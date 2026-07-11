@@ -1,0 +1,256 @@
+import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
+
+export default function QuickQuotePage() {
+  const router = useRouter();
+  const { enquiryCode, action } = router.query;
+
+  const [enquiry, setEnquiry] = useState<any>(null);
+  const [rate, setRate] = useState("");
+  const [deliveryTime, setDeliveryTime] = useState("Immediate / As per availability");
+  const [paymentTerms, setPaymentTerms] = useState("Immediate payment before dispatch / delivery. Payment can be made through Bank Transfer / UPI / Google Pay / PhonePe or any mutually agreed mode. Supplier will share Bank A/c, IFSC, UPI ID or QR Code at payment confirmation.");
+  const [remarks, setRemarks] = useState("Rate subject to stock availability and final confirmation.");
+  const [attachFile, setAttachFile] = useState(null);
+  const [attachFileName, setAttachFileName] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const cleanPhone = (phone: string) => String(phone || "").replace(/\D/g, "").replace(/^91/, "");
+
+  useEffect(() => {
+    if (!enquiryCode) return;
+    fetch(`${API_BASE}/api/enquiry/code/${enquiryCode}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success) {
+          setEnquiry(d.enquiry);
+          if (d.enquiry?.uploadedRate) setRate(String(d.enquiry.uploadedRate));
+        }
+      });
+  }, [enquiryCode]);
+
+  const rejectEnquiry = async () => {
+    if (!enquiryCode) return;
+    await fetch(`${API_BASE}/api/enquiry/code/${enquiryCode}/reject`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason: "Rejected by supplier" }),
+    });
+    alert("Enquiry rejected.");
+  };
+
+  useEffect(() => {
+    if (action === "reject" && enquiryCode) rejectEnquiry();
+  }, [action, enquiryCode]);
+
+  const sendQuote = async () => {
+    if (!enquiry || !rate) {
+      alert("Please enter quoted rate.");
+      return;
+    }
+
+    setLoading(true);
+
+    const quoteRes = await fetch(`${API_BASE}/api/quote/create`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        enquiryCode: enquiry.enquiryCode,
+        providerUserCode: enquiry.providerUserCode,
+        providerName: enquiry.providerName,
+        providerPhone: enquiry.providerPhone,
+        rate,
+        quantity: enquiry.quantity || "",
+        totalAmount: rate,
+        deliveryTime,
+        terms: paymentTerms,
+        remarks,
+        attachment: attachFileName || null,
+      }),
+    });
+
+    const quoteData = await quoteRes.json().catch(() => ({}));
+    setLoading(false);
+
+    if (!quoteRes.ok || !quoteData.success) {
+      alert(quoteData.message || "Quote save failed.");
+      return;
+    }
+
+    // Save to localStorage for dashboard
+    if (quoteData.success && quoteData.quote) {
+      const savedQuotes = JSON.parse(localStorage.getItem("buildmitra_quotes") || "[]");
+      const newQuote = {
+        ...quoteData.quote,
+        enquiryCode: enquiry.enquiryCode,
+        buyerName: enquiry.buyerName,
+        buyerPhone: enquiry.buyerPhone,
+        itemName: enquiry.itemName,
+        quantity: enquiry.quantity,
+        unit: enquiry.unit,
+        location: enquiry.location,
+        attachment: attachFileName || null,
+        sentAt: new Date().toISOString(),
+        status: "Sent"
+      };
+      savedQuotes.push(newQuote);
+      localStorage.setItem("buildmitra_quotes", JSON.stringify(savedQuotes));
+
+      // Save to supplier quotes
+      const supplierQuotes = JSON.parse(localStorage.getItem("supplier_quotes") || "[]");
+      supplierQuotes.push(newQuote);
+      localStorage.setItem("supplier_quotes", JSON.stringify(supplierQuotes));
+
+      // Save to buyer quotes
+      const buyerQuotes = JSON.parse(localStorage.getItem("buyer_quotes") || "[]");
+      buyerQuotes.push(newQuote);
+      localStorage.setItem("buyer_quotes", JSON.stringify(buyerQuotes));
+    }
+
+    const quoteUnit = enquiry.unit || enquiry.uploadedUnit || "";
+    const attachmentInfo = attachFileName ? `\n\n📎 Attachment: ${attachFileName}` : "";
+
+    const msg =
+`🏗️ BUILDMITRA OFFICIAL QUOTATION
+
+Quote No: ${quoteData.quote?.quoteCode || "-"}
+Enquiry No: ${enquiry.enquiryCode}
+
+Supplier:
+${enquiry.providerName || "-"}
+Phone: ${enquiry.providerPhone || "-"}
+
+Kind Attn: Mr/Mrs ${String(enquiry.buyerName || "").replace(/^Buyer\s+/i, "").replace(/^Owner\s+/i, "")}
+Buyer Phone: ${enquiry.buyerPhone}
+
+Requirement Details:
+Item: ${enquiry.itemName}
+Quantity: ${enquiry.quantity || "-"} ${enquiry.unit || ""}
+Location: ${enquiry.location || "-"}
+Pincode: ${enquiry.pincode || "-"}
+Requirement: ${enquiry.message || enquiry.specification || "-"}
+
+Rate:
+₹${rate} / ${quoteUnit || "Unit"}
+Delivery Time: ${deliveryTime}
+
+Payment Terms & Conditions:
+${paymentTerms}
+
+Standard Terms:
+1. Rate is subject to stock availability and final confirmation.
+2. Buyer should verify material quantity and quality before unloading.
+3. Any shortage, defect, damage, opened package or quality issue must be reported before unloading/acceptance.
+4. Transport, loading, unloading, GST and extra charges are as mutually agreed.
+5. Payment and delivery commitment will be valid only after supplier confirmation.
+
+Remarks:
+${remarks}${attachmentInfo}
+
+Thank you,
+BuildMitra Marketplace`;
+
+    const buyerPhone = cleanPhone(enquiry.buyerPhone);
+    if (!buyerPhone) {
+      alert("Buyer phone missing.");
+      return;
+    }
+
+    window.open(`https://wa.me/91${buyerPhone}?text=${encodeURIComponent(msg)}`, "_blank");
+    alert("Quote saved. WhatsApp opened to buyer.");
+  };
+
+  if (!enquiry) return <div style={styles.page}>Loading enquiry...</div>;
+
+  return (
+    <div style={styles.page}>
+      <div style={styles.card}>
+        <h1>Reply Quote</h1>
+
+        <div style={styles.headerBox}>
+          <h2>{enquiry.providerName || "Supplier"}</h2>
+          <p>Phone: {enquiry.providerPhone || "-"}</p>
+        </div>
+
+        <div style={styles.box}>
+          <p><b>Kind Attn:</b> Mr/Mrs {String(enquiry.buyerName || "").replace(/^Buyer\s+/i, "").replace(/^Owner\s+/i, "")}</p>
+          <p><b>Buyer Phone:</b> {enquiry.buyerPhone}</p>
+        </div>
+
+        <div style={styles.box}>
+          <h3>Requirement Details</h3>
+          <p><b>Enquiry:</b> {enquiry.enquiryCode}</p>
+          <p><b>Item:</b> {enquiry.itemName}</p>
+          <p><b>Qty:</b> {enquiry.quantity || "-"} {enquiry.unit || ""}</p>
+          <p><b>Location:</b> {enquiry.location || "-"} - {enquiry.pincode || ""}</p>
+          <p><b>Message:</b> {enquiry.message || enquiry.specification || "-"}</p>
+        </div>
+
+        <label style={styles.label}>Rate ₹ / {enquiry.uploadedUnit || enquiry.unit || "Unit"}</label>
+        <input style={styles.input} value={rate} onChange={(e) => setRate(e.target.value)} />
+        <p style={styles.note}>Uploaded supplier rate auto-filled. You can edit only if required.</p>
+
+        <input style={styles.input} placeholder="Delivery Time" value={deliveryTime} onChange={(e) => setDeliveryTime(e.target.value)} />
+        <textarea style={styles.textarea} placeholder="Payment Terms & Conditions" value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)} />
+        <textarea style={styles.textarea} placeholder="Remarks" value={remarks} onChange={(e) => setRemarks(e.target.value)} />
+
+        {/* Attachment Section */}
+        <div style={{ border: '2px dashed #ccc', borderRadius: '8px', padding: '16px', textAlign: 'center', margin: '12px 0', backgroundColor: '#fafafa' }}>
+          <label style={{ fontWeight: '600', display: 'block', marginBottom: '8px' }}>📎 Attach Quote / Catalog / Document</label>
+          <input 
+            type="file" 
+            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx" 
+            onChange={(e) => {
+              const file = e.target.files[0];
+              if (file) {
+                if (file.size > 10 * 1024 * 1024) {
+                  alert('❌ File size exceeds 10MB limit.');
+                  return;
+                }
+                setAttachFile(file);
+                setAttachFileName(file.name);
+              }
+            }} 
+            style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px', backgroundColor: 'white' }} 
+          />
+          {attachFileName && <p style={{ color: '#047857', marginTop: '8px', fontWeight: 'bold' }}>✅ {attachFileName}</p>}
+          <p style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>Supported: PDF, DOC, JPG, PNG, XLS (Max 10MB)</p>
+        </div>
+
+        <div style={styles.terms}>
+          <b>Standard Terms Included:</b>
+          <ol>
+            <li>Rate subject to stock availability and final confirmation.</li>
+            <li>Buyer must verify material before unloading.</li>
+            <li>Shortage/defect/damage/opened package issue must be reported before unloading.</li>
+            <li>Payment can be made through Bank Transfer / UPI / Google Pay / PhonePe or any mutually agreed mode.</li>
+            <li>Supplier will share Bank A/c, IFSC, UPI ID or QR Code at payment confirmation.</li>
+            <li>GST, transport, loading/unloading as mutually agreed.</li>
+            <li>Payment and delivery valid after supplier confirmation.</li>
+          </ol>
+        </div>
+
+        <button style={styles.button} onClick={sendQuote} disabled={loading}>
+          {loading ? "Saving..." : "Send Official Quote on WhatsApp"}
+        </button>
+
+        <button style={styles.reject} onClick={rejectEnquiry}>Reject Enquiry</button>
+      </div>
+    </div>
+  );
+}
+
+const styles: Record<string, any> = {
+  page: { minHeight: "100vh", background: "#f5f7fb", padding: 24, fontFamily: "Arial" },
+  card: { maxWidth: 720, margin: "30px auto", background: "#fff", padding: 24, borderRadius: 14, boxShadow: "0 10px 30px rgba(0,0,0,0.08)" },
+  headerBox: { background: "#ecfdf5", padding: 14, borderRadius: 10, border: "1px solid #bbf7d0", marginBottom: 12 },
+  box: { background: "#f9fafb", padding: 14, borderRadius: 10, border: "1px solid #e5e7eb", marginBottom: 12 },
+  label: { fontWeight: 900, display: "block", marginBottom: 6 },
+  note: { color: "#047857", fontWeight: 800, marginTop: -4 },
+  input: { width: "100%", padding: 12, margin: "8px 0", border: "1px solid #d1d5db", borderRadius: 8 },
+  textarea: { width: "100%", padding: 12, margin: "8px 0", border: "1px solid #d1d5db", borderRadius: 8, minHeight: 76 },
+  terms: { background: "#fff7ed", padding: 14, borderRadius: 10, border: "1px solid #fed7aa", marginTop: 10, fontSize: 14 },
+  button: { width: "100%", padding: 14, background: "#16a34a", color: "#fff", border: 0, borderRadius: 8, fontWeight: 900, marginTop: 10 },
+  reject: { width: "100%", padding: 12, background: "#ef4444", color: "#fff", border: 0, borderRadius: 8, fontWeight: 800, marginTop: 10 },
+};

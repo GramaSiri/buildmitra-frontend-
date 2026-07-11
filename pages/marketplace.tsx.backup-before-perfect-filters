@@ -1,0 +1,326 @@
+import React, { useEffect, useState } from "react";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
+export default function Marketplace() {
+  const [listings, setListings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [itemType, setItemType] = useState("material");
+  const [location, setLocation] = useState("");
+
+  const loadListings = async () => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams();
+      if (itemType) params.append("itemType", itemType);
+      if (location) params.append("location", location);
+
+      const res = await fetch(`${API_BASE}/api/provider/marketplace-listings?${params.toString()}`);
+      const data = await res.json();
+      setListings(data.listings || []);
+    } catch (err) {
+      console.error("Marketplace load error:", err);
+      setListings([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadListings();
+  }, []);
+
+  const cleanPhone = (phone: string) => {
+    if (!phone) return "";
+    return phone.replace(/\D/g, "").replace(/^91/, "");
+  };
+
+  const goToProfile = (item: any) => {
+    const code = item.providerUserCode || item.listingCode;
+    window.location.href = `/public-profile/${code}`;
+  };
+
+  const sendWhatsApp = (item: any) => {
+    const phone = cleanPhone(item.providerPhone);
+    const msg = `Hello ${item.providerName},
+
+I am interested in your BuildMitra marketplace listing.
+
+Item: ${item.itemName}
+Rate: ₹${item.rate} / ${item.unit}
+Location: ${item.location}
+
+Please send quotation.`;
+
+    window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`, "_blank");
+  };
+
+  return (
+    <div style={styles.page}>
+      <div style={styles.header}>
+        <h1 style={styles.title}>🏗️ BuildMitra Marketplace</h1>
+        <p style={styles.subtitle}>Find verified materials, services, machines and labour.</p>
+      </div>
+
+      <div style={styles.filters}>
+        <select value={itemType} onChange={(e) => setItemType(e.target.value)} style={styles.input}>
+          <option value="">All Types</option>
+          <option value="material">Material</option>
+          <option value="service">Service</option>
+          <option value="machine">Machine</option>
+          <option value="labour">Labour</option>
+        </select>
+
+        <input
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+          placeholder="Location e.g. Bengaluru"
+          style={styles.input}
+        />
+
+        <button onClick={loadListings} style={styles.searchBtn}>🔍 Search</button>
+      </div>
+
+      {loading ? (
+        <div style={styles.emptyCard}>Loading marketplace...</div>
+      ) : listings.length === 0 ? (
+        <div style={styles.emptyCard}>No approved listings found.</div>
+      ) : (
+        <div style={styles.grid}>
+          {listings.map((item) => (
+            <div key={item._id || item.listingCode} style={styles.card}>
+              <div style={styles.providerRow}>
+                <div style={styles.avatar} onClick={() => goToProfile(item)}>
+                  {(item.providerName || "BM").slice(0, 2).toUpperCase()}
+                </div>
+
+                <div style={{ flex: 1 }}>
+                  <div onClick={() => goToProfile(item)} style={styles.providerName}>
+                    {item.providerName || "Verified Provider"}
+                  </div>
+                  <div style={styles.verified}>✔ Verified Provider</div>
+                </div>
+
+                <button onClick={() => goToProfile(item)} style={styles.profileBtn}>
+                  View Profile
+                </button>
+              </div>
+
+              <div style={styles.productRow}>
+                <div style={styles.imageBox}>
+                  <div style={styles.noImage}>🏗️</div>
+                </div>
+
+                <div style={styles.details}>
+                  <h2 style={styles.itemName}>{item.itemName}</h2>
+                  <div style={styles.smallText}>🏷️ {item.category || item.itemType}</div>
+                  <div style={styles.smallText}>📦 {item.brand || "Brand not specified"}</div>
+                  <div style={styles.smallText}>📍 {item.location || "-"} {item.pincode ? `- ${item.pincode}` : ""}</div>
+
+                  <div style={styles.priceBox}>
+                    ₹{item.rate || "Call"} <span style={styles.unit}>/ {item.unit || "unit"}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div style={styles.actions}>
+                <button onClick={() => sendWhatsApp(item)} style={styles.whatsappBtn}>
+                  📱 WhatsApp Enquiry
+                </button>
+
+                <button
+                  onClick={() =>
+                    alert(`Item: ${item.itemName}\nSpecification: ${item.specification || "-"}\nGST: ${item.gst || 0}%\nCode: ${item.listingCode}`)
+                  }
+                  style={styles.detailsBtn}
+                >
+                  View Details
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const styles: { [key: string]: React.CSSProperties } = {
+  page: {
+    minHeight: "100vh",
+    background: "#f5f7fb",
+    padding: "24px",
+    fontFamily: "Arial, sans-serif",
+    color: "#111827",
+  },
+  header: {
+    maxWidth: 1200,
+    margin: "0 auto 22px auto",
+  },
+  title: {
+    margin: 0,
+    fontSize: 34,
+    fontWeight: 800,
+  },
+  subtitle: {
+    marginTop: 8,
+    fontSize: 16,
+    color: "#6b7280",
+  },
+  filters: {
+    maxWidth: 1200,
+    margin: "0 auto 24px auto",
+    display: "flex",
+    gap: 12,
+    flexWrap: "wrap",
+  },
+  input: {
+    padding: "13px 14px",
+    borderRadius: 10,
+    border: "1px solid #d1d5db",
+    minWidth: 220,
+    background: "white",
+    fontSize: 15,
+  },
+  searchBtn: {
+    padding: "13px 26px",
+    borderRadius: 10,
+    border: "none",
+    background: "#2563eb",
+    color: "white",
+    fontWeight: 700,
+    fontSize: 15,
+    cursor: "pointer",
+  },
+  grid: {
+    maxWidth: 1200,
+    margin: "0 auto",
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))",
+    gap: 18,
+  },
+  card: {
+    background: "white",
+    borderRadius: 16,
+    boxShadow: "0 4px 14px rgba(0,0,0,0.08)",
+    overflow: "hidden",
+    border: "1px solid #e5e7eb",
+  },
+  providerRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+    padding: 16,
+    borderBottom: "1px solid #e5e7eb",
+  },
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: "50%",
+    background: "#0f3b82",
+    color: "white",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontWeight: 800,
+    cursor: "pointer",
+  },
+  providerName: {
+    fontSize: 18,
+    fontWeight: 800,
+    cursor: "pointer",
+  },
+  verified: {
+    fontSize: 13,
+    color: "#16a34a",
+    marginTop: 3,
+  },
+  profileBtn: {
+    padding: "8px 12px",
+    borderRadius: 8,
+    border: "1px solid #2563eb",
+    background: "white",
+    color: "#2563eb",
+    fontWeight: 700,
+    cursor: "pointer",
+  },
+  productRow: {
+    display: "flex",
+    gap: 16,
+    padding: 16,
+  },
+  imageBox: {
+    width: 120,
+    height: 120,
+    background: "#f3f4f6",
+    borderRadius: 12,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  noImage: {
+    fontSize: 42,
+  },
+  details: {
+    flex: 1,
+  },
+  itemName: {
+    margin: "0 0 10px 0",
+    fontSize: 20,
+    lineHeight: 1.25,
+  },
+  smallText: {
+    fontSize: 14,
+    color: "#4b5563",
+    marginBottom: 7,
+  },
+  priceBox: {
+    display: "inline-block",
+    marginTop: 8,
+    padding: "10px 16px",
+    borderRadius: 10,
+    background: "#ecfdf5",
+    color: "#15803d",
+    fontSize: 24,
+    fontWeight: 900,
+  },
+  unit: {
+    fontSize: 15,
+    color: "#374151",
+    fontWeight: 500,
+  },
+  actions: {
+    display: "flex",
+    gap: 10,
+    padding: 16,
+    borderTop: "1px solid #e5e7eb",
+  },
+  whatsappBtn: {
+    flex: 1,
+    padding: "12px",
+    borderRadius: 10,
+    border: "none",
+    background: "#25D366",
+    color: "white",
+    fontWeight: 800,
+    cursor: "pointer",
+  },
+  detailsBtn: {
+    padding: "12px 16px",
+    borderRadius: 10,
+    border: "1px solid #d1d5db",
+    background: "white",
+    color: "#111827",
+    fontWeight: 700,
+    cursor: "pointer",
+  },
+  emptyCard: {
+    maxWidth: 1200,
+    margin: "0 auto",
+    background: "white",
+    padding: 24,
+    borderRadius: 14,
+    boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+  },
+};

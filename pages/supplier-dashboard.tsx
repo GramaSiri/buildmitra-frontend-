@@ -486,9 +486,9 @@ const [userName, setUserName] = useState("Supplier");
   const renderProducts = () => {
     return React.createElement("div", null,
       React.createElement("div", { style: { display: "flex", gap: "12px", marginBottom: "16px", flexWrap: "wrap" } },
-        React.createElement("button", { onClick: () => setShowProductModal(true), style: styles.button }, "+ Add Product"),
-        React.createElement("button", { onClick: () => setShowBulkUploadModal(true), style: styles.buttonInfo }, "📂 Bulk Upload"),
-        React.createElement("button", { onClick: downloadBulkTemplate, style: styles.buttonWarning }, "📥 Download Template")
+        React.createElement("button", { onClick: () => window.location.href = "/provider-select-items", style: styles.button }, "➕ Add / Select Items"),
+        React.createElement("button", { onClick: () => window.location.href = "/provider-select-items", style: styles.buttonInfo }, "📂 Bulk Add Rates"),
+        React.createElement("button", { onClick: () => window.location.href = "/provider-select-items", style: styles.buttonWarning }, "✏️ Edit My Rates")
       ),
       React.createElement("div", { style: styles.card },
         React.createElement("div", { style: styles.cardTitle }, "📦 Product Catalog (", products.length, " products)"),
@@ -590,6 +590,7 @@ const [userName, setUserName] = useState("Supplier");
       ),
       React.createElement("div", { style: { display: "flex", gap: "8px", flexWrap: "wrap" } },
         React.createElement("button", { onClick: () => setActiveTab("overview"), style: styles.buttonInfo }, "Dashboard"),
+        React.createElement("button", { onClick: () => window.location.href = "/provider-select-items", style: styles.buttonSuccess }, "Select Items & Rates"),
         React.createElement("button", { onClick: () => window.location.href = "/marketplace", style: styles.buttonInfo }, "Marketplace"),
         React.createElement("button", { onClick: () => setActiveTab("quotes"), style: styles.buttonSuccess }, "Enquiries"),
         React.createElement("button", { onClick: () => setActiveTab("quotes"), style: styles.buttonWarning }, "Quotes"),
@@ -676,5 +677,7 @@ const [userName, setUserName] = useState("Supplier");
     )
   );
 }
+
+
 
 
