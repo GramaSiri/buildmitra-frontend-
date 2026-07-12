@@ -276,7 +276,7 @@ export default function Sidebar({ children, currentPath }) {
 
   useEffect(() => {
     const checkMobile = () => {
-      const mobile = window.innerWidth <= 768;
+      const mobile = window.matchMedia("(max-width: 1024px)").matches;
       setIsMobile(mobile);
       if (mobile && !currentPath?.includes("dashboard")) {
         setShowMobileMenu(false);
@@ -614,6 +614,7 @@ if (isMobile) {
     </div>
   );
 }
+
 
 
 
