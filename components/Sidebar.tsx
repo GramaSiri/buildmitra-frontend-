@@ -357,43 +357,22 @@ if (isMobile) {
           <div style={{ fontSize: 11, opacity: 0.8 }}>Build Smarter. Save Bigger.</div>
         </div>
 
-        {showMobileGrid ? (
-          <button
-            type="button"
-            onClick={() => {
-              clearBuildMitraSession();
-              router.push("/login");
-            }}
-            style={{
-              border: 0,
-              borderRadius: 8,
-              padding: "8px 10px",
-              background: "#ef4444",
-              color: "#ffffff",
-              fontWeight: 800
-            }}
-          >
-            Logout
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={backToMobileGrid}
-            style={{
-              border: 0,
-              borderRadius: 8,
-              padding: "8px 12px",
-              background: "#ffffff",
-              color: "#1a1a2e",
-              fontWeight: 800
-            }}
-          >
-            ← Back
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={() => { clearBuildMitraSession(); router.push("/login"); }}
+          style={{
+            border: 0,
+            borderRadius: 8,
+            padding: "8px 10px",
+            background: "#ef4444",
+            color: "#ffffff",
+            fontWeight: 800
+          }}
+        >
+          Logout
+        </button>
       </div>
 
-      {showMobileGrid && (
       <div style={{
         padding: "12px",
         background: "#ffffff",
@@ -441,18 +420,14 @@ if (isMobile) {
           ))}
         </div>
       </div>
-      )}
 
-      {!showMobileGrid && (
-        <main style={{
-          width: "100%",
-          minWidth: 0,
-          minHeight: "calc(100vh - 70px)",
-          overflowX: "hidden"
-        }}>
-          {children}
-        </main>
-      )}
+      <main style={{
+        width: "100%",
+        minWidth: 0,
+        overflowX: "hidden"
+      }}>
+        {children}
+      </main>
     </div>
   );
 }
@@ -639,7 +614,6 @@ if (isMobile) {
     </div>
   );
 }
-
 
 
 
