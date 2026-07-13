@@ -327,11 +327,23 @@ const mobileDashboardPath =
   "/contractor-dashboard";
 
 const mobileTabs = [
-  { name: dashboardName, icon: dashboardIcon, path: `${mobileDashboardPath}?mobileModule=1` },
+  {
+    name: dashboardName,
+    icon: dashboardIcon,
+    path: `${mobileDashboardPath}?mobileModule=1`
+  },
   ...otherTabs,
   ...calculatorTabs,
   ...boqTabs
 ];
+
+const showMobileGrid =
+  Boolean(currentPath?.includes("dashboard")) &&
+  router.query.mobileModule !== "1";
+
+const handleMobileBack = () => {
+  router.push(mobileDashboardPath);
+};
 
 if (isMobile) {
   return (
@@ -354,84 +366,96 @@ if (isMobile) {
       }}>
         <div>
           <div style={{ fontSize: 20, fontWeight: 900 }}>🏗️ BuildMitra</div>
-          <div style={{ fontSize: 11, opacity: 0.8 }}>Build Smarter. Save Bigger.</div>
+          <div style={{ fontSize: 11, opacity: 0.8 }}>
+            Build Smarter. Save Bigger.
+          </div>
         </div>
 
         <button
           type="button"
-          onClick={() => { clearBuildMitraSession(); router.push("/login"); }}
+          onClick={() => {
+            if (showMobileGrid) {
+              clearBuildMitraSession();
+              router.push("/login");
+            } else {
+              handleMobileBack();
+            }
+          }}
           style={{
             border: 0,
             borderRadius: 8,
             padding: "8px 10px",
-            background: "#ef4444",
-            color: "#ffffff",
+            background: showMobileGrid ? "#ef4444" : "#ffffff",
+            color: showMobileGrid ? "#ffffff" : "#1a1a2e",
             fontWeight: 800
           }}
         >
-          Logout
+          {showMobileGrid ? "Logout" : "← Back"}
         </button>
       </div>
 
-      <div style={{
-        padding: "12px",
-        background: "#ffffff",
-        borderBottom: "1px solid #e5e7eb"
-      }}>
+      {showMobileGrid ? (
         <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-          gap: "10px"
+          padding: "12px",
+          background: "#ffffff",
+          borderBottom: "1px solid #e5e7eb"
         }}>
-          {mobileTabs.map((tab, i) => (
-            <button
-              key={`${tab.path}-${i}`}
-              type="button"
-              onClick={() => go(tab.path)}
-              style={{
-                minHeight: "82px",
-                border: currentPath === tab.path
-                  ? "2px solid #ff7a00"
-                  : "1px solid #e5e7eb",
-                borderRadius: "12px",
-                background: currentPath === tab.path ? "#fff7ed" : "#ffffff",
-                padding: "9px 5px",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "6px",
-                color: "#111827",
-                cursor: "pointer",
-                boxShadow: "0 2px 7px rgba(0,0,0,0.06)"
-              }}
-            >
-              <span style={{ fontSize: "25px", lineHeight: 1 }}>{tab.icon}</span>
-              <span style={{
-                fontSize: "10px",
-                lineHeight: 1.15,
-                fontWeight: 800,
-                textAlign: "center",
-                overflowWrap: "anywhere"
-              }}>
-                {tab.name}
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+            gap: "10px"
+          }}>
+            {mobileTabs.map((tab, i) => (
+              <button
+                key={`${tab.path}-${i}`}
+                type="button"
+                onClick={() => go(tab.path)}
+                style={{
+                  minHeight: "82px",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: "12px",
+                  background: "#ffffff",
+                  padding: "9px 5px",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "6px",
+                  color: "#111827",
+                  cursor: "pointer",
+                  boxShadow: "0 2px 7px rgba(0,0,0,0.06)"
+                }}
+              >
+                <span style={{ fontSize: "25px", lineHeight: 1 }}>
+                  {tab.icon}
+                </span>
 
-      <main style={{
-        width: "100%",
-        minWidth: 0,
-        overflowX: "hidden"
-      }}>
-        {children}
-      </main>
+                <span style={{
+                  fontSize: "10px",
+                  lineHeight: 1.15,
+                  fontWeight: 800,
+                  textAlign: "center",
+                  overflowWrap: "anywhere"
+                }}>
+                  {tab.name}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <main style={{
+          width: "100%",
+          minWidth: 0,
+          minHeight: "calc(100vh - 70px)",
+          overflowX: "hidden"
+        }}>
+          {children}
+        </main>
+      )}
     </div>
   );
 }
-
   return (
 
   <div style={{ display: "flex" }}>
@@ -614,6 +638,7 @@ if (isMobile) {
     </div>
   );
 }
+
 
 
 
