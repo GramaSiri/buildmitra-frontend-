@@ -62,7 +62,7 @@ export const rateStatusMessage = (rates: Record<string, MasterRateResult>) => {
 };
 
 export const syncApprovedRatesFromBackend = async (
-  apiBase: string = "http://localhost:5000"
+  apiBase: string = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000"
 ): Promise<{ success: boolean; count: number; error?: string }> => {
   if (typeof window === "undefined") return { success: false, count: 0, error: "Browser only" };
 
@@ -117,3 +117,4 @@ export const syncApprovedRatesFromBackend = async (
     return { success: false, count: 0, error: err?.message || "Rate sync failed" };
   }
 };
+

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import * as XLSX from 'xlsx';
-const API = "http://localhost:5000/api";
+const API = (process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000") + "/api";
 import { logoutToLogin } from "../utils/session";
 
 export default function AdminDashboard() {
@@ -40,7 +40,7 @@ const loadLocalData = (key, fallback) => {
 
   const [users, setUsers] = useState(() => loadLocalData("users", []));
 
-    const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+    const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
 
   useEffect(() => {
     const loadMongoUsers = async () => {
@@ -1454,6 +1454,7 @@ useEffect(() => { localStorage.setItem("bm_service_rates", JSON.stringify(servic
     )
   );
 }
+
 
 
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
 import { exportProjectReport } from "../utils/reporting";
 import {
   DEFAULT_PROJECT_PERMISSIONS,
@@ -210,11 +210,11 @@ useEffect(() => {
         return;
       }
 
-      let res = await fetch(API_BASE + "/enquiry?providerUserCode=" + encodeURIComponent(providerUserCode));
+      let res = await fetch(API_BASE + "/api/enquiry?providerUserCode=" + encodeURIComponent(providerUserCode));
       let data = await res.json();
 
       if (!data.success) {
-        res = await fetch(API_BASE + "/enquiry");
+        res = await fetch(API_BASE + "/api/enquiry");
         data = await res.json();
       }
 
@@ -738,7 +738,7 @@ useEffect(() => {
       return;
     }
     try {
-      const res = await fetch(API_BASE + "/enquiry/" + enquiryId + "/quote", {
+      const res = await fetch(API_BASE + "/api/enquiry/" + enquiryId + "/quote", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1890,3 +1890,4 @@ useEffect(() => {
     )
   );
 }
+
