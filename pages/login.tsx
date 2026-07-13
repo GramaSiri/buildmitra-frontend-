@@ -277,7 +277,7 @@ export default function Login() {
     setError("");
     setSuccess("");
 
-    const apiBase = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE || "https://buildmitra-backend-beta.onrender.com";
     const loginId = formData.phone || formData.email;
 
     if (!loginId || !formData.password) {
@@ -400,7 +400,7 @@ export default function Login() {
 
     // STEP 2: Save to Backend FIRST
     try {
-      const registerRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000"}/api/auth/register`, {
+      const registerRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE || "https://buildmitra-backend-beta.onrender.com"}/api/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1021,4 +1021,5 @@ export default function Login() {
     )
   );
 }
+
 
