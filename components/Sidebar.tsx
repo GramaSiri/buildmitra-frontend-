@@ -359,7 +359,7 @@ if (isMobile) {
 
         <button
           type="button"
-          onClick={logout}
+          onClick={() => { clearBuildMitraSession(); router.push("/login"); }}
           style={{
             border: 0,
             borderRadius: 8,
@@ -614,6 +614,7 @@ if (isMobile) {
     </div>
   );
 }
+
 
 
 
