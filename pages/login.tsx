@@ -277,7 +277,7 @@ export default function Login() {
     setError("");
     setSuccess("");
 
-    const apiBase = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE || "https://buildmitra-backend-beta.onrender.com";
+    const apiBase = "https://buildmitra-backend-beta.onrender.com";
     const loginId = formData.phone || formData.email;
 
     if (!loginId || !formData.password) {
@@ -1021,5 +1021,6 @@ export default function Login() {
     )
   );
 }
+
 
 
