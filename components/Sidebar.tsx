@@ -327,7 +327,7 @@ const mobileDashboardPath =
   "/contractor-dashboard";
 
 const mobileTabs = [
-  { name: dashboardName, icon: dashboardIcon, path: mobileDashboardPath },
+  { name: dashboardName, icon: dashboardIcon, path: `${mobileDashboardPath}?mobileModule=1` },
   ...otherTabs,
   ...calculatorTabs,
   ...boqTabs
@@ -614,6 +614,7 @@ if (isMobile) {
     </div>
   );
 }
+
 
 
 
