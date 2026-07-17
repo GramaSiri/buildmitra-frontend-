@@ -197,7 +197,7 @@ export default function ProviderSelectItems() {
             ) : visibleItems.map((item) => (
               <tr key={item.masterItemCode}>
                 <td style={styles.td}><input type="checkbox" checked={Boolean(selected[item.masterItemCode])} onChange={(e) => setSelected({ ...selected, [item.masterItemCode]: e.target.checked })} /></td>
-                <td style={styles.td}><img src={item.imageUrl || `/images/images/master-images/${item.masterItemCode}.webp`} alt={item.itemName} style={styles.thumb} onError={(e) => { const img = e.currentTarget as HTMLImageElement; const slug = String(item.category || "default").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); if (!img.dataset.fallback) { img.dataset.fallback = "1"; img.src = `/images/images/master-images/category-${slug}.webp`; } else { img.src = "/images/images/master-images/category-default.webp"; } }} /></td>
+                <td style={styles.td}><img src={item.imageUrl || `/images/images/master-images/${item.masterItemCode}.webp`} alt={item.itemName} style={styles.thumb} onError={(e) => { const img = e.currentTarget as HTMLImageElement; if (img.dataset.fallback === "done") return; const slug = String(item.category || "default").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); if (!img.dataset.fallback) { img.dataset.fallback = "category"; img.src = `/images/images/master-images/category-${slug}.webp`; return; } img.dataset.fallback = "done"; img.onerror = null; img.src = "/images/images/master-images/category-default.webp"; }} /></td>
                 <td style={styles.td}><strong>{item.masterItemCode}</strong>{selectedCodes.has(item.masterItemCode) ? <div style={styles.badge}>Submitted</div> : null}</td>
                 <td style={styles.td}>{item.itemName}<div style={styles.muted}>{item.category} {item.subCategory ? `/ ${item.subCategory}` : ""}</div></td>
                 <td style={styles.td}>{item.brand || "-"}</td>
@@ -257,6 +257,7 @@ const styles: Record<string, React.CSSProperties> = {
   sectionTitle: { margin: "0 0 12px", fontSize: 20 },
   requestGrid: { display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8 },
 };
+
 
 
 
