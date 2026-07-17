@@ -268,7 +268,6 @@ export default function Sidebar({ children, currentPath }) {
   const otherTabs = [
     { name: "Marketplace", icon: "🛒", path: "/marketplace" },    
     { name: "DRG", icon: "📐", path: "/drg" },
-    { name: "Pre Floor Plan DRG", icon: "🏠", path: "/pre-floor-plan-drg" },
     { name: "Layout Plans", icon: "🗺️", path: "/layout-plans" },
     { name: "Learn & Earn", icon: "📚", path: "/learn-earn" },
     { name: "Real Estate Hub", icon: "🏘️", path: "/realestate-hub" },
@@ -328,11 +327,6 @@ const mobileDashboardPath =
   "/contractor-dashboard";
 
 const mobileTabs = [
-  {
-    name: "Floor Plan",
-    icon: "🏠",
-    path: "/pre-floor-plan-drg",
-  },
   {
     name: dashboardName,
     icon: dashboardIcon,
@@ -644,7 +638,6 @@ if (isMobile) {
     </div>
   );
 }
-
 
 
 
