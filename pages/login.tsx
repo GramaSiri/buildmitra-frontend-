@@ -3,23 +3,26 @@ import { useRouter } from "next/router";
 
 export default function Login() {
   const welcomeUser =
-    typeof window !== "undefined"
-      ? localStorage.getItem("userName") || ""
-      : "";
+  typeof window !== "undefined"
+    ? localStorage.getItem("userName") || ""
+    : "";
   const router = useRouter();
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
-    name: "",
-    phone: "",
-    email: "",
-    address: "",
-    city: "",
-    state: "",
-    pincode: "",
-    password: "",
-    confirmPassword: "",
-    role: "buyer",
-  });
+  name: "",
+  phone: "",
+  email: "",
+  companyName: "",
+  gstNo: "",
+  officePhone: "",
+  address: "",
+  city: "",
+  state: "",
+  pincode: "",
+  password: "",
+  confirmPassword: "",
+  role: "buyer"
+});
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [registeredCode, setRegisteredCode] = useState("");
@@ -28,14 +31,19 @@ export default function Login() {
   const [isCheckingSession, setIsCheckingSession] = useState(true);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const user = localStorage.getItem("loggedInUser");
-      if (user) {
-        console.log("Existing session:", JSON.parse(user));
-      }
+  if (typeof window !== "undefined") {
+
+    const user = localStorage.getItem("loggedInUser");
+
+    if (user) {
+      console.log("Existing session:", JSON.parse(user));
     }
-    setIsCheckingSession(false);
-  }, []);
+
+  }
+
+  setIsCheckingSession(false);
+
+}, []);
 
   const normalizeRole = (role) => {
     const value = String(role || "").toLowerCase().replace(/\s+/g, "");
@@ -45,34 +53,45 @@ export default function Login() {
     return value;
   };
 
+  const saveCurrentUser = (user) => {
+    const businessRole = normalizeRole(user.businessRole || user.role);
+    const currentUser = {
+      ...user,
+      userCode: user.userCode || user.uniqueCode || user.code || "",
+      userId: user.userId || user.id || user._id || "",
+      name: user.name || "",
+      phone: user.phone || "",
+      role: businessRole,
+      businessRole: businessRole,
+      companyName: user.companyName || "",
+      city: user.city || user.location || ""
+    };
+    localStorage.setItem("currentUser", JSON.stringify(currentUser));
+    localStorage.setItem("loggedInUser", JSON.stringify(currentUser));
+    localStorage.setItem("user", JSON.stringify(currentUser));
+    localStorage.setItem("userName", currentUser.name || "");
+    localStorage.setItem("userPhone", currentUser.phone || "");
+    localStorage.setItem("userEmail", currentUser.email || "");
+    localStorage.setItem("userCode", currentUser.userCode || "");
+    localStorage.setItem("userRole", currentUser.businessRole || currentUser.role || "");
+    localStorage.setItem("uniqueCode", currentUser.userCode || "");
+    return currentUser;
+  };
+
   const redirectToDashboard = (role) => {
-    switch (normalizeRole(role)) {
-      case "admin":
-        router.push("/admin-dashboard");
-        break;
-      case "buyer":
-        router.push("/buyer-dashboard");
-        break;
-      case "supplier":
-        router.push("/supplier-dashboard");
-        break;
-      case "contractor":
-        router.push("/contractor-dashboard");
-        break;
-      case "machinehire":
-        router.push("/machinehire-dashboard");
-        break;
-      case "laboursupply":
-        router.push("/laboursupply-dashboard");
-        break;
-      case "realestate":
-        router.push("/realestate-dashboard");
-        break;
-      default:
-        router.push("/buyer-dashboard");
+    switch(normalizeRole(role)) {
+      case "admin": router.push("/admin-dashboard"); break;
+      case "buyer": router.push("/buyer-dashboard"); break;
+      case "supplier": router.push("/supplier-dashboard"); break;
+      case "contractor": router.push("/contractor-dashboard"); break;
+      case "machinehire": router.push("/machinehire-dashboard"); break;
+      case "laboursupply": router.push("/laboursupply-dashboard"); break;
+      case "realestate": router.push("/realestate-dashboard"); break;
+      default: router.push("/buyer-dashboard");
     }
   };
 
+  // Generate unique code based on role
   const generateUniqueCode = (role, users = []) => {
     const prefix = {
       supplier: "SUP",
@@ -81,7 +100,7 @@ export default function Login() {
       machinery: "MAC",
       labour: "LAB",
       realestate: "REA",
-      admin: "ADM",
+      admin: "ADM"
     };
     const codePrefix = prefix[role] || "USR";
     const existingCodes = new Set(
@@ -93,24 +112,33 @@ export default function Login() {
       const candidate = `${codePrefix}-${randomNum}`;
       if (!existingCodes.has(candidate)) return candidate;
     }
-    throw new Error(
-      `No ${codePrefix}-xxxx codes are available. Contact BuildMitra support.`
-    );
+    throw new Error(`No ${codePrefix}-xxxx codes are available. Contact BuildMitra support.`);
   };
 
-  // Reset functions
+  // Reset data based on role
+  const resetUserData = (userId, userName, userPhone, uniqueCode, role) => {
+    if (role === "supplier") {
+      resetSupplierData(userId, userName, userPhone, uniqueCode);
+    } else if (role === "contractor") {
+      resetContractorData(userId, userName, userPhone, uniqueCode);
+    } else if (role === "machinery") {
+      resetMachineryData(userId, userName, userPhone, uniqueCode);
+    } else if (role === "labour") {
+      resetLabourData(userId, userName, userPhone, uniqueCode);
+    } else if (role === "realestate") {
+      resetRealEstateData(userId, userName, userPhone, uniqueCode);
+    } else {
+      resetBuyerData(userId, userName, userPhone, uniqueCode);
+    }
+  };
+
   const resetSupplierData = (userId, userName, userPhone, uniqueCode) => {
     const keysToRemove = [
-      "supplierInfo",
-      "supplierProducts",
-      "supplierOffers",
-      "supplierOrders",
-      "supplierQuotes",
-      "shopPhoto",
-      "businessCard",
+      "supplierInfo", "supplierProducts", "supplierOffers",
+      "supplierOrders", "supplierQuotes", "shopPhoto", "businessCard"
     ];
-    keysToRemove.forEach((key) => localStorage.removeItem(key));
-
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+    
     const freshSupplierInfo = {
       userId: userId,
       uniqueCode: uniqueCode,
@@ -129,13 +157,10 @@ export default function Login() {
       activeOffers: 0,
       totalProducts: 0,
       totalEnquiries: 0,
-      isNewUser: true,
+      isNewUser: true
     };
     localStorage.setItem("supplierInfo", JSON.stringify(freshSupplierInfo));
-    localStorage.setItem(
-      "supplierInfo_" + userId,
-      JSON.stringify(freshSupplierInfo)
-    );
+    localStorage.setItem("supplierInfo_" + userId, JSON.stringify(freshSupplierInfo));
     localStorage.setItem("supplierProducts_" + userId, JSON.stringify([]));
     localStorage.setItem("supplierOffers_" + userId, JSON.stringify([]));
     localStorage.setItem("supplierOrders_" + userId, JSON.stringify([]));
@@ -145,7 +170,7 @@ export default function Login() {
   const resetContractorData = (userId, userName, userPhone, uniqueCode) => {
     localStorage.removeItem("contractorInfo");
     localStorage.removeItem("contractorProjects");
-
+    
     const freshContractorInfo = {
       userId: userId,
       uniqueCode: uniqueCode,
@@ -159,7 +184,7 @@ export default function Login() {
       rating: 0,
       completedProjects: 0,
       totalRevenue: 0,
-      isNewUser: true,
+      isNewUser: true
     };
     localStorage.setItem("contractorInfo", JSON.stringify(freshContractorInfo));
     localStorage.setItem("contractorProjects", JSON.stringify([]));
@@ -168,7 +193,7 @@ export default function Login() {
   const resetMachineryData = (userId, userName, userPhone, uniqueCode) => {
     localStorage.removeItem("machineryInfo");
     localStorage.removeItem("machineryListings");
-
+    
     const freshMachineryInfo = {
       userId: userId,
       uniqueCode: uniqueCode,
@@ -182,7 +207,7 @@ export default function Login() {
       rating: 0,
       totalEquipment: 0,
       totalRevenue: 0,
-      isNewUser: true,
+      isNewUser: true
     };
     localStorage.setItem("machineryInfo", JSON.stringify(freshMachineryInfo));
     localStorage.setItem("machineryListings", JSON.stringify([]));
@@ -191,7 +216,7 @@ export default function Login() {
   const resetLabourData = (userId, userName, userPhone, uniqueCode) => {
     localStorage.removeItem("labourInfo");
     localStorage.removeItem("labourListings");
-
+    
     const freshLabourInfo = {
       userId: userId,
       uniqueCode: uniqueCode,
@@ -205,7 +230,7 @@ export default function Login() {
       rating: 0,
       totalLabours: 0,
       totalRevenue: 0,
-      isNewUser: true,
+      isNewUser: true
     };
     localStorage.setItem("labourInfo", JSON.stringify(freshLabourInfo));
     localStorage.setItem("labourListings", JSON.stringify([]));
@@ -214,7 +239,7 @@ export default function Login() {
   const resetRealEstateData = (userId, userName, userPhone, uniqueCode) => {
     localStorage.removeItem("realEstateInfo");
     localStorage.removeItem("realEstateProperties");
-
+    
     const freshRealEstateInfo = {
       userId: userId,
       uniqueCode: uniqueCode,
@@ -228,7 +253,7 @@ export default function Login() {
       rating: 0,
       totalProperties: 0,
       totalRevenue: 0,
-      isNewUser: true,
+      isNewUser: true
     };
     localStorage.setItem("realEstateInfo", JSON.stringify(freshRealEstateInfo));
     localStorage.setItem("realEstateProperties", JSON.stringify([]));
@@ -237,7 +262,7 @@ export default function Login() {
   const resetBuyerData = (userId, userName, userPhone, uniqueCode) => {
     localStorage.removeItem("buyerProjects");
     localStorage.removeItem("buyerInfo");
-
+    
     const freshBuyerInfo = {
       userId: userId,
       uniqueCode: uniqueCode,
@@ -246,231 +271,189 @@ export default function Login() {
       email: "",
       address: "",
       totalProjects: 0,
-      isNewUser: true,
+      isNewUser: true
     };
     localStorage.setItem("buyerInfo", JSON.stringify(freshBuyerInfo));
     localStorage.setItem("buyerProjects", JSON.stringify([]));
   };
 
-  const resetUserData = (userId, userName, userPhone, uniqueCode, role) => {
-    if (role === "supplier") {
-      resetSupplierData(userId, userName, userPhone, uniqueCode);
-    } else if (role === "contractor") {
-      resetContractorData(userId, userName, userPhone, uniqueCode);
-    } else if (role === "machinery") {
-      resetMachineryData(userId, userName, userPhone, uniqueCode);
-    } else if (role === "labour") {
-      resetLabourData(userId, userName, userPhone, uniqueCode);
-    } else if (role === "realestate") {
-      resetRealEstateData(userId, userName, userPhone, uniqueCode);
-    } else {
-      resetBuyerData(userId, userName, userPhone, uniqueCode);
-    }
-  };
-
-  // ============================================================
-  // LOGIN HANDLER
-  // ============================================================
   const handleLogin = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError("");
-    setSuccess("");
-
-    const apiBase = "https://buildmitra-backend-beta.onrender.com";
-    const loginId = formData.phone || formData.email;
-
-    if (!loginId || !formData.password) {
-      setError("❌ Please enter phone/email and password.");
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const res = await fetch(`${apiBase}/api/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: formData.email || formData.phone,
-          password: formData.password,
-        }),
-      });
-
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok || !data.success || !data.user) {
-        setError("❌ Invalid phone/email or password. Please try again.");
-        setLoading(false);
-        return;
-      }
-
-      const u = data.user;
-      const currentUser = {
-        userId: u.id || u._id || "",
-        id: u.id || u._id || "",
-        name: u.name || "",
-        phone: u.phone || "",
-        email: u.email || "",
-        role: u.businessRole || u.role || "buyer",
-        businessRole: u.businessRole || u.role || "buyer",
-        userCode: u.userCode || "",
-        token: data.token || "",
-      };
-
-      localStorage.setItem("token", data.token || "");
-      localStorage.setItem("currentUser", JSON.stringify(currentUser));
-      localStorage.setItem("loggedInUser", JSON.stringify(currentUser));
-      localStorage.setItem("user", JSON.stringify(currentUser));
-      localStorage.setItem("userName", currentUser.name);
-      localStorage.setItem("userPhone", currentUser.phone);
-      localStorage.setItem("userEmail", currentUser.email);
-      localStorage.setItem("userCode", currentUser.userCode);
-      localStorage.setItem("userRole", currentUser.businessRole);
-      setSuccess("✅ Login successful!");
-
-      const role = data.user.businessRole || data.user.role || "buyer";
-      setTimeout(() => redirectToDashboard(role), 500);
-    } catch (err) {
-      console.log("Login error", err);
-      setError("❌ Backend login failed. Please check backend server.");
-      setLoading(false);
-    }
-  };
-
-  // ============================================================
-  // ✅ FIXED: REGISTER HANDLER (Pincode Mandatory, Email Optional)
-  // ============================================================
-  const handleRegister = async (e) => {
-    e.preventDefault();
     setError("");
     setSuccess("");
     setLoading(true);
-
-    if (!agreePolicy) {
-      setError("Please accept BuildMitra Terms & Conditions and Privacy Policy");
-      setLoading(false);
-      return;
-    }
 
     if (typeof window === "undefined") {
       setLoading(false);
       return;
     }
 
+    localStorage.removeItem("loggedInUser");
+
+    const loginId = formData.phone || formData.email;
+    const apiBase = process.env.NEXT_PUBLIC_API_BASE || process.env.NEXT_PUBLIC_API_URL || "https://buildmitra-backend-beta.onrender.com";
+
+    try {
+      const res = await fetch(`${apiBase}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: formData.email || formData.phone, password: formData.password })
+      });
+
+      const data = await res.json();
+
+      if (data.success && data.user) {
+        const loggedInUser = saveCurrentUser({
+          ...data.user,
+          uniqueCode: data.user.uniqueCode || data.user.userCode || data.user.code || "",
+          role: data.user.businessRole || data.user.role || "",
+          city: data.user.city || data.user.location || ""
+        });
+
+        setSuccess(`✅ Login successful! Welcome ${loggedInUser.name}!`);
+        setTimeout(() => redirectToDashboard(loggedInUser.role), 800);
+        return;
+      }
+
+      if (data.error) {
+        setError("❌ " + data.error);
+        setLoading(false);
+        return;
+      }
+    } catch (apiError) {
+      console.warn("Backend login unavailable, using local fallback:", apiError);
+    }
+
+    // Local fallback for existing beta users
+    const users = JSON.parse(localStorage.getItem("users") || "[]");
+    const user = users.find(u => {
+      const phoneMatch = u.phone === formData.phone;
+      const emailMatch = u.email && u.email === formData.email;
+      const phoneAsEmail = formData.phone && u.email === formData.phone;
+      return (phoneMatch || emailMatch || phoneAsEmail) && u.password === formData.password;
+    });
+
+    if (user) {
+      if (!user.uniqueCode) {
+        user.uniqueCode = generateUniqueCode(user.role, users);
+        localStorage.setItem("users", JSON.stringify(users));
+      }
+
+      const loggedInUser = saveCurrentUser({
+        userId: user.userId,
+        userCode: user.userCode || user.uniqueCode,
+        uniqueCode: user.userCode || user.uniqueCode,
+        name: user.name,
+        phone: user.phone,
+        email: user.email || "",
+        role: user.role,
+        businessRole: user.businessRole || user.role,
+        companyName: user.companyName || "",
+        city: user.city || user.location || "Bengaluru",
+        location: user.location || user.city || "Bengaluru"
+      });
+      sessionStorage.setItem("justLoggedIn", "true");
+
+      setSuccess(`✅ Login successful! Welcome ${user.name}!`);
+      setTimeout(() => redirectToDashboard(user.role), 800);
+    } else {
+      setError("❌ Invalid phone/email or password. Please try again.");
+      setLoading(false);
+    }
+  };
+  const handleRegister = (e) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+    setLoading(true);
+    if (!agreePolicy) {
+    setLoading(true);
+  if (!agreePolicy) {
+  setError("Please accept BuildMitra Terms & Conditions and Privacy Policy");
+  setLoading(false);
+  return;
+}
+  return;
+}
+    
+    if (typeof window === "undefined") {
+      setLoading(false);
+      return;
+    }
+    
     if (!formData.name.trim()) {
       setError("Full Name is required");
       setLoading(false);
       return;
     }
-
+    
     if (!formData.phone.trim() || formData.phone.length < 10) {
       setError("Valid Phone Number is required (min 10 digits)");
       setLoading(false);
       return;
     }
-
-    if (!formData.address.trim()) {
-      setError("Address is required");
-      setLoading(false);
-      return;
-    }
-
-    if (!formData.pincode.trim() || formData.pincode.length < 6) {
-      setError("Valid Pincode is required (6 digits)");
-      setLoading(false);
-      return;
-    }
-
+    
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match");
       setLoading(false);
       return;
     }
-
+    
     if (formData.password.length < 6) {
       setError("Password must be at least 6 characters");
       setLoading(false);
       return;
     }
-
-    // STEP 1: Generate unique code
+    
     const users = JSON.parse(localStorage.getItem("users") || "[]");
-    const userId = Date.now() + Math.floor(Math.random() * 10000);
-    const uniqueCode = generateUniqueCode(formData.role, users);
-
-    // STEP 2: Save to Backend FIRST
-    try {
-      const registerRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE || "https://buildmitra-backend-beta.onrender.com"}/api/auth/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: formData.name.trim(),
-          phone: formData.phone.trim(),
-          email: formData.email.trim() || "",
-          password: formData.password,
-          role: formData.role,
-          businessRole: formData.role,
-        }),
-      });
-
-      const registerData = await registerRes.json();
-
-      if (!registerRes.ok || !registerData.success) {
-        setError(registerData.message || "❌ Registration failed. Please try again.");
-        setLoading(false);
-        return;
-      }
-
-      // STEP 3: Save to localStorage (only after backend success)
-      const newUser = {
-        userId: userId,
-        uniqueCode: uniqueCode,
-        name: formData.name.trim(),
-        phone: formData.phone.trim(),
-        email: formData.email.trim() || "",
-        address: formData.address.trim(),
-        pincode: formData.pincode.trim(),
-        password: formData.password,
-        role: formData.role,
-        createdAt: new Date().toISOString(),
-      };
-
-      users.push(newUser);
-      localStorage.setItem("users", JSON.stringify(users));
-      localStorage.setItem("userName", newUser.name);
-      localStorage.setItem("userRole", newUser.role);
-      localStorage.setItem("uniqueCode", uniqueCode);
-
-      resetUserData(
-        userId,
-        formData.name.trim(),
-        formData.phone.trim(),
-        uniqueCode,
-        formData.role
-      );
-
-      setSuccess(
-        `✅ Registration successful! Your code is ${uniqueCode}. You can now login.`
-      );
-      setRegisteredCode(uniqueCode);
+    
+    if (users.find(u => u.phone === formData.phone)) {
+      setError("❌ User with this phone number already exists. Please login.");
       setLoading(false);
-
-      setTimeout(() => {
-        setIsLogin(true);
-        setFormData({
-          ...formData,
-          password: "",
-          confirmPassword: "",
-          phone: "",
-          email: "",
-        });
-      }, 2500);
-
-    } catch (err) {
-      console.log("Registration error:", err);
-      setError("❌ Backend registration failed. Please check backend server.");
-      setLoading(false);
+      return;
     }
+    
+    if (formData.email && users.find(u => u.email === formData.email)) {
+      setError("User with this email already exists");
+      setLoading(false);
+      return;
+    }
+    
+    // Generate unique userId
+    const userId = Date.now() + Math.floor(Math.random() * 10000);
+    
+    // Generate unique code
+    const uniqueCode = generateUniqueCode(formData.role, users);
+    
+    const newUser = {
+      userId: userId,
+      uniqueCode: uniqueCode,
+      name: formData.name.trim(),
+      phone: formData.phone.trim(),
+      email: formData.email.trim() || "",
+      password: formData.password,
+      role: formData.role,
+      location: formData.location || "Bengaluru",
+      createdAt: new Date().toISOString()
+    };
+    
+    users.push(newUser);
+    localStorage.setItem("users", JSON.stringify(users));
+    localStorage.setItem("userName", newUser.name);
+    localStorage.setItem("userRole", newUser.role);
+    localStorage.setItem("uniqueCode", uniqueCode);
+    
+    // Reset dashboard data
+    resetUserData(userId, formData.name.trim(), formData.phone.trim(), uniqueCode, formData.role);
+    
+    setSuccess(`Registration successful. Your code is ${uniqueCode}. Share this code only with the contractor you want to give project view access.`);
+    setRegisteredCode(uniqueCode);
+    setLoading(false);
+    
+    setTimeout(() => {
+      setIsLogin(true);
+      setFormData({ ...formData, password: "", confirmPassword: "", phone: "", email: "" });
+    }, 2500);
   };
 
   // STYLES
@@ -481,7 +464,7 @@ export default function Login() {
       alignItems: "center",
       justifyContent: "center",
       background: "linear-gradient(135deg, #1a5f7a 0%, #2d8db5 100%)",
-      padding: "20px",
+      padding: "20px"
     },
     card: {
       backgroundColor: "white",
@@ -489,29 +472,29 @@ export default function Login() {
       padding: "40px",
       width: "100%",
       maxWidth: "450px",
-      boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
+      boxShadow: "0 20px 60px rgba(0,0,0,0.3)"
     },
     logo: {
       textAlign: "center",
-      marginBottom: "30px",
+      marginBottom: "30px"
     },
     logoText: {
       fontSize: "28px",
       fontWeight: "bold",
       color: "#1a5f7a",
-      margin: 0,
+      margin: 0
     },
     logoSub: {
       fontSize: "14px",
       color: "#666",
-      margin: "5px 0 0",
+      margin: "5px 0 0"
     },
     toggleContainer: {
       display: "flex",
       backgroundColor: "#f0f2f5",
       borderRadius: "12px",
       padding: "4px",
-      marginBottom: "24px",
+      marginBottom: "24px"
     },
     toggleBtn: {
       flex: 1,
@@ -521,15 +504,15 @@ export default function Login() {
       cursor: "pointer",
       fontSize: "14px",
       fontWeight: "500",
-      transition: "all 0.3s",
+      transition: "all 0.3s"
     },
     toggleActive: {
       backgroundColor: "#1a5f7a",
-      color: "white",
+      color: "white"
     },
     toggleInactive: {
       backgroundColor: "transparent",
-      color: "#666",
+      color: "#666"
     },
     input: {
       width: "100%",
@@ -537,18 +520,18 @@ export default function Login() {
       border: "1px solid #ddd",
       borderRadius: "10px",
       fontSize: "14px",
-      marginBottom: "16px",
+      marginBottom: "16px"
     },
     label: {
       display: "block",
       fontSize: "13px",
       fontWeight: "600",
       color: "#333",
-      marginBottom: "6px",
+      marginBottom: "6px"
     },
     labelRequired: {
       color: "#dc3545",
-      marginLeft: "4px",
+      marginLeft: "4px"
     },
     button: {
       width: "100%",
@@ -559,11 +542,11 @@ export default function Login() {
       borderRadius: "10px",
       fontSize: "16px",
       fontWeight: "bold",
-      cursor: "pointer",
+      cursor: "pointer"
     },
     buttonDisabled: {
       opacity: 0.7,
-      cursor: "not-allowed",
+      cursor: "not-allowed"
     },
     error: {
       backgroundColor: "#fee2e2",
@@ -571,7 +554,7 @@ export default function Login() {
       padding: "12px",
       borderRadius: "8px",
       marginBottom: "16px",
-      fontSize: "14px",
+      fontSize: "14px"
     },
     success: {
       backgroundColor: "#d1fae5",
@@ -579,18 +562,18 @@ export default function Login() {
       padding: "12px",
       borderRadius: "8px",
       marginBottom: "16px",
-      fontSize: "14px",
+      fontSize: "14px"
     },
     link: {
       color: "#1a5f7a",
       cursor: "pointer",
-      fontWeight: "500",
+      fontWeight: "500"
     },
     footer: {
       textAlign: "center",
       marginTop: "20px",
       fontSize: "13px",
-      color: "#666",
+      color: "#666"
     },
     roleSelect: {
       width: "100%",
@@ -599,14 +582,14 @@ export default function Login() {
       borderRadius: "10px",
       fontSize: "14px",
       marginBottom: "16px",
-      backgroundColor: "white",
+      backgroundColor: "white"
     },
     note: {
       fontSize: "12px",
       color: "#888",
       marginTop: "-8px",
-      marginBottom: "12px",
-    },
+      marginBottom: "12px"
+    }
   };
 
   const handleInputChange = (e) => {
@@ -614,15 +597,9 @@ export default function Login() {
   };
 
   if (isCheckingSession) {
-    return React.createElement(
-      "div",
-      { style: styles.container },
-      React.createElement(
-        "div",
-        { style: styles.card },
-        React.createElement(
-          "div",
-          { style: styles.logo },
+    return React.createElement("div", { style: styles.container },
+      React.createElement("div", { style: styles.card },
+        React.createElement("div", { style: styles.logo },
           React.createElement("h1", { style: styles.logoText }, "🏗️ BuildMitra"),
           React.createElement("p", { style: styles.logoSub }, "Loading...")
         )
@@ -630,397 +607,259 @@ export default function Login() {
     );
   }
 
-  return React.createElement(
-    "div",
-    { style: styles.container },
-    React.createElement(
-      "div",
-      { style: styles.card },
-      React.createElement(
-        "div",
-        { style: styles.logo },
+  return React.createElement("div", { style: styles.container },
+    React.createElement("div", { style: styles.card },
+      React.createElement("div", { style: styles.logo },
         React.createElement("h1", { style: styles.logoText }, "🏗️ BuildMitra"),
         React.createElement(
-          "p",
-          { style: styles.logoSub },
-          welcomeUser ? "Welcome BuildMitra" : "Construction Management Platform"
+  "p",
+  { style: styles.logoSub },
+  welcomeUser
+   ? "Welcome BuildMitra"
+    : "Construction Management Platform"
+)
+      ),
+      
+      React.createElement("div", { style: styles.toggleContainer },
+        React.createElement("button", {
+          onClick: () => { setIsLogin(true); setError(""); setSuccess(""); },
+          style: { ...styles.toggleBtn, ...(isLogin ? styles.toggleActive : styles.toggleInactive) }
+        }, "Login"),
+        React.createElement("button", {
+          onClick: () => { setIsLogin(false); setError(""); setSuccess(""); },
+          style: { ...styles.toggleBtn, ...(!isLogin ? styles.toggleActive : styles.toggleInactive) }
+        }, "Register")
+      ),
+      
+      error && React.createElement("div", { style: styles.error }, error),
+      success && React.createElement("div", { style: styles.success },
+        React.createElement("div", null, success),
+        registeredCode && React.createElement("div", { style: { marginTop: "10px", fontSize: "18px", fontWeight: "bold" } },
+          "Your Unique Code: ", registeredCode,
+          React.createElement("button", { type: "button", onClick: () => navigator.clipboard?.writeText(registeredCode), style: { marginLeft: "10px", padding: "5px 10px", border: "1px solid currentColor", borderRadius: "6px", cursor: "pointer" } }, "Copy Code")
         )
       ),
+      
+      isLogin ? 
+        React.createElement("form", { onSubmit: handleLogin },
+          React.createElement("div", null,
+            React.createElement("label", { style: styles.label }, "Phone Number or Email"),
+            React.createElement("input", {
+              type: "text",
+              name: "phone",
+              placeholder: "Enter your phone number or email",
+              value: formData.phone || formData.email,
+              onChange: (e) => {
+                const val = e.target.value;
+                if (val.includes('@')) {
+                  setFormData({ ...formData, email: val, phone: "" });
+                } else {
+                  setFormData({ ...formData, phone: val, email: "" });
+                }
+              },
+              required: true,
+              style: styles.input
+            })
+          ),
+          React.createElement("div", null,
+            React.createElement("label", { style: styles.label }, "Password"),
+            React.createElement("input", {
+              type: "password",
+              name: "password",
+              placeholder: "Enter your password",
+              value: formData.password,
+              onChange: handleInputChange,
+              required: true,
+              style: styles.input
+            })
+          ),
+          React.createElement("div", {
+            style: { textAlign: "right", marginBottom: "15px", marginTop: "-8px" }
+          },
+            React.createElement("span", {
+              style: styles.link,
+              onClick: () => router.push("/forgot-password")
+            }, "Forgot Password?")
+          ),
+          React.createElement("button", { 
+            type: "submit", 
+            style: { ...styles.button, ...(loading ? styles.buttonDisabled : {}) },
+            disabled: loading
+          }, loading ? "Logging in..." : "Login"),
+          React.createElement("div", { style: styles.footer },
+            "New to BuildMitra? ",
+            React.createElement("span", { 
+              style: styles.link, 
+              onClick: () => { setIsLogin(false); setError(""); setSuccess(""); }
+            }, "Create an Account")
+          )
+        ) :
+        React.createElement("form", { onSubmit: handleRegister },
+          React.createElement("div", null,
+            React.createElement("label", { style: styles.label }, 
+              "Full Name", 
+              React.createElement("span", { style: styles.labelRequired }, " *")
+            ),
+            React.createElement("input", {
+              type: "text",
+              name: "name",
+              placeholder: "Enter your full name",
+              value: formData.name,
+              onChange: handleInputChange,
+              required: true,
+              style: styles.input
+            })
+          ),
+          React.createElement("div", null,
+            React.createElement("label", { style: styles.label }, 
+              "Phone Number", 
+              React.createElement("span", { style: styles.labelRequired }, " *")
+            ),
+            React.createElement("input", {
+              type: "tel",
+              name: "phone",
+              placeholder: "Enter your 10-digit phone number",
+              value: formData.phone,
+              onChange: handleInputChange,
+              required: true,
+              minLength: 10,
+              style: styles.input
+            })
+          ),
+          React.createElement("div", null,
+            React.createElement("label", { style: styles.label }, "Email Address (Optional)"),
+            React.createElement("input", {
+              type: "email",
+              name: "email",
+              placeholder: "Enter your email (optional)",
+              value: formData.email,
+              onChange: handleInputChange,
+              style: styles.input
+            }),
+            React.createElement("div", { style: styles.note }, "Email is optional. You can login with phone number.")
+          ),
+          React.createElement("div", null,
+            React.createElement("label", { style: styles.label }, 
+              "Role",
+              React.createElement("span", { style: styles.labelRequired }, " *")
+            ),
+                      React.createElement("div", null,
+            React.createElement("label", { style: styles.label }, "GST No (Optional)"),
+            React.createElement("input", {
+              type: "text",
+              name: "gstNo",
+              placeholder: "Enter GST number",
+              value: formData.gstNo,
+              onChange: handleInputChange,
+              style: styles.input
+            })
+          ),
 
-      React.createElement(
-        "div",
-        { style: styles.toggleContainer },
-        React.createElement(
-          "button",
-          {
-            onClick: () => {
-              setIsLogin(true);
-              setError("");
-              setSuccess("");
+            React.createElement("div", null,
+            React.createElement("label", { style: styles.label }, "Address (Optional)"),
+            React.createElement("input", {
+              type: "text",
+              name: "address",
+              placeholder: "Enter address",
+              value: formData.address,
+              onChange: handleInputChange,
+              style: styles.input
+            })
+          ),
+          React.createElement("div", null,
+            React.createElement("label", { style: styles.label }, "Pincode (Optional)"),
+            React.createElement("input", {
+              type: "text",
+              name: "pincode",
+              placeholder: "Enter pincode",
+              value: formData.pincode,
+              onChange: handleInputChange,
+              style: styles.input
+            })
+          ),
+            React.createElement("select", {
+              name: "role",
+              value: formData.role,
+              onChange: handleInputChange,
+              required: true,
+              style: styles.roleSelect
             },
-            style: {
-              ...styles.toggleBtn,
-              ...(isLogin ? styles.toggleActive : styles.toggleInactive),
-            },
-          },
-          "Login"
-        ),
-        React.createElement(
-          "button",
-          {
-            onClick: () => {
-              setIsLogin(false);
-              setError("");
-              setSuccess("");
-            },
-            style: {
-              ...styles.toggleBtn,
-              ...(!isLogin ? styles.toggleActive : styles.toggleInactive),
-            },
-          },
-          "Register"
+              React.createElement("option", { value: "buyer" }, "🏠 Buyer"),
+              React.createElement("option", { value: "supplier" }, "📦 Supplier"),
+              React.createElement("option", { value: "contractor" }, "🏗️ Contractor"),
+              React.createElement("option", { value: "machinery" }, "🚜 Machinery Hire"),
+              React.createElement("option", { value: "labour" }, "👷 Labour Supply"),
+              React.createElement("option", { value: "realestate" }, "🏡 Real Estate")
+            )
+          ),
+          React.createElement("div", null,
+            React.createElement("label", { style: styles.label }, 
+              "Password",
+              React.createElement("span", { style: styles.labelRequired }, " *")
+            ),
+            React.createElement("input", {
+              type: "password",
+              name: "password",
+              placeholder: "Create a password (min 6 characters)",
+              value: formData.password,
+              onChange: handleInputChange,
+              required: true,
+              minLength: 6,
+              style: styles.input
+            })
+          ),
+          React.createElement("div", null,
+            React.createElement("label", { style: styles.label }, 
+              "Confirm Password",
+              React.createElement("span", { style: styles.labelRequired }, " *")
+            ),
+            React.createElement("input", {
+              type: "password",
+              name: "confirmPassword",
+              placeholder: "Confirm your password",
+              value: formData.confirmPassword,
+              onChange: handleInputChange,
+              required: true,
+              style: styles.input
+            })
+          ),
+          React.createElement("div", {
+  style: {
+    marginBottom: "15px",
+    fontSize: "13px"
+  }
+},
+  React.createElement("input", {
+    type: "checkbox",
+    checked: agreePolicy,
+    onChange: (e) => setAgreePolicy(e.target.checked),
+    style: { marginRight: "8px" }
+  }),
+  "I agree to BuildMitra Terms & Conditions and Privacy Policy"
+),
+React.createElement("button", {
+  type: "submit",
+  style: {
+    ...styles.button,
+    ...(loading ? styles.buttonDisabled : {})
+  },
+  disabled: loading
+}, loading ? "Registering..." : "Register"),
+          React.createElement("div", { style: styles.footer },
+            "Already have an account? ",
+            React.createElement("span", { 
+              style: styles.link, 
+              onClick: () => { setIsLogin(true); setError(""); setSuccess(""); }
+                       }, "Login Here")
+          )
         )
-      ),
-
-      error &&
-        React.createElement("div", { style: styles.error }, error),
-      success &&
-        React.createElement(
-          "div",
-          { style: styles.success },
-          React.createElement("div", null, success),
-          registeredCode &&
-            React.createElement(
-              "div",
-              {
-                style: {
-                  marginTop: "10px",
-                  fontSize: "18px",
-                  fontWeight: "bold",
-                },
-              },
-              "Your Unique Code: ",
-              registeredCode,
-              React.createElement(
-                "button",
-                {
-                  type: "button",
-                  onClick: () =>
-                    navigator.clipboard?.writeText(registeredCode),
-                  style: {
-                    marginLeft: "10px",
-                    padding: "5px 10px",
-                    border: "1px solid currentColor",
-                    borderRadius: "6px",
-                    cursor: "pointer",
-                  },
-                },
-                "Copy Code"
-              )
-            )
-        ),
-
-      isLogin
-        ? React.createElement(
-            "form",
-            { onSubmit: handleLogin },
-            React.createElement(
-              "div",
-              null,
-              React.createElement("label", { style: styles.label }, "Phone Number or Email"),
-              React.createElement("input", {
-                type: "text",
-                name: "phone",
-                placeholder: "Enter your phone number or email",
-                value: formData.phone || formData.email,
-                onChange: (e) => {
-                  const val = e.target.value;
-                  if (val.includes("@")) {
-                    setFormData({ ...formData, email: val, phone: "" });
-                  } else {
-                    setFormData({ ...formData, phone: val, email: "" });
-                  }
-                },
-                required: true,
-                style: styles.input,
-              })
-            ),
-            React.createElement(
-              "div",
-              null,
-              React.createElement("label", { style: styles.label }, "Password"),
-              React.createElement("input", {
-                type: "password",
-                name: "password",
-                placeholder: "Enter your password",
-                value: formData.password,
-                onChange: handleInputChange,
-                required: true,
-                style: styles.input,
-              })
-            ),
-            React.createElement(
-              "div",
-              {
-                style: {
-                  textAlign: "right",
-                  marginBottom: "15px",
-                  marginTop: "-8px",
-                },
-              },
-              React.createElement(
-                "span",
-                {
-                  style: styles.link,
-                  onClick: () => router.push("/forgot-password"),
-                },
-                "Forgot Password?"
-              )
-            ),
-            React.createElement(
-              "button",
-              {
-                type: "submit",
-                style: {
-                  ...styles.button,
-                  ...(loading ? styles.buttonDisabled : {}),
-                },
-                disabled: loading,
-              },
-              loading ? "Logging in..." : "Login"
-            ),
-            React.createElement(
-              "div",
-              { style: styles.footer },
-              "New to BuildMitra? ",
-              React.createElement(
-                "span",
-                {
-                  style: styles.link,
-                  onClick: () => {
-                    setIsLogin(false);
-                    setError("");
-                    setSuccess("");
-                  },
-                },
-                "Create an Account"
-              )
-            )
-          )
-        : React.createElement(
-            "form",
-            { onSubmit: handleRegister },
-            React.createElement(
-              "div",
-              null,
-              React.createElement(
-                "label",
-                { style: styles.label },
-                "Full Name",
-                React.createElement("span", { style: styles.labelRequired }, " *")
-              ),
-              React.createElement("input", {
-                type: "text",
-                name: "name",
-                placeholder: "Enter your full name",
-                value: formData.name,
-                onChange: handleInputChange,
-                required: true,
-                style: styles.input,
-              })
-            ),
-            React.createElement(
-              "div",
-              null,
-              React.createElement(
-                "label",
-                { style: styles.label },
-                "Phone Number",
-                React.createElement("span", { style: styles.labelRequired }, " *")
-              ),
-              React.createElement("input", {
-                type: "tel",
-                name: "phone",
-                placeholder: "Enter your 10-digit phone number",
-                value: formData.phone,
-                onChange: handleInputChange,
-                required: true,
-                minLength: 10,
-                style: styles.input,
-              })
-            ),
-            React.createElement(
-              "div",
-              null,
-              React.createElement("label", { style: styles.label }, "Email Address (Optional)"),
-              React.createElement("input", {
-                type: "email",
-                name: "email",
-                placeholder: "Enter your email (optional)",
-                value: formData.email,
-                onChange: handleInputChange,
-                style: styles.input,
-              }),
-              React.createElement(
-                "div",
-                { style: styles.note },
-                "Email is optional. You can login with phone number."
-              )
-            ),
-            React.createElement(
-              "div",
-              null,
-              React.createElement(
-                "label",
-                { style: styles.label },
-                "Address",
-                React.createElement("span", { style: styles.labelRequired }, " *")
-              ),
-              React.createElement("input", {
-                type: "text",
-                name: "address",
-                placeholder: "Enter your address",
-                value: formData.address,
-                onChange: handleInputChange,
-                required: true,
-                style: styles.input,
-              })
-            ),
-            React.createElement(
-              "div",
-              null,
-              React.createElement(
-                "label",
-                { style: styles.label },
-                "Pincode",
-                React.createElement("span", { style: styles.labelRequired }, " *")
-              ),
-              React.createElement("input", {
-                type: "text",
-                name: "pincode",
-                placeholder: "Enter 6-digit pincode",
-                value: formData.pincode,
-                onChange: handleInputChange,
-                required: true,
-                minLength: 6,
-                maxLength: 6,
-                style: styles.input,
-              })
-            ),
-            React.createElement(
-              "div",
-              null,
-              React.createElement(
-                "label",
-                { style: styles.label },
-                "Role",
-                React.createElement("span", { style: styles.labelRequired }, " *")
-              ),
-              React.createElement(
-                "select",
-                {
-                  name: "role",
-                  value: formData.role,
-                  onChange: handleInputChange,
-                  required: true,
-                  style: styles.roleSelect,
-                },
-                React.createElement("option", { value: "buyer" }, "🏠 Buyer"),
-                React.createElement("option", { value: "supplier" }, "📦 Supplier"),
-                React.createElement("option", { value: "contractor" }, "🏗️ Contractor"),
-                React.createElement("option", { value: "machinery" }, "🚜 Machinery Hire"),
-                React.createElement("option", { value: "labour" }, "👷 Labour Supply"),
-                React.createElement("option", { value: "realestate" }, "🏡 Real Estate")
-              )
-            ),
-            React.createElement(
-              "div",
-              null,
-              React.createElement(
-                "label",
-                { style: styles.label },
-                "Password",
-                React.createElement("span", { style: styles.labelRequired }, " *")
-              ),
-              React.createElement("input", {
-                type: "password",
-                name: "password",
-                placeholder: "Create a password (min 6 characters)",
-                value: formData.password,
-                onChange: handleInputChange,
-                required: true,
-                minLength: 6,
-                style: styles.input,
-              })
-            ),
-            React.createElement(
-              "div",
-              null,
-              React.createElement(
-                "label",
-                { style: styles.label },
-                "Confirm Password",
-                React.createElement("span", { style: styles.labelRequired }, " *")
-              ),
-              React.createElement("input", {
-                type: "password",
-                name: "confirmPassword",
-                placeholder: "Confirm your password",
-                value: formData.confirmPassword,
-                onChange: handleInputChange,
-                required: true,
-                style: styles.input,
-              })
-            ),
-            React.createElement(
-              "div",
-              {
-                style: {
-                  marginBottom: "15px",
-                  fontSize: "13px",
-                },
-              },
-              React.createElement("input", {
-                type: "checkbox",
-                checked: agreePolicy,
-                onChange: (e) => setAgreePolicy(e.target.checked),
-                style: { marginRight: "8px" },
-              }),
-              "I agree to BuildMitra Terms & Conditions and Privacy Policy"
-            ),
-            React.createElement(
-              "button",
-              {
-                type: "submit",
-                style: {
-                  ...styles.button,
-                  ...(loading ? styles.buttonDisabled : {}),
-                },
-                disabled: loading,
-              },
-              loading ? "Registering..." : "Register"
-            ),
-            React.createElement(
-              "div",
-              { style: styles.footer },
-              "Already have an account? ",
-              React.createElement(
-                "span",
-                {
-                  style: styles.link,
-                  onClick: () => {
-                    setIsLogin(true);
-                    setError("");
-                    setSuccess("");
-                  },
-                },
-                "Login Here"
-              )
-            )
-          )
     )
   );
 }
+
+
+
+
 
 
 
