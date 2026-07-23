@@ -18,7 +18,9 @@ const PROJECT_ARRAY_FIELDS = [
   "payments",
   "siteMedia",
   "extraWorks",
-  "quotations"
+  "quotations",
+  "savedCalculations",
+  "boqRevisions"
 ];
 
 export const DEFAULT_PROJECT_PERMISSIONS = {
