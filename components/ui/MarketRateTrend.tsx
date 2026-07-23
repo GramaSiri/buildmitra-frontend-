@@ -58,17 +58,22 @@ export default function MarketRateTrend() {
       <div
         style={{
           height: "50px",
-          background: "#0f172a",
-          color: "#94a3b8",
+          background: "#ffffff",
+          border: "1px solid #dbe3ea",
+          color: "#475569",
           display: "flex",
           alignItems: "center",
           padding: "0 16px",
-          borderRadius: "8px",
+          borderRadius: "10px",
           marginBottom: "16px",
-          fontSize: "12px"
+          fontSize: "12px",
+          fontWeight: "600"
         }}
       >
-        <span>🏗️ BuildMitra Current Rate Trend • Loading market rates...</span>
+        <div style={{ backgroundColor: "#0f766e", color: "#ffffff", padding: "4px 10px", borderRadius: "6px", fontSize: "11px", fontWeight: "800", marginRight: "12px" }}>
+          🏗️ BuildMitra Live Rates
+        </div>
+        <span>Loading latest market rates...</span>
       </div>
     );
   }
@@ -91,7 +96,7 @@ export default function MarketRateTrend() {
         .ticker-track {
           display: flex;
           align-items: center;
-          gap: 20px;
+          gap: 18px;
           white-space: nowrap;
           width: max-content;
           animation: tickerScroll 95s linear infinite;
@@ -113,7 +118,7 @@ export default function MarketRateTrend() {
         }
       `}</style>
 
-      {/* COMPACT RUNNING TICKER BAR (Max 55px desktop, 65px mobile) */}
+      {/* LIGHT COMPACT RUNNING TICKER BAR (Max 55px desktop, 65px mobile) */}
       <div
         className="ticker-container"
         onMouseEnter={() => setPaused(true)}
@@ -125,38 +130,38 @@ export default function MarketRateTrend() {
         onTouchEnd={() => setPaused(false)}
         style={{
           height: "52px",
-          backgroundColor: "#0f172a",
+          backgroundColor: "#ffffff",
           borderRadius: "10px",
-          border: "1px solid #1e293b",
+          border: "1px solid #dbe3ea",
           display: "flex",
           alignItems: "center",
           overflow: "hidden",
           padding: "0 12px",
-          boxShadow: "0 4px 12px rgba(15,23,42,0.15)",
-          color: "#ffffff"
+          boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+          color: "#1e293b"
         }}
       >
-        {/* HEADER BADGE */}
+        {/* TARGET 1: EXACT HEADING BADGE */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
             gap: "6px",
-            backgroundColor: "#1e293b",
+            backgroundColor: "#0f766e", // Target 2: Teal background
             padding: "6px 12px",
             borderRadius: "6px",
             fontSize: "11px",
             fontWeight: "800",
-            letterSpacing: "0.5px",
-            color: "#f59e0b",
+            letterSpacing: "0.4px",
+            color: "#ffffff", // Target 2: White text
             whiteSpace: "nowrap",
             marginRight: "16px",
             zIndex: 2,
-            boxShadow: "4px 0 12px rgba(15,23,42,0.8)"
+            boxShadow: "4px 0 10px rgba(255,255,255,0.9)"
           }}
         >
           <span>🏗️</span>
-          <span>BuildMitra Current Rate Trend</span>
+          <span>BuildMitra Live Rates</span>
         </div>
 
         {/* CONTINUOUS LOOP TICKER TRACK */}
@@ -169,23 +174,32 @@ export default function MarketRateTrend() {
             const isCheaper = item.trend === "cheaper";
             const isCostlier = item.trend === "costlier";
             const isUnchanged = item.trend === "unchanged";
+            const isNew = item.trend === "new";
 
-            // Target 4: Construction colour logic
+            // Target 2: Clean Light Theme Badge & Text Colours
             const badgeBg = isCheaper
-              ? "#14532d"
+              ? "#dcfce7" // Light Green
               : isCostlier
-              ? "#7f1d1d"
+              ? "#fee2e2" // Light Red
               : isUnchanged
-              ? "#334155"
-              : "#1e3a8a";
+              ? "#f1f5f9" // Light Grey
+              : "#dbeafe"; // Target 2: Light Blue for NEW
+
+            const borderColor = isCheaper
+              ? "#86efac"
+              : isCostlier
+              ? "#fca5a5"
+              : isUnchanged
+              ? "#cbd5e1"
+              : "#93c5fd";
 
             const textColor = isCheaper
-              ? "#4ade80" // Green for cheaper ↓
+              ? "#15803d" // Dark Green text ↓
               : isCostlier
-              ? "#fca5a5" // Red for costlier ↑
+              ? "#b91c1c" // Dark Red text ↑
               : isUnchanged
-              ? "#cbd5e1" // Grey for unchanged →
-              : "#93c5fd";
+              ? "#64748b" // Grey text →
+              : "#1d4ed8"; // Target 2: High contrast Blue text for NEW
 
             const arrow = isCheaper ? "↓" : isCostlier ? "↑" : isUnchanged ? "→" : "•";
             const labelSuffix = isCheaper ? "cheaper" : isCostlier ? "costlier" : "";
@@ -200,21 +214,21 @@ export default function MarketRateTrend() {
                   alignItems: "center",
                   gap: "8px",
                   backgroundColor: badgeBg,
+                  border: `1px solid ${borderColor}`,
                   padding: "4px 10px",
                   borderRadius: "6px",
                   fontSize: "12px",
-                  fontWeight: "600",
-                  transition: "transform 0.15s ease"
+                  fontWeight: "600"
                 }}
               >
-                <span style={{ color: "#ffffff", fontWeight: "700" }}>{item.itemName}</span>
-                <span style={{ color: "#ffffff", fontWeight: "900" }}>
+                <span style={{ color: "#1e293b", fontWeight: "700" }}>{item.itemName}</span>
+                <span style={{ color: "#0f172a", fontWeight: "900" }}>
                   ₹{item.todayRate.toLocaleString()}/{item.unit}
                 </span>
 
-                <span style={{ color: textColor, fontWeight: "800", display: "inline-flex", alignItems: "center", gap: "2px" }}>
+                <span style={{ color: textColor, fontWeight: "800", display: "inline-flex", alignItems: "center", gap: "3px" }}>
                   <span>{arrow}</span>
-                  {item.trend === "new" ? (
+                  {isNew ? (
                     <span>NEW</span>
                   ) : (
                     <span>
@@ -224,7 +238,7 @@ export default function MarketRateTrend() {
                 </span>
 
                 <span style={{ color: "#94a3b8", fontSize: "10px", fontWeight: "400" }}>
-                  • {item.sourceType === "marketplace" ? "Lowest Marketplace" : "Admin Approved"}
+                  · {item.sourceType === "marketplace" ? "Lowest Marketplace" : "Admin Approved"}
                 </span>
               </div>
             );
@@ -232,7 +246,7 @@ export default function MarketRateTrend() {
         </div>
       </div>
 
-      {/* POPOVER TOOLTIP ON HOVER / CLICK */}
+      {/* LIGHT POPOVER TOOLTIP ON HOVER / CLICK */}
       {hoveredRate && (
         <div
           style={{
@@ -240,42 +254,42 @@ export default function MarketRateTrend() {
             top: "58px",
             left: "50%",
             transform: "translateX(-50%)",
-            backgroundColor: "#1e293b",
-            color: "#ffffff",
-            border: "1px solid #334155",
+            backgroundColor: "#ffffff",
+            color: "#1e293b",
+            border: "1px solid #cbd5e1",
             borderRadius: "10px",
             padding: "14px 18px",
-            boxShadow: "0 12px 32px rgba(0,0,0,0.3)",
+            boxShadow: "0 10px 25px rgba(0,0,0,0.15)",
             zIndex: 100,
             width: "320px",
             fontSize: "12px"
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-            <strong style={{ fontSize: "14px", color: "#fcd34d" }}>{hoveredRate.itemName}</strong>
-            <span style={{ fontSize: "10px", color: "#94a3b8", textTransform: "uppercase" }}>
+            <strong style={{ fontSize: "14px", color: "#0f766e" }}>{hoveredRate.itemName}</strong>
+            <span style={{ fontSize: "10px", color: "#64748b", textTransform: "uppercase", fontWeight: "700" }}>
               {hoveredRate.category}
             </span>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "10px", backgroundColor: "#0f172a", padding: "10px", borderRadius: "6px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "10px", backgroundColor: "#f8fafc", padding: "10px", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
             <div>
-              <span style={{ color: "#94a3b8", fontSize: "10px" }}>Today's Rate:</span>
-              <div style={{ fontSize: "15px", fontWeight: "900", color: "#ffffff" }}>
+              <span style={{ color: "#64748b", fontSize: "10px" }}>Today's Rate:</span>
+              <div style={{ fontSize: "15px", fontWeight: "900", color: "#0f172a" }}>
                 ₹{hoveredRate.todayRate} / {hoveredRate.unit}
               </div>
             </div>
             <div>
-              <span style={{ color: "#94a3b8", fontSize: "10px" }}>Yesterday's Rate:</span>
-              <div style={{ fontSize: "15px", fontWeight: "700", color: "#cbd5e1" }}>
+              <span style={{ color: "#64748b", fontSize: "10px" }}>Yesterday's Rate:</span>
+              <div style={{ fontSize: "15px", fontWeight: "700", color: "#334155" }}>
                 {hoveredRate.yesterdayRate ? `₹${hoveredRate.yesterdayRate}` : "None"}
               </div>
             </div>
           </div>
 
-          <div style={{ marginBottom: "8px", color: "#cbd5e1" }}>
+          <div style={{ marginBottom: "8px", color: "#334155" }}>
             <strong>Trend: </strong>
-            <span style={{ color: hoveredRate.displayColour === "green" ? "#4ade80" : hoveredRate.displayColour === "red" ? "#fca5a5" : "#cbd5e1" }}>
+            <span style={{ fontWeight: "700", color: hoveredRate.displayColour === "green" ? "#15803d" : hoveredRate.displayColour === "red" ? "#b91c1c" : "#64748b" }}>
               {hoveredRate.trend === "cheaper"
                 ? `↓ ₹${Math.abs(hoveredRate.changeAmount)} (${hoveredRate.percentageChange}% cheaper)`
                 : hoveredRate.trend === "costlier"
@@ -286,7 +300,7 @@ export default function MarketRateTrend() {
             </span>
           </div>
 
-          <div style={{ fontSize: "11px", color: "#94a3b8", lineHeight: "1.5" }}>
+          <div style={{ fontSize: "11px", color: "#475569", lineHeight: "1.5" }}>
             <div>📍 City: <strong>{hoveredRate.city}</strong></div>
             <div>🏷️ Source: <strong>{hoveredRate.sourceLabel}</strong></div>
             {hoveredRate.sourceType === "marketplace" && (
@@ -300,12 +314,13 @@ export default function MarketRateTrend() {
             style={{
               marginTop: "10px",
               width: "100%",
-              padding: "4px",
-              border: 0,
-              borderRadius: "4px",
-              backgroundColor: "#334155",
-              color: "#ffffff",
+              padding: "5px",
+              border: "1px solid #cbd5e1",
+              borderRadius: "6px",
+              backgroundColor: "#f1f5f9",
+              color: "#334155",
               fontSize: "11px",
+              fontWeight: "700",
               cursor: "pointer"
             }}
           >
