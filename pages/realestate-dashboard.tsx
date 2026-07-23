@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { getBuildMitraUser, logoutToLogin } from "../utils/session";
+import MarketRateTrend from "../components/ui/MarketRateTrend";
 import { themeTokens, PrimaryButton, SecondaryButton, Card, Badge, LoadingSpinner, EmptyState } from "../components/ui/DesignSystem";
 
 const p = (obj: any) => obj;
@@ -949,6 +950,7 @@ const [activeTab, setActiveTab] = useState("overview");
     React.createElement("div", { style: styles.tabContainer },
       tabs.map(tab => React.createElement("div", { key: tab.id, onClick: () => setActiveTab(tab.id), style: { ...styles.tab, ...(activeTab === tab.id ? styles.activeTab : {}) } }, tab.icon, " ", tab.name))
     ),
+    React.createElement(MarketRateTrend, null),
     renderContent(),
 
     showEnquiryModal && selectedEnquiry && React.createElement("div", { style: styles.modal, onClick: () => setShowEnquiryModal(false) },

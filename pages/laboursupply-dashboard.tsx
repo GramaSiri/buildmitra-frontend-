@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import * as XLSX from 'xlsx';
 import { logoutToLogin } from "../utils/session";
 import { themeTokens, PrimaryButton, SecondaryButton, Card, Badge, LoadingSpinner, EmptyState } from "../components/ui/DesignSystem";
+import MarketRateTrend from "../components/ui/MarketRateTrend";
 
 export default function LabourSupplyDashboard() {
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
@@ -308,6 +309,8 @@ const [activeTab, setActiveTab] = useState("dashboard");
     React.createElement("div", { style: styles.tabContainer },
       tabs.map(tab => React.createElement("div", { key: tab.id, onClick: () => setActiveTab(tab.id), style: { ...styles.tab, ...(activeTab === tab.id ? styles.activeTab : {}) } }, tab.name))
     ),
+
+    React.createElement(MarketRateTrend, null),
 
     activeTab === "dashboard" && React.createElement("div", null,
       React.createElement("div", { style: styles.grid2 },

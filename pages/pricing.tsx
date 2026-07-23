@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
+import MarketRateTrend from "../components/ui/MarketRateTrend";
 
 interface BreakupItem {
   id: number;
@@ -102,6 +103,8 @@ export default function PricingPage() {
             </div>
           </div>
         </div>
+
+        <MarketRateTrend />
 
         {/* NAVIGATION TABS */}
         <div style={{ display: "flex", gap: "12px", marginBottom: "24px" }}>
