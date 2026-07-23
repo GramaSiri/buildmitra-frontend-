@@ -84,6 +84,87 @@ const [userName, setUserName] = useState("Supplier");
     customerMobile: e.buyerPhone || "",
     itemName: e.itemName || e.itemType || "Material",
     quantity: e.quantity || "",
+const p = (obj: any) => obj;
+
+export default function SupplierDashboard() {
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
+const [userName, setUserName] = useState("Supplier");
+  const [userId, setUserId] = useState(null);
+  const [isClient, setIsClient] = useState(false);
+  const [activeTab, setActiveTab] = useState("overview");
+  const [showProductModal, setShowProductModal] = useState(false);
+  const [showOfferModal, setShowOfferModal] = useState(false);
+  const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
+  const [showQuoteModal, setShowQuoteModal] = useState(false);
+  const [selectedQuoteRequest, setSelectedQuoteRequest] = useState(null);
+  const [bulkFile, setBulkFile] = useState(null);
+  const [shopPhoto, setShopPhoto] = useState(null);
+  const [businessCard, setBusinessCard] = useState(null);
+  const [quoteResponse, setQuoteResponse] = useState({ price: "", deliveryDate: "", notes: "" });
+  const [pincode, setPincode] = useState("");
+  const [pincodeError, setPincodeError] = useState("");
+  const [showEditProductModal, setShowEditProductModal] = useState(false);
+  
+  const [newProduct, setNewProduct] = useState({
+    name: "", category: "", unit: "kg", price: "", stock: "", minOrder: "", description: ""
+  });
+  const [newOffer, setNewOffer] = useState({
+    offerName: "", productName: "", bulkQuantity: "", bulkValue: "", discount: "", 
+    freeDelivery: "No", buyGet: "", billDiscount: "", validFrom: "", validTo: ""
+  });
+  const [editProduct, setEditProduct] = useState({
+    id: "", name: "", category: "", unit: "", price: "", stock: "", minOrder: "", description: ""
+  });
+
+  // Load user data on mount
+  useEffect(() => {
+    setIsClient(true);
+    
+    const user = (sessionStorage.getItem("currentUser") || sessionStorage.getItem("currentUser")) || (sessionStorage.getItem("loggedInUser") || sessionStorage.getItem("loggedInUser")) || (sessionStorage.getItem("user") || sessionStorage.getItem("user"));
+    if (user) {
+      const userData = JSON.parse(user);
+      const resolvedUserCode =
+        userData.userCode ||
+        userData.uniqueCode ||
+        (sessionStorage.getItem("uniqueCode") || sessionStorage.getItem("uniqueCode")) ||
+        "";
+
+      const resolvedUserId =
+        resolvedUserCode ||
+        userData.userId ||
+        userData.id ||
+        userData._id ||
+        "";
+
+      const normalizedUser = {
+        ...userData,
+        userCode: resolvedUserCode,
+        uniqueCode: resolvedUserCode,
+        userId: resolvedUserId
+      };
+
+      setUserName(userData.name || "Supplier");
+      setUserId(resolvedUserId);
+
+      console.log("✅ Supplier identity loaded:", {
+        userCode: resolvedUserCode,
+        userId: resolvedUserId,
+        mongoId: userData.id || userData._id || ""
+      });
+
+      loadUserData(resolvedUserId);
+      loadLiveQuoteRequests(normalizedUser);
+    }
+  }, []);
+
+  const mapMongoQuoteRequest = (e) => ({
+    id: e._id,
+    enquiryCode: e.enquiryCode,
+    date: e.createdAt ? e.createdAt.split("T")[0] : "",
+    customerName: e.buyerName || "",
+    customerMobile: e.buyerPhone || "",
+    itemName: e.itemName || e.itemType || "Material",
+    quantity: e.quantity || "",
     location: e.location || "",
     requirement: e.specification || e.message || "",
     status: e.status || "Pending",
@@ -98,44 +179,13 @@ const [userName, setUserName] = useState("Supplier");
         setQuoteRequests([]);
         return;
       }
-      const res = await fetch(
-        API_BASE + "/api/enquiry?providerUserCode=" + encodeURIComponent(providerUserCode),
+      let res = await fetch(
+        API_BASE + "/api/enquiry/provider/my?providerUserCode=" + encodeURIComponent(providerUserCode),
         {
           headers: {
             "x-user-code": providerUserCode
           }
         }
-      );
-      const data = await res.json();
-      if (data.success) {
-        setQuoteRequests((data.enquiries || []).map(mapMongoQuoteRequest));
-        setSupplierInfo((info) => ({ ...info, totalEnquiries: (data.enquiries || []).length }));
-      }
-    } catch (err) {
-      console.log("Supplier enquiries not loaded", err);
-    }
-  };
-
-  const loadUserData = (uid) => {
-    // Load supplier info
-    const info = localStorage.getItem("supplierInfo_" + uid);
-    if (info) {
-      setSupplierInfo(JSON.parse(info));
-    }
-    
-    // Load products for this specific user
-    const savedProducts = localStorage.getItem("supplierProducts_" + uid);
-    if (savedProducts) {
-      setProducts(JSON.parse(savedProducts));
-      console.log("✅ Loaded products for user:", uid, JSON.parse(savedProducts).length);
-    } else {
-      setProducts([]);
-    }
-  };
-
-  // State
-  const [supplierInfo, setSupplierInfo] = useState({
-  // Existing
   shopName: "",
   ownerName: "",
   shopPhotoUrl: null,

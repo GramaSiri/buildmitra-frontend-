@@ -196,21 +196,34 @@ const isReadOnly = false;
   useEffect(() => {
     const loadSentEnquiries = async () => {
       try {
+        const user = getLoggedInUser();
         const currentUser = getCurrentAppUser();
-        const buyerUserCode = currentUser.userCode || currentUser.userId || currentUser.uniqueCode || "";
+        const buyerUserCode = user?.uniqueCode || user?.userCode || currentUser.userCode || currentUser.uniqueCode || "";
         if (!buyerUserCode) {
           setSentEnquiries([]);
           return;
         }
-        const res = await fetch(
-          API_BASE + "/api/enquiry?buyerUserCode=" + encodeURIComponent(buyerUserCode),
+        let res = await fetch(
+          API_BASE + "/api/enquiry/buyer/my?buyerUserCode=" + encodeURIComponent(buyerUserCode),
           {
             headers: {
               "x-user-code": buyerUserCode
             }
           }
         );
-        const data = await res.json();
+        let data = await res.json().catch(() => ({}));
+        if (!data.success) {
+          res = await fetch(
+            API_BASE + "/api/enquiry?buyerUserCode=" + encodeURIComponent(buyerUserCode),
+            {
+              headers: {
+                "x-user-code": buyerUserCode
+              }
+            }
+          );
+          data = await res.json().catch(() => ({}));
+        }
+
         if (data.success) {
           setSentEnquiries((data.enquiries || []).map((e: any) => ({
             id: e._id,

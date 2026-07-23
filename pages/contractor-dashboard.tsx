@@ -211,28 +211,43 @@ useEffect(() => {
   const fetchLiveEnquiries = async () => {
     setEnquiriesLoading(true);
     try {
+      const user = getLoggedInUser();
       const currentUser = getCurrentAppUser();
-      const providerUserCode = currentUser.userCode || currentUser.userId || currentUser.uniqueCode || "";
+      const providerUserCode = user?.uniqueCode || user?.userCode || currentUser.userCode || currentUser.userId || currentUser.uniqueCode || "";
       if (!providerUserCode) {
         setEnquiries([]);
         setEnquiriesLoading(false);
         return;
       }
 
-      let res = await fetch(API_BASE + "/api/enquiry?providerUserCode=" + encodeURIComponent(providerUserCode));
-      let data = await res.json();
+      let res = await fetch(
+        API_BASE + "/api/enquiry/provider/my?providerUserCode=" + encodeURIComponent(providerUserCode),
+        {
+          headers: {
+            "x-user-code": providerUserCode
+          }
+        }
+      );
+      let data = await res.json().catch(() => ({}));
 
       if (!data.success) {
-        res = await fetch(API_BASE + "/api/enquiry");
-        data = await res.json();
+        res = await fetch(
+          API_BASE + "/api/enquiry?providerUserCode=" + encodeURIComponent(providerUserCode),
+          {
+            headers: {
+              "x-user-code": providerUserCode
+            }
+          }
+        );
+        data = await res.json().catch(() => ({}));
       }
 
       if (data.success) {
-        const liveRows = (data.enquiries || []).filter((e) => String(e.providerUserCode || "") === String(providerUserCode));
+        const liveRows = data.enquiries || [];
         console.log("BuildMitra contractor enquiry debug", {
           loggedInContractor: currentUser,
           contractorUserCode: providerUserCode,
-          fetchedEnquiryCount: (data.enquiries || []).length,
+          fetchedEnquiryCount: liveRows.length,
           matchingEnquiryCount: liveRows.length,
           firstProviderUserCodes: (data.enquiries || []).slice(0, 3).map((e) => e.providerUserCode)
         });
