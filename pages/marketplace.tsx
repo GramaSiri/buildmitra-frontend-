@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import MarketRateTrend from "../components/ui/MarketRateTrend";
+import { normalizeImageUrl, resolveListingImage } from "../utils/imageUrl";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
 
@@ -573,7 +574,31 @@ ${enquiry.buyerPhone}`;
                 <button style={styles.profileBtn} onClick={() => window.location.href = `/public-profile/${item.providerUserCode}`}>View Profile</button>
               </div>
 
-              <img src={item.imageUrl} alt={item.itemName} style={styles.image} />
+              {resolveListingImage(item) ? (
+                <img
+                  src={resolveListingImage(item) || ""}
+                  alt={item.itemName || "Marketplace Product"}
+                  style={styles.image}
+                  loading="lazy"
+                  onError={(e) => {
+                    const target = e.currentTarget as HTMLImageElement;
+                    target.style.display = "none";
+                    const parent = target.parentElement;
+                    if (parent && !parent.querySelector(".bm-img-placeholder")) {
+                      const ph = document.createElement("div");
+                      ph.className = "bm-img-placeholder";
+                      ph.style.cssText = "width:100%;height:190px;background:#f1f5f9;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#64748b;font-size:13px;font-weight:600;gap:4px;";
+                      ph.innerHTML = "<span>🏗️</span><span>Product image not available</span>";
+                      parent.insertBefore(ph, target);
+                    }
+                  }}
+                />
+              ) : (
+                <div style={{ width: "100%", height: 190, background: "#f1f5f9", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#64748b", fontSize: 13, fontWeight: 600, gap: 4 }}>
+                  <span style={{ fontSize: 24 }}>🏗️</span>
+                  <span>Product image not available</span>
+                </div>
+              )}
 
               <div style={styles.body}>
                 <h2 style={styles.item}>{item.itemName}</h2>

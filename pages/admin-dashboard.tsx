@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import * as XLSX from 'xlsx';
 import { themeTokens, PrimaryButton, SecondaryButton, Card, Badge, LoadingSpinner, EmptyState, BuildMitraHeader } from "../components/ui/DesignSystem";
 import MarketRateTrend from "../components/ui/MarketRateTrend";
+import { normalizeImageUrl, resolveListingImage } from "../utils/imageUrl";
 const API = (process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000") + "/api";
 import { getBuildMitraUser, logoutToLogin } from "../utils/session";
 
@@ -1681,6 +1682,7 @@ const rejectRealEstate = async (propertyCode) => {
           React.createElement("thead", null,
             React.createElement("tr", null,
               React.createElement("th", { style: styles.th }, "Select"),
+              React.createElement("th", { style: styles.th }, "Photo"),
               React.createElement("th", { style: styles.th }, "Listing"),
               React.createElement("th", { style: styles.th }, "Provider"),
               React.createElement("th", { style: styles.th }, "Master Item"),
@@ -1695,6 +1697,17 @@ const rejectRealEstate = async (propertyCode) => {
             marketplaceListings.map(listing =>
               React.createElement("tr", { key: listing._id || listing.listingCode },
                 React.createElement("td", { style: styles.td }, React.createElement("input", { type: "checkbox", checked: Boolean(selectedListingCodes[listing.listingCode]), onChange: (e) => setSelectedListingCodes({ ...selectedListingCodes, [listing.listingCode]: e.target.checked }) })),
+                React.createElement("td", { style: styles.td },
+                  resolveListingImage(listing)
+                    ? React.createElement("img", {
+                        src: resolveListingImage(listing) || "",
+                        alt: listing.itemName,
+                        style: { width: "44px", height: "44px", borderRadius: "6px", objectFit: "cover", border: "1px solid #ddd", cursor: "pointer" },
+                        onClick: () => window.open(resolveListingImage(listing) || "", "_blank"),
+                        onError: (e: any) => { e.currentTarget.style.display = "none"; }
+                      })
+                    : React.createElement("span", { style: { fontSize: "11px", color: "#888" } }, "No product image")
+                ),
                 React.createElement("td", { style: styles.td }, listing.listingCode),
                 React.createElement("td", { style: styles.td }, React.createElement("strong", null, listing.providerName), React.createElement("br"), listing.providerUserCode),
                 React.createElement("td", { style: styles.td }, React.createElement("strong", null, listing.itemName), React.createElement("br"), listing.masterItemCode),
