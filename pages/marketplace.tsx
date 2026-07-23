@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import MarketRateTrend from "../components/ui/MarketRateTrend";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
 
@@ -511,6 +512,8 @@ ${enquiry.buyerPhone}`;
         <h1 style={styles.title}>BuildMitra Marketplace</h1>
         <p style={styles.subtitle}>Approved providers with master-item linked rates.</p>
       </div>
+
+      <MarketRateTrend />
 
       <div style={styles.filters}>
         <input style={styles.input} placeholder="Search item, provider, brand" value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} />

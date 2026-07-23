@@ -3,6 +3,7 @@ import * as XLSX from 'xlsx';
 import { useRouter } from 'next/router';
 import { useRates } from '../contexts/RateContext';
 import { usePaymentBarrier } from '../hooks/usePaymentBarrier';
+import MarketRateTrend from '../components/ui/MarketRateTrend';
 import { getMasterRate } from "../utils/masterRates";
 
 const styles = {
@@ -168,6 +169,8 @@ export default function ConcretePage() {
       React.createElement('button', { onClick: handleBack, style: styles.backButton }, '←'),
       React.createElement('h1', { style: styles.headerTitle }, '🧱 Concrete Calculator')
     ),
+
+    React.createElement(MarketRateTrend, null),
     
     React.createElement('div', { style: styles.rateInfo },
       React.createElement('span', null, `💰 Material Rates: Cement ₹${cementRate}/bag | Sand ₹${sandRate}/CFT`),

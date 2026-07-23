@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import * as XLSX from 'xlsx';
 import { logoutToLogin } from "../utils/session";
 import { themeTokens, PrimaryButton, SecondaryButton, Card, Badge, LoadingSpinner, EmptyState, BuildMitraHeader } from "../components/ui/DesignSystem";
+import MarketRateTrend from "../components/ui/MarketRateTrend";
 
 const p = (obj: any) => obj;
 
@@ -785,6 +786,7 @@ BuildMitra Marketplace`;
       React.createElement("button", { onClick: () => setActiveTab("quotes"), style: styles.buttonSuccess }, "Enquiries"),
       React.createElement("button", { onClick: logoutToLogin, style: { ...styles.buttonDanger } }, "🚪 Logout")
     ),
+    React.createElement(MarketRateTrend, null),
     React.createElement("div", { style: styles.tabContainer },
       tabs.map(tab => React.createElement("div", { key: tab.id, onClick: () => setActiveTab(tab.id), style: { ...styles.tab, ...(activeTab === tab.id ? styles.activeTab : {}) } }, tab.icon, " ", tab.name))
     ),

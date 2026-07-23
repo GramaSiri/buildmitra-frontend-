@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import * as XLSX from 'xlsx';
 import { usePaymentBarrier } from '../hooks/usePaymentBarrier';
 import { getMasterRate, rateStatusMessage } from '../utils/masterRates';
+import MarketRateTrend from '../components/ui/MarketRateTrend';
 
 const styles: any = {
   container: { maxWidth: '100%', margin: 0, padding: '12px', backgroundColor: '#f5f0e8', minHeight: '100vh', boxSizing: 'border-box' },
@@ -356,6 +357,8 @@ const router = useRouter();
       React.createElement('h1', { style: styles.headerTitle }, '🏗️ Civil BOQ Calculator'),
       React.createElement('p', { style: styles.headerSub }, 'Professional Civil BOQ — 10% setback, SBC based quantities and Admin Master Rates')
     ),
+
+    React.createElement(MarketRateTrend, null),
 
     React.createElement('div', { style: styles.infoBox },
       `Admin Master Rates linked. ${rateMsg || 'All core rate keys loaded or fallback ₹0 is used where rate is missing.'}`

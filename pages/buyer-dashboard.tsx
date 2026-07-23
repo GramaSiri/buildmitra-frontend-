@@ -3,6 +3,7 @@ import { exportProjectReport } from "../utils/reporting";
 import { DEFAULT_PROJECT_PERMISSIONS, getLoggedInUser, migrateLegacyProjects, saveProjectsForBuyer } from "../utils/projectStorage";
 import { logoutToLogin } from "../utils/session";
 import { themeTokens, PrimaryButton, SecondaryButton, Card, Badge, LoadingSpinner, EmptyState, BuildMitraHeader } from "../components/ui/DesignSystem";
+import MarketRateTrend from "../components/ui/MarketRateTrend";
 
 export default function BuyerDashboard() {
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
@@ -1470,6 +1471,7 @@ const isReadOnly = false;
         )
       )
     ),
+    React.createElement(MarketRateTrend, null),
     React.createElement("div", { style: styles.tabContainer },
       visibleTabs.map(tab => React.createElement("div", { key: tab.id, onClick: () => setActiveTab(tab.id), style: { ...styles.tab, ...(activeTab === tab.id ? styles.activeTab : {}) } }, tab.name))
     ),

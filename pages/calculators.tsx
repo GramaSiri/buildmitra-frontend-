@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
+import MarketRateTrend from "../components/ui/MarketRateTrend";
 
 interface CalcItem {
   id: string;
@@ -78,6 +79,8 @@ export default function CalculatorsPage() {
             </button>
           </div>
         </div>
+
+        <MarketRateTrend />
 
         {/* CONTROLS BAR */}
         <div style={{ background: "#ffffff", borderRadius: "14px", padding: "16px 20px", marginBottom: "24px", border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>

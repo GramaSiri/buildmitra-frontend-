@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import * as XLSX from 'xlsx';
-import { themeTokens, PrimaryButton, SecondaryButton, Card, Badge, LoadingSpinner, EmptyState } from "../components/ui/DesignSystem";
+import { themeTokens, PrimaryButton, SecondaryButton, Card, Badge, LoadingSpinner, EmptyState, BuildMitraHeader } from "../components/ui/DesignSystem";
+import MarketRateTrend from "../components/ui/MarketRateTrend";
 const API = (process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000") + "/api";
 import { getBuildMitraUser, logoutToLogin } from "../utils/session";
 
@@ -1153,15 +1154,15 @@ const rejectRealEstate = async (propertyCode) => {
 ];
 
   return React.createElement("div", { style: styles.container },
-    React.createElement("div", { style: styles.header },
-      React.createElement("div", null,
-        React.createElement("h1", { style: styles.headerTitle }, "Admin Dashboard"),
-        React.createElement("p", { style: styles.headerSub }, "Manage Platform, Users, Subscriptions & Payments")
-      ),
-      React.createElement("div", { style: { display: "flex", gap: "10px" } },
-        React.createElement("button", { onClick: () => navigateTo("/marketplace"), style: { backgroundColor: "#17a2b8", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer" } }, "Marketplace"),
-        React.createElement("button", { onClick: handleLogout, style: { backgroundColor: "#dc3545", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer" } }, "Logout")
-      )
+    React.createElement(BuildMitraHeader, {
+      moduleTitle: "Admin Module",
+      pageTitle: "Admin Dashboard",
+      subtitle: "Manage Platform, Users, Subscriptions, Market Rates & Payments",
+      showBackToDashboard: false
+    }),
+    React.createElement("div", { style: { display: "flex", gap: "10px", marginBottom: "20px" } },
+      React.createElement("button", { onClick: () => navigateTo("/marketplace"), style: { backgroundColor: "#17a2b8", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer" } }, "Marketplace"),
+      React.createElement("button", { onClick: handleLogout, style: { backgroundColor: "#dc3545", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer" } }, "Logout")
     ),
 
     React.createElement("div", { style: styles.grid4 },
@@ -1176,6 +1177,8 @@ const rejectRealEstate = async (propertyCode) => {
       React.createElement("div", { style: styles.card }, React.createElement("div", { style: styles.statValue }, totalEnquiries), React.createElement("div", { style: styles.statLabel }, "Enquiries")),
       React.createElement("div", { style: styles.card }, React.createElement("div", { style: styles.statValue }, totalMasterRates), React.createElement("div", { style: styles.statLabel }, "Master Rates"))
     ),
+
+    React.createElement(MarketRateTrend, null),
 
     React.createElement("div", { style: styles.tabContainer },
       tabs.map(tab => React.createElement("div", { key: tab.id, onClick: () => setActiveTab(tab.id), style: { ...styles.tab, ...(activeTab === tab.id ? styles.activeTab : {}) } }, tab.name))

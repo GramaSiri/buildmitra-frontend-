@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { generateBuildMitraDocument } from "../utils/documentGenerator";
 import { themeTokens, PrimaryButton, SecondaryButton, Card, Badge, LoadingSpinner, EmptyState, BuildMitraHeader } from "../components/ui/DesignSystem";
+import MarketRateTrend from "../components/ui/MarketRateTrend";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
 import { exportProjectReport } from "../utils/reporting";
@@ -1879,6 +1880,7 @@ alert("Quotation saved and PDF downloaded successfully.");
       React.createElement("button", { onClick: () => window.open("https://wa.me/919876543210", "_blank"), style: styles.buttonSuccess }, "📱 Share"),
       React.createElement("button", { onClick: logoutToLogin, style: styles.buttonDanger }, "🚪 Logout")
     ),
+    React.createElement(MarketRateTrend, null),
     React.createElement("div", { style: styles.tabContainer },
       tabs.map(tab => React.createElement("div", { key: tab.id, onClick: () => setActiveTab(tab.id), style: { ...styles.tab, ...(activeTab === tab.id ? styles.activeTab : {}) } }, tab.icon, " ", tab.name))
     ),
