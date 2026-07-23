@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import * as XLSX from 'xlsx';
 import { logoutToLogin } from "../utils/session";
-import { themeTokens, PrimaryButton, SecondaryButton, Card, Badge, LoadingSpinner, EmptyState } from "../components/ui/DesignSystem";
+import { themeTokens, PrimaryButton, SecondaryButton, Card, Badge, LoadingSpinner, EmptyState, BuildMitraHeader } from "../components/ui/DesignSystem";
 
 const p = (obj: any) => obj;
 
@@ -772,19 +772,18 @@ BuildMitra Marketplace`;
   }
 
   return React.createElement("div", { style: styles.container },
-    React.createElement("div", { style: styles.header },
-      React.createElement("div", null,
-        React.createElement("h1", { style: styles.headerTitle }, "🏭 Supplier Dashboard"),
-        React.createElement("div", { style: styles.welcomeText }, "👋 Welcome, ", userName),
-        React.createElement("p", { style: styles.headerSub }, "Manage products, offers, orders, and enquiries")
-      ),
-      React.createElement("div", { style: { display: "flex", gap: "8px", flexWrap: "wrap" } },
-        React.createElement("button", { onClick: () => setActiveTab("overview"), style: styles.buttonInfo }, "Dashboard"),
-        React.createElement("button", { onClick: () => window.location.href = "/provider-select-items", style: styles.buttonSuccess }, "Select Items & Rates"),
-        React.createElement("button", { onClick: () => window.location.href = "/marketplace", style: styles.buttonInfo }, "Marketplace"),
-        React.createElement("button", { onClick: () => setActiveTab("quotes"), style: styles.buttonSuccess }, "Enquiries"),
-        React.createElement("button", { onClick: logoutToLogin, style: { ...styles.buttonDanger } }, "🚪 Logout")
-      )
+    React.createElement(BuildMitraHeader, {
+      moduleTitle: "Supplier Module",
+      pageTitle: "Supplier Dashboard",
+      subtitle: `Welcome, ${userName} | Manage products, offers, orders, and enquiries`,
+      showBackToDashboard: false
+    }),
+    React.createElement("div", { style: { display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "20px" } },
+      React.createElement("button", { onClick: () => setActiveTab("overview"), style: styles.buttonInfo }, "Dashboard"),
+      React.createElement("button", { onClick: () => window.location.href = "/provider-select-items", style: styles.buttonSuccess }, "Select Items & Rates"),
+      React.createElement("button", { onClick: () => window.location.href = "/marketplace", style: styles.buttonInfo }, "Marketplace"),
+      React.createElement("button", { onClick: () => setActiveTab("quotes"), style: styles.buttonSuccess }, "Enquiries"),
+      React.createElement("button", { onClick: logoutToLogin, style: { ...styles.buttonDanger } }, "🚪 Logout")
     ),
     React.createElement("div", { style: styles.tabContainer },
       tabs.map(tab => React.createElement("div", { key: tab.id, onClick: () => setActiveTab(tab.id), style: { ...styles.tab, ...(activeTab === tab.id ? styles.activeTab : {}) } }, tab.icon, " ", tab.name))

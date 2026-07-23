@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { generateBuildMitraDocument } from "../utils/documentGenerator";
-import { themeTokens, PrimaryButton, SecondaryButton, Card, Badge, LoadingSpinner, EmptyState } from "../components/ui/DesignSystem";
+import { themeTokens, PrimaryButton, SecondaryButton, Card, Badge, LoadingSpinner, EmptyState, BuildMitraHeader } from "../components/ui/DesignSystem";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
 import { exportProjectReport } from "../utils/reporting";
@@ -1864,22 +1864,20 @@ alert("Quotation saved and PDF downloaded successfully.");
   };
 
   return React.createElement("div", { style: styles.container },
-    React.createElement("div", { style: styles.header },
-      React.createElement("div", null,
-        React.createElement("h1", { style: styles.headerTitle }, "🏗️ Contractor Dashboard"),
-        React.createElement("p", { style: styles.headerSub }, "Contractor Code: ", (loggedInUser?.uniqueCode || loggedInUser?.userCode) || contractorInfo.uniqueCode || "Not assigned", " | ", loggedInUser?.name || contractorInfo.ownerName || contractorInfo.companyName, " ",
-          ((loggedInUser?.uniqueCode || loggedInUser?.userCode) || contractorInfo.uniqueCode) && React.createElement("button", { onClick: () => navigator.clipboard?.writeText((loggedInUser?.uniqueCode || loggedInUser?.userCode) || contractorInfo.uniqueCode), style: { marginLeft: "8px", padding: "3px 8px", border: 0, borderRadius: "4px", cursor: "pointer" } }, "Copy Code")
-        )
-      ),
-      React.createElement("div", { style: { display: "flex", gap: "8px", flexWrap: "wrap" } },
-        React.createElement("button", { onClick: () => setActiveTab("overview"), style: styles.buttonInfo }, "Dashboard"),
-        React.createElement("button", { onClick: () => window.location.href = "/provider-select-items", style: styles.buttonSuccess }, "Select Items & Rates"),
-        React.createElement("button", { onClick: () => window.location.href = "/marketplace", style: styles.buttonInfo }, "Marketplace"),
-        React.createElement("button", { onClick: () => setActiveTab("enquiries"), style: styles.buttonSuccess }, "Enquiries"),
-        React.createElement("button", { onClick: () => setActiveTab("quotes"), style: styles.buttonWarning }, "Quotes"),
-        React.createElement("button", { onClick: () => window.open("https://wa.me/919876543210", "_blank"), style: styles.buttonSuccess }, "📱 Share"),
-        React.createElement("button", { onClick: logoutToLogin, style: styles.buttonDanger }, "🚪 Logout")
-      )
+    React.createElement(BuildMitraHeader, {
+      moduleTitle: "Contractor Module",
+      pageTitle: "Contractor Dashboard",
+      subtitle: `Contractor Code: ${(loggedInUser?.uniqueCode || loggedInUser?.userCode) || contractorInfo.uniqueCode || "Not assigned"} | ${loggedInUser?.name || contractorInfo.ownerName || contractorInfo.companyName}`,
+      showBackToDashboard: false
+    }),
+    React.createElement("div", { style: { display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "20px" } },
+      React.createElement("button", { onClick: () => setActiveTab("overview"), style: styles.buttonInfo }, "Dashboard"),
+      React.createElement("button", { onClick: () => window.location.href = "/provider-select-items", style: styles.buttonSuccess }, "Select Items & Rates"),
+      React.createElement("button", { onClick: () => window.location.href = "/marketplace", style: styles.buttonInfo }, "Marketplace"),
+      React.createElement("button", { onClick: () => setActiveTab("enquiries"), style: styles.buttonSuccess }, "Enquiries"),
+      React.createElement("button", { onClick: () => setActiveTab("quotes"), style: styles.buttonWarning }, "Quotes"),
+      React.createElement("button", { onClick: () => window.open("https://wa.me/919876543210", "_blank"), style: styles.buttonSuccess }, "📱 Share"),
+      React.createElement("button", { onClick: logoutToLogin, style: styles.buttonDanger }, "🚪 Logout")
     ),
     React.createElement("div", { style: styles.tabContainer },
       tabs.map(tab => React.createElement("div", { key: tab.id, onClick: () => setActiveTab(tab.id), style: { ...styles.tab, ...(activeTab === tab.id ? styles.activeTab : {}) } }, tab.icon, " ", tab.name))

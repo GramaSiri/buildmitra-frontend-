@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { exportProjectReport } from "../utils/reporting";
 import { DEFAULT_PROJECT_PERMISSIONS, getLoggedInUser, migrateLegacyProjects, saveProjectsForBuyer } from "../utils/projectStorage";
 import { logoutToLogin } from "../utils/session";
-import { themeTokens, PrimaryButton, SecondaryButton, Card, Badge, LoadingSpinner, EmptyState } from "../components/ui/DesignSystem";
+import { themeTokens, PrimaryButton, SecondaryButton, Card, Badge, LoadingSpinner, EmptyState, BuildMitraHeader } from "../components/ui/DesignSystem";
 
 export default function BuyerDashboard() {
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
@@ -1439,21 +1439,19 @@ const isReadOnly = false;
   };
 
   return React.createElement("div", { style: styles.container },
-    React.createElement("div", { style: styles.header },
-      React.createElement("div", null,
-        React.createElement("h1", { style: styles.headerTitle }, "Buyer Dashboard"),
-        React.createElement("p", { style: styles.headerSub }, "Buyer Code: ", getLoggedInUser()?.uniqueCode || "Not assigned", " | ", getLoggedInUser()?.name || "Buyer", " ",
-          getLoggedInUser()?.uniqueCode && React.createElement("button", { onClick: () => navigator.clipboard?.writeText(getLoggedInUser()?.uniqueCode || ""), style: { marginLeft: "8px", padding: "3px 8px", border: 0, borderRadius: "4px", cursor: "pointer" } }, "Copy Code")
-        )
-      ),
-      React.createElement("div", { style: { display: "flex", gap: "8px", flexWrap: "wrap" } },
-        React.createElement("button", { onClick: () => setActiveTab("dashboard"), style: styles.button }, "Dashboard"),
-        React.createElement("button", { onClick: () => window.location.href = "/marketplace", style: styles.buttonInfo }, "Marketplace"),
-        React.createElement("button", { onClick: () => setActiveTab("enquiries"), style: styles.buttonSuccess }, "Marketplace Enquiries & Quotes"),
-        React.createElement("button", { onClick: () => setActiveTab("quotations"), style: styles.buttonWarning }, "Project Quotations"),
-        React.createElement("button", { onClick: () => checkAndRun('calculator_export', 'buyer-dashboard', shareWhatsApp), style: styles.buttonSuccess }, "📱 Share Update"),
-        React.createElement("button", { onClick: logoutToLogin, style: { ...styles.button, backgroundColor: "#dc3545" } }, "🚪 Logout")
-      )
+    React.createElement(BuildMitraHeader, {
+      moduleTitle: "Buyer Module",
+      pageTitle: "Buyer Dashboard",
+      subtitle: `Buyer Code: ${getLoggedInUser()?.uniqueCode || "Not assigned"} | ${getLoggedInUser()?.name || "Buyer"}`,
+      showBackToDashboard: false
+    }),
+    React.createElement("div", { style: { display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "20px" } },
+      React.createElement("button", { onClick: () => setActiveTab("dashboard"), style: styles.button }, "Dashboard"),
+      React.createElement("button", { onClick: () => window.location.href = "/marketplace", style: styles.buttonInfo }, "Marketplace"),
+      React.createElement("button", { onClick: () => setActiveTab("enquiries"), style: styles.buttonSuccess }, "Marketplace Enquiries & Quotes"),
+      React.createElement("button", { onClick: () => setActiveTab("quotations"), style: styles.buttonWarning }, "Project Quotations"),
+      React.createElement("button", { onClick: () => checkAndRun('calculator_export', 'buyer-dashboard', shareWhatsApp), style: styles.buttonSuccess }, "📱 Share Update"),
+      React.createElement("button", { onClick: logoutToLogin, style: { ...styles.button, backgroundColor: "#dc3545" } }, "🚪 Logout")
     ),
     React.createElement("div", { style: styles.card },
       React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" } },
