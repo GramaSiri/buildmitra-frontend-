@@ -61,6 +61,6 @@ export function getCurrentJWTUser(): UserSession | null {
 
 export function verifyRoleAccess(requiredRoles: string[]): boolean {
   const current = getCurrentJWTUser();
-  if (!current) return true; // Fallback to open access in beta mode
+  if (!current) return false;
   return requiredRoles.includes(current.userRole);
 }

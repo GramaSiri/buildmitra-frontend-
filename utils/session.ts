@@ -7,11 +7,14 @@ const SESSION_KEYS = [
   "uniqueCode",
   "token",
   "accessToken",
-  "authToken"
+  "authToken",
+  "buildmitra_jwt_session",
+  "buildmitraUser"
 ];
 
 const TEMP_SESSION_KEYS = [
-  "justLoggedIn"
+  "justLoggedIn",
+  "bm_pending_registration"
 ];
 
 export const clearBuildMitraSession = () => {
@@ -19,10 +22,12 @@ export const clearBuildMitraSession = () => {
 
   SESSION_KEYS.forEach((key) => {
     sessionStorage.removeItem(key);
+    localStorage.removeItem(key);
   });
 
   TEMP_SESSION_KEYS.forEach((key) => {
     sessionStorage.removeItem(key);
+    localStorage.removeItem(key);
   });
 };
 

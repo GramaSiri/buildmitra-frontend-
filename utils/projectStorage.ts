@@ -154,7 +154,22 @@ const migrationMarkerKey = (user: BuildMitraUser) => {
 export const getLoggedInUser = (): BuildMitraUser | null => {
   if (typeof window === "undefined") return null;
   try {
-    return JSON.parse(sessionStorage.getItem("loggedInUser") || "null");
+    const raw =
+      sessionStorage.getItem("loggedInUser") ||
+      sessionStorage.getItem("currentUser") ||
+      sessionStorage.getItem("user") ||
+      localStorage.getItem("buildmitraUser");
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return null;
+    const effectiveRole = String(parsed.businessRole || parsed.role || "buyer").toLowerCase();
+    return {
+      ...parsed,
+      userId: parsed.userId ?? parsed.id ?? parsed._id,
+      id: parsed.id ?? parsed.userId ?? parsed._id,
+      uniqueCode: parsed.userCode || parsed.uniqueCode,
+      role: effectiveRole === "user" ? "buyer" : effectiveRole
+    };
   } catch {
     return null;
   }
