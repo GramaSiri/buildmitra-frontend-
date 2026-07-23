@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from "react";
 import * as XLSX from 'xlsx';
+import { themeTokens, PrimaryButton, SecondaryButton, Card, Badge, LoadingSpinner, EmptyState } from "../components/ui/DesignSystem";
 const API = (process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000") + "/api";
-import { logoutToLogin } from "../utils/session";
+import { getBuildMitraUser, logoutToLogin } from "../utils/session";
 
 export default function AdminDashboard() {
   React.useEffect(() => {
     try {
-      const user = JSON.parse(localStorage.getItem("loggedInUser") || "{}");
-      const role = String(user.role || localStorage.getItem("userRole") || "").toLowerCase();
+      const user = JSON.parse(sessionStorage.getItem("loggedInUser") || "{}");
+      const role = String(user.role || sessionStorage.getItem("userRole") || "").toLowerCase();
       if (role !== "admin") {
         alert("Admin access only");
         window.location.href = "/login";
@@ -16,7 +17,8 @@ export default function AdminDashboard() {
       window.location.href = "/login";
     }
   }, []);
-const loadLocalData = (key, fallback) => {
+
+  const loadLocalData = (key: string, fallback: any) => {
     if (typeof window === "undefined") return fallback;
     try {
       const saved = localStorage.getItem(key);
@@ -37,6 +39,7 @@ const loadLocalData = (key, fallback) => {
   const [userSearch, setUserSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [mongoEnquiries, setMongoEnquiries] = useState([]);
+  const [enquiryActionBusy, setEnquiryActionBusy] = useState("");
 
   const [users, setUsers] = useState(() => loadLocalData("users", []));
 
@@ -56,14 +59,21 @@ const loadLocalData = (key, fallback) => {
             id: u._id || index + 1,
             name: u.name || "",
             email: u.email || "",
-            mobile: u.phone || "",
+            mobile: u.phone || u.mobile || "",
             role: u.businessRole || u.role || "",
-            userCode: u.userCode || "",
-            status: u.isActive ? "Active" : "Blocked",
+            userCode: u.userCode || u.uniqueCode || "",
+            status: !u.isActive
+              ? "Blocked"
+              : (u.subscriptionStatus === "expired" ? "Expired" : "Active"),
             kyc: u.isVerified ? "Verified" : "Pending",
-            plan: "None",
-            planType: null,
-            expiry: null,
+            subscriptionStatus: u.subscriptionStatus || "inactive",
+            paymentStatus: u.paymentStatus || "",
+            activationType: u.activationType || "",
+            plan: u.subscriptionPlan || "None",
+            planType: u.subscriptionBilling || "",
+            expiry: u.subscriptionExpiry
+              ? new Date(u.subscriptionExpiry).toLocaleDateString()
+              : null,
             assignedProjects: u.assignedProjects || [],
             marketplace: u.isMarketplaceVisible ? "Visible" : "Hidden",
           }));
@@ -78,32 +88,98 @@ const loadLocalData = (key, fallback) => {
     loadMongoUsers();
   }, []);
 
-  useEffect(() => {
-    const loadMongoEnquiries = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/api/enquiry`);
-        const data = await res.json();
-        if (data.success && Array.isArray(data.enquiries)) {
-          setMongoEnquiries(data.enquiries.map((e) => ({
-            id: e._id,
-            enquiryCode: e.enquiryCode || "",
-            buyer: e.buyerName || "",
-            buyerPhone: e.buyerPhone || "",
-            provider: e.providerName || "",
-            providerRole: e.providerRole || "",
-            providerUserCode: e.providerUserCode || "",
-            itemName: e.itemName || e.itemType || "",
-            status: e.status || "Pending",
-            date: e.createdAt ? e.createdAt.split("T")[0] : ""
-          })));
-        }
-      } catch (err) {
-        console.error("Mongo enquiries load failed:", err);
+  const loadMongoEnquiries = async () => {
+    try {
+      const currentAdmin = getBuildMitraUser() || {};
+      const res = await fetch(`${API_BASE}/api/enquiry/admin/all`, {
+        headers: {
+          "x-user-role": "admin",
+          "x-user-code": currentAdmin.userCode || currentAdmin.uniqueCode || "admin",
+        },
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "Unable to load Admin enquiries");
       }
-    };
 
+      setMongoEnquiries((data.enquiries || []).map((e) => ({
+        id: e._id,
+        enquiryCode: e.enquiryCode || "",
+        category: e.enquiryCategory || "general",
+        buyer: e.buyerName || "",
+        buyerPhone: e.buyerPhone || "",
+        provider: e.providerName || "",
+        providerRole: e.providerRole || "",
+        providerUserCode: e.providerUserCode || "",
+        assignedProviderName: e.assignedProviderName || "",
+        assignedProviderUserCode: e.assignedProviderUserCode || "",
+        itemName: e.itemName || e.itemType || "",
+        location: e.location || "",
+        status: e.status || "Pending Admin",
+        adminApprovalStatus: e.adminApprovalStatus || "pending_admin",
+        contactReleased: Boolean(e.contactReleased),
+        adminRemarks: e.adminRemarks || "",
+        date: e.createdAt ? e.createdAt.split("T")[0] : "",
+      })));
+    } catch (err) {
+      console.error("Admin enquiries load failed:", err);
+      alert(err.message || "Unable to load enquiries");
+    }
+  };
+
+  useEffect(() => {
     loadMongoEnquiries();
   }, []);
+
+  const runAdminEnquiryAction = async (enquiryCode, action) => {
+    try {
+      setEnquiryActionBusy(`${enquiryCode}:${action}`);
+      const currentAdmin = getBuildMitraUser() || {};
+      let endpoint = `${API_BASE}/api/enquiry/admin/${encodeURIComponent(enquiryCode)}/${action}`;
+      let body = {
+        reviewedBy: currentAdmin.userCode || currentAdmin.uniqueCode || "admin",
+        assignedBy: currentAdmin.userCode || currentAdmin.uniqueCode || "admin",
+      };
+
+      if (action === "assign") {
+        const assignedProviderUserCode = window.prompt("Enter registered user code to assign this enquiry:");
+        if (!assignedProviderUserCode) return;
+        const adminRemarks = window.prompt("Admin remarks (optional):") || "";
+        body = { ...body, assignedProviderUserCode: assignedProviderUserCode.trim(), adminRemarks };
+      }
+
+      if (action === "hold" || action === "reject") {
+        const adminRemarks = window.prompt(
+          action === "reject" ? "Reason for rejection:" : "Reason for placing this enquiry on hold:"
+        );
+        if (adminRemarks === null) return;
+        body = { ...body, adminRemarks };
+      }
+
+      if (action === "approve-uploader") {
+        body.adminRemarks = window.prompt("Approval remarks (optional):") || "";
+      }
+
+      const res = await fetch(endpoint, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-role": "admin",
+          "x-user-code": currentAdmin.userCode || currentAdmin.uniqueCode || "admin",
+        },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.message || "Enquiry action failed");
+
+      alert(data.message || "Enquiry updated successfully");
+      await loadMongoEnquiries();
+    } catch (err) {
+      alert(err.message || "Enquiry action failed");
+    } finally {
+      setEnquiryActionBusy("");
+    }
+  };
   const [plans, setPlans] = useState([
     { id: 1, name: "Basic", monthly: 250, yearly: 2500, features: ["Export reports", "Basic support", "1 user account"], status: "active" },
     { id: 2, name: "Professional", monthly: 350, yearly: 3500, features: ["Export reports", "WhatsApp integration", "Analytics", "5 user accounts", "Priority support"], status: "active" },
@@ -154,6 +230,7 @@ const loadLocalData = (key, fallback) => {
   const [supplierApprovals, setSupplierApprovals] = useState(() => loadLocalData("bm_supplier_approvals", []));
   const [marketplaceListings, setMarketplaceListings] = useState([]);
   const [marketplaceStatus, setMarketplaceStatus] = useState("pending");
+  const [realEstateListings, setRealEstateListings] = useState([]);
   const [marketplaceSearch, setMarketplaceSearch] = useState("");
   const [selectedListingCodes, setSelectedListingCodes] = useState({});
   const [newItemRequests, setNewItemRequests] = useState([]);
@@ -198,8 +275,9 @@ useEffect(() => { localStorage.setItem("bm_service_rates", JSON.stringify(servic
   };
 
   useEffect(() => {
-    loadMarketplaceApprovals();
-  }, [marketplaceStatus, marketplaceSearch]);
+  loadMarketplaceApprovals();
+  loadRealEstateApprovals();
+}, [marketplaceStatus, marketplaceSearch]);
 
   const updateListingStatus = async (listingCode, status) => {
     const path = status === "approved" ? "approve" : "reject";
@@ -228,16 +306,112 @@ useEffect(() => { localStorage.setItem("bm_service_rates", JSON.stringify(servic
   };
 
   const editListingRate = async (listing) => {
-    const rate = Number(prompt("Rate:", listing.rate));
-    if (!rate) return;
-    await fetch(`${API_BASE}/api/admin/marketplace-listings/${listing.listingCode}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json", "x-user-role": "admin" },
-      body: JSON.stringify({ rate }),
-    });
-    loadMarketplaceApprovals();
-  };
+  const rate = Number(prompt("Rate:", listing.rate));
 
+  if (!rate) return;
+
+  await fetch(`${API_BASE}/api/admin/marketplace-listings/${listing.listingCode}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      "x-user-role": "admin",
+    },
+    body: JSON.stringify({ rate }),
+  });
+
+  loadMarketplaceApprovals();
+};  const loadRealEstateApprovals = async () => {
+  try {
+    const res = await fetch(`${API_BASE}/api/realestate/admin/all`, {
+      headers: {
+        "x-user-role": "admin",
+      },
+    });
+
+    const data = await res.json();
+
+    if (data.success && Array.isArray(data.properties)) {
+      setRealEstateListings(data.properties);
+    } else {
+      setRealEstateListings([]);
+      console.error(data.message || "Could not load Real Estate approvals.");
+    }
+  } catch (err) {
+    console.error("Real Estate approvals load failed:", err);
+    setRealEstateListings([]);
+  }
+};
+
+const approveRealEstate = async (propertyCode) => {
+  try {
+    const res = await fetch(
+      `${API_BASE}/api/realestate/admin/${propertyCode}/approve`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-role": "admin",
+        },
+        body: JSON.stringify({
+          approvedBy: "admin",
+        }),
+      }
+    );
+
+    const data = await res.json();
+
+    alert(
+      data.success
+        ? `Property ${propertyCode} approved.`
+        : data.message || "Property approval failed."
+    );
+
+    if (data.success) {
+      loadRealEstateApprovals();
+    }
+  } catch (err) {
+    console.error("Real Estate approval failed:", err);
+    alert("Property approval failed.");
+  }
+};
+
+const rejectRealEstate = async (propertyCode) => {
+  const reason =
+    prompt("Enter rejection reason:", "Rejected by admin") ||
+    "Rejected by admin";
+
+  try {
+    const res = await fetch(
+      `${API_BASE}/api/realestate/admin/${propertyCode}/reject`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-role": "admin",
+        },
+        body: JSON.stringify({
+          rejectedReason: reason,
+          reason,
+        }),
+      }
+    );
+
+    const data = await res.json();
+
+    alert(
+      data.success
+        ? `Property ${propertyCode} rejected.`
+        : data.message || "Property rejection failed."
+    );
+
+    if (data.success) {
+      loadRealEstateApprovals();
+    }
+  } catch (err) {
+    console.error("Real Estate rejection failed:", err);
+    alert("Property rejection failed.");
+  }
+};
   const loadDefaultMasterItems = async () => {
     const res = await fetch(`${API_BASE}/api/admin/master-items/default-load`, {
       method: "POST",
@@ -293,15 +467,187 @@ useEffect(() => { localStorage.setItem("bm_service_rates", JSON.stringify(servic
   }
 };
 
-  const extendSubscription = () => {
+  const updateSubscription = async (userId, payload, successMessage) => {
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/admin/mongo-users/${userId}/admin-control`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "x-user-role": "admin"
+          },
+          body: JSON.stringify(payload)
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "Subscription update failed");
+      }
+
+      const updatedUser = data.user || {};
+
+      setUsers(prevUsers =>
+        prevUsers.map(u =>
+          u.id === userId
+            ? {
+                ...u,
+                status: updatedUser.isActive === false
+                  ? "Blocked"
+                  : "Active",
+                subscriptionStatus:
+                  updatedUser.subscriptionStatus || "inactive",
+                paymentStatus:
+                  updatedUser.paymentStatus || "",
+                activationType:
+                  updatedUser.activationType || "",
+                plan:
+                  updatedUser.subscriptionPlan || u.plan || "None",
+                planType:
+                  updatedUser.subscriptionBilling || u.planType || "",
+                expiry: updatedUser.subscriptionExpiry
+                  ? new Date(updatedUser.subscriptionExpiry).toLocaleDateString()
+                  : u.expiry
+              }
+            : u
+        )
+      );
+
+      alert(successMessage);
+      return true;
+    } catch (err) {
+      console.error(err);
+      alert(err.message || "Subscription update failed");
+      return false;
+    }
+  };
+  
+  const activateFreeBeta = async (user) => {
+    const start = new Date();
+    const expiry = new Date();
+    expiry.setFullYear(expiry.getFullYear() + 1);
+
+    await updateSubscription(
+      user.id,
+      {
+        isActive: true,
+        subscriptionPlan: user.plan !== "None" ? user.plan : "Beta",
+        subscriptionBilling: user.planType || "annual",
+        subscriptionStatus: "active",
+        paymentStatus: "not_required",
+        activationType: "beta_free",
+        subscriptionStart: start.toISOString(),
+        subscriptionExpiry: expiry.toISOString(),
+        adminRemarks: "Free beta access activated by admin"
+      },
+      `Free Beta activated for ${user.name}`
+    );
+  };
+
+  const requestSubscriptionPayment = async (user) => {
+    await updateSubscription(
+      user.id,
+      {
+        isActive: false,
+        subscriptionStatus: "pending",
+        paymentStatus: "pending",
+        activationType: "paid",
+        adminRemarks: "Subscription payment requested by admin"
+      },
+      `Payment requested from ${user.name}`
+    );
+  };
+
+  const approvePaidSubscription = async (user) => {
+    const start = new Date();
+    const expiry = new Date();
+    const billing = user.planType || "annual";
+
+    if (billing === "monthly") {
+      expiry.setMonth(expiry.getMonth() + 1);
+    } else {
+      expiry.setFullYear(expiry.getFullYear() + 1);
+    }
+
+    await updateSubscription(
+      user.id,
+      {
+        isActive: true,
+        subscriptionPlan: user.plan !== "None" ? user.plan : "Standard",
+        subscriptionBilling: billing,
+        subscriptionStatus: "active",
+        paymentStatus: "paid",
+        activationType: "paid",
+        subscriptionStart: start.toISOString(),
+        subscriptionExpiry: expiry.toISOString(),
+        lastPaymentDate: start.toISOString(),
+        adminRemarks: "Paid subscription approved by admin"
+      },
+      `Paid subscription approved for ${user.name}`
+    );
+  };
+
+  const deactivateSubscription = async (user) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to deactivate ${user.name}?`
+    );
+
+    if (!confirmed) return;
+
+    await updateSubscription(
+      user.id,
+      {
+        isActive: false,
+        subscriptionStatus: "inactive",
+        adminRemarks: "Subscription deactivated by admin"
+      },
+      `${user.name} subscription deactivated`
+    );
+  };
+  const extendSubscription = async () => {
     if (!selectedUser) return;
-    const newExpiry = new Date(selectedUser.expiry);
-    newExpiry.setDate(newExpiry.getDate() + extensionDays);
-    setUsers(users.map(u => u.id === selectedUser.id ? { ...u, expiry: newExpiry.toISOString().split("T")[0], status: "Active" } : u));
-    alert(`Subscription extended by ${extensionDays} days for ${selectedUser.name}`);
-    setShowExtendModal(false);
-    setSelectedUser(null);
-    setExtensionDays(30);
+
+    const days = Number(extensionDays);
+
+    if (!days || days < 1) {
+      alert("Enter valid extension days");
+      return;
+    }
+
+    const today = new Date();
+
+    const existingExpiry = selectedUser.expiry
+      ? new Date(selectedUser.expiry)
+      : today;
+
+    const validExpiry = isNaN(existingExpiry.getTime())
+      ? today
+      : existingExpiry;
+
+    const baseDate =
+      validExpiry > today ? validExpiry : today;
+
+    const newExpiry = new Date(baseDate);
+    newExpiry.setDate(newExpiry.getDate() + days);
+
+    const success = await updateSubscription(
+      selectedUser.id,
+      {
+        isActive: true,
+        subscriptionStatus: "active",
+        subscriptionExpiry: newExpiry.toISOString(),
+        adminRemarks: `Subscription extended by ${days} days`
+      },
+      `Subscription extended by ${days} days for ${selectedUser.name}`
+    );
+
+    if (success) {
+      setShowExtendModal(false);
+      setSelectedUser(null);
+      setExtensionDays(30);
+    }
   };
 
   const updatePlan = (userId, planId, planType) => {
@@ -363,7 +709,7 @@ useEffect(() => { localStorage.setItem("bm_service_rates", JSON.stringify(servic
     } : u));
     
     setPendingPayments(pendingPayments.filter(p => p.id !== paymentId));
-    alert(`Payment of ₹${payment.amount} approved!`);
+    alert(`Payment of â‚¹${payment.amount} approved!`);
   };
 
   const rejectPayment = (paymentId) => {
@@ -800,6 +1146,7 @@ useEffect(() => { localStorage.setItem("bm_service_rates", JSON.stringify(servic
 
   { id: "masterRates", name: "Master Rates" },
   { id: "marketplaceApproval", name: "Marketplace Approval" },
+  { id: "realEstateApproval", name: "Real Estate Approval" },
   { id: "projectControl", name: "Project Control" },
 
   { id: "reports", name: "Reports" }
@@ -820,7 +1167,7 @@ useEffect(() => { localStorage.setItem("bm_service_rates", JSON.stringify(servic
     React.createElement("div", { style: styles.grid4 },
       React.createElement("div", { style: styles.card }, React.createElement("div", { style: styles.statValue }, totalUsers), React.createElement("div", { style: styles.statLabel }, "Total Users")),
       React.createElement("div", { style: styles.card }, React.createElement("div", { style: styles.statValue }, activeSubscriptions), React.createElement("div", { style: styles.statLabel }, "Active Subs")),
-      React.createElement("div", { style: styles.card }, React.createElement("div", { style: styles.statValue }, "₹", (totalRevenue/1000).toFixed(0), "K"), React.createElement("div", { style: styles.statLabel }, "Revenue")),
+      React.createElement("div", { style: styles.card }, React.createElement("div", { style: styles.statValue }, "â‚¹", (totalRevenue/1000).toFixed(0), "K"), React.createElement("div", { style: styles.statLabel }, "Revenue")),
       React.createElement("div", { style: styles.card }, React.createElement("div", { style: styles.statValue }, pendingKYC), React.createElement("div", { style: styles.statLabel }, "Pending KYC")),
       React.createElement("div", { style: styles.card }, React.createElement("div", { style: styles.statValue }, activeUsers), React.createElement("div", { style: styles.statLabel }, "Active Users")),
       React.createElement("div", { style: styles.card }, React.createElement("div", { style: styles.statValue }, blockedUsers), React.createElement("div", { style: styles.statLabel }, "Blocked Users")),
@@ -840,7 +1187,7 @@ useEffect(() => { localStorage.setItem("bm_service_rates", JSON.stringify(servic
           React.createElement("div", { style: styles.cardTitle }, "Platform Overview"),
           React.createElement("div", null, React.createElement("strong", null, "Total Users:"), " ", totalUsers),
           React.createElement("div", null, React.createElement("strong", null, "Active Subscriptions:"), " ", activeSubscriptions),
-          React.createElement("div", null, React.createElement("strong", null, "Monthly Revenue:"), " ₹", totalRevenue.toLocaleString()),
+          React.createElement("div", null, React.createElement("strong", null, "Monthly Revenue:"), " â‚¹", totalRevenue.toLocaleString()),
           React.createElement("div", null, React.createElement("strong", null, "Pending KYC:"), " ", pendingKYC),
           React.createElement("div", null, React.createElement("strong", null, "Pending Payments:"), " ", pendingPayments.length)
         ),
@@ -855,34 +1202,92 @@ useEffect(() => { localStorage.setItem("bm_service_rates", JSON.stringify(servic
     ),
 
     activeTab === "enquiries" && React.createElement("div", { style: styles.card },
-      React.createElement("div", { style: styles.cardTitle }, "MongoDB Enquiries"),
+      React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" } },
+        React.createElement("div", { style: styles.cardTitle }, "Admin Enquiry Control Centre"),
+        React.createElement("button", { onClick: loadMongoEnquiries, style: styles.buttonInfo }, "Refresh")
+      ),
+      React.createElement("p", { style: { color: "#666", marginTop: "4px" } },
+        "Every marketplace, real-estate and general enquiry stays with Admin until approved or assigned. Buyer contact is released only after Admin action."
+      ),
       React.createElement("div", { style: { overflowX: "auto" } },
         React.createElement("table", { style: styles.table },
           React.createElement("thead", null,
             React.createElement("tr", null,
-              React.createElement("th", { style: styles.th }, "Code"),
+              React.createElement("th", { style: styles.th }, "Code / Date"),
               React.createElement("th", { style: styles.th }, "Buyer"),
-              React.createElement("th", { style: styles.th }, "Provider"),
-              React.createElement("th", { style: styles.th }, "Role"),
               React.createElement("th", { style: styles.th }, "Requirement"),
-              React.createElement("th", { style: styles.th }, "Status"),
-              React.createElement("th", { style: styles.th }, "Date")
+              React.createElement("th", { style: styles.th }, "Original Uploader"),
+              React.createElement("th", { style: styles.th }, "Assigned To"),
+              React.createElement("th", { style: styles.th }, "Admin Status"),
+              React.createElement("th", { style: styles.th }, "Contact"),
+              React.createElement("th", { style: styles.th }, "Admin Action")
             )
           ),
           React.createElement("tbody", null,
             mongoEnquiries.length === 0 ? React.createElement("tr", null,
-              React.createElement("td", { colSpan: 7, style: { ...styles.td, textAlign: "center" } }, "No MongoDB enquiries found.")
-            ) : mongoEnquiries.map((e) =>
-              React.createElement("tr", { key: e.id },
-                React.createElement("td", { style: styles.td }, e.enquiryCode),
-                React.createElement("td", { style: styles.td }, e.buyer, React.createElement("br", null), React.createElement("span", { style: { fontSize: "10px" } }, e.buyerPhone)),
-                React.createElement("td", { style: styles.td }, e.provider, React.createElement("br", null), React.createElement("span", { style: { fontSize: "10px" } }, e.providerUserCode)),
-                React.createElement("td", { style: styles.td }, e.providerRole),
-                React.createElement("td", { style: styles.td }, e.itemName),
-                React.createElement("td", { style: styles.td }, e.status),
-                React.createElement("td", { style: styles.td }, e.date)
-              )
-            )
+              React.createElement("td", { colSpan: 8, style: { ...styles.td, textAlign: "center" } }, "No enquiries found in the Admin queue.")
+            ) : mongoEnquiries.map((e) => {
+              const locked = ["approved", "assigned", "rejected"].includes(e.adminApprovalStatus);
+              const busy = enquiryActionBusy.startsWith(`${e.enquiryCode}:`);
+              return React.createElement("tr", { key: e.id },
+                React.createElement("td", { style: styles.td },
+                  React.createElement("strong", null, e.enquiryCode),
+                  React.createElement("br", null),
+                  React.createElement("span", { style: { fontSize: "10px", color: "#666" } }, e.date)
+                ),
+                React.createElement("td", { style: styles.td },
+                  e.buyer,
+                  React.createElement("br", null),
+                  React.createElement("span", { style: { fontSize: "10px" } }, e.buyerPhone || "Not provided")
+                ),
+                React.createElement("td", { style: styles.td },
+                  React.createElement("strong", null, e.itemName),
+                  React.createElement("br", null),
+                  React.createElement("span", { style: { fontSize: "10px" } }, `${e.category} â€¢ ${e.location || "Location not supplied"}`)
+                ),
+                React.createElement("td", { style: styles.td },
+                  e.provider || "Not specified",
+                  React.createElement("br", null),
+                  React.createElement("span", { style: { fontSize: "10px" } }, `${e.providerUserCode || "-"} â€¢ ${e.providerRole || "-"}`)
+                ),
+                React.createElement("td", { style: styles.td },
+                  e.assignedProviderName || "Not assigned",
+                  React.createElement("br", null),
+                  React.createElement("span", { style: { fontSize: "10px" } }, e.assignedProviderUserCode || "-")
+                ),
+                React.createElement("td", { style: styles.td },
+                  React.createElement("strong", null, e.status),
+                  React.createElement("br", null),
+                  React.createElement("span", { style: { fontSize: "10px" } }, e.adminApprovalStatus),
+                  e.adminRemarks && React.createElement("div", { style: { fontSize: "10px", color: "#666", marginTop: "4px" } }, e.adminRemarks)
+                ),
+                React.createElement("td", { style: styles.td }, e.contactReleased ? "Released" : "Admin only"),
+                React.createElement("td", { style: { ...styles.td, minWidth: "310px" } },
+                  React.createElement("div", { style: { display: "flex", gap: "6px", flexWrap: "wrap" } },
+                    React.createElement("button", {
+                      disabled: busy || locked,
+                      onClick: () => runAdminEnquiryAction(e.enquiryCode, "approve-uploader"),
+                      style: { ...styles.buttonSuccess, opacity: busy || locked ? 0.5 : 1 }
+                    }, "Approve Uploader"),
+                    React.createElement("button", {
+                      disabled: busy || e.adminApprovalStatus === "rejected",
+                      onClick: () => runAdminEnquiryAction(e.enquiryCode, "assign"),
+                      style: { ...styles.buttonInfo, opacity: busy || e.adminApprovalStatus === "rejected" ? 0.5 : 1 }
+                    }, "Assign User"),
+                    React.createElement("button", {
+                      disabled: busy || locked,
+                      onClick: () => runAdminEnquiryAction(e.enquiryCode, "hold"),
+                      style: { ...styles.button, opacity: busy || locked ? 0.5 : 1 }
+                    }, "Hold"),
+                    React.createElement("button", {
+                      disabled: busy || locked,
+                      onClick: () => runAdminEnquiryAction(e.enquiryCode, "reject"),
+                      style: { ...styles.buttonDanger, opacity: busy || locked ? 0.5 : 1 }
+                    }, "Reject")
+                  )
+                )
+              );
+            })
           )
         )
       )
@@ -928,24 +1333,33 @@ useEffect(() => { localStorage.setItem("bm_service_rates", JSON.stringify(servic
           ),
           React.createElement("tbody", null,
             filteredUsers.map(u => React.createElement("tr", { key: u.id },
-              React.createElement("td", { style: styles.td }, u.name),
-              React.createElement("td", { style: styles.td }, u.role),
+              React.createElement("td", { style: styles.td }, u.name || "-"),
+              React.createElement("td", { style: styles.td }, u.userCode || "-"),
+              React.createElement("td", { style: styles.td }, u.mobile || "-"),
+              React.createElement("td", { style: styles.td }, u.role || "-"),
               React.createElement("td", { style: styles.td },
-                React.createElement("select", { value: u.plan, onChange: (e) => updatePlan(u.id, parseInt(e.target.value), "monthly"), style: { padding: "4px", borderRadius: "4px" } },
-                  React.createElement("option", { value: "None" }, "None"),
-                  plans.map(p => React.createElement("option", { key: p.id, value: p.id }, p.name))
-                )
+                React.createElement("div", { style: { fontWeight: "600" } }, u.plan || "None"),
+                u.planType && React.createElement("div", { style: { fontSize: "12px", color: "#666", textTransform: "capitalize" } }, u.planType)
               ),
               React.createElement("td", { style: styles.td }, u.expiry || "-"),
-              React.createElement("td", { style: styles.td }, React.createElement("span", { style: { backgroundColor: u.kyc === "Verified" ? "#d4edda" : "#f8d7da", padding: "4px 8px", borderRadius: "4px" } }, u.kyc)),
               React.createElement("td", { style: styles.td },
-                React.createElement("select", { value: u.status, onChange: (e) => updateUserStatus(u.id, e.target.value), style: { padding: "4px", borderRadius: "4px" } },
-                  React.createElement("option", null, "Active"), React.createElement("option", null, "Inactive"), React.createElement("option", null, "Blocked")
-                )
+                React.createElement("span", { style: { backgroundColor: u.kyc === "Verified" ? "#d4edda" : "#f8d7da", padding: "4px 8px", borderRadius: "4px", whiteSpace: "nowrap" } }, u.kyc)
               ),
               React.createElement("td", { style: styles.td },
-                u.kyc === "Pending" && React.createElement("button", { onClick: () => approveKYC(u.id), style: { ...styles.buttonSuccess, marginRight: "4px", marginBottom: "4px" } }, "Approve KYC"),
-                React.createElement("button", { onClick: () => { setSelectedUser(u); setShowExtendModal(true); }, style: styles.buttonInfo }, "Extend")
+                React.createElement("span", { style: { backgroundColor: u.status === "Active" ? "#d4edda" : u.status === "Expired" ? "#fff3cd" : "#f8d7da", padding: "4px 8px", borderRadius: "4px", whiteSpace: "nowrap" } }, u.status)
+              ),
+              React.createElement("td", { style: styles.td }, u.marketplace || "Hidden"),
+              React.createElement("td", { style: { ...styles.td, minWidth: "280px" } },
+                String(u.role || "").toLowerCase() === "admin"
+                  ? React.createElement("span", { style: { fontWeight: "600", color: "#666" } }, "Admin Account")
+                  : React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: "6px" } },
+                      u.kyc === "Pending" && React.createElement("button", { onClick: () => approveKYC(u.id), style: styles.buttonSuccess }, "Approve KYC"),
+                      React.createElement("button", { onClick: () => activateFreeBeta(u), style: styles.buttonSuccess }, "Free Beta"),
+                      React.createElement("button", { onClick: () => requestSubscriptionPayment(u), style: styles.button }, "Request Payment"),
+                      React.createElement("button", { onClick: () => approvePaidSubscription(u), style: styles.buttonSuccess }, "Approve Paid"),
+                      React.createElement("button", { onClick: () => { setSelectedUser(u); setShowExtendModal(true); }, style: styles.buttonInfo }, "Extend"),
+                      React.createElement("button", { onClick: () => deactivateSubscription(u), style: { ...styles.button, backgroundColor: "#dc3545" } }, "Deactivate")
+                    )
               )
             ))
           )
@@ -958,10 +1372,10 @@ useEffect(() => { localStorage.setItem("bm_service_rates", JSON.stringify(servic
       React.createElement("div", { style: styles.grid3, marginTop: "16px" },
         plans.map(p => React.createElement("div", { key: p.id, style: styles.card },
           React.createElement("h3", { style: { color: "#800020", margin: "0 0 8px 0" } }, p.name),
-          React.createElement("p", null, React.createElement("span", { style: { fontSize: "24px", fontWeight: "bold" } }, "₹", p.monthly), " /month"),
-          React.createElement("p", null, "₹", p.yearly, " /year"),
+          React.createElement("p", null, React.createElement("span", { style: { fontSize: "24px", fontWeight: "bold" } }, "â‚¹", p.monthly), " /month"),
+          React.createElement("p", null, "â‚¹", p.yearly, " /year"),
           React.createElement("ul", { style: { paddingLeft: "20px", fontSize: "12px" } },
-            p.features.map((f, idx) => React.createElement("li", { key: idx }, "✓ ", f))
+            p.features.map((f, idx) => React.createElement("li", { key: idx }, "âœ“ ", f))
           ),
           React.createElement("p", { style: { marginTop: "8px" } }, "Status: ", React.createElement("span", { style: { color: p.status === "active" ? "#28a745" : "#dc3545" } }, p.status))
         ))
@@ -975,7 +1389,7 @@ useEffect(() => { localStorage.setItem("bm_service_rates", JSON.stringify(servic
           React.createElement("div", { style: styles.qrBox },
             qrImage ? React.createElement("img", { src: qrImage, alt: "UPI QR Code", style: { width: "200px", height: "200px", objectFit: "contain" } }) :
               React.createElement("div", { style: { padding: "40px", textAlign: "center" } },
-                React.createElement("div", { style: { fontSize: "48px" } }, "📱"),
+                React.createElement("div", { style: { fontSize: "48px" } }, "ðŸ“±"),
                 React.createElement("p", null, "No QR code uploaded")
               ),
             React.createElement("button", { onClick: () => setShowQRModal(true), style: { ...styles.button, marginTop: "12px" } }, "Upload QR Code")
@@ -990,7 +1404,7 @@ useEffect(() => { localStorage.setItem("bm_service_rates", JSON.stringify(servic
           pendingPayments.length === 0 ? React.createElement("div", { style: { textAlign: "center", padding: "40px", color: "#666" } }, "No pending payments") :
             pendingPayments.map(p => React.createElement("div", { key: p.id, style: { border: "1px solid #eee", borderRadius: "8px", padding: "12px", marginBottom: "12px" } },
               React.createElement("div", null, React.createElement("strong", null, p.userName), " - ", p.planName, " Plan (", p.type, ")"),
-              React.createElement("div", null, "Amount: ₹", p.amount),
+              React.createElement("div", null, "Amount: â‚¹", p.amount),
               React.createElement("div", null, "Date: ", p.date),
               React.createElement("div", { style: { display: "flex", gap: "8px", marginTop: "8px" } },
                 React.createElement("button", { onClick: () => approvePayment(p.id), style: styles.buttonSuccess }, "Approve"),
@@ -1014,7 +1428,7 @@ useEffect(() => { localStorage.setItem("bm_service_rates", JSON.stringify(servic
               transactions.map(t => React.createElement("tr", { key: t.id },
                 React.createElement("td", { style: styles.td }, t.id),
                 React.createElement("td", { style: styles.td }, t.userName),
-                React.createElement("td", { style: styles.td }, "₹", t.amount.toLocaleString()),
+                React.createElement("td", { style: styles.td }, "â‚¹", t.amount.toLocaleString()),
                 React.createElement("td", { style: styles.td }, t.plan),
                 React.createElement("td", { style: styles.td }, t.date),
                 React.createElement("td", { style: styles.td }, React.createElement("span", { style: { backgroundColor: "#d4edda", padding: "4px 8px", borderRadius: "4px" } }, t.status))
@@ -1143,7 +1557,7 @@ useEffect(() => { localStorage.setItem("bm_service_rates", JSON.stringify(servic
                 React.createElement("td", { style: styles.td }, r.brand || "-"),
                 React.createElement("td", { style: styles.td }, r.specification || "-"),
                 React.createElement("td", { style: styles.td }, r.unit || "-"),
-                React.createElement("td", { style: styles.td }, "₹", r.rate),
+                React.createElement("td", { style: styles.td }, "â‚¹", r.rate),
                 React.createElement("td", { style: styles.td }, r.status || "Active"),
                 React.createElement("td", { style: styles.td },
                   React.createElement("button", { onClick: () => updateRate("material", r.id, r.rate), style: styles.buttonInfo }, "Edit")
@@ -1175,7 +1589,7 @@ useEffect(() => { localStorage.setItem("bm_service_rates", JSON.stringify(servic
                 React.createElement("td", { style: styles.td }, r.trade || r.itemName || "-"),
                 React.createElement("td", { style: styles.td }, r.description || "-"),
                 React.createElement("td", { style: styles.td }, r.unit || "-"),
-                React.createElement("td", { style: styles.td }, "₹", r.rate),
+                React.createElement("td", { style: styles.td }, "â‚¹", r.rate),
                 React.createElement("td", { style: styles.td }, r.status || "Active"),
                 React.createElement("td", { style: styles.td },
                   React.createElement("button", { onClick: () => updateRate("labour", r.id, r.rate), style: styles.buttonInfo }, "Edit")
@@ -1207,7 +1621,7 @@ useEffect(() => { localStorage.setItem("bm_service_rates", JSON.stringify(servic
                 React.createElement("td", { style: styles.td }, r.service || r.itemName || "-"),
                 React.createElement("td", { style: styles.td }, r.description || "-"),
                 React.createElement("td", { style: styles.td }, r.unit || "-"),
-                React.createElement("td", { style: styles.td }, "₹", r.rate),
+                React.createElement("td", { style: styles.td }, "â‚¹", r.rate),
                 React.createElement("td", { style: styles.td }, r.status || "Active"),
                 React.createElement("td", { style: styles.td },
                   React.createElement("button", { onClick: () => updateRate("service", r.id, r.rate), style: styles.buttonInfo }, "Edit")
@@ -1235,7 +1649,7 @@ useEffect(() => { localStorage.setItem("bm_service_rates", JSON.stringify(servic
                 React.createElement("td", { style: styles.td }, r.code || "-"),
                 React.createElement("td", { style: styles.td }, r.item || r.itemName || "-"),
                 React.createElement("td", { style: styles.td }, r.unit || "-"),
-                React.createElement("td", { style: styles.td }, "₹", r.rate),
+                React.createElement("td", { style: styles.td }, "â‚¹", r.rate),
                 React.createElement("td", { style: styles.td }, r.status || "Active"),
                 React.createElement("td", { style: styles.td },
                   React.createElement("button", { onClick: () => updateRate("equipment", r.id, r.rate), style: styles.buttonInfo }, "Edit")
@@ -1328,7 +1742,193 @@ useEffect(() => { localStorage.setItem("bm_service_rates", JSON.stringify(servic
         )
       )
     ),
+    activeTab === "realEstateApproval" &&
+  React.createElement(
+    "div",
+    { style: styles.card },
 
+    React.createElement(
+      "div",
+      { style: styles.cardTitle },
+      "Real Estate Property Approval"
+    ),
+
+    React.createElement(
+      "p",
+      { style: { color: "#666", marginBottom: "12px" } },
+      "Approve or reject properties uploaded by Real Estate providers."
+    ),
+
+    React.createElement(
+      "button",
+      {
+        onClick: loadRealEstateApprovals,
+        style: { ...styles.buttonInfo, marginBottom: "12px" },
+      },
+      "Refresh Properties"
+    ),
+
+    React.createElement(
+      "div",
+      { style: { overflowX: "auto" } },
+
+      React.createElement(
+        "table",
+        { style: styles.table },
+
+        React.createElement(
+          "thead",
+          null,
+          React.createElement(
+            "tr",
+            null,
+            React.createElement("th", { style: styles.th }, "Property Code"),
+            React.createElement("th", { style: styles.th }, "Title"),
+            React.createElement("th", { style: styles.th }, "Property Type"),
+            React.createElement("th", { style: styles.th }, "Location"),
+            React.createElement("th", { style: styles.th }, "Price"),
+            React.createElement("th", { style: styles.th }, "Provider"),
+            React.createElement("th", { style: styles.th }, "Status"),
+            React.createElement("th", { style: styles.th }, "Action")
+          )
+        ),
+
+        React.createElement(
+          "tbody",
+          null,
+
+          realEstateListings.length === 0 &&
+            React.createElement(
+              "tr",
+              null,
+              React.createElement(
+                "td",
+                {
+                  colSpan: 8,
+                  style: {
+                    ...styles.td,
+                    textAlign: "center",
+                    padding: "20px",
+                    color: "#666",
+                  },
+                },
+                "No Real Estate properties found."
+              )
+            ),
+
+          realEstateListings.map((property) =>
+            React.createElement(
+              "tr",
+              {
+                key:
+                  property.propertyCode ||
+                  property._id ||
+                  `${property.title}-${property.createdAt}`,
+              },
+
+              React.createElement(
+                "td",
+                { style: styles.td },
+                property.propertyCode || "-"
+              ),
+
+              React.createElement(
+                "td",
+                { style: styles.td },
+                property.title ||
+                  property.propertyName ||
+                  property.name ||
+                  "-"
+              ),
+
+              React.createElement(
+                "td",
+                { style: styles.td },
+                property.propertyType ||
+                  property.type ||
+                  property.category ||
+                  "-"
+              ),
+
+              React.createElement(
+                "td",
+                { style: styles.td },
+                property.location ||
+                  property.city ||
+                  property.area ||
+                  "-"
+              ),
+
+              React.createElement(
+                "td",
+                { style: styles.td },
+                property.price
+                  ? `â‚¹${Number(property.price).toLocaleString("en-IN")}`
+                  : property.expectedPrice
+                  ? `â‚¹${Number(property.expectedPrice).toLocaleString("en-IN")}`
+                  : "-"
+              ),
+
+              React.createElement(
+                "td",
+                { style: styles.td },
+                property.providerName ||
+                  property.ownerName ||
+                  property.providerUserCode ||
+                  "-"
+              ),
+
+              React.createElement(
+                "td",
+                { style: styles.td },
+                property.status || "pending"
+              ),
+
+              React.createElement(
+                "td",
+                { style: styles.td },
+
+                String(property.status || "pending").toLowerCase() ===
+                  "pending" &&
+                  React.createElement(
+                    "button",
+                    {
+                      onClick: () =>
+                        approveRealEstate(property.propertyCode),
+                      style: {
+                        ...styles.buttonSuccess,
+                        marginRight: "6px",
+                        marginBottom: "4px",
+                      },
+                    },
+                    "Approve"
+                  ),
+
+                String(property.status || "pending").toLowerCase() ===
+                  "pending" &&
+                  React.createElement(
+                    "button",
+                    {
+                      onClick: () =>
+                        rejectRealEstate(property.propertyCode),
+                      style: styles.buttonDanger,
+                    },
+                    "Reject"
+                  ),
+
+                String(property.status || "").toLowerCase() !== "pending" &&
+                  React.createElement(
+                    "span",
+                    { style: { fontWeight: "bold" } },
+                    String(property.status || "-").toUpperCase()
+                  )
+              )
+            )
+          )
+        )
+      )
+    )
+  ),
     false && activeTab === "marketplaceApproval" && React.createElement("div", { style: styles.card },
       React.createElement("div", { style: styles.cardTitle }, "Marketplace Approval - Providers"),
       React.createElement("p", { style: { color: "#666" } }, "Control provider marketplace visibility."),
@@ -1454,6 +2054,13 @@ useEffect(() => { localStorage.setItem("bm_service_rates", JSON.stringify(servic
     )
   );
 }
+
+
+
+
+
+
+
 
 
 

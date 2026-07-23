@@ -9,6 +9,17 @@ export default function Marketplace() {
 
   const [showEnquiry, setShowEnquiry] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [cart, setCart] = useState<any[]>([]);
+  const [showCart, setShowCart] = useState(false);
+  const [pendingWhatsApps, setPendingWhatsApps] = useState<any[]>([]);
+  const [showWhatsAppQueue, setShowWhatsAppQueue] = useState(false);
+  const [cartEnquiry, setCartEnquiry] = useState({
+  buyerName: "",
+  buyerPhone: "",
+  location: "",
+  pincode: "",
+  message: "",
+});
   const [enquiry, setEnquiry] = useState({
     buyerName: "",
     buyerPhone: "",
@@ -46,16 +57,89 @@ export default function Marketplace() {
   }, [query]);
 
   const cleanPhone = (phone: string) => String(phone || "").replace(/\D/g, "").replace(/^91/, "");
+    
+  const loadCartBuyerDetails = () => {
+  if (typeof window === "undefined") return;
+
+  try {
+    const user = JSON.parse(
+      sessionStorage.getItem("currentUser") ||
+      sessionStorage.getItem("loggedInUser") ||
+      sessionStorage.getItem("user") ||
+      "{}"
+    );
+
+    setCartEnquiry((current) => ({
+      ...current,
+      buyerName: current.buyerName || user.name || "",
+      buyerPhone: current.buyerPhone || user.phone || "",
+    }));
+  } catch {
+    // Keep fields editable if saved login data is unavailable.
+  }
+};
+  const addToCart = (item: any) => {
+    const exists = cart.some(
+      (x) =>
+        x.listingCode === item.listingCode &&
+        x.providerUserCode === item.providerUserCode
+    );
+
+    if (!exists) {
+      setCart((current) => [
+        ...current,
+        {
+          ...item,
+          quantity: "1",
+          specification: "",
+        },
+      ]);
+    }
+
+    loadCartBuyerDetails();
+    setShowCart(true);
+  };
+
+  const getItemRate = (item: any) => {
+    const rawRate =
+      item?.rate ??
+      item?.price ??
+      item?.sellingPrice ??
+      item?.amount ??
+      0;
+
+    return Number(String(rawRate).replace(/,/g, "")) || 0;
+  };
+
+  const getItemEstimate = (item: any) => {
+    const quantity = Number(item?.quantity || 0);
+    return quantity * getItemRate(item);
+  };
+
+  const cartEstimatedTotal = cart.reduce(
+    (total, item) => total + getItemEstimate(item),
+    0
+  );
 
   const sendWhatsApp = (item: any) => {
     sendEnquiry(item);
   };
 
   const sendEnquiry = (item: any) => {
-    const user =
-      typeof window !== "undefined"
-        ? JSON.parse(localStorage.getItem("user") || "{}")
-        : {};
+    let user: any = {};
+
+    if (typeof window !== "undefined") {
+      try {
+        user = JSON.parse(
+          sessionStorage.getItem("currentUser") ||
+          sessionStorage.getItem("loggedInUser") ||
+          sessionStorage.getItem("user") ||
+          "{}"
+        );
+      } catch {
+        user = {};
+      }
+    }
 
     setSelectedItem(item);
 
@@ -66,14 +150,269 @@ export default function Marketplace() {
       quantity: "",
       unit: item.unit || "",
       location: "",
+      pincode: "",
       specification: "",
       message: "",
-    pincode: "",
-  });
+    });
 
     setShowEnquiry(true);
   };
 
+  const submitCartEnquiry = async () => {
+    if (cart.length === 0) {
+      alert("Your enquiry cart is empty.");
+      return;
+    }
+
+    if (
+      !cartEnquiry.buyerName ||
+      !cartEnquiry.buyerPhone ||
+      !cartEnquiry.location ||
+      !cartEnquiry.pincode
+    ) {
+      alert(
+        "Please fill name, phone, delivery location and pincode."
+      );
+      return;
+    }
+
+    const invalidQuantity = cart.some(
+      (item) =>
+        !String(item.quantity || "").trim() ||
+        Number(item.quantity) <= 0
+    );
+
+    if (invalidQuantity) {
+      alert(
+        "Please enter a valid quantity for every cart item."
+      );
+      return;
+    }
+
+    let currentUser: any = {};
+
+    try {
+      currentUser = JSON.parse(
+        sessionStorage.getItem("currentUser") ||
+          sessionStorage.getItem("loggedInUser") ||
+          sessionStorage.getItem("user") ||
+          "{}"
+      );
+    } catch {
+      currentUser = {};
+    }
+
+    const buyerUserCode =
+      currentUser.userCode ||
+      currentUser.uniqueCode ||
+      "";
+
+    const cartGroupCode = `CART-${Date.now()}`;
+
+    try {
+      const createdEnquiries: any[] = [];
+
+      /*
+        Create one database enquiry for every selected item.
+      */
+      for (const item of cart) {
+        const res = await fetch(`${API_BASE}/api/enquiry`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            buyerUserCode,
+            buyerName: cartEnquiry.buyerName,
+            buyerPhone: cartEnquiry.buyerPhone,
+
+            providerUserCode: item.providerUserCode,
+            providerName: item.providerName,
+            providerPhone: item.providerPhone,
+
+            itemType: item.itemType || "material",
+            itemName: item.itemName,
+            listingCode: item.listingCode,
+            masterItemCode: item.masterItemCode,
+
+            quantity: item.quantity,
+            unit: item.unit || "",
+
+            location: cartEnquiry.location,
+            pincode: cartEnquiry.pincode,
+
+            specification:
+              cartEnquiry.message || "",
+
+            message:
+              `${
+                cartEnquiry.message ||
+                "Grouped marketplace enquiry"
+              } ` +
+              `[Cart Group: ${cartGroupCode}]`,
+          }),
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok || !data.success) {
+          throw new Error(
+            data.message ||
+              `Could not submit enquiry for ${item.itemName}`
+          );
+        }
+
+        createdEnquiries.push({
+          ...item,
+          enquiryCode:
+            data.enquiry?.enquiryCode ||
+            data.enquiryCode ||
+            "",
+        });
+      }
+
+      /*
+        Group all successfully created enquiries supplier-wise.
+      */
+      const providerGroups = createdEnquiries.reduce(
+        (groups: Record<string, any[]>, item: any) => {
+          const providerKey =
+            item.providerUserCode ||
+            item.providerPhone ||
+            item.providerName ||
+            `provider-${Object.keys(groups).length + 1}`;
+
+          if (!groups[providerKey]) {
+            groups[providerKey] = [];
+          }
+
+          groups[providerKey].push(item);
+
+          return groups;
+        },
+        {}
+      );
+
+      /*
+        Create one WhatsApp URL per supplier.
+
+        We do not open multiple tabs automatically because browsers
+        normally block the second and later popup.
+      */
+      const whatsappQueue = Object.entries(providerGroups)
+        .map(([providerKey, groupedItems]) => {
+          const providerItems = groupedItems as any[];
+          const provider = providerItems[0];
+
+          const phone = cleanPhone(
+            provider.providerPhone
+          );
+
+          const PUBLIC_URL =
+            process.env.NEXT_PUBLIC_APP_URL ||
+            window.location.origin;
+
+          const itemLines = providerItems
+            .map((item, index) => {
+              const replyQuoteLink =
+                `${PUBLIC_URL}/quick-quote?enquiryCode=${encodeURIComponent(
+                  item.enquiryCode || ""
+                )}`;
+
+              return `${index + 1}. ${item.itemName}
+Quantity: ${item.quantity} ${item.unit || ""}
+Listed Rate: ₹${getItemRate(item).toLocaleString(
+                "en-IN"
+              )}${item.unit ? ` / ${item.unit}` : ""}
+Estimated Amount: ₹${getItemEstimate(
+                item
+              ).toLocaleString("en-IN", {
+                maximumFractionDigits: 2,
+              })}
+Specification: ${cartEnquiry.message || "-"}
+Enquiry Code: ${item.enquiryCode || "-"}
+
+✅ Reply Quote:
+${replyQuoteLink}`;
+            })
+            .join("\n\n------------------------------\n\n");
+
+          const providerEstimatedTotal =
+            providerItems.reduce(
+              (total, item) =>
+                total + getItemEstimate(item),
+              0
+            );
+
+          const whatsappMessage =
+`Hello ${provider.providerName || "Provider"},
+
+🏗️ NEW BUILDMITRA GROUPED ENQUIRY
+
+Customer: ${cartEnquiry.buyerName}
+Phone: ${cartEnquiry.buyerPhone}
+Delivery Location: ${cartEnquiry.location}
+Pincode: ${cartEnquiry.pincode}
+
+${itemLines}
+
+Supplier Item Estimate:
+₹${providerEstimatedTotal.toLocaleString("en-IN", {
+  maximumFractionDigits: 2,
+})}
+
+Common Specification:
+${cartEnquiry.message || "-"}
+
+Cart Group:
+${cartGroupCode}
+
+Please send your final quotation with GST, delivery charges, loading/unloading, included items and extra charges.`;
+
+          return {
+            providerKey,
+            providerName:
+              provider.providerName ||
+              "BuildMitra Supplier",
+
+            providerPhone:
+              provider.providerPhone || "",
+
+            itemCount: providerItems.length,
+
+            itemNames: providerItems
+              .map((item) => item.itemName)
+              .join(", "),
+
+            url: phone
+              ? `https://wa.me/91${phone}?text=${encodeURIComponent(
+                  whatsappMessage
+                )}`
+              : "",
+          };
+        })
+        .filter((entry) => entry.url);
+
+      setPendingWhatsApps(whatsappQueue);
+      setShowWhatsAppQueue(true);
+
+      setCart([]);
+      setShowCart(false);
+
+      setCartEnquiry({
+        buyerName: cartEnquiry.buyerName,
+        buyerPhone: cartEnquiry.buyerPhone,
+        location: "",
+        pincode: "",
+        message: "",
+      });
+    } catch (error: any) {
+      alert(
+        error?.message ||
+          "Could not submit grouped cart enquiry."
+      );
+    }
+  };
   const submitEnquiry = async () => {
     if (!selectedItem) return;
     if (!enquiry.buyerName || !enquiry.buyerPhone || !enquiry.location || !enquiry.pincode) {
@@ -85,6 +424,20 @@ export default function Marketplace() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        buyerUserCode:
+          JSON.parse(
+            sessionStorage.getItem("currentUser") ||
+            sessionStorage.getItem("loggedInUser") ||
+            sessionStorage.getItem("user") ||
+            "{}"
+          ).userCode ||
+          JSON.parse(
+            sessionStorage.getItem("currentUser") ||
+            sessionStorage.getItem("loggedInUser") ||
+            sessionStorage.getItem("user") ||
+            "{}"
+          ).uniqueCode ||
+          "",
         providerUserCode: selectedItem.providerUserCode,
         providerName: selectedItem.providerName,
         providerPhone: selectedItem.providerPhone,
@@ -184,7 +537,22 @@ ${enquiry.buyerPhone}`;
         <button style={styles.clear} onClick={() => setFilters({ search: "", itemType: "", category: "", subCategory: "", brand: "", city: "", area: "", pincode: "", minPrice: "", maxPrice: "", sort: "newest" })}>Clear</button>
       </div>
 
-      <div style={styles.count}>Showing <strong>{listings.length}</strong> approved listings</div>
+      <div style={styles.marketplaceTopRow}>
+  <div style={styles.count}>
+    Showing <strong>{listings.length}</strong> approved listings
+  </div>
+
+  <button
+    type="button"
+    style={styles.cartButton}
+    onClick={() => {
+  loadCartBuyerDetails();
+  setShowCart(true);
+}}
+  >
+    Enquiry Cart ({cart.length})
+  </button>
+</div>
 
       {loading ? (
         <div style={styles.empty}>Loading marketplace...</div>
@@ -212,18 +580,571 @@ ${enquiry.buyerPhone}`;
               </div>
 
               <div style={styles.actions}>
-                <button style={styles.whatsapp} onClick={() => sendWhatsApp(item)}>WhatsApp Enquiry</button>
-                <button style={styles.secondary} onClick={() => sendEnquiry(item)}>Send Enquiry</button>
-              </div>
+  <button
+    type="button"
+    style={styles.cartAddButton}
+    onClick={() => addToCart(item)}
+  >
+    Add to Cart
+  </button>
+
+  <button
+    type="button"
+    style={styles.secondary}
+    onClick={() => sendEnquiry(item)}
+  >
+    Enquiry Now
+  </button>
+</div>
             </div>
           ))}
+        </div>
+      )}
+      {showCart && (
+        <div
+          style={styles.modalOverlay}
+          onClick={() => setShowCart(false)}
+        >
+          <div
+            style={styles.cartModalBox}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={styles.cartHeader}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: 20 }}>My Cart</h2>
+
+                <div style={styles.cartSubText}>
+                  {cart.length} item{cart.length === 1 ? "" : "s"}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                style={styles.cartCloseButton}
+                onClick={() => setShowCart(false)}
+                aria-label="Close cart"
+              >
+                ✕
+              </button>
+            </div>
+
+            {cart.length === 0 ? (
+              <div style={styles.cartEmpty}>
+                <div style={{ fontSize: 38, marginBottom: 10 }}>🛒</div>
+                <strong>Your cart is empty</strong>
+
+                <div style={{ marginTop: 6 }}>
+                  Select materials from the marketplace.
+                </div>
+              </div>
+            ) : (
+              <>
+                <div style={styles.cartScrollArea}>
+                  <div style={styles.cartList}>
+                    {cart.map((cartItem, index) => {
+                      const quantity =
+                        Number(cartItem.quantity || 0) || 0;
+
+                      const increaseQuantity = () => {
+                        setCart((current) =>
+                          current.map((item, cartIndex) =>
+                            cartIndex === index
+                              ? {
+                                  ...item,
+                                  quantity: String(
+                                    (Number(item.quantity || 0) || 0) + 1
+                                  ),
+                                }
+                              : item
+                          )
+                        );
+                      };
+
+                      const decreaseQuantity = () => {
+                        if (quantity <= 1) {
+                          setCart((current) =>
+                            current.filter(
+                              (_, cartIndex) => cartIndex !== index
+                            )
+                          );
+
+                          return;
+                        }
+
+                        setCart((current) =>
+                          current.map((item, cartIndex) =>
+                            cartIndex === index
+                              ? {
+                                  ...item,
+                                  quantity: String(
+                                    Math.max(
+                                      1,
+                                      (Number(item.quantity || 1) || 1) - 1
+                                    )
+                                  ),
+                                }
+                              : item
+                          )
+                        );
+                      };
+
+                      return (
+                        <div
+                          key={`${cartItem.providerUserCode}-${cartItem.listingCode}-${index}`}
+                          style={styles.cartItem}
+                        >
+                          <div style={styles.cartProductIcon}>
+                            {String(cartItem.itemName || "M")
+                              .charAt(0)
+                              .toUpperCase()}
+                          </div>
+
+                          <div style={styles.cartProductDetails}>
+                            <div style={styles.cartItemName}>
+                              {cartItem.itemName}
+                            </div>
+
+                            <div style={styles.cartProvider}>
+                              {cartItem.providerName ||
+                                "Verified Supplier"}
+                            </div>
+
+                            <div style={styles.cartRate}>
+                              ₹
+                              {getItemRate(cartItem).toLocaleString(
+                                "en-IN"
+                              )}
+                              {cartItem.unit
+                                ? ` / ${cartItem.unit}`
+                                : ""}
+                            </div>
+
+                            <div style={styles.cartItemBottom}>
+                              <div style={styles.quantityControl}>
+                                <button
+                                  type="button"
+                                  style={styles.quantityButton}
+                                  onClick={decreaseQuantity}
+                                >
+                                  −
+                                </button>
+
+                                <input
+                                  type="number"
+                                  min="1"
+                                  step="1"
+                                  style={styles.quantityInput}
+                                  value={cartItem.quantity || ""}
+                                  onChange={(e) => {
+                                    const value = e.target.value;
+
+                                    setCart((current) =>
+                                      current.map(
+                                        (item, cartIndex) =>
+                                          cartIndex === index
+                                            ? {
+                                                ...item,
+                                                quantity: value,
+                                              }
+                                            : item
+                                      )
+                                    );
+                                  }}
+                                />
+
+                                <button
+                                  type="button"
+                                  style={styles.quantityButton}
+                                  onClick={increaseQuantity}
+                                >
+                                  +
+                                </button>
+                              </div>
+
+                              <div style={styles.cartItemEstimate}>
+                                ₹
+                                {getItemEstimate(
+                                  cartItem
+                                ).toLocaleString("en-IN", {
+                                  maximumFractionDigits: 2,
+                                })}
+                              </div>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            style={styles.cartDeleteButton}
+                            onClick={() =>
+                              setCart((current) =>
+                                current.filter(
+                                  (_, cartIndex) =>
+                                    cartIndex !== index
+                                )
+                              )
+                            }
+                            aria-label="Remove item"
+                          >
+                            🗑
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div style={styles.cartDeliveryCard}>
+                    <div style={styles.cartSectionTitle}>
+                      Delivery details
+                    </div>
+
+                    <div style={styles.cartLoggedBuyer}>
+                      <div>
+                        <strong>
+                          {cartEnquiry.buyerName ||
+                            "Logged-in buyer"}
+                        </strong>
+
+                        {cartEnquiry.buyerPhone && (
+                          <div style={{ marginTop: 3 }}>
+                            {cartEnquiry.buyerPhone}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <textarea
+                      style={styles.cartAddressInput}
+                      placeholder="Enter delivery address / location"
+                      value={cartEnquiry.location}
+                      onChange={(e) =>
+                        setCartEnquiry({
+                          ...cartEnquiry,
+                          location: e.target.value,
+                        })
+                      }
+                    />
+
+                    <input
+                      style={styles.cartPincodeInput}
+                      inputMode="numeric"
+                      maxLength={6}
+                      placeholder="Delivery PIN code"
+                      value={cartEnquiry.pincode}
+                      onChange={(e) =>
+                        setCartEnquiry({
+                          ...cartEnquiry,
+                          pincode: e.target.value.replace(
+                            /\D/g,
+                            ""
+                          ),
+                        })
+                      }
+                    />
+
+                    <textarea
+                      style={styles.cartSpecificationInput}
+                      placeholder="Specification or delivery instructions"
+                      value={cartEnquiry.message}
+                      onChange={(e) =>
+                        setCartEnquiry({
+                          ...cartEnquiry,
+                          message: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+
+                  <div style={styles.cartPriceDetails}>
+                    <div style={styles.cartPriceHeading}>
+                      Price details
+                    </div>
+
+                    <div style={styles.cartPriceRow}>
+                      <span>Item estimate</span>
+
+                      <strong>
+                        ₹
+                        {cartEstimatedTotal.toLocaleString(
+                          "en-IN",
+                          {
+                            maximumFractionDigits: 2,
+                          }
+                        )}
+                      </strong>
+                    </div>
+
+                    <div style={styles.cartPriceNote}>
+                      Final quotation may include GST, transport,
+                      loading, unloading and supplier terms.
+                    </div>
+                  </div>
+                </div>
+
+                <div style={styles.cartStickyFooter}>
+                  <div>
+                    <div style={styles.cartFooterLabel}>
+                      Estimated total
+                    </div>
+
+                    <div style={styles.cartFooterAmount}>
+                      ₹
+                      {cartEstimatedTotal.toLocaleString(
+                        "en-IN",
+                        {
+                          maximumFractionDigits: 2,
+                        }
+                      )}
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    style={styles.cartSubmitButton}
+                    onClick={submitCartEnquiry}
+                  >
+                    Send Enquiry
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+      {showWhatsAppQueue && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 1200,
+            background: "rgba(17,24,39,0.55)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 16,
+          }}
+          onClick={() => setShowWhatsAppQueue(false)}
+        >
+          <div
+            style={{
+              width: "min(460px, 100%)",
+              maxHeight: "85vh",
+              overflowY: "auto",
+              background: "#ffffff",
+              borderRadius: 16,
+              boxShadow:
+                "0 20px 60px rgba(0,0,0,0.25)",
+            }}
+            onClick={(event) =>
+              event.stopPropagation()
+            }
+          >
+            <div
+              style={{
+                position: "sticky",
+                top: 0,
+                zIndex: 1,
+                padding: "16px 18px",
+                background: "#ffffff",
+                borderBottom:
+                  "1px solid #e5e7eb",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: 12,
+              }}
+            >
+              <div>
+                <h2
+                  style={{
+                    margin: 0,
+                    fontSize: 19,
+                  }}
+                >
+                  WhatsApp Messages Ready
+                </h2>
+
+                <div
+                  style={{
+                    marginTop: 4,
+                    color: "#6b7280",
+                    fontSize: 12,
+                  }}
+                >
+                  Open one message for each supplier
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setShowWhatsAppQueue(false)
+                }
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: "50%",
+                  border:
+                    "1px solid #e5e7eb",
+                  background: "#f9fafb",
+                  cursor: "pointer",
+                  fontWeight: 900,
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div
+              style={{
+                padding: 14,
+                display: "grid",
+                gap: 10,
+              }}
+            >
+              {pendingWhatsApps.map(
+                (whatsappItem, index) => (
+                  <div
+                    key={
+                      whatsappItem.providerKey ||
+                      index
+                    }
+                    style={{
+                      padding: 13,
+                      border:
+                        "1px solid #e5e7eb",
+                      borderRadius: 12,
+                      background: "#ffffff",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent:
+                          "space-between",
+                        alignItems: "flex-start",
+                        gap: 12,
+                      }}
+                    >
+                      <div
+                        style={{
+                          flex: 1,
+                          minWidth: 0,
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontWeight: 900,
+                            color: "#111827",
+                          }}
+                        >
+                          {index + 1}.{" "}
+                          {
+                            whatsappItem.providerName
+                          }
+                        </div>
+
+                        <div
+                          style={{
+                            marginTop: 4,
+                            color: "#6b7280",
+                            fontSize: 12,
+                          }}
+                        >
+                          {
+                            whatsappItem.providerPhone
+                          }
+                        </div>
+
+                        <div
+                          style={{
+                            marginTop: 7,
+                            color: "#374151",
+                            fontSize: 12,
+                            lineHeight: 1.45,
+                          }}
+                        >
+                          {
+                            whatsappItem.itemCount
+                          }{" "}
+                          item
+                          {whatsappItem.itemCount ===
+                          1
+                            ? ""
+                            : "s"}
+                          :{" "}
+                          {whatsappItem.itemNames}
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          window.open(
+                            whatsappItem.url,
+                            "_blank"
+                          )
+                        }
+                        style={{
+                          flexShrink: 0,
+                          border: 0,
+                          borderRadius: 9,
+                          background: "#16a34a",
+                          color: "#ffffff",
+                          padding: "11px 13px",
+                          fontWeight: 900,
+                          cursor: "pointer",
+                        }}
+                      >
+                        Open WhatsApp
+                      </button>
+                    </div>
+                  </div>
+                )
+              )}
+
+              <div
+                style={{
+                  padding: 11,
+                  borderRadius: 10,
+                  background: "#f0fdf4",
+                  color: "#166534",
+                  fontSize: 12,
+                  lineHeight: 1.5,
+                }}
+              >
+                Enquiries are already saved. Open every
+                supplier’s WhatsApp button to send their
+                separate message.
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowWhatsAppQueue(false);
+                  setPendingWhatsApps([]);
+                }}
+                style={{
+                  width: "100%",
+                  border:
+                    "1px solid #d1d5db",
+                  borderRadius: 10,
+                  background: "#ffffff",
+                  padding: 12,
+                  fontWeight: 800,
+                  cursor: "pointer",
+                }}
+              >
+                Done
+              </button>
+            </div>
+          </div>
         </div>
       )}
       {showEnquiry && selectedItem && (
         <div style={styles.modalOverlay}>
           <div style={styles.modalBox}>
             <h2 style={{ marginTop: 0 }}>Send Enquiry</h2>
-            <p><b>{selectedItem.itemName}</b></p>
+            <p><b>{selectedItem?.itemName || ""}</b></p>
 
             <input style={styles.input} placeholder="Your Name" value={enquiry.buyerName} onChange={(e) => setEnquiry({ ...enquiry, buyerName: e.target.value })} />
             <br /><br />
@@ -265,7 +1186,42 @@ const styles: Record<string, React.CSSProperties> = {
   filters: { maxWidth: 1250, margin: "0 auto 14px", background: "#fff", padding: 16, borderRadius: 8, display: "grid", gridTemplateColumns: "2fr repeat(5, 1fr)", gap: 10, border: "1px solid #e5e7eb" },
   input: { padding: "11px 12px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 14, background: "#fff" },
   clear: { padding: "11px 14px", borderRadius: 8, border: 0, background: "#ef4444", color: "#fff", fontWeight: 800, cursor: "pointer" },
-  count: { maxWidth: 1250, margin: "0 auto 16px", color: "#374151" },
+  count: {
+  maxWidth: 1250,
+  margin: "0 auto 16px",
+  color: "#374151",
+},
+
+marketplaceTopRow: {
+  maxWidth: 1250,
+  margin: "0 auto 16px",
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  gap: 12,
+  flexWrap: "wrap",
+},
+
+cartButton: {
+  border: 0,
+  background: "#155eef",
+  color: "#fff",
+  borderRadius: 8,
+  padding: "11px 16px",
+  fontWeight: 900,
+  cursor: "pointer",
+},
+
+cartAddButton: {
+  flex: 1,
+  border: 0,
+  background: "#f59e0b",
+  color: "#111827",
+  borderRadius: 8,
+  padding: 11,
+  fontWeight: 900,
+  cursor: "pointer",
+},
   grid: { maxWidth: 1250, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 18 },
   card: { background: "#fff", borderRadius: 8, border: "1px solid #e5e7eb", overflow: "hidden", boxShadow: "0 2px 10px rgba(0,0,0,0.05)" },
   providerRow: { display: "flex", justifyContent: "space-between", gap: 12, padding: 14, borderBottom: "1px solid #eef0f4" },
@@ -283,15 +1239,321 @@ const styles: Record<string, React.CSSProperties> = {
   whatsapp: { flex: 1, border: 0, background: "#16a34a", color: "#fff", borderRadius: 8, padding: 11, fontWeight: 900, cursor: "pointer" },
   secondary: { flex: 1, border: "1px solid #d1d5db", background: "#fff", borderRadius: 8, padding: 11, fontWeight: 800, cursor: "pointer" },
   empty: { maxWidth: 1250, margin: "0 auto", background: "#fff", padding: 24, borderRadius: 8, border: "1px solid #e5e7eb" },
-  modalOverlay: {
+  cartModalBox: {
     position: "fixed",
-    inset: 0,
-    background: "rgba(0,0,0,0.45)",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    width: "min(420px, 100vw)",
+    height: "100vh",
+    background: "#ffffff",
+    display: "flex",
+    flexDirection: "column",
+    boxShadow: "-10px 0 35px rgba(0,0,0,0.18)",
+    overflow: "hidden",
+    zIndex: 1001,
+  },
+
+  cartHeader: {
+    minHeight: 68,
+    padding: "14px 16px",
+    borderBottom: "1px solid #e5e7eb",
+    background: "#ffffff",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 12,
+    flexShrink: 0,
+  },
+
+  cartSubText: {
+    color: "#6b7280",
+    fontSize: 13,
+    marginTop: 3,
+  },
+
+  cartCloseButton: {
+    width: 38,
+    height: 38,
+    border: "1px solid #e5e7eb",
+    background: "#f9fafb",
+    borderRadius: "50%",
+    fontSize: 17,
+    fontWeight: 900,
+    cursor: "pointer",
+  },
+
+  cartEmpty: {
+    margin: "auto 20px",
+    padding: 28,
+    textAlign: "center",
+    color: "#6b7280",
+    border: "1px dashed #d1d5db",
+    borderRadius: 14,
+    background: "#f9fafb",
+  },
+
+  cartScrollArea: {
+    flex: 1,
+    overflowY: "auto",
+    padding: "14px 14px 120px",
+    background: "#f5f6f8",
+  },
+
+  cartList: {
+    display: "grid",
+    gap: 10,
+  },
+
+  cartItem: {
+    position: "relative",
+    display: "flex",
+    gap: 11,
+    padding: 12,
+    border: "1px solid #e5e7eb",
+    borderRadius: 13,
+    background: "#ffffff",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+  },
+
+  cartProductIcon: {
+    width: 52,
+    height: 52,
+    minWidth: 52,
+    borderRadius: 11,
+    background: "#eef2ff",
+    color: "#155eef",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    zIndex: 9999,
-    padding: 16,
+    fontSize: 22,
+    fontWeight: 900,
+  },
+
+  cartProductDetails: {
+    flex: 1,
+    minWidth: 0,
+  },
+
+  cartItemName: {
+    paddingRight: 28,
+    fontWeight: 900,
+    fontSize: 14,
+    lineHeight: 1.35,
+    color: "#111827",
+  },
+
+  cartProvider: {
+    color: "#6b7280",
+    fontSize: 12,
+    marginTop: 3,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+
+  cartRate: {
+    color: "#111827",
+    fontSize: 13,
+    fontWeight: 800,
+    marginTop: 7,
+  },
+
+  cartItemBottom: {
+    marginTop: 10,
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 10,
+  },
+
+  quantityControl: {
+    display: "flex",
+    alignItems: "center",
+    border: "1px solid #16a34a",
+    borderRadius: 8,
+    overflow: "hidden",
+    height: 34,
+  },
+
+  quantityButton: {
+    width: 32,
+    height: 34,
+    border: 0,
+    background: "#ecfdf3",
+    color: "#15803d",
+    fontSize: 20,
+    fontWeight: 900,
+    cursor: "pointer",
+  },
+
+  quantityInput: {
+    width: 44,
+    height: 34,
+    border: 0,
+    borderLeft: "1px solid #bbf7d0",
+    borderRight: "1px solid #bbf7d0",
+    textAlign: "center",
+    outline: "none",
+    fontWeight: 900,
+    boxSizing: "border-box",
+  },
+
+  cartItemEstimate: {
+    fontSize: 15,
+    fontWeight: 900,
+    color: "#111827",
+    textAlign: "right",
+  },
+
+  cartDeleteButton: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    width: 28,
+    height: 28,
+    border: 0,
+    background: "transparent",
+    cursor: "pointer",
+    fontSize: 14,
+  },
+
+  cartDeliveryCard: {
+    marginTop: 14,
+    padding: 14,
+    background: "#ffffff",
+    border: "1px solid #e5e7eb",
+    borderRadius: 13,
+  },
+
+  cartSectionTitle: {
+    fontSize: 15,
+    fontWeight: 900,
+    marginBottom: 10,
+  },
+
+  cartLoggedBuyer: {
+    padding: 10,
+    marginBottom: 10,
+    borderRadius: 9,
+    background: "#f9fafb",
+    color: "#374151",
+    fontSize: 13,
+  },
+
+  cartAddressInput: {
+    width: "100%",
+    minHeight: 66,
+    padding: 11,
+    border: "1px solid #d1d5db",
+    borderRadius: 9,
+    resize: "vertical",
+    fontFamily: "inherit",
+    boxSizing: "border-box",
+    outline: "none",
+  },
+
+  cartPincodeInput: {
+    width: "100%",
+    marginTop: 9,
+    padding: 11,
+    border: "1px solid #d1d5db",
+    borderRadius: 9,
+    boxSizing: "border-box",
+    outline: "none",
+  },
+
+  cartSpecificationInput: {
+    width: "100%",
+    minHeight: 70,
+    marginTop: 9,
+    padding: 11,
+    border: "1px solid #d1d5db",
+    borderRadius: 9,
+    resize: "vertical",
+    fontFamily: "inherit",
+    boxSizing: "border-box",
+    outline: "none",
+  },
+
+  cartPriceDetails: {
+    marginTop: 14,
+    padding: 14,
+    background: "#ffffff",
+    border: "1px solid #e5e7eb",
+    borderRadius: 13,
+  },
+
+  cartPriceHeading: {
+    fontWeight: 900,
+    marginBottom: 12,
+  },
+
+  cartPriceRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 10,
+    fontSize: 14,
+  },
+
+  cartPriceNote: {
+    marginTop: 10,
+    paddingTop: 10,
+    borderTop: "1px dashed #d1d5db",
+    color: "#6b7280",
+    fontSize: 11,
+    lineHeight: 1.45,
+  },
+
+  cartStickyFooter: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    minHeight: 82,
+    padding: "12px 14px",
+    borderTop: "1px solid #e5e7eb",
+    background: "#ffffff",
+    boxShadow: "0 -8px 25px rgba(0,0,0,0.08)",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 14,
+  },
+
+  cartFooterLabel: {
+    color: "#6b7280",
+    fontSize: 11,
+    fontWeight: 700,
+  },
+
+  cartFooterAmount: {
+    marginTop: 2,
+    fontSize: 21,
+    fontWeight: 900,
+    color: "#111827",
+  },
+
+  cartSubmitButton: {
+    minWidth: 155,
+    border: 0,
+    borderRadius: 10,
+    padding: "13px 16px",
+    background: "#16a34a",
+    color: "#ffffff",
+    fontWeight: 900,
+    cursor: "pointer",
+  },
+  modalOverlay: {
+    position: "fixed",
+    inset: 0,
+    zIndex: 1000,
+    background: "rgba(17,24,39,0.42)",
+    display: "flex",
+    justifyContent: "flex-end",
+    alignItems: "stretch",
+    padding: 0,
   },
   modalBox: {
     background: "#fff",
@@ -302,6 +1564,23 @@ const styles: Record<string, React.CSSProperties> = {
     boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
   },
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

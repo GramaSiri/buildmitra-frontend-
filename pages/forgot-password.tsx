@@ -10,6 +10,7 @@ export default function ForgotPassword() {
     "https://buildmitra-backend-beta.onrender.com";
 
   const [phone, setPhone] = useState("");
+  const [businessRole, setBusinessRole] = useState("");
   const [otp, setOtp] = useState("");
   const [step, setStep] = useState(1);
   const [newPassword, setNewPassword] = useState("");
@@ -114,6 +115,11 @@ export default function ForgotPassword() {
       return;
     }
 
+    if (!businessRole) {
+      setError("Select your registered role.");
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -125,7 +131,8 @@ export default function ForgotPassword() {
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
-            phone: cleanPhone
+            phone: cleanPhone,
+            businessRole
           })
         }
       );
@@ -187,6 +194,7 @@ export default function ForgotPassword() {
           },
           body: JSON.stringify({
             phone: cleanPhone,
+            businessRole,
             otp: otp.trim(),
             newPassword
           })
@@ -232,6 +240,24 @@ export default function ForgotPassword() {
               inputMode="numeric"
               maxLength={13}
             />
+
+            <label style={styles.label}>Registered Role</label>
+
+            <select
+              style={styles.input}
+              value={businessRole}
+              onChange={(e) => setBusinessRole(e.target.value)}
+            >
+              <option value="">Select your role</option>
+              <option value="buyer">Buyer / Owner</option>
+              <option value="contractor">Contractor</option>
+              <option value="supplier">Supplier</option>
+              <option value="vendor">Vendor</option>
+              <option value="laboursupply">Labour Supplier</option>
+              <option value="machinehire">Machine Hire</option>
+              <option value="realestate">Real Estate</option>
+              <option value="admin">Admin</option>
+            </select>
 
             <button
               style={{
@@ -290,6 +316,24 @@ export default function ForgotPassword() {
               placeholder="Confirm password"
             />
 
+            <label style={styles.label}>Registered Role</label>
+
+            <select
+              style={styles.input}
+              value={businessRole}
+              onChange={(e) => setBusinessRole(e.target.value)}
+            >
+              <option value="">Select your role</option>
+              <option value="buyer">Buyer / Owner</option>
+              <option value="contractor">Contractor</option>
+              <option value="supplier">Supplier</option>
+              <option value="vendor">Vendor</option>
+              <option value="laboursupply">Labour Supplier</option>
+              <option value="machinehire">Machine Hire</option>
+              <option value="realestate">Real Estate</option>
+              <option value="admin">Admin</option>
+            </select>
+
             <button
               style={{
                 ...styles.button,
@@ -313,3 +357,5 @@ export default function ForgotPassword() {
     </div>
   );
 }
+
+

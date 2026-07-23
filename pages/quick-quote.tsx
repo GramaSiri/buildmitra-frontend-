@@ -52,23 +52,18 @@ export default function QuickQuotePage() {
 
     setLoading(true);
 
-    const quoteRes = await fetch(`${API_BASE}/api/quote/create`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        enquiryCode: enquiry.enquiryCode,
-        providerUserCode: enquiry.providerUserCode,
-        providerName: enquiry.providerName,
-        providerPhone: enquiry.providerPhone,
-        rate,
-        quantity: enquiry.quantity || "",
-        totalAmount: rate,
-        deliveryTime,
-        terms: paymentTerms,
-        remarks,
-        attachment: attachFileName || null,
-      }),
-    });
+    const quoteRes = await fetch(`${API_BASE}/api/enquiry/${enquiry._id}/quote`, {
+  method: "PUT",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    quotedAmount: Number(rate),
+    quoteMessage: remarks || "Please contact us for quotation details",
+    quoteValidityDate: deliveryTime || "",
+    paymentTerms: paymentTerms || "",
+    gstIncluded: false,
+    transportCharges: 0,
+  }),
+});
 
     const quoteData = await quoteRes.json().catch(() => ({}));
     setLoading(false);
@@ -79,10 +74,10 @@ export default function QuickQuotePage() {
     }
 
     // Save to localStorage for dashboard
-    if (quoteData.success && quoteData.quote) {
+    if (quoteData.success && quoteData.enquiry) {
       const savedQuotes = JSON.parse(localStorage.getItem("buildmitra_quotes") || "[]");
       const newQuote = {
-        ...quoteData.quote,
+        ...quoteData.enquiry,
         enquiryCode: enquiry.enquiryCode,
         buyerName: enquiry.buyerName,
         buyerPhone: enquiry.buyerPhone,
@@ -114,7 +109,7 @@ export default function QuickQuotePage() {
     const msg =
 `🏗️ BUILDMITRA OFFICIAL QUOTATION
 
-Quote No: ${quoteData.quote?.quoteCode || "-"}
+Quote No: ${enquiry.enquiryCode || "-"}
 Enquiry No: ${enquiry.enquiryCode}
 
 Supplier:
@@ -254,3 +249,4 @@ const styles: Record<string, any> = {
   button: { width: "100%", padding: 14, background: "#16a34a", color: "#fff", border: 0, borderRadius: 8, fontWeight: 900, marginTop: 10 },
   reject: { width: "100%", padding: 12, background: "#ef4444", color: "#fff", border: 0, borderRadius: 8, fontWeight: 800, marginTop: 10 },
 };
+

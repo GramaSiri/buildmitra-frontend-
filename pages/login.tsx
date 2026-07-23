@@ -1,865 +1,674 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 
-export default function Login() {
-  const welcomeUser =
-  typeof window !== "undefined"
-    ? localStorage.getItem("userName") || ""
-    : "";
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  "https://buildmitra-backend-beta.onrender.com";
+
+export default function LoginPage() {
   const router = useRouter();
-  const [isLogin, setIsLogin] = useState(true);
-  const [formData, setFormData] = useState({
-  name: "",
-  phone: "",
-  email: "",
-  companyName: "",
-  gstNo: "",
-  officePhone: "",
-  address: "",
-  city: "",
-  state: "",
-  pincode: "",
-  password: "",
-  confirmPassword: "",
-  role: "buyer"
-});
+
+  const [loginId, setLoginId] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [registeredCode, setRegisteredCode] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [agreePolicy, setAgreePolicy] = useState(false);
-  const [isCheckingSession, setIsCheckingSession] = useState(true);
+
+  const redirectToDashboard = (rawRole: string) => {
+    const role = String(rawRole || "")
+      .trim()
+      .toLowerCase();
+
+    const routes: Record<string, string> = {
+      admin: "/admin-dashboard",
+      buyer: "/buyer-dashboard",
+      owner: "/buyer-dashboard",
+      contractor: "/contractor-dashboard",
+      supplier: "/supplier-dashboard",
+      vendor: "/vendor-dashboard",
+      serviceprovider: "/vendor-dashboard",
+      service_provider: "/vendor-dashboard",
+      laboursupply: "/laboursupply-dashboard",
+      labour: "/laboursupply-dashboard",
+      machinehire: "/machinehire-dashboard",
+      machinery: "/machinehire-dashboard",
+      equipment: "/machinehire-dashboard",
+      realestate: "/realestate-dashboard"
+    };
+
+    router.replace(routes[role] || "/");
+  };
 
   useEffect(() => {
-  if (typeof window !== "undefined") {
+    if (!router.isReady) return;
 
-    const user = localStorage.getItem("loggedInUser");
+    // Always display the login page.
+    // Do not automatically redirect using an old saved session.
+    setCheckingSession(false);
+  }, [router.isReady]);
 
-    if (user) {
-      console.log("Existing session:", JSON.parse(user));
-    }
+  const handleLogin = async (
+    event: React.FormEvent<HTMLFormElement>
+  ) => {
+    event.preventDefault();
 
-  }
-
-  setIsCheckingSession(false);
-
-}, []);
-
-  const normalizeRole = (role) => {
-    const value = String(role || "").toLowerCase().replace(/\s+/g, "");
-    if (value === "labour") return "laboursupply";
-    if (value === "machinery" || value === "machine") return "machinehire";
-    if (value === "user") return "buyer";
-    return value;
-  };
-
-  const saveCurrentUser = (user) => {
-    const businessRole = normalizeRole(user.businessRole || user.role);
-    const currentUser = {
-      ...user,
-      userCode: user.userCode || user.uniqueCode || user.code || "",
-      userId: user.userId || user.id || user._id || "",
-      name: user.name || "",
-      phone: user.phone || "",
-      role: businessRole,
-      businessRole: businessRole,
-      companyName: user.companyName || "",
-      city: user.city || user.location || ""
-    };
-    localStorage.setItem("currentUser", JSON.stringify(currentUser));
-    localStorage.setItem("loggedInUser", JSON.stringify(currentUser));
-    localStorage.setItem("user", JSON.stringify(currentUser));
-    localStorage.setItem("userName", currentUser.name || "");
-    localStorage.setItem("userPhone", currentUser.phone || "");
-    localStorage.setItem("userEmail", currentUser.email || "");
-    localStorage.setItem("userCode", currentUser.userCode || "");
-    localStorage.setItem("userRole", currentUser.businessRole || currentUser.role || "");
-    localStorage.setItem("uniqueCode", currentUser.userCode || "");
-    return currentUser;
-  };
-
-  const redirectToDashboard = (role) => {
-    switch(normalizeRole(role)) {
-      case "admin": router.push("/admin-dashboard"); break;
-      case "buyer": router.push("/buyer-dashboard"); break;
-      case "supplier": router.push("/supplier-dashboard"); break;
-      case "contractor": router.push("/contractor-dashboard"); break;
-      case "machinehire": router.push("/machinehire-dashboard"); break;
-      case "laboursupply": router.push("/laboursupply-dashboard"); break;
-      case "realestate": router.push("/realestate-dashboard"); break;
-      default: router.push("/buyer-dashboard");
-    }
-  };
-
-  // Generate unique code based on role
-  const generateUniqueCode = (role, users = []) => {
-    const prefix = {
-      supplier: "SUP",
-      contractor: "CON",
-      buyer: "BUY",
-      machinery: "MAC",
-      labour: "LAB",
-      realestate: "REA",
-      admin: "ADM"
-    };
-    const codePrefix = prefix[role] || "USR";
-    const existingCodes = new Set(
-      users.map((user) => String(user.uniqueCode || "").toUpperCase())
-    );
-    const start = Math.floor(Math.random() * 9000);
-    for (let attempt = 0; attempt < 9000; attempt += 1) {
-      const randomNum = 1000 + ((start + attempt) % 9000);
-      const candidate = `${codePrefix}-${randomNum}`;
-      if (!existingCodes.has(candidate)) return candidate;
-    }
-    throw new Error(`No ${codePrefix}-xxxx codes are available. Contact BuildMitra support.`);
-  };
-
-  // Reset data based on role
-  const resetUserData = (userId, userName, userPhone, uniqueCode, role) => {
-    if (role === "supplier") {
-      resetSupplierData(userId, userName, userPhone, uniqueCode);
-    } else if (role === "contractor") {
-      resetContractorData(userId, userName, userPhone, uniqueCode);
-    } else if (role === "machinery") {
-      resetMachineryData(userId, userName, userPhone, uniqueCode);
-    } else if (role === "labour") {
-      resetLabourData(userId, userName, userPhone, uniqueCode);
-    } else if (role === "realestate") {
-      resetRealEstateData(userId, userName, userPhone, uniqueCode);
-    } else {
-      resetBuyerData(userId, userName, userPhone, uniqueCode);
-    }
-  };
-
-  const resetSupplierData = (userId, userName, userPhone, uniqueCode) => {
-    const keysToRemove = [
-      "supplierInfo", "supplierProducts", "supplierOffers",
-      "supplierOrders", "supplierQuotes", "shopPhoto", "businessCard"
-    ];
-    keysToRemove.forEach(key => localStorage.removeItem(key));
-    
-    const freshSupplierInfo = {
-      userId: userId,
-      uniqueCode: uniqueCode,
-      shopName: userName,
-      ownerName: userName,
-      phone: userPhone,
-      shopPhotoUrl: null,
-      businessCardUrl: null,
-      gstNo: "",
-      address: "",
-      email: "",
-      since: new Date().getFullYear().toString(),
-      rating: 0,
-      totalOrdersCompleted: 0,
-      totalRevenue: 0,
-      activeOffers: 0,
-      totalProducts: 0,
-      totalEnquiries: 0,
-      isNewUser: true
-    };
-    localStorage.setItem("supplierInfo", JSON.stringify(freshSupplierInfo));
-    localStorage.setItem("supplierInfo_" + userId, JSON.stringify(freshSupplierInfo));
-    localStorage.setItem("supplierProducts_" + userId, JSON.stringify([]));
-    localStorage.setItem("supplierOffers_" + userId, JSON.stringify([]));
-    localStorage.setItem("supplierOrders_" + userId, JSON.stringify([]));
-    localStorage.setItem("supplierQuotes_" + userId, JSON.stringify([]));
-  };
-
-  const resetContractorData = (userId, userName, userPhone, uniqueCode) => {
-    localStorage.removeItem("contractorInfo");
-    localStorage.removeItem("contractorProjects");
-    
-    const freshContractorInfo = {
-      userId: userId,
-      uniqueCode: uniqueCode,
-      companyName: userName,
-      ownerName: userName,
-      phone: userPhone,
-      email: "",
-      address: "",
-      gstNo: "",
-      since: new Date().getFullYear().toString(),
-      rating: 0,
-      completedProjects: 0,
-      totalRevenue: 0,
-      isNewUser: true
-    };
-    localStorage.setItem("contractorInfo", JSON.stringify(freshContractorInfo));
-    localStorage.setItem("contractorProjects", JSON.stringify([]));
-  };
-
-  const resetMachineryData = (userId, userName, userPhone, uniqueCode) => {
-    localStorage.removeItem("machineryInfo");
-    localStorage.removeItem("machineryListings");
-    
-    const freshMachineryInfo = {
-      userId: userId,
-      uniqueCode: uniqueCode,
-      businessName: userName + "'s Machinery",
-      ownerName: userName,
-      phone: userPhone,
-      email: "",
-      address: "",
-      gstNo: "",
-      since: new Date().getFullYear().toString(),
-      rating: 0,
-      totalEquipment: 0,
-      totalRevenue: 0,
-      isNewUser: true
-    };
-    localStorage.setItem("machineryInfo", JSON.stringify(freshMachineryInfo));
-    localStorage.setItem("machineryListings", JSON.stringify([]));
-  };
-
-  const resetLabourData = (userId, userName, userPhone, uniqueCode) => {
-    localStorage.removeItem("labourInfo");
-    localStorage.removeItem("labourListings");
-    
-    const freshLabourInfo = {
-      userId: userId,
-      uniqueCode: uniqueCode,
-      businessName: userName + "'s Labour Supply",
-      ownerName: userName,
-      phone: userPhone,
-      email: "",
-      address: "",
-      gstNo: "",
-      since: new Date().getFullYear().toString(),
-      rating: 0,
-      totalLabours: 0,
-      totalRevenue: 0,
-      isNewUser: true
-    };
-    localStorage.setItem("labourInfo", JSON.stringify(freshLabourInfo));
-    localStorage.setItem("labourListings", JSON.stringify([]));
-  };
-
-  const resetRealEstateData = (userId, userName, userPhone, uniqueCode) => {
-    localStorage.removeItem("realEstateInfo");
-    localStorage.removeItem("realEstateProperties");
-    
-    const freshRealEstateInfo = {
-      userId: userId,
-      uniqueCode: uniqueCode,
-      businessName: userName + "'s Real Estate",
-      ownerName: userName,
-      phone: userPhone,
-      email: "",
-      address: "",
-      gstNo: "",
-      since: new Date().getFullYear().toString(),
-      rating: 0,
-      totalProperties: 0,
-      totalRevenue: 0,
-      isNewUser: true
-    };
-    localStorage.setItem("realEstateInfo", JSON.stringify(freshRealEstateInfo));
-    localStorage.setItem("realEstateProperties", JSON.stringify([]));
-  };
-
-  const resetBuyerData = (userId, userName, userPhone, uniqueCode) => {
-    localStorage.removeItem("buyerProjects");
-    localStorage.removeItem("buyerInfo");
-    
-    const freshBuyerInfo = {
-      userId: userId,
-      uniqueCode: uniqueCode,
-      name: userName,
-      phone: userPhone,
-      email: "",
-      address: "",
-      totalProjects: 0,
-      isNewUser: true
-    };
-    localStorage.setItem("buyerInfo", JSON.stringify(freshBuyerInfo));
-    localStorage.setItem("buyerProjects", JSON.stringify([]));
-  };
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
     setError("");
     setSuccess("");
-    setLoading(true);
 
-    if (typeof window === "undefined") {
-      setLoading(false);
+    const cleanLoginId = loginId.trim();
+
+    if (!cleanLoginId) {
+      setError(
+        "Please enter your mobile number or email."
+      );
       return;
     }
 
-    localStorage.removeItem("loggedInUser");
-
-    const loginId = formData.phone || formData.email;
-    const apiBase = process.env.NEXT_PUBLIC_API_BASE || process.env.NEXT_PUBLIC_API_URL || "https://buildmitra-backend-beta.onrender.com";
+    if (!password) {
+      setError("Please enter your password.");
+      return;
+    }
 
     try {
-      const res = await fetch(`${apiBase}/api/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: formData.email || formData.phone, password: formData.password })
-      });
+      setLoading(true);
 
-      const data = await res.json();
+      const response = await fetch(
+        `${API_BASE}/api/auth/login`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            phoneOrEmail: cleanLoginId,
+            email: cleanLoginId,
+            phone: cleanLoginId,
+            password
+          })
+        }
+      );
 
-      if (data.success && data.user) {
-        const loggedInUser = saveCurrentUser({
-          ...data.user,
-          uniqueCode: data.user.uniqueCode || data.user.userCode || data.user.code || "",
-          role: data.user.businessRole || data.user.role || "",
-          city: data.user.city || data.user.location || ""
-        });
+      const data = await response
+        .json()
+        .catch(() => ({}));
 
-        setSuccess(`✅ Login successful! Welcome ${loggedInUser.name}!`);
-        setTimeout(() => redirectToDashboard(loggedInUser.role), 800);
-        return;
+      if (!response.ok || data.success === false) {
+        throw new Error(
+          data.message ||
+          data.error ||
+          "Invalid mobile number, email or password."
+        );
       }
 
-      if (data.error) {
-        setError("❌ " + data.error);
-        setLoading(false);
-        return;
+      const sourceUser =
+        data.user ||
+        data.data?.user ||
+        data.data ||
+        {};
+
+      const token =
+        data.token ||
+        data.accessToken ||
+        data.data?.token ||
+        "";
+
+      const role =
+        sourceUser.businessRole ||
+        sourceUser.role ||
+        "buyer";
+
+      const user = {
+        id:
+          sourceUser.id ||
+          sourceUser._id ||
+          "",
+
+        _id:
+          sourceUser._id ||
+          sourceUser.id ||
+          "",
+
+        name:
+          sourceUser.name ||
+          sourceUser.fullName ||
+          "",
+
+        email:
+          sourceUser.email ||
+          "",
+
+        phone:
+          sourceUser.phone ||
+          sourceUser.mobile ||
+          "",
+
+        userCode:
+          sourceUser.userCode ||
+          sourceUser.uniqueCode ||
+          sourceUser.code ||
+          "",
+
+        uniqueCode:
+          sourceUser.uniqueCode ||
+          sourceUser.userCode ||
+          sourceUser.code ||
+          "",
+
+        role,
+
+        businessRole: role,
+
+        city:
+          sourceUser.city ||
+          sourceUser.location ||
+          "",
+
+        location:
+          sourceUser.location ||
+          sourceUser.city ||
+          "",
+
+        pincode:
+          sourceUser.pincode ||
+          "",
+
+        subscriptionPlan:
+          sourceUser.subscriptionPlan ||
+          "",
+
+        subscriptionStatus:
+          sourceUser.subscriptionStatus ||
+          "",
+
+        paymentStatus:
+          sourceUser.paymentStatus ||
+          "",
+
+        assignedProjects:
+          sourceUser.assignedProjects ||
+          []
+      };
+
+
+
+      // BUILDMITRA TAB-SPECIFIC SESSION
+      // sessionStorage is separate for each browser tab.
+      sessionStorage.setItem(
+        "currentUser",
+        JSON.stringify(user)
+      );
+
+      sessionStorage.setItem(
+        "loggedInUser",
+        JSON.stringify(user)
+      );
+
+      sessionStorage.setItem(
+        "user",
+        JSON.stringify(user)
+      );
+
+      sessionStorage.setItem(
+        "userName",
+        user.name || ""
+      );
+
+      sessionStorage.setItem(
+        "userRole",
+        user.businessRole || user.role || ""
+      );
+
+      sessionStorage.setItem(
+        "uniqueCode",
+        user.userCode || user.uniqueCode || ""
+      );
+
+      if (token) {
+        sessionStorage.setItem(
+          "token",
+          token
+        );
       }
-    } catch (apiError) {
-      console.warn("Backend login unavailable, using local fallback:", apiError);
-    }
+      sessionStorage.setItem(
+        "justLoggedIn",
+        "true"
+      );
 
-    // Local fallback for existing beta users
-    const users = JSON.parse(localStorage.getItem("users") || "[]");
-    const user = users.find(u => {
-      const phoneMatch = u.phone === formData.phone;
-      const emailMatch = u.email && u.email === formData.email;
-      const phoneAsEmail = formData.phone && u.email === formData.phone;
-      return (phoneMatch || emailMatch || phoneAsEmail) && u.password === formData.password;
-    });
+      setSuccess(
+        `Login successful. Welcome ${
+          user.name || "to BuildMitra"
+        }.`
+      );
 
-    if (user) {
-      if (!user.uniqueCode) {
-        user.uniqueCode = generateUniqueCode(user.role, users);
-        localStorage.setItem("users", JSON.stringify(users));
-      }
+      setTimeout(() => {
+        redirectToDashboard(role);
+      }, 500);
+    } catch (loginError: any) {
+      console.error(
+        "Login error:",
+        loginError
+      );
 
-      const loggedInUser = saveCurrentUser({
-        userId: user.userId,
-        userCode: user.userCode || user.uniqueCode,
-        uniqueCode: user.userCode || user.uniqueCode,
-        name: user.name,
-        phone: user.phone,
-        email: user.email || "",
-        role: user.role,
-        businessRole: user.businessRole || user.role,
-        companyName: user.companyName || "",
-        city: user.city || user.location || "Bengaluru",
-        location: user.location || user.city || "Bengaluru"
-      });
-      sessionStorage.setItem("justLoggedIn", "true");
-
-      setSuccess(`✅ Login successful! Welcome ${user.name}!`);
-      setTimeout(() => redirectToDashboard(user.role), 800);
-    } else {
-      setError("❌ Invalid phone/email or password. Please try again.");
+      setError(
+        loginError?.message ||
+        "Unable to connect to the BuildMitra beta server."
+      );
+    } finally {
       setLoading(false);
     }
   };
-  const handleRegister = (e) => {
-    e.preventDefault();
-    setError("");
-    setSuccess("");
-    setLoading(true);
-    if (!agreePolicy) {
-    setLoading(true);
-  if (!agreePolicy) {
-  setError("Please accept BuildMitra Terms & Conditions and Privacy Policy");
-  setLoading(false);
-  return;
-}
-  return;
-}
-    
-    if (typeof window === "undefined") {
-      setLoading(false);
-      return;
-    }
-    
-    if (!formData.name.trim()) {
-      setError("Full Name is required");
-      setLoading(false);
-      return;
-    }
-    
-    if (!formData.phone.trim() || formData.phone.length < 10) {
-      setError("Valid Phone Number is required (min 10 digits)");
-      setLoading(false);
-      return;
-    }
-    
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
-      setLoading(false);
-      return;
-    }
-    
-    if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters");
-      setLoading(false);
-      return;
-    }
-    
-    const users = JSON.parse(localStorage.getItem("users") || "[]");
-    
-    if (users.find(u => u.phone === formData.phone)) {
-      setError("❌ User with this phone number already exists. Please login.");
-      setLoading(false);
-      return;
-    }
-    
-    if (formData.email && users.find(u => u.email === formData.email)) {
-      setError("User with this email already exists");
-      setLoading(false);
-      return;
-    }
-    
-    // Generate unique userId
-    const userId = Date.now() + Math.floor(Math.random() * 10000);
-    
-    // Generate unique code
-    const uniqueCode = generateUniqueCode(formData.role, users);
-    
-    const newUser = {
-      userId: userId,
-      uniqueCode: uniqueCode,
-      name: formData.name.trim(),
-      phone: formData.phone.trim(),
-      email: formData.email.trim() || "",
-      password: formData.password,
-      role: formData.role,
-      location: formData.location || "Bengaluru",
-      createdAt: new Date().toISOString()
-    };
-    
-    users.push(newUser);
-    localStorage.setItem("users", JSON.stringify(users));
-    localStorage.setItem("userName", newUser.name);
-    localStorage.setItem("userRole", newUser.role);
-    localStorage.setItem("uniqueCode", uniqueCode);
-    
-    // Reset dashboard data
-    resetUserData(userId, formData.name.trim(), formData.phone.trim(), uniqueCode, formData.role);
-    
-    setSuccess(`Registration successful. Your code is ${uniqueCode}. Share this code only with the contractor you want to give project view access.`);
-    setRegisteredCode(uniqueCode);
-    setLoading(false);
-    
-    setTimeout(() => {
-      setIsLogin(true);
-      setFormData({ ...formData, password: "", confirmPassword: "", phone: "", email: "" });
-    }, 2500);
-  };
 
-  // STYLES
-  const styles = {
-    container: {
-      minHeight: "100vh",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      background: "linear-gradient(135deg, #1a5f7a 0%, #2d8db5 100%)",
-      padding: "20px"
-    },
-    card: {
-      backgroundColor: "white",
-      borderRadius: "20px",
-      padding: "40px",
-      width: "100%",
-      maxWidth: "450px",
-      boxShadow: "0 20px 60px rgba(0,0,0,0.3)"
-    },
-    logo: {
-      textAlign: "center",
-      marginBottom: "30px"
-    },
-    logoText: {
-      fontSize: "28px",
-      fontWeight: "bold",
-      color: "#1a5f7a",
-      margin: 0
-    },
-    logoSub: {
-      fontSize: "14px",
-      color: "#666",
-      margin: "5px 0 0"
-    },
-    toggleContainer: {
-      display: "flex",
-      backgroundColor: "#f0f2f5",
-      borderRadius: "12px",
-      padding: "4px",
-      marginBottom: "24px"
-    },
-    toggleBtn: {
-      flex: 1,
-      padding: "10px",
-      border: "none",
-      borderRadius: "10px",
-      cursor: "pointer",
-      fontSize: "14px",
-      fontWeight: "500",
-      transition: "all 0.3s"
-    },
-    toggleActive: {
-      backgroundColor: "#1a5f7a",
-      color: "white"
-    },
-    toggleInactive: {
-      backgroundColor: "transparent",
-      color: "#666"
-    },
-    input: {
-      width: "100%",
-      padding: "12px 16px",
-      border: "1px solid #ddd",
-      borderRadius: "10px",
-      fontSize: "14px",
-      marginBottom: "16px"
-    },
-    label: {
-      display: "block",
-      fontSize: "13px",
-      fontWeight: "600",
-      color: "#333",
-      marginBottom: "6px"
-    },
-    labelRequired: {
-      color: "#dc3545",
-      marginLeft: "4px"
-    },
-    button: {
-      width: "100%",
-      padding: "14px",
-      backgroundColor: "#1a5f7a",
-      color: "white",
-      border: "none",
-      borderRadius: "10px",
-      fontSize: "16px",
-      fontWeight: "bold",
-      cursor: "pointer"
-    },
-    buttonDisabled: {
-      opacity: 0.7,
-      cursor: "not-allowed"
-    },
-    error: {
-      backgroundColor: "#fee2e2",
-      color: "#dc2626",
-      padding: "12px",
-      borderRadius: "8px",
-      marginBottom: "16px",
-      fontSize: "14px"
-    },
-    success: {
-      backgroundColor: "#d1fae5",
-      color: "#065f46",
-      padding: "12px",
-      borderRadius: "8px",
-      marginBottom: "16px",
-      fontSize: "14px"
-    },
-    link: {
-      color: "#1a5f7a",
-      cursor: "pointer",
-      fontWeight: "500"
-    },
-    footer: {
-      textAlign: "center",
-      marginTop: "20px",
-      fontSize: "13px",
-      color: "#666"
-    },
-    roleSelect: {
-      width: "100%",
-      padding: "12px 16px",
-      border: "1px solid #ddd",
-      borderRadius: "10px",
-      fontSize: "14px",
-      marginBottom: "16px",
-      backgroundColor: "white"
-    },
-    note: {
-      fontSize: "12px",
-      color: "#888",
-      marginTop: "-8px",
-      marginBottom: "12px"
-    }
-  };
+  if (checkingSession) {
+    return (
+      <main style={styles.page}>
+        <section style={styles.card}>
+          <div style={styles.logoIcon}>🏗️</div>
 
-  const handleInputChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  if (isCheckingSession) {
-    return React.createElement("div", { style: styles.container },
-      React.createElement("div", { style: styles.card },
-        React.createElement("div", { style: styles.logo },
-          React.createElement("h1", { style: styles.logoText }, "🏗️ BuildMitra"),
-          React.createElement("p", { style: styles.logoSub }, "Loading...")
-        )
-      )
+          <div style={styles.loadingText}>
+            Opening BuildMitra...
+          </div>
+        </section>
+      </main>
     );
   }
 
-  return React.createElement("div", { style: styles.container },
-    React.createElement("div", { style: styles.card },
-      React.createElement("div", { style: styles.logo },
-        React.createElement("h1", { style: styles.logoText }, "🏗️ BuildMitra"),
-        React.createElement(
-  "p",
-  { style: styles.logoSub },
-  welcomeUser
-   ? "Welcome BuildMitra"
-    : "Construction Management Platform"
-)
-      ),
-      
-      React.createElement("div", { style: styles.toggleContainer },
-        React.createElement("button", {
-          onClick: () => { setIsLogin(true); setError(""); setSuccess(""); },
-          style: { ...styles.toggleBtn, ...(isLogin ? styles.toggleActive : styles.toggleInactive) }
-        }, "Login"),
-        React.createElement("button", {
-          onClick: () => { setIsLogin(false); setError(""); setSuccess(""); },
-          style: { ...styles.toggleBtn, ...(!isLogin ? styles.toggleActive : styles.toggleInactive) }
-        }, "Register")
-      ),
-      
-      error && React.createElement("div", { style: styles.error }, error),
-      success && React.createElement("div", { style: styles.success },
-        React.createElement("div", null, success),
-        registeredCode && React.createElement("div", { style: { marginTop: "10px", fontSize: "18px", fontWeight: "bold" } },
-          "Your Unique Code: ", registeredCode,
-          React.createElement("button", { type: "button", onClick: () => navigator.clipboard?.writeText(registeredCode), style: { marginLeft: "10px", padding: "5px 10px", border: "1px solid currentColor", borderRadius: "6px", cursor: "pointer" } }, "Copy Code")
-        )
-      ),
-      
-      isLogin ? 
-        React.createElement("form", { onSubmit: handleLogin },
-          React.createElement("div", null,
-            React.createElement("label", { style: styles.label }, "Phone Number or Email"),
-            React.createElement("input", {
-              type: "text",
-              name: "phone",
-              placeholder: "Enter your phone number or email",
-              value: formData.phone || formData.email,
-              onChange: (e) => {
-                const val = e.target.value;
-                if (val.includes('@')) {
-                  setFormData({ ...formData, email: val, phone: "" });
-                } else {
-                  setFormData({ ...formData, phone: val, email: "" });
-                }
-              },
-              required: true,
-              style: styles.input
-            })
-          ),
-          React.createElement("div", null,
-            React.createElement("label", { style: styles.label }, "Password"),
-            React.createElement("input", {
-              type: "password",
-              name: "password",
-              placeholder: "Enter your password",
-              value: formData.password,
-              onChange: handleInputChange,
-              required: true,
-              style: styles.input
-            })
-          ),
-          React.createElement("div", {
-            style: { textAlign: "right", marginBottom: "15px", marginTop: "-8px" }
-          },
-            React.createElement("span", {
-              style: styles.link,
-              onClick: () => router.push("/forgot-password")
-            }, "Forgot Password?")
-          ),
-          React.createElement("button", { 
-            type: "submit", 
-            style: { ...styles.button, ...(loading ? styles.buttonDisabled : {}) },
-            disabled: loading
-          }, loading ? "Logging in..." : "Login"),
-          React.createElement("div", { style: styles.footer },
-            "New to BuildMitra? ",
-            React.createElement("span", { 
-              style: styles.link, 
-              onClick: () => { setIsLogin(false); setError(""); setSuccess(""); }
-            }, "Create an Account")
-          )
-        ) :
-        React.createElement("form", { onSubmit: handleRegister },
-          React.createElement("div", null,
-            React.createElement("label", { style: styles.label }, 
-              "Full Name", 
-              React.createElement("span", { style: styles.labelRequired }, " *")
-            ),
-            React.createElement("input", {
-              type: "text",
-              name: "name",
-              placeholder: "Enter your full name",
-              value: formData.name,
-              onChange: handleInputChange,
-              required: true,
-              style: styles.input
-            })
-          ),
-          React.createElement("div", null,
-            React.createElement("label", { style: styles.label }, 
-              "Phone Number", 
-              React.createElement("span", { style: styles.labelRequired }, " *")
-            ),
-            React.createElement("input", {
-              type: "tel",
-              name: "phone",
-              placeholder: "Enter your 10-digit phone number",
-              value: formData.phone,
-              onChange: handleInputChange,
-              required: true,
-              minLength: 10,
-              style: styles.input
-            })
-          ),
-          React.createElement("div", null,
-            React.createElement("label", { style: styles.label }, "Email Address (Optional)"),
-            React.createElement("input", {
-              type: "email",
-              name: "email",
-              placeholder: "Enter your email (optional)",
-              value: formData.email,
-              onChange: handleInputChange,
-              style: styles.input
-            }),
-            React.createElement("div", { style: styles.note }, "Email is optional. You can login with phone number.")
-          ),
-          React.createElement("div", null,
-            React.createElement("label", { style: styles.label }, 
-              "Role",
-              React.createElement("span", { style: styles.labelRequired }, " *")
-            ),
-                      React.createElement("div", null,
-            React.createElement("label", { style: styles.label }, "GST No (Optional)"),
-            React.createElement("input", {
-              type: "text",
-              name: "gstNo",
-              placeholder: "Enter GST number",
-              value: formData.gstNo,
-              onChange: handleInputChange,
-              style: styles.input
-            })
-          ),
+  return (
+    <main style={styles.page}>
+      <section style={styles.card}>
+        <div style={styles.logoIcon}>
+          🏗️
+        </div>
 
-            React.createElement("div", null,
-            React.createElement("label", { style: styles.label }, "Address (Optional)"),
-            React.createElement("input", {
-              type: "text",
-              name: "address",
-              placeholder: "Enter address",
-              value: formData.address,
-              onChange: handleInputChange,
-              style: styles.input
-            })
-          ),
-          React.createElement("div", null,
-            React.createElement("label", { style: styles.label }, "Pincode (Optional)"),
-            React.createElement("input", {
-              type: "text",
-              name: "pincode",
-              placeholder: "Enter pincode",
-              value: formData.pincode,
-              onChange: handleInputChange,
-              style: styles.input
-            })
-          ),
-            React.createElement("select", {
-              name: "role",
-              value: formData.role,
-              onChange: handleInputChange,
-              required: true,
-              style: styles.roleSelect
-            },
-              React.createElement("option", { value: "buyer" }, "🏠 Buyer"),
-              React.createElement("option", { value: "supplier" }, "📦 Supplier"),
-              React.createElement("option", { value: "contractor" }, "🏗️ Contractor"),
-              React.createElement("option", { value: "machinery" }, "🚜 Machinery Hire"),
-              React.createElement("option", { value: "labour" }, "👷 Labour Supply"),
-              React.createElement("option", { value: "realestate" }, "🏡 Real Estate")
-            )
-          ),
-          React.createElement("div", null,
-            React.createElement("label", { style: styles.label }, 
-              "Password",
-              React.createElement("span", { style: styles.labelRequired }, " *")
-            ),
-            React.createElement("input", {
-              type: "password",
-              name: "password",
-              placeholder: "Create a password (min 6 characters)",
-              value: formData.password,
-              onChange: handleInputChange,
-              required: true,
-              minLength: 6,
-              style: styles.input
-            })
-          ),
-          React.createElement("div", null,
-            React.createElement("label", { style: styles.label }, 
-              "Confirm Password",
-              React.createElement("span", { style: styles.labelRequired }, " *")
-            ),
-            React.createElement("input", {
-              type: "password",
-              name: "confirmPassword",
-              placeholder: "Confirm your password",
-              value: formData.confirmPassword,
-              onChange: handleInputChange,
-              required: true,
-              style: styles.input
-            })
-          ),
-          React.createElement("div", {
-  style: {
-    marginBottom: "15px",
-    fontSize: "13px"
-  }
-},
-  React.createElement("input", {
-    type: "checkbox",
-    checked: agreePolicy,
-    onChange: (e) => setAgreePolicy(e.target.checked),
-    style: { marginRight: "8px" }
-  }),
-  "I agree to BuildMitra Terms & Conditions and Privacy Policy"
-),
-React.createElement("button", {
-  type: "submit",
-  style: {
-    ...styles.button,
-    ...(loading ? styles.buttonDisabled : {})
-  },
-  disabled: loading
-}, loading ? "Registering..." : "Register"),
-          React.createElement("div", { style: styles.footer },
-            "Already have an account? ",
-            React.createElement("span", { 
-              style: styles.link, 
-              onClick: () => { setIsLogin(true); setError(""); setSuccess(""); }
-                       }, "Login Here")
-          )
-        )
-    )
+        <h1 style={styles.logo}>
+          BuildMitra
+        </h1>
+
+        <p style={styles.subtitle}>
+          Build Smarter. Save Bigger.
+        </p>
+
+        <div style={styles.tabs}>
+          <button
+            type="button"
+            style={{
+              ...styles.tab,
+              ...styles.activeTab
+            }}
+          >
+            Login
+          </button>
+
+          <button
+            type="button"
+            style={styles.tab}
+            onClick={() =>
+              router.push("/register")
+            }
+          >
+            Register
+          </button>
+        </div>
+
+        <h2 style={styles.title}>
+          Welcome Back
+        </h2>
+
+        <p style={styles.description}>
+          Login using your registered mobile number
+          or email.
+        </p>
+
+        {error && (
+          <div style={styles.error}>
+            {error}
+          </div>
+        )}
+
+        {success && (
+          <div style={styles.success}>
+            {success}
+          </div>
+        )}
+
+        <form onSubmit={handleLogin}>
+          <label style={styles.field}>
+            <span style={styles.label}>
+              Mobile Number or Email
+            </span>
+
+            <input
+              type="text"
+              value={loginId}
+              onChange={(event) =>
+                setLoginId(event.target.value)
+              }
+              placeholder="Enter mobile number or email"
+              autoComplete="username"
+              style={styles.input}
+              required
+            />
+          </label>
+
+          <label style={styles.field}>
+            <span style={styles.label}>
+              Password
+            </span>
+
+            <input
+              type="password"
+              value={password}
+              onChange={(event) =>
+                setPassword(event.target.value)
+              }
+              placeholder="Enter your password"
+              autoComplete="current-password"
+              style={styles.input}
+              required
+            />
+          </label>
+
+          <div style={styles.forgotRow}>
+            <button
+              type="button"
+              style={styles.linkButton}
+              onClick={() =>
+                router.push("/forgot-password")
+              }
+            >
+              Forgot Password?
+            </button>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              ...styles.loginButton,
+              ...(loading
+                ? styles.disabledButton
+                : {})
+            }}
+          >
+            {loading
+              ? "Logging in..."
+              : "Login"}
+          </button>
+        </form>
+
+        <div style={styles.divider}>
+          <span style={styles.dividerLine} />
+
+          <span style={styles.dividerText}>
+            New to BuildMitra?
+          </span>
+
+          <span style={styles.dividerLine} />
+        </div>
+
+        <button
+          type="button"
+          style={styles.registerButton}
+          onClick={() =>
+            router.push("/register")
+          }
+        >
+          Create New Account
+        </button>
+
+        <p style={styles.note}>
+          Select your subscription plan during
+          registration.
+        </p>
+
+        <button
+          type="button"
+          style={styles.homeButton}
+          onClick={() =>
+            router.push("/")
+          }
+        >
+          ← Back to Home
+        </button>
+      </section>
+    </main>
   );
 }
 
+const styles: Record<
+  string,
+  React.CSSProperties
+> = {
+  page: {
+    minHeight: "100vh",
+    display: "grid",
+    placeItems: "center",
+    padding: "18px",
+    boxSizing: "border-box",
+    background:
+      "linear-gradient(135deg, #0f4c5c 0%, #1a6f82 52%, #2c8ca3 100%)",
+    fontFamily:
+      "Arial, Helvetica, sans-serif"
+  },
 
+  card: {
+    width: "100%",
+    maxWidth: "450px",
+    boxSizing: "border-box",
+    padding: "34px 30px",
+    borderRadius: "22px",
+    background: "#ffffff",
+    boxShadow:
+      "0 25px 70px rgba(0,0,0,0.30)"
+  },
 
+  logoIcon: {
+    textAlign: "center",
+    fontSize: "46px",
+    lineHeight: 1
+  },
 
+  logo: {
+    margin: "8px 0 2px",
+    textAlign: "center",
+    color: "#7f1d1d",
+    fontSize: "30px",
+    fontWeight: 900
+  },
+
+  subtitle: {
+    margin: "0 0 24px",
+    textAlign: "center",
+    color: "#64748b",
+    fontSize: "14px"
+  },
+
+  tabs: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "5px",
+    padding: "5px",
+    marginBottom: "24px",
+    borderRadius: "12px",
+    background: "#e2e8f0"
+  },
+
+  tab: {
+    padding: "11px 10px",
+    border: "none",
+    borderRadius: "9px",
+    background: "transparent",
+    color: "#475569",
+    cursor: "pointer",
+    fontWeight: 800,
+    fontSize: "14px"
+  },
+
+  activeTab: {
+    background: "#16697a",
+    color: "#ffffff",
+    boxShadow:
+      "0 4px 12px rgba(22,105,122,0.25)"
+  },
+
+  title: {
+    margin: "0 0 6px",
+    color: "#0f172a",
+    textAlign: "center",
+    fontSize: "24px"
+  },
+
+  description: {
+    margin: "0 0 22px",
+    color: "#64748b",
+    textAlign: "center",
+    lineHeight: 1.5,
+    fontSize: "14px"
+  },
+
+  field: {
+    display: "block",
+    marginBottom: "16px"
+  },
+
+  label: {
+    display: "block",
+    marginBottom: "7px",
+    color: "#334155",
+    fontSize: "13px",
+    fontWeight: 800
+  },
+
+  input: {
+    width: "100%",
+    boxSizing: "border-box",
+    padding: "13px 14px",
+    border: "1px solid #cbd5e1",
+    borderRadius: "10px",
+    background: "#ffffff",
+    color: "#0f172a",
+    fontSize: "15px",
+    outline: "none"
+  },
+
+  forgotRow: {
+    display: "flex",
+    justifyContent: "flex-end",
+    marginTop: "-6px",
+    marginBottom: "16px"
+  },
+
+  linkButton: {
+    padding: 0,
+    border: "none",
+    background: "transparent",
+    color: "#16697a",
+    cursor: "pointer",
+    fontSize: "13px",
+    fontWeight: 800
+  },
+
+  loginButton: {
+    width: "100%",
+    padding: "14px",
+    border: "none",
+    borderRadius: "10px",
+    background: "#7f1d1d",
+    color: "#ffffff",
+    cursor: "pointer",
+    fontSize: "16px",
+    fontWeight: 900
+  },
+
+  disabledButton: {
+    opacity: 0.65,
+    cursor: "not-allowed"
+  },
+
+  error: {
+    marginBottom: "16px",
+    padding: "12px",
+    borderRadius: "9px",
+    background: "#fee2e2",
+    color: "#991b1b",
+    fontSize: "14px",
+    fontWeight: 700,
+    lineHeight: 1.5
+  },
+
+  success: {
+    marginBottom: "16px",
+    padding: "12px",
+    borderRadius: "9px",
+    background: "#dcfce7",
+    color: "#166534",
+    fontSize: "14px",
+    fontWeight: 700,
+    lineHeight: 1.5
+  },
+
+  divider: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    margin: "22px 0 16px"
+  },
+
+  dividerLine: {
+    flex: 1,
+    height: "1px",
+    background: "#e2e8f0"
+  },
+
+  dividerText: {
+    color: "#64748b",
+    fontSize: "12px",
+    whiteSpace: "nowrap"
+  },
+
+  registerButton: {
+    width: "100%",
+    padding: "13px",
+    border: "2px solid #16697a",
+    borderRadius: "10px",
+    background: "#ffffff",
+    color: "#16697a",
+    cursor: "pointer",
+    fontSize: "15px",
+    fontWeight: 900
+  },
+
+  note: {
+    margin: "12px 0 0",
+    padding: "10px",
+    borderRadius: "9px",
+    background: "#f0fdf4",
+    color: "#166534",
+    textAlign: "center",
+    fontSize: "12px",
+    lineHeight: 1.5
+  },
+
+  homeButton: {
+    display: "block",
+    width: "100%",
+    marginTop: "16px",
+    padding: "6px",
+    border: "none",
+    background: "transparent",
+    color: "#64748b",
+    cursor: "pointer",
+    fontWeight: 700
+  },
+
+  loadingText: {
+    marginTop: "14px",
+    textAlign: "center",
+    color: "#16697a",
+    fontWeight: 800
+  }
+};
 
 
 

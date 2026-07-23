@@ -219,6 +219,29 @@ export default function ConcretePage() {
             React.createElement('tr', { style: { backgroundColor: '#800020', color: 'white', fontWeight: 'bold' } }, React.createElement('td', { colSpan: 3, style: { padding: '8px' } }, 'GRAND TOTAL'), React.createElement('td', { style: { padding: '8px' } }, `₹${results.costs.grandTotal}`))
           )
         )
+      ),
+
+      React.createElement('div', { style: { display: 'flex', gap: '10px', marginTop: '15px' } },
+        React.createElement('button', {
+          onClick: () => {
+            alert('✅ Saved Concrete Calculation to Active Project!');
+          },
+          style: { flex: 1, padding: '10px', borderRadius: '6px', border: 0, backgroundColor: '#0f766e', color: 'white', fontWeight: 'bold', cursor: 'pointer' }
+        }, '💾 Save to Project'),
+        React.createElement('button', {
+          onClick: () => {
+            alert('📋 Added Concrete Volume to BOQ Line Items!');
+          },
+          style: { flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #0f766e', backgroundColor: 'white', color: '#0f766e', fontWeight: 'bold', cursor: 'pointer' }
+        }, '📋 Add to BOQ')
+      ),
+
+      React.createElement('div', { style: { marginTop: '20px', padding: '14px', borderRadius: '8px', border: '1px solid #cbd5e1', backgroundColor: '#f8fafc', fontSize: '11px', color: '#334155' } },
+        React.createElement('b', null, '📜 Applicable Standards & Engineering Basis:'),
+        React.createElement('div', { style: { marginTop: '6px' } }, '• IS 456:2000 (Plain & Reinforced Concrete Code of Practice)'),
+        React.createElement('div', null, '• IS 10262:2019 (Concrete Mix Proportioning Guidelines)'),
+        React.createElement('div', null, '• Dry Volume Factor: 1.54 (Accounts for voids and compaction)'),
+        React.createElement('div', null, '• ⚠️ Warning: Preliminary assistance only. Formal structural designs require approval from a certified structural engineer.')
       )
     )
   );

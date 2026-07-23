@@ -2,9 +2,15 @@ import DashboardHeader from "../components/DashboardHeader";
 import React, { useState } from "react";
 import * as XLSX from 'xlsx';
 import { logoutToLogin } from "../utils/session";
+const p = (obj: any) => obj;
+import { usePaymentBarrier } from "../hooks/usePaymentBarrier";
+import { useRouter } from "next/router";
 
 export default function VendorDashboard() {
-const [activeTab, setActiveTab] = useState("dashboard");
+  const router = useRouter();
+  const { checkAndRun } = usePaymentBarrier();
+
+  const [activeTab, setActiveTab] = useState("dashboard");
   const [selectedProject, setSelectedProject] = useState(1);
   const [showAddProject, setShowAddProject] = useState(false);
   const [showClaimModal, setShowClaimModal] = useState(false);

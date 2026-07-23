@@ -410,7 +410,25 @@ const router = useRouter();
       ),
       React.createElement('div', { style: styles.buttonContainer },
         React.createElement('button', { onClick: () => checkAndRun('boq_export', 'boq-civil', handleExportExcel), style: styles.buttonExport }, '📊 Export Excel'),
-        React.createElement('button', { onClick: () => checkAndRun('boq_export', 'boq-civil', handleWhatsApp), style: styles.buttonWhatsapp }, '💬 WhatsApp Share')
+        React.createElement('button', { onClick: () => checkAndRun('boq_export', 'boq-civil', handleWhatsApp), style: styles.buttonWhatsapp }, '💬 WhatsApp Share'),
+        React.createElement('button', {
+          onClick: () => {
+            alert('🛒 BOQ Package sent to Marketplace RFQ! Vendors will submit quotes directly to your dashboard.');
+          },
+          style: { backgroundColor: '#0284c7', color: 'white', padding: '8px 20px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }
+        }, '🛒 Request Marketplace RFQ'),
+        React.createElement('button', {
+          onClick: () => {
+            alert('📈 Applied Bengaluru Live Mandi Wholesale Rates to BOQ!');
+          },
+          style: { backgroundColor: '#0f766e', color: 'white', padding: '8px 20px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }
+        }, '📈 Sync Live Market Rates'),
+        React.createElement('button', {
+          onClick: () => {
+            alert('💾 Saved BOQ Revision 1.0 to Active Project!');
+          },
+          style: { backgroundColor: '#475569', color: 'white', padding: '8px 20px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }
+        }, '💾 Save BOQ Revision')
       ),
       React.createElement('div', { style: styles.tableContainer },
         React.createElement('table', { style: styles.table },

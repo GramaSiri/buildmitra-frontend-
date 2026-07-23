@@ -152,7 +152,7 @@ const migrationMarkerKey = (user: BuildMitraUser) => {
 export const getLoggedInUser = (): BuildMitraUser | null => {
   if (typeof window === "undefined") return null;
   try {
-    return JSON.parse(localStorage.getItem("loggedInUser") || "null");
+    return JSON.parse(sessionStorage.getItem("loggedInUser") || "null");
   } catch {
     return null;
   }
@@ -250,3 +250,4 @@ export const findBuyerByCode = (buyerCode: string) => {
     (user) => user.role === "buyer" && String(user.uniqueCode || "").toUpperCase() === normalizedCode
   );
 };
+

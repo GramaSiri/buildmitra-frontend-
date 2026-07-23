@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { generateBuildMitraDocument } from "../utils/documentGenerator";
+import { themeTokens, PrimaryButton, SecondaryButton, Card, Badge, LoadingSpinner, EmptyState } from "../components/ui/DesignSystem";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
 import { exportProjectReport } from "../utils/reporting";
@@ -32,7 +34,14 @@ const [showProjectModal, setShowProjectModal] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState(null);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [selectedEnquiry, setSelectedEnquiry] = useState(null);
-  const [quoteResponse, setQuoteResponse] = useState({ amount: "", message: "", deliveryDate: "" });
+  const [quoteResponse, setQuoteResponse] = useState({
+  amount: "",
+  message: "",
+  deliveryDate: "",
+  paymentTerms: "",
+  gstIncluded: false,
+  transportCharges: ""
+});
   const [invoiceAmount, setInvoiceAmount] = useState("");
   const [reportType, setReportType] = useState("payments");
   const [reportFilters, setReportFilters] = useState({ startDate: "", endDate: "", projectId: "", material: "", supplier: "", labour: "", payment: "", milestone: "", quotation: "", extraWork: "" });
@@ -150,7 +159,7 @@ useEffect(() => {
 useEffect(() => {
   if (!storageReady || !loggedInUser) return;
   const contractorId = loggedInUser.userId ?? loggedInUser.id;
-  saveProjectsForContractor, getAllProjects(contractorId, projects);
+  saveProjectsForContractor(contractorId, projects);
 }, [projects, storageReady, loggedInUser]);
 
   const [completedProjects, setCompletedProjects] = useState<any[]>([]);
@@ -162,7 +171,7 @@ useEffect(() => {
 
   const getCurrentAppUser = () => {
     try {
-      const user = JSON.parse(localStorage.getItem("currentUser") || localStorage.getItem("loggedInUser") || localStorage.getItem("user") || "{}");
+      const user = JSON.parse(sessionStorage.getItem("currentUser") || sessionStorage.getItem("loggedInUser") || sessionStorage.getItem("user") || "{}");
       const identityText = [
         user.userCode,
         user.uniqueCode,
@@ -740,11 +749,19 @@ useEffect(() => {
     try {
       const res = await fetch(API_BASE + "/api/enquiry/" + enquiryId + "/quote", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-code": providerUserCode
+        },
         body: JSON.stringify({
-          quotedAmount: Number(quoteResponse.amount),
-          quoteMessage: quoteResponse.message || "Please contact us for quote details"
-        })
+  quotedAmount: Number(quoteResponse.amount),
+  quoteMessage:
+    quoteResponse.message || "Please contact us for quote details",
+  quoteValidityDate: quoteResponse.deliveryDate || "",
+  paymentTerms: quoteResponse.paymentTerms || "",
+  gstIncluded: quoteResponse.gstIncluded,
+  transportCharges: Number(quoteResponse.transportCharges) || 0
+})
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
@@ -760,7 +777,14 @@ useEffect(() => {
         createdAt: new Date().toISOString().split("T")[0]
       }]);
       setShowQuoteModal(false);
-      setQuoteResponse({ amount: "", message: "", deliveryDate: "" });
+      setQuoteResponse({
+  amount: "",
+  message: "",
+  deliveryDate: "",
+  paymentTerms: "",
+  gstIncluded: false,
+  transportCharges: ""
+});
       await fetchLiveEnquiries();
       alert("Quote sent successfully!");
     } catch (err) {
@@ -1108,6 +1132,52 @@ useEffect(() => {
           React.createElement("label", { style: styles.label }, "Start Date"),
           React.createElement("input", { type: "date", value: reportFilters.startDate, onChange: (e) => setReportFilters({...reportFilters, startDate: e.target.value}), style: styles.input })
         ),
+React.createElement("input", {
+  type: "text",
+  placeholder: "Payment Terms, for example: 30% advance",
+  value: quoteResponse.paymentTerms,
+  onChange: (e) =>
+    setQuoteResponse({
+      ...quoteResponse,
+      paymentTerms: e.target.value
+    }),
+  style: styles.input
+}),
+
+React.createElement("input", {
+  type: "number",
+  min: "0",
+  placeholder: "Transport Charges (₹)",
+  value: quoteResponse.transportCharges,
+  onChange: (e) =>
+    setQuoteResponse({
+      ...quoteResponse,
+      transportCharges: e.target.value
+    }),
+  style: styles.input
+}),
+
+React.createElement(
+  "label",
+  {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: "8px",
+      marginBottom: "12px"
+    }
+  },
+  React.createElement("input", {
+    type: "checkbox",
+    checked: quoteResponse.gstIncluded,
+    onChange: (e) =>
+      setQuoteResponse({
+        ...quoteResponse,
+        gstIncluded: e.target.checked
+      })
+  }),
+  "GST included in quoted amount"
+),
         React.createElement("div", null,
           React.createElement("label", { style: styles.label }, "End Date"),
           React.createElement("input", { type: "date", value: reportFilters.endDate, onChange: (e) => setReportFilters({...reportFilters, endDate: e.target.value}), style: styles.input })
@@ -1498,7 +1568,156 @@ useEffect(() => {
     const updated = [...companyQuotes, quote];
     setCompanyQuotes(updated);
     localStorage.setItem("contractorCompanyQuotes", JSON.stringify(updated));
-    alert("Quotation saved. PDF upload/generation will be connected next.");
+    generateBuildMitraDocument({
+  documentType: "QUOTATION",
+  documentNumber: newQuote.quoteCode || newQuote.quotationCode || newQuote.id,
+  date: new Date().toLocaleDateString("en-IN"),
+
+  providerName:
+    currentUser?.companyName ||
+    currentUser?.businessName ||
+    currentUser?.name ||
+    "BuildMitra Contractor",
+
+  providerCode:
+    currentUser?.userCode ||
+    currentUser?.uniqueCode ||
+    "",
+
+  providerPhone:
+    currentUser?.phone ||
+    currentUser?.mobile ||
+    "",
+
+  providerEmail: currentUser?.email || "",
+  providerAddress: currentUser?.address || "",
+  providerGstin: currentUser?.gstNo || currentUser?.gstin || "",
+
+  customerName:
+    newQuote.customerName ||
+    newQuote.buyerName ||
+    selectedEnquiry?.buyerName ||
+    "Customer",
+
+  customerCode:
+    newQuote.buyerUserCode ||
+    selectedEnquiry?.buyerUserCode ||
+    "",
+
+  customerPhone:
+    newQuote.customerPhone ||
+    newQuote.buyerPhone ||
+    selectedEnquiry?.buyerPhone ||
+    "",
+
+  customerAddress:
+    newQuote.location ||
+    selectedEnquiry?.location ||
+    "",
+
+  projectName:
+    newQuote.projectName ||
+    selectedEnquiry?.projectName ||
+    "",
+
+  subject:
+    newQuote.title ||
+    newQuote.itemName ||
+    selectedEnquiry?.itemName ||
+    "Quotation",
+
+  items: [
+    {
+      description:
+        newQuote.itemName ||
+        selectedEnquiry?.itemName ||
+        newQuote.title ||
+        "Quotation Item",
+
+      quantity:
+        newQuote.quantity ||
+        selectedEnquiry?.quantity ||
+        1,
+
+      unit:
+        newQuote.unit ||
+        selectedEnquiry?.unit ||
+        "Job",
+
+      rate:
+        newQuote.rate ||
+        newQuote.amount ||
+        0,
+
+      gst:
+        newQuote.gst ||
+        newQuote.gstPercent ||
+        0,
+
+      amount:
+        newQuote.totalAmount ||
+        newQuote.amount ||
+        newQuote.rate ||
+        0
+    }
+  ],
+
+  subtotal:
+    Number(
+      newQuote.subtotal ||
+      newQuote.amount ||
+      newQuote.totalAmount ||
+      0
+    ),
+
+  discount: Number(newQuote.discount || 0),
+
+  deliveryCharge: Number(
+    newQuote.deliveryCharge ||
+    newQuote.transportCharge ||
+    0
+  ),
+
+  gstAmount: Number(
+    newQuote.gstAmount ||
+    0
+  ),
+
+  grandTotal: Number(
+    newQuote.grandTotal ||
+    newQuote.totalAmount ||
+    newQuote.amount ||
+    0
+  ),
+
+  validity:
+    newQuote.validity ||
+    "15 days",
+
+  deliveryTerms:
+    newQuote.deliveryTerms ||
+    newQuote.deliveryTime ||
+    "",
+
+  paymentTerms:
+    newQuote.paymentTerms ||
+    "",
+
+  notes:
+    newQuote.notes ||
+    newQuote.specification ||
+    selectedEnquiry?.specification ||
+    "",
+
+  fileName:
+    `BuildMitra-Quotation-${
+      newQuote.quoteCode ||
+      newQuote.quotationCode ||
+      Date.now()
+    }`
+});
+
+alert("Quotation saved and PDF downloaded successfully.");
   };
 
   const saveCompanyProfile = () => {
@@ -1890,4 +2109,6 @@ useEffect(() => {
     )
   );
 }
+
+
 

@@ -13,7 +13,7 @@ const roleType: Record<string, string> = {
 function getCurrentUser() {
   if (typeof window === "undefined") return {};
   try {
-    return JSON.parse(localStorage.getItem("currentUser") || localStorage.getItem("loggedInUser") || localStorage.getItem("user") || "{}");
+    return JSON.parse(sessionStorage.getItem("currentUser") || sessionStorage.getItem("loggedInUser") || sessionStorage.getItem("user") || "{}");
   } catch {
     return {};
   }
@@ -257,6 +257,7 @@ const styles: Record<string, React.CSSProperties> = {
   sectionTitle: { margin: "0 0 12px", fontSize: 20 },
   requestGrid: { display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8 },
 };
+
 
 
 

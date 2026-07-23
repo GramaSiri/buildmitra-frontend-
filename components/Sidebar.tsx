@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
-import { clearBuildMitraSession } from "../utils/session";
+import { clearBuildMitraSession, getBuildMitraUser } from "../utils/session";
 
 const styles = {
   sidebar: {
@@ -195,7 +195,7 @@ const styles = {
   }
 };
 
-export default function Sidebar({ children, currentPath }) {
+export default function Sidebar({ children, currentPath }: { children?: any; currentPath?: any }) {
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const [hoveredItem, setHoveredItem] = useState(null);
@@ -230,6 +230,7 @@ export default function Sidebar({ children, currentPath }) {
   if (role === "buyer") { dashboardName = "Buyer Dashboard"; dashboardIcon = "👤"; }
   else if (role === "supplier") { dashboardName = "Supplier Dashboard"; dashboardIcon = "📦"; }
   else if (role === "contractor") { dashboardName = "Contractor Dashboard"; dashboardIcon = "👷"; }
+  else if (role === "realestate") { dashboardName = "Real Estate Dashboard";dashboardIcon = "🏢"; }
   else if (role === "admin") { dashboardName = "Admin Dashboard"; dashboardIcon = "👑"; }
 
   // ---------------- CALCULATORS ----------------
@@ -272,7 +273,9 @@ export default function Sidebar({ children, currentPath }) {
     { name: "Layout Plans", icon: "🗺️", path: "/layout-plans" },
     { name: "Learn & Earn", icon: "📚", path: "/learn-earn" },
     { name: "Real Estate Hub", icon: "🏘️", path: "/realestate-hub" },
-    { name: "Pricing", icon: "💰", path: "/pricing" }
+    { name: "Pricing", icon: "💰", path: "/pricing" },
+    { name: "Live Rates", icon: "📈", path: "/live-rates" },
+    { name: "Reports Hub", icon: "📑", path: "/reports" }
   ];
 
   useEffect(() => {
@@ -301,17 +304,17 @@ const [uniqueCode, setUniqueCode] = useState("");
 useEffect(() => {
   setMounted(true);
 
-  const storedName = localStorage.getItem("userName");
-  const storedRole = localStorage.getItem("userRole");
-  const storedCode = localStorage.getItem("uniqueCode");
+  const storedName = sessionStorage.getItem("userName");
+  const storedRole = sessionStorage.getItem("userRole");
+  const storedCode = sessionStorage.getItem("uniqueCode");
   let sessionUser: any = null;
   try {
-    sessionUser = JSON.parse(localStorage.getItem("loggedInUser") || "null");
+    sessionUser = getBuildMitraUser();
   } catch {}
 
   if (storedName || sessionUser?.name) setUserName(storedName || sessionUser.name);
-  if (storedRole || sessionUser?.role) setUserRole(storedRole || sessionUser.role);
-  if (storedCode || sessionUser?.uniqueCode) setUniqueCode(storedCode || sessionUser.uniqueCode);
+  if (storedRole || sessionUser?.businessRole || sessionUser?.role) setUserRole(storedRole || sessionUser.businessRole || sessionUser.role);
+  if (storedCode || sessionUser?.userCode || sessionUser?.uniqueCode) setUniqueCode(storedCode || sessionUser.userCode || sessionUser.uniqueCode);
 }, []);
 
 if (!mounted) {
@@ -323,8 +326,8 @@ const mobileDashboardPath =
   userRole?.toLowerCase() === "supplier" ? "/supplier-dashboard" :
   userRole?.toLowerCase() === "admin" ? "/admin-dashboard" :
   userRole?.toLowerCase() === "realestate" ? "/realestate-dashboard" :
-  userRole?.toLowerCase() === "machinery" ? "/machinehire-dashboard" :
-  userRole?.toLowerCase() === "labour" ? "/laboursupply-dashboard" :
+  ["machinehire", "machinery", "equipment"].includes(userRole?.toLowerCase()) ? "/machinehire-dashboard" :
+  ["laboursupply", "labour"].includes(userRole?.toLowerCase()) ? "/laboursupply-dashboard" :
   "/contractor-dashboard";
 
 const mobileTabs = [
@@ -539,9 +542,9 @@ if (isMobile) {
         go("/admin-dashboard");
       } else if (userRole?.toLowerCase() === "realestate") {
         go("/realestate-dashboard");
-      } else if (userRole?.toLowerCase() === "machinery") {
+      } else if (["machinehire", "machinery", "equipment"].includes(userRole?.toLowerCase())) {
         go("/machinehire-dashboard");
-      } else if (userRole?.toLowerCase() === "labour") {
+      } else if (["laboursupply", "labour"].includes(userRole?.toLowerCase())) {
         go("/laboursupply-dashboard");
       } else {
         go("/contractor-dashboard");
@@ -644,6 +647,11 @@ if (isMobile) {
     </div>
   );
 }
+
+
+
+
+
 
 
 

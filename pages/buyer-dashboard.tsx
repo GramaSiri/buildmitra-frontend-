@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { exportProjectReport } from "../utils/reporting";
 import { DEFAULT_PROJECT_PERMISSIONS, getLoggedInUser, migrateLegacyProjects, saveProjectsForBuyer } from "../utils/projectStorage";
 import { logoutToLogin } from "../utils/session";
+import { themeTokens, PrimaryButton, SecondaryButton, Card, Badge, LoadingSpinner, EmptyState } from "../components/ui/DesignSystem";
 
 export default function BuyerDashboard() {
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
@@ -10,7 +11,7 @@ const isReadOnly = false;
     alert("Buyer access is read-only. Project records can only be updated by the assigned contractor.");
   };
   const [activeTab, setActiveTab] = useState("dashboard");
-  const [selectedProject, setSelectedProject] = useState(null);
+  const [selectedProject, setSelectedProject] = useState<any>(null);
   const [showAddProject, setShowAddProject] = useState(false);
   const [showMaterialModal, setShowMaterialModal] = useState(false);
   const [showMediaModal, setShowMediaModal] = useState(false);
@@ -186,7 +187,7 @@ const isReadOnly = false;
 
   const getCurrentAppUser = () => {
     try {
-      return JSON.parse(localStorage.getItem("currentUser") || localStorage.getItem("loggedInUser") || localStorage.getItem("user") || "{}");
+      return JSON.parse((sessionStorage.getItem("currentUser") || sessionStorage.getItem("currentUser")) || (sessionStorage.getItem("loggedInUser") || sessionStorage.getItem("loggedInUser")) || (sessionStorage.getItem("user") || sessionStorage.getItem("user")) || "{}");
     } catch {
       return {};
     }
@@ -201,7 +202,14 @@ const isReadOnly = false;
           setSentEnquiries([]);
           return;
         }
-        const res = await fetch(API_BASE + "/api/enquiry?buyerUserCode=" + encodeURIComponent(buyerUserCode));
+        const res = await fetch(
+          API_BASE + "/api/enquiry?buyerUserCode=" + encodeURIComponent(buyerUserCode),
+          {
+            headers: {
+              "x-user-code": buyerUserCode
+            }
+          }
+        );
         const data = await res.json();
         if (data.success) {
           setSentEnquiries((data.enquiries || []).map((e: any) => ({
@@ -899,8 +907,8 @@ const isReadOnly = false;
     { id: "progress", name: "Progress" },
     { id: "extrawork", name: "Extra Works" },
     { id: "labour", name: "Labour" },
-    { id: "quotations", name: "Quotations" },
-    { id: "enquiries", name: "Enquiries" },
+    { id: "quotations", name: "Project Quotations" },
+    { id: "enquiries", name: "Marketplace Enquiries & Quotes" },
     { id: "reports", name: "Reports" }
   ];
 
@@ -1428,8 +1436,8 @@ const isReadOnly = false;
       React.createElement("div", { style: { display: "flex", gap: "8px", flexWrap: "wrap" } },
         React.createElement("button", { onClick: () => setActiveTab("dashboard"), style: styles.button }, "Dashboard"),
         React.createElement("button", { onClick: () => window.location.href = "/marketplace", style: styles.buttonInfo }, "Marketplace"),
-        React.createElement("button", { onClick: () => setActiveTab("enquiries"), style: styles.buttonSuccess }, "Enquiries"),
-        React.createElement("button", { onClick: () => setActiveTab("quotations"), style: styles.buttonWarning }, "Quotes"),
+        React.createElement("button", { onClick: () => setActiveTab("enquiries"), style: styles.buttonSuccess }, "Marketplace Enquiries & Quotes"),
+        React.createElement("button", { onClick: () => setActiveTab("quotations"), style: styles.buttonWarning }, "Project Quotations"),
         React.createElement("button", { onClick: () => checkAndRun('calculator_export', 'buyer-dashboard', shareWhatsApp), style: styles.buttonSuccess }, "📱 Share Update"),
         React.createElement("button", { onClick: logoutToLogin, style: { ...styles.button, backgroundColor: "#dc3545" } }, "🚪 Logout")
       )
@@ -1682,6 +1690,12 @@ const isReadOnly = false;
     )
   );
 }
+
+
+
+
+
+
 
 
 

@@ -38,8 +38,8 @@ function safeJson<T>(value: string | null, fallback: T): T {
 export function getCurrentUser(): any | null {
   if (typeof window === "undefined") return null;
   return (
-    safeJson(localStorage.getItem("loggedInUser"), null) ||
-    safeJson(localStorage.getItem("currentUser"), null) ||
+    safeJson(sessionStorage.getItem("loggedInUser"), null) ||
+    safeJson(sessionStorage.getItem("currentUser"), null) ||
     safeJson(localStorage.getItem("buildmitraUser"), null)
   );
 }
@@ -154,3 +154,4 @@ export function featureLabel(featureType: FeatureType): string {
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
 }
+

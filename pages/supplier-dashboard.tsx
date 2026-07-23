@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
 import * as XLSX from 'xlsx';
 import { logoutToLogin } from "../utils/session";
+import { themeTokens, PrimaryButton, SecondaryButton, Card, Badge, LoadingSpinner, EmptyState } from "../components/ui/DesignSystem";
+
+const p = (obj: any) => obj;
 
 export default function SupplierDashboard() {
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
@@ -36,14 +39,40 @@ const [userName, setUserName] = useState("Supplier");
   useEffect(() => {
     setIsClient(true);
     
-    const user = localStorage.getItem("currentUser") || localStorage.getItem("loggedInUser") || localStorage.getItem("user");
+    const user = (sessionStorage.getItem("currentUser") || sessionStorage.getItem("currentUser")) || (sessionStorage.getItem("loggedInUser") || sessionStorage.getItem("loggedInUser")) || (sessionStorage.getItem("user") || sessionStorage.getItem("user"));
     if (user) {
       const userData = JSON.parse(user);
-      setUserName(userData.name);
-      setUserId(userData.userId);
-      console.log("✅ User loaded with userId:", userData.userId);
-      loadUserData(userData.userId);
-      loadLiveQuoteRequests(userData);
+      const resolvedUserCode =
+        userData.userCode ||
+        userData.uniqueCode ||
+        (sessionStorage.getItem("uniqueCode") || sessionStorage.getItem("uniqueCode")) ||
+        "";
+
+      const resolvedUserId =
+        resolvedUserCode ||
+        userData.userId ||
+        userData.id ||
+        userData._id ||
+        "";
+
+      const normalizedUser = {
+        ...userData,
+        userCode: resolvedUserCode,
+        uniqueCode: resolvedUserCode,
+        userId: resolvedUserId
+      };
+
+      setUserName(userData.name || "Supplier");
+      setUserId(resolvedUserId);
+
+      console.log("✅ Supplier identity loaded:", {
+        userCode: resolvedUserCode,
+        userId: resolvedUserId,
+        mongoId: userData.id || userData._id || ""
+      });
+
+      loadUserData(resolvedUserId);
+      loadLiveQuoteRequests(normalizedUser);
     }
   }, []);
 
@@ -69,7 +98,14 @@ const [userName, setUserName] = useState("Supplier");
         setQuoteRequests([]);
         return;
       }
-      const res = await fetch(API_BASE + "/api/enquiry?providerUserCode=" + encodeURIComponent(providerUserCode));
+      const res = await fetch(
+        API_BASE + "/api/enquiry?providerUserCode=" + encodeURIComponent(providerUserCode),
+        {
+          headers: {
+            "x-user-code": providerUserCode
+          }
+        }
+      );
       const data = await res.json();
       if (data.success) {
         setQuoteRequests((data.enquiries || []).map(mapMongoQuoteRequest));
@@ -99,22 +135,68 @@ const [userName, setUserName] = useState("Supplier");
 
   // State
   const [supplierInfo, setSupplierInfo] = useState({
-    shopName: "",
-    ownerName: "",
-    shopPhotoUrl: null,
-    businessCardUrl: null,
-    gstNo: "",
-    address: "",
-    phone: "",
-    email: "",
-    since: new Date().getFullYear().toString(),
-    rating: 0,
-    totalOrdersCompleted: 0,
-    totalRevenue: 0,
-    activeOffers: 0,
-    totalProducts: 0,
-    totalEnquiries: 0
-  });
+  // Existing
+  shopName: "",
+  ownerName: "",
+  shopPhotoUrl: null,
+  businessCardUrl: null,
+  gstNo: "",
+  address: "",
+  phone: "",
+  email: "",
+  since: new Date().getFullYear().toString(),
+  rating: 0,
+  totalOrdersCompleted: 0,
+  totalRevenue: 0,
+  activeOffers: 0,
+  totalProducts: 0,
+  totalEnquiries: 0,
+
+  // ===== Professional Company Profile =====
+  companyName: "",
+  companyLogo: "",
+  companyLetterhead: "",
+  companySeal: "",
+  digitalSignature: "",
+
+  panNo: "",
+  msmeNo: "",
+  tradeLicenseNo: "",
+  isoCertificateNo: "",
+
+  bankName: "",
+  accountName: "",
+  accountNumber: "",
+  ifscCode: "",
+  branchName: "",
+  upiId: "",
+  qrCode: "",
+
+  paymentTerms:
+    "100% payment before dispatch",
+
+  deliveryTerms:
+    "Delivery at site subject to road accessibility.",
+
+  warrantyPolicy:
+    "Manufacturer warranty applicable.",
+
+  replacementPolicy:
+    "Damaged materials must be reported within 24 hours of delivery.",
+
+  quotationValidity:
+    "7 Days",
+
+  standardTerms:
+`1. Prices are subject to GST.
+2. Freight extra unless mentioned.
+3. Material once sold cannot be returned.
+4. Subject to Bengaluru jurisdiction.`,
+
+  companyBrochure: "",
+  standardQuotation: "",
+  standardProposal: ""
+});
 
   const [products, setProducts] = useState([]);
   const [offers, setOffers] = useState([]);
@@ -139,9 +221,9 @@ const [userName, setUserName] = useState("Supplier");
     
     // Get current user info
     const user =
-      JSON.parse(localStorage.getItem("currentUser") || "null") ||
-      JSON.parse(localStorage.getItem("loggedInUser") || "null") ||
-      JSON.parse(localStorage.getItem("user") || "{}");
+      JSON.parse((sessionStorage.getItem("currentUser") || sessionStorage.getItem("currentUser")) || "null") ||
+      JSON.parse((sessionStorage.getItem("loggedInUser") || sessionStorage.getItem("loggedInUser")) || "null") ||
+      JSON.parse((sessionStorage.getItem("user") || sessionStorage.getItem("user")) || "{}");
     const supplierInfoData =
       JSON.parse(localStorage.getItem("supplierInfo_" + (user.userCode || user.userId || user.id || user.phone || userId || "supplier")) || "{}");
     
@@ -205,9 +287,9 @@ const [userName, setUserName] = useState("Supplier");
         
         // Get current user info
         const user =
-      JSON.parse(localStorage.getItem("currentUser") || "null") ||
-      JSON.parse(localStorage.getItem("loggedInUser") || "null") ||
-      JSON.parse(localStorage.getItem("user") || "{}");
+      JSON.parse((sessionStorage.getItem("currentUser") || sessionStorage.getItem("currentUser")) || "null") ||
+      JSON.parse((sessionStorage.getItem("loggedInUser") || sessionStorage.getItem("loggedInUser")) || "null") ||
+      JSON.parse((sessionStorage.getItem("user") || sessionStorage.getItem("user")) || "{}");
         const supplierInfoData =
       JSON.parse(localStorage.getItem("supplierInfo_" + (user.userCode || user.userId || user.id || user.phone || userId || "supplier")) || "{}");
         const ownerName = supplierInfoData.shopName || user.name || "Supplier";
@@ -347,7 +429,7 @@ const [userName, setUserName] = useState("Supplier");
     { id: "products", name: "Products", icon: "📦" },
     { id: "offers", name: "Offers", icon: "🏷️" },
     { id: "orders", name: "Orders", icon: "🛒" },
-    { id: "quotes", name: "Quote Requests", icon: "💬" },
+    { id: "quotes", name: "Enquiries", icon: "💬" },
     { id: "analytics", name: "Analytics", icon: "📈" }
   ];
 
@@ -414,34 +496,129 @@ const [userName, setUserName] = useState("Supplier");
   };
 
   const submitQuote = async (enquiryId) => {
-    if (!quoteResponse.price) {
-      alert("Please enter your price");
-      return;
-    }
-    try {
-      const res = await fetch(API_BASE + "/api/enquiry/" + enquiryId + "/quote", {
+  const enquiryMongoId =
+    enquiryId ||
+    selectedQuoteRequest?.id ||
+    selectedQuoteRequest?._id ||
+    "";
+
+  if (!enquiryMongoId) {
+    alert("Enquiry ID is missing. Please refresh the dashboard.");
+    return;
+  }
+
+  if (!quoteResponse.price) {
+    alert("Please enter your price");
+    return;
+  }
+
+  try {
+    const res = await fetch(
+      API_BASE + "/api/enquiry/" + enquiryMongoId + "/quote",
+      {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-code": userId
+        },
         body: JSON.stringify({
           quotedAmount: Number(quoteResponse.price),
-          quoteMessage: quoteResponse.notes || "Please contact us for quote details"
+          quoteMessage:
+            quoteResponse.notes ||
+            "Please contact us for quotation details",
+          quoteValidityDate: quoteResponse.deliveryDate || "",
+          paymentTerms: "As mutually agreed",
+          gstIncluded: false,
+          transportCharges: 0
         })
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        alert(data.message || "Quote could not be sent");
-        return;
       }
-      const currentUser = JSON.parse(localStorage.getItem("currentUser") || localStorage.getItem("loggedInUser") || "{}");
-      await loadLiveQuoteRequests(currentUser);
-      setShowQuoteModal(false);
-      setQuoteResponse({ price: "", deliveryDate: "", notes: "" });
-      alert("Quote sent!");
-    } catch (err) {
-      console.log("Supplier quote failed", err);
-      alert("Quote could not be sent");
+    );
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok || !data.success) {
+      alert(data.message || "Quote could not be sent");
+      return;
     }
-  };
+
+    const savedEnquiry = data.enquiry || selectedQuoteRequest;
+
+    const cleanPhone = (phone) =>
+      String(phone || "")
+        .replace(/\D/g, "")
+        .replace(/^91/, "");
+
+    const buyerPhone = cleanPhone(
+      savedEnquiry.buyerPhone ||
+      selectedQuoteRequest?.buyerPhone
+    );
+
+    const supplierName =
+      savedEnquiry.providerName ||
+      selectedQuoteRequest?.providerName ||
+      userName ||
+      "BuildMitra Supplier";
+
+    const quoteMessage =
+`🏗️ BUILDMITRA OFFICIAL QUOTATION
+
+Enquiry No: ${savedEnquiry.enquiryCode || selectedQuoteRequest?.enquiryCode || "-"}
+
+Supplier:
+${supplierName}
+
+Buyer:
+${savedEnquiry.buyerName || selectedQuoteRequest?.buyerName || "-"}
+
+Requirement:
+${savedEnquiry.itemName || selectedQuoteRequest?.itemName || "-"}
+Quantity: ${savedEnquiry.quantity || selectedQuoteRequest?.quantity || "-"} ${savedEnquiry.unit || selectedQuoteRequest?.unit || ""}
+Location: ${savedEnquiry.location || selectedQuoteRequest?.location || "-"}
+
+Quoted Amount:
+₹${quoteResponse.price}
+
+Delivery / Validity:
+${quoteResponse.deliveryDate || "As per availability"}
+
+Remarks:
+${quoteResponse.notes || "Please contact us for quotation details"}
+
+Thank you,
+BuildMitra Marketplace`;
+
+    const currentUser = JSON.parse(
+      (sessionStorage.getItem("currentUser") || sessionStorage.getItem("currentUser")) ||
+      (sessionStorage.getItem("loggedInUser") || sessionStorage.getItem("loggedInUser")) ||
+      (sessionStorage.getItem("user") || sessionStorage.getItem("user")) ||
+      "{}"
+    );
+
+    await loadLiveQuoteRequests(currentUser);
+
+    setShowQuoteModal(false);
+    setSelectedQuoteRequest(null);
+    setQuoteResponse({
+      price: "",
+      deliveryDate: "",
+      notes: ""
+    });
+
+    if (buyerPhone) {
+      window.open(
+        `https://wa.me/91${buyerPhone}?text=${encodeURIComponent(quoteMessage)}`,
+        "_blank"
+      );
+
+      alert("Quote saved in enquiry database. WhatsApp opened to buyer.");
+    } else {
+      alert("Quote saved, but buyer WhatsApp number is missing.");
+    }
+  } catch (err) {
+    console.log("Supplier quote failed", err);
+    alert("Quote could not be sent. Please check the backend connection.");
+  }
+};
 
   // Render functions
   const renderOverview = () => {
@@ -526,7 +703,7 @@ const [userName, setUserName] = useState("Supplier");
   };
 
   const renderQuoteRequests = () => React.createElement("div", { style: styles.card },
-    React.createElement("div", { style: styles.cardTitle }, "Quote Requests"),
+    React.createElement("div", { style: styles.cardTitle }, "Enquiries"),
     React.createElement("div", { style: { overflowX: "auto" } },
       React.createElement("table", { style: styles.table },
         React.createElement("thead", null,
@@ -593,7 +770,6 @@ const [userName, setUserName] = useState("Supplier");
         React.createElement("button", { onClick: () => window.location.href = "/provider-select-items", style: styles.buttonSuccess }, "Select Items & Rates"),
         React.createElement("button", { onClick: () => window.location.href = "/marketplace", style: styles.buttonInfo }, "Marketplace"),
         React.createElement("button", { onClick: () => setActiveTab("quotes"), style: styles.buttonSuccess }, "Enquiries"),
-        React.createElement("button", { onClick: () => setActiveTab("quotes"), style: styles.buttonWarning }, "Quotes"),
         React.createElement("button", { onClick: logoutToLogin, style: { ...styles.buttonDanger } }, "🚪 Logout")
       )
     ),
@@ -671,12 +847,19 @@ const [userName, setUserName] = useState("Supplier");
         React.createElement("p", null, selectedQuoteRequest.itemName, " - ", selectedQuoteRequest.quantity),
         React.createElement("input", { type: "number", placeholder: "Quoted Amount (₹)", value: quoteResponse.price, onChange: (e) => setQuoteResponse({...quoteResponse, price: e.target.value}), style: styles.input }),
         React.createElement("input", { type: "date", value: quoteResponse.deliveryDate, onChange: (e) => setQuoteResponse({...quoteResponse, deliveryDate: e.target.value}), style: styles.input }),
-        React.createElement("textarea", { placeholder: "Message", value: quoteResponse.notes, onChange: (e) => setQuoteResponse({...quoteResponse, notes: e.target.value}), style: styles.textarea }),
+        React.createElement("textarea", { placeholder: "Message", value: quoteResponse.notes, onChange: (e) => setQuoteResponse({...quoteResponse, notes: e.target.value}), style: styles.input }),
         React.createElement("button", { onClick: () => submitQuote(selectedQuoteRequest.id), style: { ...styles.buttonSuccess, width: "100%" } }, "Send Quote")
       )
     )
   );
 }
+
+
+
+
+
+
+
 
 
 

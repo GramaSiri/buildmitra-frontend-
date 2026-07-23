@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { logoutToLogin } from "../utils/session";
+import { getBuildMitraUser, logoutToLogin } from "../utils/session";
+import { themeTokens, PrimaryButton, SecondaryButton, Card, Badge, LoadingSpinner, EmptyState } from "../components/ui/DesignSystem";
+
+const p = (obj: any) => obj;
 
 export default function RealEstateDashboard() {
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
@@ -24,13 +27,7 @@ const [activeTab, setActiveTab] = useState("overview");
   
   const [properties, setProperties] = useState([]);
 
-  const getCurrentAppUser = () => {
-    try {
-      return JSON.parse(localStorage.getItem("currentUser") || localStorage.getItem("loggedInUser") || localStorage.getItem("user") || "{}");
-    } catch {
-      return {};
-    }
-  };
+  const getCurrentAppUser = () => getBuildMitraUser() || {};
 
   const mapMongoEnquiry = (e) => ({
     id: e._id,
@@ -42,7 +39,9 @@ const [activeTab, setActiveTab] = useState("overview");
     quantity: e.quantity || "",
     location: e.location || "",
     requirement: e.specification || e.message || "",
-    status: e.status || "Pending",
+    status: e.status || "Approved",
+    adminApprovalStatus: e.adminApprovalStatus || "approved",
+    contactReleased: Boolean(e.contactReleased),
     quotedAmount: e.quotedAmount || "",
     quoteMessage: e.quoteMessage || ""
   });
@@ -55,11 +54,16 @@ const [activeTab, setActiveTab] = useState("overview");
         setLiveEnquiries([]);
         return;
       }
-      const res = await fetch(API_BASE + "/api/enquiry?providerUserCode=" + encodeURIComponent(providerUserCode));
+
+      const res = await fetch(API_BASE + "/api/enquiry/provider/my", {
+        headers: { "x-user-code": providerUserCode },
+      });
       const data = await res.json();
-      if (data.success) setLiveEnquiries((data.enquiries || []).map(mapMongoEnquiry));
+      if (!res.ok || !data.success) throw new Error(data.message || "Unable to load released enquiries");
+      setLiveEnquiries((data.enquiries || []).map(mapMongoEnquiry));
     } catch (err) {
       console.log("Real estate enquiries not loaded", err);
+      setLiveEnquiries([]);
     }
   };
 
@@ -74,9 +78,9 @@ const [activeTab, setActiveTab] = useState("overview");
             { key: "northSouth", label: "North to South (ft)", type: "number", required: true },
             { key: "roadFacing", label: "Road Facing", type: "select", options: ["East", "West", "North", "South", "Corner"], required: true },
             { key: "roadWidth", label: "Road Width (ft)", type: "number", required: true },
-            { key: "ratePerSft", label: "Rate per sq.ft (₹)", type: "number", required: true },
+            { key: "ratePerSft", label: "Rate per sq.ft (â‚¹)", type: "number", required: true },
             { key: "totalArea", label: "Total Area (sq.ft)", type: "number", required: true, readonly: true, calculated: true },
-            { key: "totalAmount", label: "Total Amount (₹)", type: "number", required: true, readonly: true, calculated: true }
+            { key: "totalAmount", label: "Total Amount (â‚¹)", type: "number", required: true, readonly: true, calculated: true }
           ]
         };
       case "agriculture":
@@ -90,8 +94,8 @@ const [activeTab, setActiveTab] = useState("overview");
             { key: "soilType", label: "Soil Type", type: "select", options: ["Black", "Red", "Sandy", "Clay", "Loam", "Mixed"], required: true },
             { key: "waterSource", label: "Water Source", type: "select", options: ["Borewell", "Open Well", "River", "Canal", "Rainfed"], required: true },
             { key: "roadAccess", label: "Road Access", type: "select", options: ["Metalled Road", "Kutcha Road", "No Road"], required: true },
-            { key: "ratePerAcre", label: "Rate per Acre (₹)", type: "number", required: true },
-            { key: "totalAmount", label: "Total Amount (₹)", type: "number", required: true, readonly: true, calculated: true }
+            { key: "ratePerAcre", label: "Rate per sq.ft (â‚¹)", type: "number", required: true },
+            { key: "totalAmount", label: "Total Amount (â‚¹)", type: "number", required: true, readonly: true, calculated: true }
           ]
         };
       case "farmland":
@@ -105,8 +109,8 @@ const [activeTab, setActiveTab] = useState("overview");
             { key: "cropType", label: "Crop Type", type: "select", options: ["Coconut", "Arecanut", "Rubber", "Tea", "Coffee", "Mixed Crops", "Dry Land"], required: true },
             { key: "irrigation", label: "Irrigation Facility", type: "select", options: ["Drip", "Sprinkler", "Flood", "Rainfed", "Well"], required: true },
             { key: "fencing", label: "Fencing", type: "select", options: ["Barbed Wire", "Stone Wall", "Live Hedge", "No Fencing"], required: true },
-            { key: "ratePerAcre", label: "Rate per Acre (₹)", type: "number", required: true },
-            { key: "totalAmount", label: "Total Amount (₹)", type: "number", required: true, readonly: true, calculated: true }
+            { key: "ratePerAcre", label: "Rate per sq.ft (â‚¹)", type: "number", required: true },
+            { key: "totalAmount", label: "Total Amount (â‚¹)", type: "number", required: true, readonly: true, calculated: true }
           ]
         };
       case "revenue":
@@ -116,8 +120,8 @@ const [activeTab, setActiveTab] = useState("overview");
             { key: "siteNumber", label: "Site Number", type: "text", required: true },
             { key: "surveyNumber", label: "Survey Number", type: "text", required: true },
             { key: "totalArea", label: "Total Area (sq.ft)", type: "number", required: true },
-            { key: "ratePerSft", label: "Rate per sq.ft (₹)", type: "number", required: true },
-            { key: "totalAmount", label: "Total Amount (₹)", type: "number", required: true, readonly: true, calculated: true },
+            { key: "ratePerSft", label: "Rate per sq.ft (â‚¹)", type: "number", required: true },
+            { key: "totalAmount", label: "Total Amount (â‚¹)", type: "number", required: true, readonly: true, calculated: true },
             { key: "roadFacing", label: "Road Facing", type: "select", options: ["East", "West", "North", "South", "Corner"], required: true },
             { key: "roadWidth", label: "Road Width (ft)", type: "number", required: true },
             { key: "status", label: "Status", type: "select", options: ["Approved", "Pending Approval", "Ready for Registration"], required: true }
@@ -130,8 +134,8 @@ const [activeTab, setActiveTab] = useState("overview");
             { key: "siteNumber", label: "Site Number", type: "text", required: true },
             { key: "layoutName", label: "Layout Name", type: "text", required: true },
             { key: "totalArea", label: "Total Area (sq.ft)", type: "number", required: true },
-            { key: "ratePerSft", label: "Rate per sq.ft (₹)", type: "number", required: true },
-            { key: "totalAmount", label: "Total Amount (₹)", type: "number", required: true, readonly: true, calculated: true },
+            { key: "ratePerSft", label: "Rate per sq.ft (â‚¹)", type: "number", required: true },
+            { key: "totalAmount", label: "Total Amount (â‚¹)", type: "number", required: true, readonly: true, calculated: true },
             { key: "roadFacing", label: "Road Facing", type: "select", options: ["East", "West", "North", "South", "Corner"], required: true },
             { key: "roadWidth", label: "Road Width (ft)", type: "number", required: true },
             { key: "approvalStatus", label: "Approval Status", type: "select", options: ["BMRDA Approved", "Approval Pending", "Final Layout Ready"], required: true }
@@ -149,8 +153,8 @@ const [activeTab, setActiveTab] = useState("overview");
             { key: "powerAvailability", label: "Power Availability", type: "select", options: ["Yes - 3 Phase", "Yes - Single Phase", "No"], required: true },
             { key: "waterSupply", label: "Water Supply", type: "select", options: ["Borewell", "Municipal", "River", "Rainfed"], required: true },
             { key: "roadAccess", label: "Road Access", type: "select", options: ["NH/SH", "District Road", "Village Road", "No Road"], required: true },
-            { key: "ratePerAcre", label: "Rate per Acre (₹)", type: "number", required: true },
-            { key: "totalAmount", label: "Total Amount (₹)", type: "number", required: true, readonly: true, calculated: true }
+            { key: "ratePerAcre", label: "Rate per sq.ft (â‚¹)", type: "number", required: true },
+            { key: "totalAmount", label: "Total Amount (â‚¹)", type: "number", required: true, readonly: true, calculated: true }
           ]
         };
       case "apartment":
@@ -165,8 +169,8 @@ const [activeTab, setActiveTab] = useState("overview");
             { key: "furnishing", label: "Furnishing", type: "select", options: ["Unfurnished", "Semi-furnished", "Fully Furnished"], required: true },
             { key: "status", label: "Property Status", type: "select", options: ["Ready to Move", "Under Construction"], required: true },
             { key: "totalArea", label: "Total Area (sq.ft)", type: "number", required: true },
-            { key: "ratePerSft", label: "Rate per sq.ft (₹)", type: "number", required: true },
-            { key: "totalAmount", label: "Total Amount (₹)", type: "number", required: true, readonly: true, calculated: true }
+            { key: "ratePerSft", label: "Rate per sq.ft (â‚¹)", type: "number", required: true },
+            { key: "totalAmount", label: "Total Amount (â‚¹)", type: "number", required: true, readonly: true, calculated: true }
           ]
         };
       case "villa":
@@ -180,8 +184,8 @@ const [activeTab, setActiveTab] = useState("overview");
             { key: "floors", label: "Floors", type: "number", required: true },
             { key: "furnishing", label: "Furnishing", type: "select", options: ["Unfurnished", "Semi-furnished", "Fully Furnished"], required: true },
             { key: "status", label: "Property Status", type: "select", options: ["Ready to Move", "Under Construction"], required: true },
-            { key: "ratePerSft", label: "Rate per sq.ft (₹)", type: "number", required: true },
-            { key: "totalAmount", label: "Total Amount (₹)", type: "number", required: true, readonly: true, calculated: true }
+            { key: "ratePerSft", label: "Rate per sq.ft (â‚¹)", type: "number", required: true },
+            { key: "totalAmount", label: "Total Amount (â‚¹)", type: "number", required: true, readonly: true, calculated: true }
           ]
         };
       case "commercial":
@@ -194,8 +198,8 @@ const [activeTab, setActiveTab] = useState("overview");
             { key: "officeType", label: "Office Type", type: "select", options: ["Retail", "Office Space", "Showroom", "Warehouse", "Factory"], required: true },
             { key: "parking", label: "Parking Available", type: "select", options: ["Yes", "No"], required: true },
             { key: "status", label: "Property Status", type: "select", options: ["Ready to Move", "Under Construction"], required: true },
-            { key: "ratePerSft", label: "Rate per sq.ft (₹)", type: "number", required: true },
-            { key: "totalAmount", label: "Total Amount (₹)", type: "number", required: true, readonly: true, calculated: true }
+            { key: "ratePerSft", label: "Rate per sq.ft (â‚¹)", type: "number", required: true },
+            { key: "totalAmount", label: "Total Amount (â‚¹)", type: "number", required: true, readonly: true, calculated: true }
           ]
         };
       case "land":
@@ -209,8 +213,8 @@ const [activeTab, setActiveTab] = useState("overview");
             { key: "roadFacing", label: "Road Facing", type: "select", options: ["East", "West", "North", "South", "Corner"], required: true },
             { key: "roadWidth", label: "Road Width (ft)", type: "number", required: true },
             { key: "zonation", label: "Zonation", type: "select", options: ["Residential", "Commercial", "Industrial", "Agricultural"], required: true },
-            { key: "ratePerSft", label: "Rate per sq.ft (₹)", type: "number", required: true },
-            { key: "totalAmount", label: "Total Amount (₹)", type: "number", required: true, readonly: true, calculated: true }
+            { key: "ratePerSft", label: "Rate per sq.ft (â‚¹)", type: "number", required: true },
+            { key: "totalAmount", label: "Total Amount (â‚¹)", type: "number", required: true, readonly: true, calculated: true }
           ]
         };
       default:
@@ -218,24 +222,54 @@ const [activeTab, setActiveTab] = useState("overview");
     }
   };
 
+  const normalizeProperty = (p) => ({
+    ...p,
+    id: p._id || p.id || p.propertyCode,
+    type: p.propertyType || p.type || "property",
+    listingType: p.transactionType || p.listingType || "sell",
+    location: [p.area, p.city].filter(Boolean).join(", ") || p.location || "",
+    totalArea: p.plotArea || p.builtUpArea || p.totalArea || 0,
+    totalAmount: p.askingPrice || p.totalAmount || p.monthlyRent || 0,
+    contactNumber: "",
+  });
+
+  const loadProperties = async () => {
+    try {
+      const currentUser = getCurrentAppUser();
+      const providerUserCode =
+        currentUser.userCode ||
+        currentUser.uniqueCode ||
+        currentUser.userId ||
+        "";
+
+      if (!providerUserCode) {
+        setProperties([]);
+        return;
+      }
+
+      const response = await fetch(
+        `${API_BASE}/api/realestate/mine/${encodeURIComponent(providerUserCode)}`
+      );
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Unable to load properties");
+      }
+
+      setProperties((data.properties || []).map(normalizeProperty));
+    } catch (error) {
+      console.error("Real Estate properties not loaded:", error);
+      setProperties([]);
+    }
+  };
+
   useEffect(() => {
     setIsClient(true);
     const currentUser = getCurrentAppUser();
-    const name = currentUser.name || localStorage.getItem("userName") || "Real Estate Agent";
-    setUserName(name);
+    setUserName(currentUser.name || "Real Estate Agent");
+    loadProperties();
     loadLiveEnquiries();
-    
-    const saved = localStorage.getItem("realEstateProperties");
-    if (saved) {
-      setProperties(JSON.parse(saved));
-    }
   }, []);
-
-  useEffect(() => {
-    if (isClient && properties.length > 0) {
-      localStorage.setItem("realEstateProperties", JSON.stringify(properties));
-    }
-  }, [properties, isClient]);
 
   // Calculate Total Amount and Area based on type
   const calculateTotals = (formData, type) => {
@@ -264,7 +298,11 @@ const [activeTab, setActiveTab] = useState("overview");
       case "industrial":
         totalArea = data.eastWest * data.northSouth;
         totalAreaAcres = totalArea / 43560;
-        totalAmount = totalAreaAcres * data.ratePerAcre;
+
+        // Total amount = total sq.ft x rate per sq.ft.
+        totalAmount =
+          totalArea *
+          (data.ratePerSft || data.ratePerAcre || 0);
         break;
         
       case "revenue":
@@ -307,47 +345,199 @@ const [activeTab, setActiveTab] = useState("overview");
     if (acresField) acresField.value = results.totalAreaAcres || 0;
   };
 
-  const addProperty = (e) => {
+  const addProperty = async (e) => {
     e.preventDefault();
-    const form = e.target;
-    const formData = new FormData(form);
-    const propertyData = {};
-    
-    const fields = getPropertyFields(propertyType).fields;
-    fields.forEach(f => {
-      propertyData[f.key] = formData.get(f.key) || "";
-    });
-    
-    // Calculate totals
-    const results = calculateTotals(formData, propertyType);
-    propertyData.totalArea = results.totalArea || propertyData.totalArea;
-    propertyData.totalAmount = results.totalAmount || propertyData.totalAmount;
-    propertyData.totalAreaAcres = results.totalAreaAcres || 0;
-    
-    const newProperty = { listingType: activeTab === "rental" ? "Rental" : activeTab === "buy" ? "Buy" : "Sell",
-      id: Date.now(),
-      type: propertyType,
-      title: formData.get("title"),
-      location: formData.get("location"),
-      description: formData.get("description"),
-      contactNumber: formData.get("contactNumber") || "9876543210",
-      ...propertyData,
-      images: selectedImage ? [URL.createObjectURL(selectedImage)] : [],
-      documents: selectedDocument ? [selectedDocument.name] : [],
-      video: selectedVideo ? URL.createObjectURL(selectedVideo) : null,
-      status: "Available",
-      createdAt: new Date().toISOString().split("T")[0],
-      enquiries: []
-    };
-    
-    setProperties([...properties, newProperty]);
-    setShowPropertyModal(false);
-    setSelectedImage(null);
-    setSelectedDocument(null);
-    setSelectedVideo(null);
-    setCalculatedTotal(0);
-    setCalculatedArea(0);
-    alert("Property added successfully!");
+
+    try {
+      const form = e.target;
+      const formData = new FormData(form);
+      const currentUser = getCurrentAppUser();
+
+      const providerUserCode =
+        currentUser.userCode ||
+        currentUser.uniqueCode ||
+        "";
+
+      if (!providerUserCode) {
+        alert("Login user code not found. Please logout and login again.");
+        return;
+      }
+
+      const fields = getPropertyFields(propertyType).fields;
+      const propertyData = {};
+
+      fields.forEach((field) => {
+        propertyData[field.key] = formData.get(field.key) || "";
+      });
+
+      const results = calculateTotals(formData, propertyType);
+
+      const propertyTypeMap = {
+        farmland: "farm-land",
+        revenue: "revenue-land",
+        agriculture: "agriculture",
+        bmrda: "bmrda",
+        plot: "plot",
+        apartment: "apartment",
+        villa: "villa",
+        house: "house",
+        commercial: "commercial",
+        industrial: "industrial"
+      };
+
+      const transactionType =
+        activeTab === "rental"
+          ? "rent"
+          : activeTab === "buy"
+          ? "buy-requirement"
+          : "sale";
+
+      const title = String(
+        formData.get("title") ||
+        propertyData.title ||
+        `${propertyType} property`
+      ).trim();
+
+      const city = String(
+        formData.get("city") ||
+        formData.get("location") ||
+        propertyData.city ||
+        propertyData.location ||
+        ""
+      ).trim();
+
+      if (!city) {
+        alert("City / Location is required.");
+        return;
+      }
+
+      const payload = {
+        ...propertyData,
+
+        providerUserCode,
+        providerId: currentUser.id || currentUser._id || "",
+        providerEmail: currentUser.email || "",
+        providerPhone: currentUser.phone || "",
+        providerName: currentUser.name || "",
+        transactionType,
+        propertyType: propertyTypeMap[propertyType] || "other",
+
+        title,
+        description: String(
+          formData.get("description") ||
+          propertyData.description ||
+          propertyData.remarks ||
+          ""
+        ),
+
+        city,
+        area: String(
+          formData.get("area") ||
+          propertyData.area ||
+          propertyData.locality ||
+          ""
+        ),
+        pincode: String(
+          formData.get("pincode") ||
+          propertyData.pincode ||
+          ""
+        ),
+        address: String(
+          formData.get("address") ||
+          propertyData.address ||
+          ""
+        ),
+        landmark: String(
+          formData.get("landmark") ||
+          propertyData.landmark ||
+          ""
+        ),
+
+        plotArea: Number(
+          propertyData.plotArea ||
+          propertyData.totalArea ||
+          results.totalArea ||
+          0
+        ),
+        builtUpArea: Number(
+          propertyData.builtUpArea ||
+          propertyData.superBuiltUpArea ||
+          0
+        ),
+        areaUnit: String(propertyData.areaUnit || "sqft"),
+
+        bedrooms: Number(propertyData.bedrooms || 0),
+        bathrooms: Number(propertyData.bathrooms || 0),
+        balconies: Number(propertyData.balconies || 0),
+        floors: Number(propertyData.floors || 0),
+
+        propertyAge: String(propertyData.propertyAge || ""),
+        facing: String(propertyData.facing || ""),
+        furnishing: String(propertyData.furnishing || ""),
+        parking: String(propertyData.parking || ""),
+
+        askingPrice: Number(
+          propertyData.askingPrice ||
+          propertyData.totalAmount ||
+          results.totalAmount ||
+          0
+        ),
+        monthlyRent: Number(propertyData.monthlyRent || 0),
+        depositAmount: Number(propertyData.depositAmount || 0),
+        ratePerSqft: Number(
+          propertyData.ratePerSqft ||
+          propertyData.ratePerSft ||
+          0
+        ),
+
+        negotiable:
+          propertyData.negotiable === true ||
+          propertyData.negotiable === "true" ||
+          propertyData.negotiable === "yes",
+
+        amenities: String(propertyData.amenities || "")
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean),
+
+        imageUrls: [],
+        videoUrls: [],
+        documentUrls: []
+      };
+
+      const response = await fetch(`${API_BASE}/api/realestate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        alert(data.message || "Property submission failed.");
+        return;
+      }
+
+      await loadProperties();
+
+      setShowPropertyModal(false);
+      setSelectedImage(null);
+      setSelectedDocument(null);
+      setSelectedVideo(null);
+      setCalculatedTotal(0);
+      setCalculatedArea(0);
+
+      form.reset();
+
+      alert(
+        `Property ${data.property.propertyCode} submitted for Admin approval.`
+      );
+    } catch (error) {
+      console.error("Real Estate property submission failed:", error);
+      alert("Property could not be submitted. Please try again.");
+    }
   };
 
   // Render Property Fields based on type with auto-calc
@@ -391,15 +581,54 @@ const [activeTab, setActiveTab] = useState("overview");
     });
   };
 
-  // Rest of the functions remain the same...
-  const deleteProperty = (id) => {
-    if (window.confirm("Delete this property?")) {
-      setProperties(properties.filter(p => p.id !== id));
-    }
+  // Property availability is stored only in MongoDB.
+  const deleteProperty = async (id) => {
+    const property = properties.find((p) => p.id === id);
+    if (!property?.propertyCode) return;
+    if (!window.confirm("Mark this property inactive?")) return;
+    await updatePropertyStatus(id, "inactive");
   };
 
-  const updatePropertyStatus = (id, status) => {
-    setProperties(properties.map(p => p.id === id ? { ...p, status } : p));
+  const updatePropertyStatus = async (id, status) => {
+    const property = properties.find((p) => p.id === id);
+    if (!property?.propertyCode) return;
+
+    const normalizedStatus =
+      String(status).toLowerCase() === "sold"
+        ? "sold"
+        : String(status).toLowerCase() === "rented"
+        ? "rented"
+        : "inactive";
+
+    try {
+      const currentUser = getCurrentAppUser();
+      const providerUserCode =
+        currentUser.userCode ||
+        currentUser.uniqueCode ||
+        currentUser.userId ||
+        "";
+
+      const response = await fetch(
+        `${API_BASE}/api/realestate/code/${encodeURIComponent(
+          property.propertyCode
+        )}/availability`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ providerUserCode, status: normalizedStatus }),
+        }
+      );
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        return alert(data.message || "Property status could not be updated.");
+      }
+
+      await loadProperties();
+    } catch (error) {
+      console.error("Property status update failed:", error);
+      alert("Property status could not be updated.");
+    }
   };
 
   const sendQuote = async () => {
@@ -407,7 +636,7 @@ const [activeTab, setActiveTab] = useState("overview");
     try {
       const res = await fetch(API_BASE + "/api/enquiry/" + selectedEnquiry.id + "/quote", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-user-code": (getCurrentAppUser().userCode || getCurrentAppUser().uniqueCode || "") },
         body: JSON.stringify({ quotedAmount: Number(quoteAmount), quoteMessage: quoteMessage || "Please contact us for property details" })
       });
       const data = await res.json();
@@ -467,20 +696,20 @@ const [activeTab, setActiveTab] = useState("overview");
   };
 
   const tabs = [
-    { id: "overview", name: "Overview", icon: "📊" },
-    { id: "properties", name: "Properties", icon: "🏠" },
-    { id: "rental", name: "Rental", icon: "🏘️" },
-    { id: "buy", name: "Buy", icon: "🛒" },
-    { id: "sell", name: "Sell", icon: "🏷️" },
-    { id: "enquiries", name: "Enquiries", icon: "💬" },
-    { id: "affiliate", name: "Affiliate", icon: "🤝" },
-    { id: "analytics", name: "Analytics", icon: "📈" }
+    { id: "overview", name: "Overview", icon: "ðŸ“Š" },
+    { id: "properties", name: "Properties", icon: "ðŸ " },
+    { id: "rental", name: "Rental", icon: "ðŸ˜ï¸" },
+    { id: "buy", name: "Buy", icon: "ðŸ›’" },
+    { id: "sell", name: "Sell", icon: "ðŸ·ï¸" },
+    { id: "enquiries", name: "Enquiries", icon: "ðŸ’¬" },
+    { id: "affiliate", name: "Affiliate", icon: "ðŸ¤" },
+    { id: "analytics", name: "Analytics", icon: "ðŸ“ˆ" }
   ];
 
   const formatPrice = (price) => {
-    if (price >= 10000000) return `₹${(price/10000000).toFixed(1)}Cr`;
-    if (price >= 100000) return `₹${(price/100000).toFixed(1)}L`;
-    return `₹${price.toLocaleString()}`;
+    if (price >= 10000000) return `â‚¹${(price/10000000).toFixed(1)}Cr`;
+    if (price >= 100000) return `â‚¹${(price/100000).toFixed(1)}L`;
+    return `â‚¹${price.toLocaleString()}`;
   };
 
   const renderOverview = () => {
@@ -540,7 +769,7 @@ const [activeTab, setActiveTab] = useState("overview");
                 React.createElement("div", null,
                   React.createElement("h3", { style: { margin: "0 0 4px 0" } }, p.title),
                   React.createElement("p", { style: { margin: "4px 0", fontSize: "12px", color: "#666" } }, p.location, " | ", p.type, " | ", p.listingType || "Sell"),
-                  React.createElement("p", { style: { margin: "4px 0", fontSize: "12px" } }, "📐 ", p.totalArea || p.plotArea || "N/A", " sq.ft")
+                  React.createElement("p", { style: { margin: "4px 0", fontSize: "12px" } }, "ðŸ“ ", p.totalArea || p.plotArea || "N/A", " sq.ft")
                 ),
                 React.createElement("div", { style: { textAlign: "right" } },
                   React.createElement("div", { style: { fontSize: "24px", fontWeight: "bold", color: "#1a5f7a" } }, formatPrice(p.totalAmount || 0)),
@@ -551,16 +780,16 @@ const [activeTab, setActiveTab] = useState("overview");
                     onChange: (e) => updatePropertyStatus(p.id, e.target.value),
                     style: { marginTop: "4px", padding: "4px", borderRadius: "4px", border: "1px solid #ddd" }
                   },
-                    React.createElement("option", null, "Available"),
-                    React.createElement("option", null, "Booked"),
-                    React.createElement("option", null, "Sold"),
-                    React.createElement("option", null, "Rented")
+                    React.createElement("option", { value: p.status }, p.status || "pending"),
+                    React.createElement("option", { value: "sold" }, "Sold"),
+                    React.createElement("option", { value: "rented" }, "Rented"),
+                    React.createElement("option", { value: "inactive" }, "Inactive")
                   )
                 )
               ),
               React.createElement("p", { style: { fontSize: "12px", color: "#666", marginTop: "8px" } }, p.description),
               React.createElement("div", { style: { marginTop: "12px", display: "flex", gap: "8px", flexWrap: "wrap" } },
-                React.createElement("button", { onClick: () => window.open(`https://wa.me/${p.contactNumber || "9876543210"}?text=Hi, I'm interested in ${p.title}`, "_blank"), style: styles.buttonSuccess }, "📱 Enquire")
+                React.createElement("span", { style: styles.statusBadge }, p.propertyCode || "Pending code")
               )
             )
           )
@@ -568,114 +797,30 @@ const [activeTab, setActiveTab] = useState("overview");
     );
   };
 
-  const renderAffiliate = () => {
-    const layouts = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("bm_realestate_layouts") || "[]") : [];
-    const plots = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("bm_realestate_plots") || "[]") : [];
-
-    const saveLayout = () => {
-      const get = (id) => ((document.getElementById(id) || {}) as any).value || "";
-      const layout = {
-        id: Date.now(),
-        layoutName: get("layoutName"),
-        developerName: get("developerName"),
-        reraNo: get("reraNo"),
-        location: get("layoutLocation"),
-        googleMap: get("googleMap"),
-        brochureUrl: get("brochureUrl"),
-        masterPlanUrl: get("masterPlanUrl"),
-        imageUrls: get("imageUrls"),
-        videoUrl: get("videoUrl"),
-        droneVideoUrl: get("droneVideoUrl"),
-        amenities: get("amenities"),
-        authority: get("authority"),
-        contactPerson: get("contactPerson"),
-        phone: get("layoutPhone"),
-        website: get("website"),
-        ratePerSft: Number(get("ratePerSft") || 0),
-        discount: get("discount"),
-        offer: get("offer"),
-        status: "Live",
-        featured: true,
-        createdAt: new Date().toISOString()
-      };
-      const all = [layout, ...layouts];
-      localStorage.setItem("bm_realestate_layouts", JSON.stringify(all));
-      alert("Layout uploaded to Real Estate Hub.");
-      window.location.reload();
-    };
-
-    const savePlot = () => {
-      const get = (id) => ((document.getElementById(id) || {}) as any).value || "";
-      const area = Number(get("plotArea") || 0);
-      const rate = Number(get("plotRate") || 0);
-      const plot = {
-        id: Date.now(),
-        layoutName: get("plotLayoutName"),
-        plotNo: get("plotNo"),
-        facing: get("plotFacing"),
-        dimensions: get("plotDimensions"),
-        area,
-        ratePerSft: rate,
-        totalAmount: area * rate,
-        offerPrice: get("plotOfferPrice"),
-        discount: get("plotDiscount"),
-        status: get("plotStatus") || "Available",
-        remarks: get("plotRemarks"),
-        createdAt: new Date().toISOString()
-      };
-      const all = [plot, ...plots];
-      localStorage.setItem("bm_realestate_plots", JSON.stringify(all));
-      alert("Plot inventory updated in Real Estate Hub.");
-      window.location.reload();
-    };
-
-    return React.createElement("div", null,
-      React.createElement("div", { style: styles.card },
-        React.createElement("h2", { style: { color: "#1a5f7a", marginTop: 0 } }, "🏘️ BuildMitra Marketing Partner - Layout Upload"),
-        React.createElement("p", null, "Upload layout details here. These details will display publicly in Real Estate Hub."),
-        React.createElement("div", { style: styles.grid2 },
-          [
-            ["layoutName", "Layout Name"], ["developerName", "Developer / Owner Name"], ["reraNo", "RERA No"],
-            ["layoutLocation", "Location"], ["googleMap", "Google Map Link"], ["brochureUrl", "Brochure PDF Link"],
-            ["masterPlanUrl", "Master Plan PDF Link"], ["imageUrls", "Image / Photo URLs comma separated"],
-            ["videoUrl", "Video Link"], ["droneVideoUrl", "Drone Video Link"], ["amenities", "Amenities"],
-            ["authority", "Approval Authority"], ["contactPerson", "Contact Person"], ["layoutPhone", "WhatsApp / Phone"],
-            ["website", "Website"], ["ratePerSft", "Rate per SFT"], ["discount", "Discount"], ["offer", "Offer"]
-          ].map(([id, ph]) => React.createElement("input", { key: id, id, placeholder: ph, style: styles.input }))
-        ),
-        React.createElement("button", { style: styles.button, onClick: saveLayout }, "+ Add New Layout to Hub")
+  const renderAffiliate = () =>
+    React.createElement(
+      "div",
+      { style: styles.card },
+      React.createElement(
+        "h2",
+        { style: { color: "#1a5f7a", marginTop: 0 } },
+        "BuildMitra Prime Property Listings"
       ),
-
-      React.createElement("div", { style: styles.card },
-        React.createElement("h2", { style: { color: "#1a5f7a", marginTop: 0 } }, "📍 Plot Inventory - Available / Sold / Booked"),
-        React.createElement("div", { style: styles.grid3 },
-          [
-            ["plotLayoutName", "Layout Name"], ["plotNo", "Plot No"], ["plotFacing", "Facing"],
-            ["plotDimensions", "Dimensions"], ["plotArea", "Area SFT"], ["plotRate", "Rate/SFT"],
-            ["plotOfferPrice", "Offer Price"], ["plotDiscount", "Discount"], ["plotStatus", "Available / Booked / Sold"],
-            ["plotRemarks", "Remarks"]
-          ].map(([id, ph]) => React.createElement("input", { key: id, id, placeholder: ph, style: styles.input }))
-        ),
-        React.createElement("button", { style: styles.button, onClick: savePlot }, "+ Add Plot to This Layout")
+      React.createElement(
+        "p",
+        null,
+        "Prime layouts and plots must be uploaded through the normal Add Property form. They are stored in MongoDB and become public only after Admin approval."
       ),
-
-      React.createElement("div", { style: styles.card },
-        React.createElement("h2", null, "📋 Uploaded Layouts"),
-        layouts.length === 0 ? React.createElement("p", null, "No layouts uploaded yet.") :
-          layouts.map(l => React.createElement("div", { key: l.id, style: { padding: 10, borderBottom: "1px solid #eee" } },
-            React.createElement("b", null, l.layoutName), " - ", l.location, " - ₹", l.ratePerSft, "/sft"
-          ))
-      ),
-
-      React.createElement("div", { style: styles.card },
-        React.createElement("h2", null, "📍 Plot List"),
-        plots.length === 0 ? React.createElement("p", null, "No plots added yet.") :
-          plots.map(p => React.createElement("div", { key: p.id, style: { padding: 10, borderBottom: "1px solid #eee" } },
-            React.createElement("b", null, "Plot ", p.plotNo), " - ", p.layoutName, " - ", p.status, " - ₹", p.ratePerSft, "/sft"
-          ))
+      React.createElement(
+        "button",
+        {
+          style: styles.button,
+          onClick: () => setShowPropertyModal(true),
+        },
+        "+ Add Property"
       )
     );
-  };
+
   const renderAnalytics = () => {
     const totalProperties = properties.length;
     const totalValue = properties.reduce((sum, p) => sum + (p.totalAmount || 0), 0);
@@ -689,7 +834,7 @@ const [activeTab, setActiveTab] = useState("overview");
     return React.createElement("div", null,
       React.createElement("div", { style: styles.grid2 },
         React.createElement("div", { style: styles.card },
-          React.createElement("div", { style: styles.cardTitle }, "📊 Property Status"),
+          React.createElement("div", { style: styles.cardTitle }, "ðŸ“Š Property Status"),
           React.createElement("div", { style: { padding: "20px" } },
             React.createElement("div", null, React.createElement("strong", null, "Available:"), " ", available, " properties"),
             React.createElement("div", { style: styles.progressBar }, React.createElement("div", { style: { ...styles.progressFill, width: `${(available/totalProperties)*100}%`, backgroundColor: "#10b981" } })),
@@ -698,7 +843,7 @@ const [activeTab, setActiveTab] = useState("overview");
           )
         ),
         React.createElement("div", { style: styles.card },
-          React.createElement("div", { style: styles.cardTitle }, "💰 Value Summary"),
+          React.createElement("div", { style: styles.cardTitle }, "ðŸ’° Value Summary"),
           React.createElement("div", null,
             React.createElement("p", null, React.createElement("strong", null, "Total Portfolio:"), " ", formatPrice(totalValue)),
             React.createElement("p", null, React.createElement("strong", null, "Average Price:"), " ", formatPrice(avgPrice)),
@@ -707,7 +852,7 @@ const [activeTab, setActiveTab] = useState("overview");
         )
       ),
       React.createElement("div", { style: styles.card },
-        React.createElement("div", { style: styles.cardTitle }, "📈 Properties by Type"),
+        React.createElement("div", { style: styles.cardTitle }, "ðŸ“ˆ Properties by Type"),
         React.createElement("div", { style: { padding: "20px" } },
           Object.keys(byType).map(type =>
             React.createElement("div", { key: type },
@@ -721,12 +866,15 @@ const [activeTab, setActiveTab] = useState("overview");
   };
 
   const renderEnquiries = () => React.createElement("div", { style: styles.card },
-    React.createElement("div", { style: styles.cardTitle }, "Marketplace Enquiries"),
+    React.createElement("div", { style: styles.cardTitle }, "Admin-Released Enquiries"),
+    React.createElement("p", { style: { color: "#666", marginTop: "4px" } },
+      "Only enquiries approved or assigned by BuildMitra Admin appear here. Buyer contact is hidden until Admin releases it."
+    ),
     React.createElement("div", { style: { overflowX: "auto" } },
       React.createElement("table", { style: styles.table },
         React.createElement("thead", null,
           React.createElement("tr", null,
-            React.createElement("th", { style: styles.th }, "Date"),
+            React.createElement("th", { style: styles.th }, "Date / Code"),
             React.createElement("th", { style: styles.th }, "Buyer"),
             React.createElement("th", { style: styles.th }, "Requirement"),
             React.createElement("th", { style: styles.th }, "Location"),
@@ -737,18 +885,23 @@ const [activeTab, setActiveTab] = useState("overview");
         ),
         React.createElement("tbody", null,
           liveEnquiries.length === 0 ? React.createElement("tr", null,
-            React.createElement("td", { colSpan: 7, style: { ...styles.td, textAlign: "center" } }, "No live enquiries yet.")
+            React.createElement("td", { colSpan: 7, style: { ...styles.td, textAlign: "center" } }, "No Admin-released enquiries yet.")
           ) : liveEnquiries.map((e) =>
             React.createElement("tr", { key: e.id },
-              React.createElement("td", { style: styles.td }, e.date),
-              React.createElement("td", { style: styles.td }, e.buyerName, React.createElement("br", null), React.createElement("span", { style: { fontSize: "10px" } }, e.buyerPhone)),
+              React.createElement("td", { style: styles.td }, e.date, React.createElement("br", null), React.createElement("strong", null, e.enquiryCode)),
+              React.createElement("td", { style: styles.td },
+                e.buyerName,
+                React.createElement("br", null),
+                React.createElement("span", { style: { fontSize: "10px" } }, e.contactReleased ? e.buyerPhone : "Contact held by Admin")
+              ),
               React.createElement("td", { style: styles.td }, e.itemName, React.createElement("br", null), React.createElement("span", { style: { fontSize: "10px" } }, e.quantity || e.requirement)),
               React.createElement("td", { style: styles.td }, e.location),
               React.createElement("td", { style: styles.td }, e.status),
-              React.createElement("td", { style: styles.td }, e.quotedAmount ? React.createElement("span", null, "₹", Number(e.quotedAmount).toLocaleString()) : "-"),
+              React.createElement("td", { style: styles.td }, e.quotedAmount ? React.createElement("span", null, "â‚¹", Number(e.quotedAmount).toLocaleString()) : "-"),
               React.createElement("td", { style: styles.td },
-                e.status !== "Quoted" && React.createElement("button", { onClick: () => { setSelectedEnquiry(e); setShowEnquiryModal(true); }, style: styles.buttonSuccess }, "Send Quote"),
-                React.createElement("button", { onClick: () => whatsappBuyer(e), style: { ...styles.button, marginLeft: "8px" } }, "WhatsApp")
+                e.contactReleased && e.status !== "Quoted" && React.createElement("button", { onClick: () => { setSelectedEnquiry(e); setShowEnquiryModal(true); }, style: styles.buttonSuccess }, "Send Quote"),
+                e.contactReleased && React.createElement("button", { onClick: () => whatsappBuyer(e), style: { ...styles.button, marginLeft: "8px" } }, "WhatsApp"),
+                !e.contactReleased && React.createElement("span", { style: { fontSize: "11px", color: "#856404" } }, "Awaiting contact release")
               )
             )
           )
@@ -782,15 +935,15 @@ const [activeTab, setActiveTab] = useState("overview");
   return React.createElement("div", { style: styles.container },
     React.createElement("div", { style: styles.header },
       React.createElement("div", null,
-        React.createElement("h1", { style: styles.headerTitle }, "🏢 Real Estate Dashboard"),
-        React.createElement("div", { style: styles.welcomeText }, "👋 Welcome, ", userName),
+        React.createElement("h1", { style: styles.headerTitle }, "ðŸ¢ Real Estate Dashboard"),
+        React.createElement("div", { style: styles.welcomeText }, "ðŸ‘‹ Welcome, ", userName),
         React.createElement("p", { style: styles.headerSub }, "Manage properties, track enquiries, and close deals")
       ),
         React.createElement("div", { style: { display: "flex", gap: "10px", flexWrap: "wrap" } },
           React.createElement("button", { onClick: () => setActiveTab("overview"), style: { backgroundColor: "#ffffff", color: "#1a5f7a", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer" } }, "Dashboard"),
-          React.createElement("button", { onClick: () => window.location.href = "/marketplace", style: { backgroundColor: "#17a2b8", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer" } }, "Marketplace"),
+          React.createElement("button", { onClick: () => window.location.assign("/marketplace"), style: { backgroundColor: "#17a2b8", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer" } }, "Marketplace"),
           React.createElement("button", { onClick: () => setActiveTab("enquiries"), style: { backgroundColor: "#28a745", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer" } }, "Enquiries"),
-          React.createElement("button", { onClick: logoutToLogin, style: { backgroundColor: "#dc3545", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer" } }, "🚪 Logout")
+          React.createElement("button", { onClick: logoutToLogin, style: { backgroundColor: "#dc3545", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer" } }, "ðŸšª Logout")
         )
     ),
     React.createElement("div", { style: styles.tabContainer },
@@ -802,7 +955,7 @@ const [activeTab, setActiveTab] = useState("overview");
       React.createElement("div", { style: styles.modalContent, onClick: (e) => e.stopPropagation() },
         React.createElement("h2", { style: { color: "#1a5f7a" } }, "Send Quote"),
         React.createElement("p", null, selectedEnquiry.itemName, " - ", selectedEnquiry.quantity || selectedEnquiry.requirement),
-        React.createElement("input", { type: "number", placeholder: "Quoted Amount (₹)", value: quoteAmount, onChange: (e) => setQuoteAmount(e.target.value), style: styles.input }),
+        React.createElement("input", { type: "number", placeholder: "Quoted Amount (â‚¹)", value: quoteAmount, onChange: (e) => setQuoteAmount(e.target.value), style: styles.input }),
         React.createElement("textarea", { placeholder: "Message", value: quoteMessage, onChange: (e) => setQuoteMessage(e.target.value), style: styles.textarea }),
         React.createElement("button", { onClick: sendQuote, style: { ...styles.buttonSuccess, width: "100%" } }, "Send Quote")
       )
@@ -850,15 +1003,15 @@ const [activeTab, setActiveTab] = useState("overview");
             ),
             React.createElement("div", null,
               React.createElement("label", { style: styles.label }, "Contact Number"),
-              React.createElement("input", { name: "contactNumber", placeholder: "Your contact number", defaultValue: "9876543210", style: styles.input })
+              React.createElement("input", { name: "contactNumber", placeholder: "Your contact number", defaultValue: "", style: styles.input })
             )
           ),
           React.createElement("div", { style: styles.row3 },
             renderPropertyFields(propertyType)
           ),
           React.createElement("div", { style: { backgroundColor: "#e8f5e9", padding: "12px", borderRadius: "8px", marginBottom: "16px" } },
-            React.createElement("div", null, "📐 Calculated Total Area: ", calculatedArea.toLocaleString(), " sq.ft"),
-            React.createElement("div", null, "💰 Calculated Total Amount: ₹", (calculatedTotal || 0).toLocaleString())
+            React.createElement("div", null, "ðŸ“ Calculated Total Area: ", calculatedArea.toLocaleString(), " sq.ft"),
+            React.createElement("div", null, "ðŸ’° Calculated Total Amount: â‚¹", (calculatedTotal || 0).toLocaleString())
           ),
           React.createElement("div", null,
             React.createElement("label", { style: styles.label }, "Description"),
@@ -884,6 +1037,13 @@ const [activeTab, setActiveTab] = useState("overview");
     )
   );
 }
+
+
+
+
+
+
+
 
 
 

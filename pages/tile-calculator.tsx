@@ -36,6 +36,8 @@ const styles = {
   rateInfo: { backgroundColor: '#e8f4f8', padding: '6px', borderRadius: '4px', fontSize: '10px', textAlign: 'center', marginBottom: '10px', color: '#555' }
 };
 
+const p = (props: any): any => props;
+
 const formatNumber = (num) => {
   if (!num || isNaN(num)) return "0";
   return num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -369,19 +371,19 @@ const router = useRouter();
     
     React.createElement('div', { style: styles.sectionTitle }, '🏠 Rooms'),
     React.createElement('div', { style: styles.row6 },
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Room Type'), React.createElement('select', { value: newRoom.type, onChange: (e) => setNewRoom({ ...newRoom, type: e.target.value }), style: styles.select },
+      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Room Type'), React.createElement('select', p({ value: newRoom.type, onChange: (e: any) => setNewRoom({ ...newRoom, type: e.target.value }), style: styles.select }),
         roomTypesList.map(type => React.createElement('option', { key: type, value: type }, type)))),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Length (ft)'), React.createElement('input', { type: 'number', value: newRoom.length, onChange: (e) => setNewRoom({ ...newRoom, length: parseFloat(e.target.value) }), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Width (ft)'), React.createElement('input', { type: 'number', value: newRoom.width, onChange: (e) => setNewRoom({ ...newRoom, width: parseFloat(e.target.value) }), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Nos'), React.createElement('input', { type: 'number', value: newRoom.nos, onChange: (e) => setNewRoom({ ...newRoom, nos: parseFloat(e.target.value) }), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Flooring'), React.createElement('select', { value: newRoom.flooringType, onChange: (e) => setNewRoom({ ...newRoom, flooringType: e.target.value }), style: styles.select },
+      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Length (ft)'), React.createElement('input', p({ type: 'number', value: newRoom.length, onChange: (e: any) => setNewRoom({ ...newRoom, length: parseFloat(e.target.value) }), style: styles.input }))),
+      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Width (ft)'), React.createElement('input', p({ type: 'number', value: newRoom.width, onChange: (e: any) => setNewRoom({ ...newRoom, width: parseFloat(e.target.value) }), style: styles.input }))),
+      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Nos'), React.createElement('input', p({ type: 'number', value: newRoom.nos, onChange: (e: any) => setNewRoom({ ...newRoom, nos: parseFloat(e.target.value) }), style: styles.input }))),
+      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Flooring'), React.createElement('select', p({ value: newRoom.flooringType, onChange: (e: any) => setNewRoom({ ...newRoom, flooringType: e.target.value }), style: styles.select }),
         Object.keys(flooringTypes).filter(f => f !== 'Cladding Tiles').map(type => React.createElement('option', { key: type, value: type }, `${type} (₹${getTileRate(type)}/sqft)`)))),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Tile Size'), React.createElement('select', { value: newRoom.tileSize, onChange: (e) => setNewRoom({ ...newRoom, tileSize: e.target.value }), style: styles.select },
+      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Tile Size'), React.createElement('select', p({ value: newRoom.tileSize, onChange: (e: any) => setNewRoom({ ...newRoom, tileSize: e.target.value }), style: styles.select }),
         tileSizes[newRoom.flooringType]?.map(size => React.createElement('option', { key: size, value: size }, size)) || []))
     ),
     
     React.createElement('div', { style: styles.row6 },
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Skirting'), React.createElement('select', { value: newRoom.includeSkirting, onChange: (e) => setNewRoom({ ...newRoom, includeSkirting: e.target.value === 'true' }), style: styles.select },
+      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Skirting'), React.createElement('select', p({ value: String(newRoom.includeSkirting), onChange: (e: any) => setNewRoom({ ...newRoom, includeSkirting: e.target.value === 'true' }), style: styles.select }),
         React.createElement('option', { value: 'true' }, 'Yes (4")'), React.createElement('option', { value: 'false' }, 'No'))),
       React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Area'), React.createElement('div', { style: { ...styles.input, backgroundColor: '#e8f4f8' } }, `${(newRoom.length * newRoom.width * newRoom.nos).toFixed(2)} sqft`)),
       React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Tile Cost'), React.createElement('div', { style: { ...styles.input, backgroundColor: '#e8f4f8' } }, `₹${((newRoom.length * newRoom.width * newRoom.nos) * getTileRate(newRoom.flooringType)).toFixed(2)}`)),
@@ -393,10 +395,10 @@ const router = useRouter();
         React.createElement('thead', null, React.createElement('tr', null, React.createElement('th', { style: styles.th }, 'Type'), React.createElement('th', { style: styles.th }, 'Size'), React.createElement('th', { style: styles.th }, 'Nos'), React.createElement('th', { style: styles.th }, 'Area'), React.createElement('th', { style: styles.th }, 'Tile Cost'), React.createElement('th', { style: styles.th }, ''))),
         React.createElement('tbody', null,
           rooms.map(room => React.createElement('tr', { key: room.id, style: styles.evenRow },
-            React.createElement('td', { style: styles.td }, React.createElement('select', { value: room.type, onChange: (e) => updateRoom(room.id, 'type', e.target.value), style: styles.input },
+            React.createElement('td', { style: styles.td }, React.createElement('select', p({ value: room.type, onChange: (e: any) => updateRoom(room.id, 'type', e.target.value), style: styles.input }),
               roomTypesList.map(t => React.createElement('option', { key: t, value: t }, t)))),
             React.createElement('td', { style: styles.td }, `${room.length}' x ${room.width}'`),
-            React.createElement('td', { style: styles.td }, React.createElement('input', { type: 'number', value: room.nos, onChange: (e) => updateRoom(room.id, 'nos', parseFloat(e.target.value)), style: { ...styles.input, width: '60px' } })),
+            React.createElement('td', { style: styles.td }, React.createElement('input', p({ type: 'number', value: room.nos, onChange: (e: any) => updateRoom(room.id, 'nos', parseFloat(e.target.value)), style: { ...styles.input, width: '60px' } }))),
             React.createElement('td', { style: styles.td }, formatNumber(room.area)),
             React.createElement('td', { style: styles.td }, `₹${formatNumber(room.area * getTileRate(room.flooringType))}`),
             React.createElement('td', { style: styles.td }, React.createElement('button', { onClick: () => removeRoom(room.id), style: { ...styles.buttonSmall, backgroundColor: '#dc3545' } }, 'X'))))
@@ -406,13 +408,13 @@ const router = useRouter();
     
     React.createElement('div', { style: styles.sectionTitle }, '🎨 Cladding / Feature Walls'),
     React.createElement('div', { style: styles.row6 },
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Length (ft)'), React.createElement('input', { type: 'number', value: claddingLength, onChange: (e) => setCladdingLength(parseFloat(e.target.value)), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Width (ft)'), React.createElement('input', { type: 'number', value: claddingWidth, onChange: (e) => setCladdingWidth(parseFloat(e.target.value)), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Height (ft)'), React.createElement('input', { type: 'number', value: claddingHeight, onChange: (e) => setCladdingHeight(parseFloat(e.target.value)), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Nos'), React.createElement('input', { type: 'number', value: claddingNos, onChange: (e) => setCladdingNos(parseFloat(e.target.value)), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Tile Type'), React.createElement('select', { value: claddingType, onChange: (e) => setCladdingType(e.target.value), style: styles.select },
+      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Length (ft)'), React.createElement('input', p({ type: 'number', value: claddingLength, onChange: (e: any) => setCladdingLength(parseFloat(e.target.value)), style: styles.input }))),
+      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Width (ft)'), React.createElement('input', p({ type: 'number', value: claddingWidth, onChange: (e: any) => setCladdingWidth(parseFloat(e.target.value)), style: styles.input }))),
+      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Height (ft)'), React.createElement('input', p({ type: 'number', value: claddingHeight, onChange: (e: any) => setCladdingHeight(parseFloat(e.target.value)), style: styles.input }))),
+      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Nos'), React.createElement('input', p({ type: 'number', value: claddingNos, onChange: (e: any) => setCladdingNos(parseFloat(e.target.value)), style: styles.input }))),
+      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Tile Type'), React.createElement('select', p({ value: claddingType, onChange: (e: any) => setCladdingType(e.target.value), style: styles.select }),
         Object.keys(flooringTypes).map(type => React.createElement('option', { key: type, value: type }, `${type} (₹${getTileRate(type)}/sqft)`)))),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Tile Size'), React.createElement('select', { value: claddingTileSize, onChange: (e) => setCladdingTileSize(e.target.value), style: styles.select },
+      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Tile Size'), React.createElement('select', p({ value: claddingTileSize, onChange: (e: any) => setCladdingTileSize(e.target.value), style: styles.select }),
         tileSizes[claddingType]?.map(size => React.createElement('option', { key: size, value: size }, size)) || []))
     ),
     
@@ -438,11 +440,11 @@ const router = useRouter();
     
     React.createElement('div', { style: styles.sectionTitle }, '🧱 Mortar Details'),
     React.createElement('div', { style: styles.row6 },
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Thickness (in)'), React.createElement('input', { type: 'number', value: mortarThickness, onChange: (e) => setMortarThickness(parseFloat(e.target.value)), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Ratio'), React.createElement('select', { value: mortarRatio, onChange: (e) => setMortarRatio(e.target.value), style: styles.select },
+      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Thickness (in)'), React.createElement('input', p({ type: 'number', value: mortarThickness, onChange: (e: any) => setMortarThickness(parseFloat(e.target.value)), style: styles.input }))),
+      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Ratio'), React.createElement('select', p({ value: mortarRatio, onChange: (e: any) => setMortarRatio(e.target.value), style: styles.select }),
         React.createElement('option', { value: '1:3' }, '1:3'), React.createElement('option', { value: '1:4' }, '1:4'),
         React.createElement('option', { value: '1:5' }, '1:5'), React.createElement('option', { value: '1:6' }, '1:6'))),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Wastage (%)'), React.createElement('input', { type: 'number', value: wastage, onChange: (e) => setWastage(parseFloat(e.target.value)), style: styles.input }))
+      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Wastage (%)'), React.createElement('input', p({ type: 'number', value: wastage, onChange: (e: any) => setWastage(parseFloat(e.target.value)), style: styles.input })))
     ),
     
     React.createElement('div', { style: styles.buttonRow },

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import * as XLSX from 'xlsx';
 import { logoutToLogin } from "../utils/session";
+import { themeTokens, PrimaryButton, SecondaryButton, Card, Badge, LoadingSpinner, EmptyState } from "../components/ui/DesignSystem";
 
 export default function MachineHireDashboard() {
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
@@ -58,7 +59,7 @@ const [activeTab, setActiveTab] = useState("dashboard");
 
   const getCurrentAppUser = () => {
     try {
-      return JSON.parse(localStorage.getItem("currentUser") || localStorage.getItem("loggedInUser") || localStorage.getItem("user") || "{}");
+      return JSON.parse(sessionStorage.getItem("currentUser") || sessionStorage.getItem("loggedInUser") || sessionStorage.getItem("user") || "{}");
     } catch {
       return {};
     }
@@ -596,5 +597,7 @@ const [activeTab, setActiveTab] = useState("dashboard");
     )
   );
 }
+
+
 
 
