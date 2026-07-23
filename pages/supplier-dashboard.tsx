@@ -172,7 +172,7 @@ const [userName, setUserName] = useState("Supplier");
     notes: e.quoteMessage || ""
   });
 
-  const loadLiveQuoteRequests = async (userData) => {
+  const loadLiveQuoteRequests = async (userData: any) => {
     try {
       const providerUserCode = userData.userCode || userData.userId || userData.uniqueCode || "";
       if (!providerUserCode) {
@@ -186,7 +186,29 @@ const [userName, setUserName] = useState("Supplier");
             "x-user-code": providerUserCode
           }
         }
-  shopName: "",
+      );
+      let data = await res.json().catch(() => ({}));
+
+      if (!data.success) {
+        res = await fetch(
+          API_BASE + "/api/enquiry?providerUserCode=" + encodeURIComponent(providerUserCode),
+          {
+            headers: {
+              "x-user-code": providerUserCode
+            }
+          }
+        );
+        data = await res.json().catch(() => ({}));
+      }
+
+      if (data.success) {
+        setQuoteRequests((data.enquiries || []).map(mapMongoQuoteRequest));
+        setSupplierInfo((info: any) => ({ ...info, totalEnquiries: (data.enquiries || []).length }));
+      }
+    } catch (err) {
+      console.log("Supplier enquiries not loaded", err);
+    }
+  };
   ownerName: "",
   shopPhotoUrl: null,
   businessCardUrl: null,
