@@ -1,0 +1,774 @@
+import React, { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/router";
+
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  "http://localhost:5000";
+
+type MasterImageItem = {
+  _id?: string;
+  masterItemCode: string;
+  itemType?: string;
+  category?: string;
+  subCategory?: string;
+  itemName?: string;
+  brand?: string;
+  specification?: string;
+  imageUrl?: string;
+  status?: string;
+};
+
+type UploadResult = {
+  success: boolean;
+  total?: number;
+  matchedCount?: number;
+  unmatchedCount?: number;
+  matched?: Array<{
+    originalName: string;
+    masterItemCode: string;
+    itemName?: string;
+    imageUrl?: string;
+  }>;
+  unmatched?: Array<{
+    originalName: string;
+    masterItemCode?: string;
+    reason?: string;
+  }>;
+  message?: string;
+};
+
+function absoluteImageUrl(value?: string) {
+  const url = String(value || "").trim();
+
+  if (!url) return "";
+
+  if (
+    url.startsWith("http://") ||
+    url.startsWith("https://") ||
+    url.startsWith("data:") ||
+    url.startsWith("blob:")
+  ) {
+    return url;
+  }
+
+  return `${API_BASE}${url.startsWith("/") ? "" : "/"}${url}`;
+}
+
+export default function AdminMasterImageLibrary() {
+  const router = useRouter();
+
+  const [items, setItems] = useState<MasterImageItem[]>([]);
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [message, setMessage] = useState("");
+  const [result, setResult] = useState<UploadResult | null>(null);
+
+  const loadItems = async () => {
+    try {
+      setLoading(true);
+      setMessage("");
+
+      const params = new URLSearchParams();
+
+      if (search.trim()) {
+        params.set("search", search.trim());
+      }
+
+      const response = await fetch(
+        `${API_BASE}/api/master-images${
+          params.toString() ? `?${params.toString()}` : ""
+        }`,
+        {
+          headers: {
+            "x-user-role": "admin",
+            "x-user-code": "ADM-000001",
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Could not load master images.");
+      }
+
+      setItems(Array.isArray(data.items) ? data.items : []);
+    } catch (error: any) {
+      setMessage(error.message || "Could not load master images.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadItems();
+  }, []);
+
+  const uploadFiles = async (
+    files: FileList | null,
+    uploadType: "images" | "folder"
+  ) => {
+    if (!files || !files.length) return;
+
+    try {
+      setUploading(true);
+      setMessage("");
+      setResult(null);
+
+      const formData = new FormData();
+
+      Array.from(files).forEach((file) => {
+        formData.append("images", file, file.name);
+      });
+
+      formData.append("uploadedBy", "ADM-000001");
+
+      const response = await fetch(
+        `${API_BASE}/api/master-images/upload-images`,
+        {
+          method: "POST",
+          headers: {
+            "x-user-role": "admin",
+            "x-user-code": "ADM-000001",
+          },
+          body: formData,
+        }
+      );
+
+      const data: UploadResult = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || `${uploadType} upload failed.`);
+      }
+
+      setResult(data);
+      setMessage(
+        `Upload completed: ${data.matchedCount || 0} matched, ${
+          data.unmatchedCount || 0
+        } unmatched.`
+      );
+
+      await loadItems();
+    } catch (error: any) {
+      setMessage(error.message || "Image upload failed.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const uploadZip = async (file: File | null) => {
+    if (!file) return;
+
+    try {
+      setUploading(true);
+      setMessage("");
+      setResult(null);
+
+      const formData = new FormData();
+      formData.append("archive", file);
+      formData.append("uploadedBy", "ADM-000001");
+
+      const response = await fetch(
+        `${API_BASE}/api/master-images/upload-zip`,
+        {
+          method: "POST",
+          headers: {
+            "x-user-role": "admin",
+            "x-user-code": "ADM-000001",
+          },
+          body: formData,
+        }
+      );
+
+      const data: UploadResult = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "ZIP upload failed.");
+      }
+
+      setResult(data);
+      setMessage(
+        `ZIP completed: ${data.matchedCount || 0} matched, ${
+          data.unmatchedCount || 0
+        } unmatched.`
+      );
+
+      await loadItems();
+    } catch (error: any) {
+      setMessage(error.message || "ZIP upload failed.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const deleteImage = async (item: MasterImageItem) => {
+    const confirmed = window.confirm(
+      `Remove the master image for ${item.masterItemCode} - ${
+        item.itemName || ""
+      }?`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setMessage("");
+
+      const response = await fetch(
+        `${API_BASE}/api/master-images/${encodeURIComponent(
+          item.masterItemCode
+        )}`,
+        {
+          method: "DELETE",
+          headers: {
+            "x-user-role": "admin",
+            "x-user-code": "ADM-000001",
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Could not remove image.");
+      }
+
+      setMessage(data.message || "Master image removed.");
+      await loadItems();
+    } catch (error: any) {
+      setMessage(error.message || "Could not remove image.");
+    }
+  };
+
+  const withImages = useMemo(
+    () => items.filter((item) => Boolean(item.imageUrl)).length,
+    [items]
+  );
+
+  return (
+    <div style={styles.page}>
+      <div style={styles.header}>
+        <div>
+          <div style={styles.eyebrow}>BUILDMITRA ADMIN</div>
+          <h1 style={styles.title}>Master Image Library</h1>
+          <p style={styles.subtitle}>
+            Upload images using filenames matching the Master Item Code.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => router.push("/admin-dashboard")}
+          style={styles.secondaryButton}
+        >
+          ← Admin Dashboard
+        </button>
+      </div>
+
+      <div style={styles.instruction}>
+        <strong>Required filename format:</strong>{" "}
+        <code>CEME000206.jpg</code>, <code>STEEL000101.png</code>
+        <br />
+        Folder names are ignored. The image filename must equal the exact
+        Master Item Code.
+      </div>
+
+      <div style={styles.statsGrid}>
+        <div style={styles.statCard}>
+          <div style={styles.statNumber}>{items.length}</div>
+          <div style={styles.statLabel}>Master items loaded</div>
+        </div>
+
+        <div style={styles.statCard}>
+          <div style={styles.statNumber}>{withImages}</div>
+          <div style={styles.statLabel}>Items with images</div>
+        </div>
+
+        <div style={styles.statCard}>
+          <div style={styles.statNumber}>{items.length - withImages}</div>
+          <div style={styles.statLabel}>Images pending</div>
+        </div>
+      </div>
+
+      <div style={styles.uploadCard}>
+        <h2 style={styles.sectionTitle}>Upload Master Images</h2>
+
+        <div style={styles.uploadButtons}>
+          <label style={styles.primaryButton}>
+            Upload Images
+            <input
+              type="file"
+              accept=".jpg,.jpeg,.png,.webp"
+              multiple
+              disabled={uploading}
+              onChange={(event) => {
+                uploadFiles(event.target.files, "images");
+                event.currentTarget.value = "";
+              }}
+              style={{ display: "none" }}
+            />
+          </label>
+
+          <label style={styles.primaryButton}>
+            Upload Folder
+            <input
+              type="file"
+              accept=".jpg,.jpeg,.png,.webp"
+              multiple
+              disabled={uploading}
+              onChange={(event) => {
+                uploadFiles(event.target.files, "folder");
+                event.currentTarget.value = "";
+              }}
+              style={{ display: "none" }}
+              {...({ webkitdirectory: "", directory: "" } as any)}
+            />
+          </label>
+
+          <label style={styles.zipButton}>
+            Upload ZIP
+            <input
+              type="file"
+              accept=".zip,application/zip"
+              disabled={uploading}
+              onChange={(event) => {
+                uploadZip(event.target.files?.[0] || null);
+                event.currentTarget.value = "";
+              }}
+              style={{ display: "none" }}
+            />
+          </label>
+        </div>
+
+        {uploading && (
+          <div style={styles.progressMessage}>
+            Processing and optimizing images. Please wait…
+          </div>
+        )}
+
+        {message && (
+          <div
+            style={{
+              ...styles.message,
+              background:
+                message.toLowerCase().includes("failed") ||
+                message.toLowerCase().includes("could not")
+                  ? "#fee2e2"
+                  : "#dcfce7",
+            }}
+          >
+            {message}
+          </div>
+        )}
+      </div>
+
+      {result && (
+        <div style={styles.resultCard}>
+          <h2 style={styles.sectionTitle}>Latest Upload Result</h2>
+
+          <div style={styles.resultSummary}>
+            Total: <strong>{result.total || 0}</strong> &nbsp;|&nbsp; Matched:{" "}
+            <strong>{result.matchedCount || 0}</strong> &nbsp;|&nbsp;
+            Unmatched: <strong>{result.unmatchedCount || 0}</strong>
+          </div>
+
+          {!!result.unmatched?.length && (
+            <div style={{ marginTop: 14 }}>
+              <strong>Unmatched files</strong>
+
+              <div style={styles.unmatchedList}>
+                {result.unmatched.map((entry, index) => (
+                  <div key={`${entry.originalName}-${index}`}>
+                    {entry.originalName}
+                    {entry.masterItemCode
+                      ? ` (${entry.masterItemCode})`
+                      : ""}{" "}
+                    — {entry.reason || "Not matched"}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div style={styles.libraryCard}>
+        <div style={styles.libraryHeader}>
+          <h2 style={styles.sectionTitle}>Image Library</h2>
+
+          <div style={styles.searchRow}>
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") loadItems();
+              }}
+              placeholder="Search code, item, brand or category"
+              style={styles.searchInput}
+            />
+
+            <button
+              type="button"
+              onClick={loadItems}
+              style={styles.searchButton}
+            >
+              Search
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setSearch("");
+                setTimeout(loadItems, 0);
+              }}
+              style={styles.secondaryButton}
+            >
+              Reset
+            </button>
+          </div>
+        </div>
+
+        {loading ? (
+          <div style={styles.empty}>Loading master items…</div>
+        ) : !items.length ? (
+          <div style={styles.empty}>No master items found.</div>
+        ) : (
+          <div style={styles.grid}>
+            {items.map((item) => {
+              const image = absoluteImageUrl(item.imageUrl);
+
+              return (
+                <div key={item.masterItemCode} style={styles.itemCard}>
+                  <div style={styles.imageBox}>
+                    {image ? (
+                      <img
+                        src={image}
+                        alt={item.itemName || item.masterItemCode}
+                        style={styles.image}
+                      />
+                    ) : (
+                      <div style={styles.noImage}>No image</div>
+                    )}
+                  </div>
+
+                  <div style={styles.itemCode}>{item.masterItemCode}</div>
+                  <div style={styles.itemName}>
+                    {item.itemName || "Unnamed item"}
+                  </div>
+
+                  <div style={styles.meta}>
+                    {item.brand || "No brand"}
+                    <br />
+                    {item.category || "No category"}
+                    {item.subCategory ? ` / ${item.subCategory}` : ""}
+                  </div>
+
+                  <div style={styles.cardActions}>
+                    <label style={styles.replaceButton}>
+                      {image ? "Replace" : "Add Image"}
+                      <input
+                        type="file"
+                        accept=".jpg,.jpeg,.png,.webp"
+                        disabled={uploading}
+                        onChange={(event) => {
+                          const file = event.target.files?.[0];
+
+                          if (file) {
+                            const renamedFile = new File(
+                              [file],
+                              `${item.masterItemCode}${file.name.substring(
+                                file.name.lastIndexOf(".")
+                              )}`,
+                              { type: file.type }
+                            );
+
+                            const transfer = new DataTransfer();
+                            transfer.items.add(renamedFile);
+
+                            uploadFiles(transfer.files, "images");
+                          }
+
+                          event.currentTarget.value = "";
+                        }}
+                        style={{ display: "none" }}
+                      />
+                    </label>
+
+                    {image && (
+                      <button
+                        type="button"
+                        onClick={() => deleteImage(item)}
+                        style={styles.deleteButton}
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const styles: Record<string, React.CSSProperties> = {
+  page: {
+    minHeight: "100vh",
+    background: "#f4f7fb",
+    padding: "24px",
+    fontFamily: "Arial, sans-serif",
+    color: "#172033",
+  },
+  header: {
+    maxWidth: "1450px",
+    margin: "0 auto 18px",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: "20px",
+    flexWrap: "wrap",
+  },
+  eyebrow: {
+    color: "#2563eb",
+    fontWeight: 800,
+    fontSize: "12px",
+    letterSpacing: "1.5px",
+  },
+  title: {
+    margin: "5px 0 4px",
+    fontSize: "30px",
+  },
+  subtitle: {
+    margin: 0,
+    color: "#5f6b7a",
+  },
+  instruction: {
+    maxWidth: "1450px",
+    margin: "0 auto 18px",
+    padding: "14px 16px",
+    background: "#fff7d6",
+    border: "1px solid #f4ce55",
+    borderRadius: "10px",
+    lineHeight: 1.6,
+  },
+  statsGrid: {
+    maxWidth: "1450px",
+    margin: "0 auto 18px",
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
+    gap: "14px",
+  },
+  statCard: {
+    background: "#ffffff",
+    borderRadius: "12px",
+    padding: "18px",
+    boxShadow: "0 3px 14px rgba(15, 23, 42, 0.07)",
+  },
+  statNumber: {
+    fontSize: "27px",
+    fontWeight: 800,
+  },
+  statLabel: {
+    color: "#687386",
+    marginTop: "5px",
+  },
+  uploadCard: {
+    maxWidth: "1450px",
+    margin: "0 auto 18px",
+    background: "#ffffff",
+    padding: "20px",
+    borderRadius: "12px",
+    boxShadow: "0 3px 14px rgba(15, 23, 42, 0.07)",
+  },
+  resultCard: {
+    maxWidth: "1450px",
+    margin: "0 auto 18px",
+    background: "#ffffff",
+    padding: "20px",
+    borderRadius: "12px",
+    boxShadow: "0 3px 14px rgba(15, 23, 42, 0.07)",
+  },
+  sectionTitle: {
+    margin: "0 0 14px",
+    fontSize: "20px",
+  },
+  uploadButtons: {
+    display: "flex",
+    gap: "10px",
+    flexWrap: "wrap",
+  },
+  primaryButton: {
+    display: "inline-block",
+    cursor: "pointer",
+    border: 0,
+    borderRadius: "8px",
+    padding: "11px 17px",
+    background: "#2563eb",
+    color: "#ffffff",
+    fontWeight: 700,
+  },
+  zipButton: {
+    display: "inline-block",
+    cursor: "pointer",
+    border: 0,
+    borderRadius: "8px",
+    padding: "11px 17px",
+    background: "#7c3aed",
+    color: "#ffffff",
+    fontWeight: 700,
+  },
+  secondaryButton: {
+    border: "1px solid #cbd5e1",
+    borderRadius: "8px",
+    padding: "10px 15px",
+    background: "#ffffff",
+    color: "#263449",
+    cursor: "pointer",
+    fontWeight: 700,
+  },
+  progressMessage: {
+    marginTop: "15px",
+    padding: "12px",
+    background: "#e0efff",
+    borderRadius: "8px",
+  },
+  message: {
+    marginTop: "15px",
+    padding: "12px",
+    borderRadius: "8px",
+    fontWeight: 700,
+  },
+  resultSummary: {
+    fontSize: "16px",
+  },
+  unmatchedList: {
+    marginTop: "8px",
+    maxHeight: "180px",
+    overflowY: "auto",
+    padding: "10px",
+    background: "#fff1f2",
+    borderRadius: "8px",
+    lineHeight: 1.7,
+    fontSize: "13px",
+  },
+  libraryCard: {
+    maxWidth: "1450px",
+    margin: "0 auto",
+    background: "#ffffff",
+    padding: "20px",
+    borderRadius: "12px",
+    boxShadow: "0 3px 14px rgba(15, 23, 42, 0.07)",
+  },
+  libraryHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: "14px",
+    flexWrap: "wrap",
+  },
+  searchRow: {
+    display: "flex",
+    gap: "8px",
+    flexWrap: "wrap",
+  },
+  searchInput: {
+    width: "310px",
+    maxWidth: "75vw",
+    padding: "10px 12px",
+    border: "1px solid #cbd5e1",
+    borderRadius: "8px",
+  },
+  searchButton: {
+    border: 0,
+    borderRadius: "8px",
+    padding: "10px 16px",
+    background: "#0f766e",
+    color: "#ffffff",
+    fontWeight: 700,
+    cursor: "pointer",
+  },
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fill, minmax(215px, 1fr))",
+    gap: "16px",
+    marginTop: "15px",
+  },
+  itemCard: {
+    border: "1px solid #e2e8f0",
+    borderRadius: "11px",
+    padding: "12px",
+    background: "#ffffff",
+  },
+  imageBox: {
+    height: "165px",
+    borderRadius: "8px",
+    overflow: "hidden",
+    background: "#f1f5f9",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  image: {
+    width: "100%",
+    height: "100%",
+    objectFit: "contain",
+  },
+  noImage: {
+    color: "#94a3b8",
+    fontWeight: 700,
+  },
+  itemCode: {
+    marginTop: "11px",
+    color: "#2563eb",
+    fontSize: "12px",
+    fontWeight: 800,
+  },
+  itemName: {
+    marginTop: "4px",
+    minHeight: "39px",
+    fontWeight: 800,
+    lineHeight: 1.35,
+  },
+  meta: {
+    minHeight: "48px",
+    marginTop: "7px",
+    color: "#64748b",
+    fontSize: "12px",
+    lineHeight: 1.5,
+  },
+  cardActions: {
+    display: "flex",
+    gap: "8px",
+    marginTop: "11px",
+  },
+  replaceButton: {
+    flex: 1,
+    textAlign: "center",
+    cursor: "pointer",
+    borderRadius: "7px",
+    padding: "8px",
+    background: "#2563eb",
+    color: "#ffffff",
+    fontSize: "12px",
+    fontWeight: 700,
+  },
+  deleteButton: {
+    border: 0,
+    borderRadius: "7px",
+    padding: "8px 11px",
+    background: "#dc2626",
+    color: "#ffffff",
+    fontSize: "12px",
+    fontWeight: 700,
+    cursor: "pointer",
+  },
+  empty: {
+    padding: "40px",
+    textAlign: "center",
+    color: "#64748b",
+  },
+};

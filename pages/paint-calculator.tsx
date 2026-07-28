@@ -1,461 +1,1094 @@
-import React, { useState } from "react";
-import { useRouter } from "next/router";
+import React, { useState, useEffect, useMemo } from 'react';
 import * as XLSX from 'xlsx';
+import { useRouter } from 'next/router';
 import { usePaymentBarrier } from '../hooks/usePaymentBarrier';
-import { getMasterRate, rateStatusMessage } from "../utils/masterRates";
+import MarketRateTrend from '../components/ui/MarketRateTrend';
+import { getMasterRate, syncApprovedRatesFromBackend, MasterRateResult } from "../utils/masterRates";
 
-const styles: any = {
-  container: { maxWidth: "100%", margin: 0, padding: "12px", backgroundColor: "#f5f0e8", minHeight: "100vh", boxSizing: "border-box" },
-  header: { backgroundColor: "#9b59b6", padding: "12px", borderRadius: "8px", marginBottom: "15px", color: "white", display: "flex", alignItems: "center", gap: "10px" },
-  backButton: { backgroundColor: "transparent", border: "none", color: "white", fontSize: "22px", cursor: "pointer", padding: "5px" },
-  headerTitle: { margin: 0, fontSize: "18px", flex: 1 },
-  sectionTitle: { backgroundColor: "#e8f4f8", color: "#9b59b6", padding: "8px", borderRadius: "6px", marginBottom: "12px", fontSize: "14px", fontWeight: "bold", textAlign: "center", border: "1px solid #cce5ed" },
-  row6: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "8px", marginBottom: "12px" },
-  label: { display: "block", marginBottom: "3px", fontWeight: "600", fontSize: "10px", color: "#555" },
-  input: { width: "100%", padding: "6px", border: "1px solid #ccc", borderRadius: "4px", fontSize: "11px", boxSizing: "border-box", backgroundColor: "#fff" },
-  select: { width: "100%", padding: "6px", border: "1px solid #ccc", borderRadius: "4px", fontSize: "11px", backgroundColor: "#fff" },
-  buttonSmall: { backgroundColor: "#2196F3", color: "white", padding: "4px 12px", border: "none", borderRadius: "4px", cursor: "pointer", fontSize: "10px", marginTop: "4px" },
-  buttonRow: { display: "flex", justifyContent: "center", gap: "15px", margin: "20px 0", flexWrap: "wrap" },
-  buttonGenerate: { backgroundColor: "#800020", color: "white", padding: "8px 20px", border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "13px", fontWeight: "bold" },
-  buttonExport: { backgroundColor: "#28a745", color: "white", padding: "8px 20px", border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "13px" },
-  buttonWhatsapp: { backgroundColor: "#25D366", color: "white", padding: "8px 20px", border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "13px" },
-  cardContainer: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: "10px", marginBottom: "20px" },
-  card: { padding: "8px", borderRadius: "10px", textAlign: "center", color: "white" },
-  cardBlue: { backgroundColor: "#2196F3" },
-  cardLightGreen: { backgroundColor: "#8BC34A" },
-  cardLightOrange: { backgroundColor: "#FFB74D" },
-  cardLightTeal: { backgroundColor: "#4DB6AC" },
-  cardValue: { fontSize: "14px", fontWeight: "bold", marginTop: "4px" },
-  tableContainer: { overflowX: "auto", marginTop: "15px", border: "1px solid #ddd", borderRadius: "8px", backgroundColor: "#fff" },
-  table: { width: "100%", borderCollapse: "collapse", fontSize: "12px" },
-  th: { backgroundColor: "#9b59b6", color: "white", padding: "8px", textAlign: "left" },
-  td: { padding: "6px", borderBottom: "1px solid #eee" },
-  evenRow: { backgroundColor: "#f9f9f9" },
-  rateInfo: { backgroundColor: "#e8f4f8", padding: "6px", borderRadius: "4px", fontSize: "10px", textAlign: "center", marginBottom: "10px", color: "#555" }
+const styles: Record<string, React.CSSProperties> = {
+  container: { maxWidth: '1200px', margin: '0 auto', padding: '16px', backgroundColor: '#f8fafc', minHeight: '100vh', boxSizing: 'border-box', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' },
+  header: { backgroundColor: '#0f766e', padding: '16px 20px', borderRadius: '10px', marginBottom: '16px', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 8px rgba(15,118,110,0.2)' },
+  headerTitle: { margin: 0, fontSize: '20px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '10px' },
+  badge: { backgroundColor: '#14b8a6', color: '#ffffff', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: '700' },
+  backBtn: { backgroundColor: 'rgba(255,255,255,0.15)', border: 'none', color: 'white', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '600' },
+
+  dropdownCard: { backgroundColor: '#ffffff', borderRadius: '10px', border: '1px solid #cbd5e1', padding: '16px', marginBottom: '18px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' },
+  dropdownLabel: { fontSize: '12px', fontWeight: '800', color: '#0f766e', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '6px', display: 'block' },
+  modeSelect: { width: '100%', padding: '12px 14px', border: '2px solid #0f766e', borderRadius: '8px', fontSize: '15px', fontWeight: '700', color: '#0f766e', backgroundColor: '#f0fdfa', outline: 'none', cursor: 'pointer' },
+
+  stepperCard: { backgroundColor: '#ffffff', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '18px', marginBottom: '18px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' },
+  sectionHeader: { fontSize: '15px', fontWeight: '700', color: '#0f766e', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '2px solid #ccfbf1', paddingBottom: '8px' },
+
+  grid2: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px', marginBottom: '14px' },
+  grid3: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px', marginBottom: '14px' },
+  grid4: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '14px' },
+
+  fieldGroup: { display: 'flex', flexDirection: 'column', gap: '4px' },
+  label: { fontSize: '11px', fontWeight: '700', color: '#334155', textTransform: 'uppercase', letterSpacing: '0.3px' },
+  input: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#fff', outline: 'none' },
+  select: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', backgroundColor: '#fff', outline: 'none' },
+
+  btnPrimary: { backgroundColor: '#0f766e', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '6px' },
+  btnSecondary: { backgroundColor: '#2563eb', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' },
+  btnDanger: { backgroundColor: '#ef4444', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '11px', fontWeight: '600' },
+  btnSuccess: { backgroundColor: '#16a34a', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '700' },
+  btnReset: { backgroundColor: '#64748b', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '600' },
+
+  summaryGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '14px', marginBottom: '18px' },
+  metricCard: { padding: '14px', borderRadius: '8px', color: 'white', textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center' },
+  metricTeal: { backgroundColor: '#0f766e' },
+  metricBlue: { backgroundColor: '#2563eb' },
+  metricGreen: { backgroundColor: '#16a34a' },
+  metricOrange: { backgroundColor: '#ea580c' },
+  metricTitle: { fontSize: '11px', textTransform: 'uppercase', opacity: 0.9, fontWeight: '600' },
+  metricVal: { fontSize: '19px', fontWeight: '800', marginTop: '4px' },
+
+  tableContainer: { overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: '#fff', marginBottom: '18px' },
+  table: { width: '100%', borderCollapse: 'collapse', fontSize: '12px' },
+  th: { backgroundColor: '#0f766e', color: 'white', padding: '10px', textAlign: 'left', fontWeight: '700' },
+  td: { padding: '8px 10px', borderBottom: '1px solid #f1f5f9', color: '#334155' },
+
+  rateTag: { backgroundColor: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', padding: '2px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: '700' },
+  rateTagWarn: { backgroundColor: '#fff7ed', color: '#c2410c', border: '1px solid #ffedd5', padding: '2px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: '700' },
+
+  warnBanner: { backgroundColor: '#fff7ed', border: '1px solid #fdba74', color: '#9a3412', padding: '12px', borderRadius: '8px', marginBottom: '16px', fontSize: '12px', fontWeight: '600' },
+  noteBox: { backgroundColor: '#f0fdfa', border: '1px solid #99f6e4', padding: '12px', borderRadius: '8px', fontSize: '12px', color: '#0f766e', marginBottom: '14px' }
 };
 
-const formatNumber = (num: number) => {
-  if (!num || isNaN(num)) return "0.00";
-  return Number(num).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const formatCurrency = (val: number | null | undefined): string => {
+  if (val === null || val === undefined || isNaN(val)) return "Rate Unavailable in Admin Master";
+  return `₹${val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
-const coverage: any = {
-  putty: 10,
-  primer: 120,
-  emulsion: 120,
-  royal: 100,
-  exterior: 90,
-  enamel: 85,
-  ceiling: 130,
-  texture: 25,
-  design: 30,
-  stencil: 35
+const formatNumber = (val: number | null | undefined, decimals = 2): string => {
+  if (val === null || val === undefined || isNaN(val)) return "0";
+  return val.toLocaleString('en-IN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 };
 
-export default function PaintPage() {
-  
+// IS 2395 & CPWD Paint Coverages
+const COVERAGES = {
+  putty: 10,     // 1 kg = 10 sqft (2 coats)
+  primer: 120,   // 1 L = 120 sqft (1 coat)
+  emulsion: 60,  // 1 L = 60 sqft (2 coats)
+  royal: 55,     // 1 L = 55 sqft (2 coats)
+  exterior: 50,  // 1 L = 50 sqft (2 coats) Weatherproof Emulsion
+  enamel: 100,   // 1 L = 100 sqft (1 coat)
+  ceiling: 65,   // 1 L = 65 sqft (2 coats)
+  texture: 25
+};
+
+export default function PaintCalculator() {
+  const router = useRouter();
   const { checkAndRun } = usePaymentBarrier();
-const router = useRouter();
 
-  const [calculationMode, setCalculationMode] = useState("Particular Wall / Room");
-  const [finishType, setFinishType] = useState("Fresh Coat");
-  const [paintType, setPaintType] = useState("Regular Emulsion");
+  useEffect(() => {
+    syncApprovedRatesFromBackend();
+  }, []);
 
-  const [plotLength, setPlotLength] = useState(30);
-  const [plotWidth, setPlotWidth] = useState(40);
-  const [floors, setFloors] = useState(2);
-  const [floorHeight, setFloorHeight] = useState(10);
+  // Estimation Method Selector Mode: 'quick' vs 'detailed'
+  const [calcMode, setCalcMode] = useState<'quick' | 'detailed'>('quick');
 
-  const [length, setLength] = useState(20);
-  const [height, setHeight] = useState(10);
-  const [wallNos, setWallNos] = useState(4);
-  const [includeCeiling, setIncludeCeiling] = useState(true);
-  const [primerCoats, setPrimerCoats] = useState(1);
-  const [paintCoats, setPaintCoats] = useState(2);
+  // QUICK CALCULATION MODE INPUTS
+  const initialQuickInputs = {
+    totalArea: 1000,
+    areaType: 'Net Paintable Surface Area',
+    locationScope: 'Internal Painting', // 'Internal Painting' | 'External Painting' | 'Both (Internal & External)'
+    finishType: 'Fresh Coat',
+    paintType: 'Regular Emulsion',
+    includeCeiling: true,
+    primerCoats: 1,
+    paintCoats: 2
+  };
 
-  const [openings, setOpenings] = useState<any[]>([]);
-  const [openingType, setOpeningType] = useState("Door");
-  const [openingWidth, setOpeningWidth] = useState(3);
-  const [openingHeight, setOpeningHeight] = useState(7);
-  const [openingNos, setOpeningNos] = useState(1);
-  const [hasShutter, setHasShutter] = useState(true);
-  const [hasFrame, setHasFrame] = useState(true);
+  const [quickInputs, setQuickInputs] = useState(initialQuickInputs);
 
-  const [specialPaints, setSpecialPaints] = useState<any[]>([]);
-  const [specialType, setSpecialType] = useState("Texture");
-  const [specialArea, setSpecialArea] = useState(100);
+  // Auto Update Recommended Paint Type Based on Location Selection
+  const handleQuickLocationChange = (loc: string) => {
+    let recPaint = quickInputs.paintType;
+    if (loc === 'External Painting') recPaint = 'Exterior Weatherproof Paint';
+    if (loc === 'Internal Painting') recPaint = 'Regular Emulsion';
+    setQuickInputs({ ...quickInputs, locationScope: loc, paintType: recPaint });
+  };
 
-  const [results, setResults] = useState<any>(null);
-  const [generated, setGenerated] = useState(false);
+  // DETAILED WALL-WISE CALCULATOR INPUTS
+  const initialDetailedInputs = {
+    locationScope: 'Internal Painting',
+    finishType: 'Fresh Coat',
+    paintType: 'Regular Emulsion',
+    length: 20,
+    height: 10,
+    wallNos: 4,
+    includeCeiling: true,
+    primerCoats: 1,
+    paintCoats: 2
+  };
 
-  const puttyRate = getMasterRate(["wall putty", "putty"], 28);
-  const primerRate = getMasterRate(["primer"], 120);
-  const emulsionRate = getMasterRate(["emulsion paint", "emulsion"], 220);
-  const royalRate = getMasterRate(["royal paint", "premium paint", "royal"], 350);
-  const exteriorRate = getMasterRate(["exterior paint", "weatherproof paint", "weather proof"], 280);
-  const enamelRate = getMasterRate(["enamel paint", "enamel"], 260);
-  const ceilingRate = getMasterRate(["ceiling paint", "ceiling"], 180);
-  const textureRate = getMasterRate(["texture paint", "texture"], 90);
-  const designRate = getMasterRate(["design paint", "stencil paint", "design"], 120);
-  const labourRate = getMasterRate(["painting labour", "paint labour", "labour painting"], finishType === "Repaint" ? 8 : 12, ["bm_labour_rates", "bm_service_rates"]);
+  const [detailedInputs, setDetailedInputs] = useState(initialDetailedInputs);
 
-  const rateMsg = rateStatusMessage({
-    putty: puttyRate,
-    primer: primerRate,
-    emulsion: emulsionRate,
-    royal: royalRate,
-    exterior: exteriorRate,
-    enamel: enamelRate,
-    ceiling: ceilingRate,
-    texture: textureRate,
-    design: designRate,
-    labour: labourRate
+  const handleDetailedLocationChange = (loc: string) => {
+    let recPaint = detailedInputs.paintType;
+    if (loc === 'External Painting') recPaint = 'Exterior Weatherproof Paint';
+    if (loc === 'Internal Painting') recPaint = 'Regular Emulsion';
+    setDetailedInputs({ ...detailedInputs, locationScope: loc, paintType: recPaint });
+  };
+
+  // Openings (Doors & Windows) for Detailed Mode
+  const [openings, setOpenings] = useState<any[]>([
+    { type: 'Door', width: 3, height: 7, nos: 1, area: 21, hasShutter: true, hasFrame: true }
+  ]);
+
+  const [openingInput, setOpeningInput] = useState({
+    type: 'Door',
+    width: 3,
+    height: 7,
+    nos: 1,
+    hasShutter: true,
+    hasFrame: true
   });
 
-  const getPaintRate = (type: string) => {
-    if (type === "Premium / Royal Paint") return royalRate.rate;
-    if (type === "Exterior Weatherproof Paint") return exteriorRate.rate;
-    if (type === "Enamel Paint") return enamelRate.rate;
-    if (type === "Ceiling Paint") return ceilingRate.rate;
-    if (type === "Texture Paint") return textureRate.rate;
-    if (type === "Design / Stencil Paint") return designRate.rate;
-    return emulsionRate.rate;
+  // Special / Texture Paints
+  const [specialPaints, setSpecialPaints] = useState<any[]>([]);
+  const [specialInput, setSpecialInput] = useState({
+    type: 'Texture',
+    area: 100
+  });
+
+  // Admin Master Rate Fetches
+  const puttyRate = getMasterRate(["MAT-PUT-01", "MAT-PNT-PUT", "wall putty", "putty"], 19.50);
+  const primerRate = getMasterRate(["MAT-PRM-01", "MAT-PNT-PRM", "wall primer", "primer"], 160);
+  const emulsionRate = getMasterRate(["MAT-PNT-01", "MAT-PNT-EML", "emulsion paint", "regular emulsion"], 235);
+  const royalRate = getMasterRate(["MAT-PNT-ROY", "royal paint", "premium paint"], 380);
+  const exteriorRate = getMasterRate(["MAT-PNT-EXT", "exterior paint", "weatherproof paint"], 285);
+  const enamelRate = getMasterRate(["MAT-ENM-01", "enamel paint", "enamel"], 240);
+  const ceilingRate = getMasterRate(["MAT-PNT-CEL", "ceiling paint"], 180);
+  const textureRate = getMasterRate(["MAT-PNT-TXT", "texture paint"], 95);
+
+  const labourRate = getMasterRate(["SRV-PNT-LAY", "painting labour", "paint labour"], quickInputs.finishType === 'Repaint' ? 9 : 14);
+
+  const getPaintRateObj = (type: string): MasterRateResult => {
+    if (type.includes("Royal") || type.includes("Premium")) return royalRate;
+    if (type.includes("Exterior") || type.includes("Weatherproof")) return exteriorRate;
+    if (type.includes("Enamel")) return enamelRate;
+    if (type.includes("Ceiling")) return ceilingRate;
+    if (type.includes("Texture")) return textureRate;
+    return emulsionRate;
   };
 
-  const getCoverage = (type: string) => {
-    if (type === "Premium / Royal Paint") return coverage.royal;
-    if (type === "Exterior Weatherproof Paint") return coverage.exterior;
-    if (type === "Enamel Paint") return coverage.enamel;
-    if (type === "Ceiling Paint") return coverage.ceiling;
-    if (type === "Texture Paint") return coverage.texture;
-    if (type === "Design / Stencil Paint") return coverage.design;
-    return coverage.emulsion;
+  const getCoverageFactor = (type: string) => {
+    if (type.includes("Royal") || type.includes("Premium")) return COVERAGES.royal;
+    if (type.includes("Exterior") || type.includes("Weatherproof")) return COVERAGES.exterior;
+    if (type.includes("Enamel")) return COVERAGES.enamel;
+    if (type.includes("Ceiling")) return COVERAGES.ceiling;
+    if (type.includes("Texture")) return COVERAGES.texture;
+    return COVERAGES.emulsion;
   };
 
-  const addOpening = () => {
-    if (openingWidth > 0 && openingHeight > 0 && openingNos > 0) {
-      const area = openingWidth * openingHeight * openingNos;
-      setOpenings([...openings, { type: openingType, width: openingWidth, height: openingHeight, nos: openingNos, area, hasShutter, hasFrame }]);
-      setOpeningWidth(3);
-      setOpeningHeight(7);
-      setOpeningNos(1);
+  const handleAddOpening = () => {
+    if (openingInput.width > 0 && openingInput.height > 0 && openingInput.nos > 0) {
+      const area = openingInput.width * openingInput.height * openingInput.nos;
+      setOpenings([...openings, { ...openingInput, area, id: Date.now() }]);
     }
   };
 
-  const removeOpening = (index: number) => {
+  const handleRemoveOpening = (index: number) => {
     const next = [...openings];
     next.splice(index, 1);
     setOpenings(next);
   };
 
-  const addSpecialPaint = () => {
-    if (specialArea > 0) {
-      setSpecialPaints([...specialPaints, { type: specialType, area: specialArea }]);
-      setSpecialArea(100);
-      setSpecialType("Texture");
+  const handleAddSpecialPaint = () => {
+    if (specialInput.area > 0) {
+      setSpecialPaints([...specialPaints, { ...specialInput, id: Date.now() }]);
     }
   };
 
-  const removeSpecialPaint = (index: number) => {
+  const handleRemoveSpecialPaint = (index: number) => {
     const next = [...specialPaints];
     next.splice(index, 1);
     setSpecialPaints(next);
   };
 
-  const calculateResults = () => {
-    let wallArea = 0;
-    let ceilingArea = 0;
-    let bua = 0;
+  const handleResetQuick = () => {
+    setQuickInputs(initialQuickInputs);
+  };
 
-    if (calculationMode === "Full Building") {
-      const floorArea = plotLength * plotWidth;
-      bua = floorArea * floors;
-      const totalPaintableArea = bua * 3.5; // Civil thumb rule: total BUA x 3.5 sqft
-      wallArea = totalPaintableArea;
-      ceilingArea = 0;
-    } else {
-      wallArea = length * height * wallNos;
-      ceilingArea = includeCeiling ? length * height : 0;
+  const handleResetDetailed = () => {
+    setDetailedInputs(initialDetailedInputs);
+    setOpenings([{ type: 'Door', width: 3, height: 7, nos: 1, area: 21, hasShutter: true, hasFrame: true }]);
+    setSpecialPaints([]);
+  };
+
+  // 1. QUICK CALCULATION ENGINE
+  const quickCalcResults = useMemo(() => {
+    const q = quickInputs;
+
+    let paintableArea = q.totalArea;
+    if (q.areaType === 'Built-Up / Floor Area') {
+      paintableArea = q.totalArea * 3.5;
     }
 
-    let openingArea = 0;
-    let shutterArea = 0;
-    let frameRft = 0;
+    const isRepaint = q.finishType === 'Repaint';
+    const isTouchup = q.finishType === 'One Coat Touch-up';
 
-    openings.forEach((o) => {
-      openingArea += o.area;
-      if (o.hasShutter) shutterArea += o.area * 2;
-      if (o.hasFrame) frameRft += 2 * (o.width + o.height) * o.nos;
-    });
+    let unpricedCount = 0;
+    const unpricedList: string[] = [];
 
-    const netWallArea = Math.max(wallArea - openingArea, 0);
-    const plainArea = netWallArea + ceilingArea;
+    const resultItems: any[] = [];
+    let grandMatCost = 0;
 
-    const isRepaint = finishType === "Repaint";
-    const isTouchup = finishType === "One Coat Touch-up";
+    if (q.locationScope === 'Both (Internal & External)') {
+      const intArea = paintableArea * 0.75;
+      const extArea = paintableArea * 0.25;
 
-    const puttyArea = isRepaint || isTouchup ? 0 : plainArea;
-    const primerArea = isTouchup ? 0 : plainArea;
-    const paintArea = plainArea;
+      const intPuttyKg = isRepaint || isTouchup ? 0 : (intArea / COVERAGES.putty);
+      const intPrimerLtr = isTouchup ? 0 : (intArea / COVERAGES.primer) * (isRepaint ? 0.5 : q.primerCoats);
+      const intPaintLtr = (intArea / COVERAGES.emulsion) * (isTouchup ? 1 : q.paintCoats) / 2;
 
-    const internalArea = calculationMode === "Full Building" ? paintArea * 0.70 : paintArea;
-    const externalArea = calculationMode === "Full Building" ? paintArea * 0.25 : 0;
-    const enamelArea = calculationMode === "Full Building" ? paintArea * 0.05 : 0;
+      const extPrimerLtr = isTouchup ? 0 : (extArea / COVERAGES.primer) * (isRepaint ? 0.5 : q.primerCoats);
+      const extPaintLtr = (extArea / COVERAGES.exterior) * (isTouchup ? 1 : q.paintCoats) / 2;
 
-    const puttyKg = puttyArea / coverage.putty;
-    const primerLtr = (primerArea / coverage.primer) * (isRepaint ? 0.5 : primerCoats);
+      const puttyCost = intPuttyKg * (puttyRate.found ? puttyRate.rate : 0);
+      const intPrimerCost = intPrimerLtr * (primerRate.found ? primerRate.rate : 0);
+      const intPaintCost = intPaintLtr * (emulsionRate.found ? emulsionRate.rate : 0);
+      const extPrimerCost = extPrimerLtr * (primerRate.found ? primerRate.rate : 0);
+      const extPaintCost = extPaintLtr * (exteriorRate.found ? exteriorRate.rate : 0);
 
-    const effectivePaintCoats = isTouchup ? 1 : paintCoats;
+      grandMatCost = puttyCost + intPrimerCost + intPaintCost + extPrimerCost + extPaintCost;
 
-    let internalEmulsionLtr = 0;
-    let externalWeatherLtr = 0;
-    let enamelPrimerLtr = 0;
-    let enamelPaintLtr = 0;
-    let regularPaintLtr = 0;
-
-    if (calculationMode === "Full Building") {
-      internalEmulsionLtr = (internalArea / coverage.emulsion) * effectivePaintCoats;
-      externalWeatherLtr = (externalArea / coverage.exterior) * effectivePaintCoats;
-      enamelPrimerLtr = enamelArea / coverage.primer;
-      enamelPaintLtr = (enamelArea / coverage.enamel) * effectivePaintCoats;
-      regularPaintLtr = internalEmulsionLtr + externalWeatherLtr;
+      resultItems.push(
+        { code: puttyRate.itemCode || "MAT-PUT-01", category: "Material", description: `Interior Wall Putty (750 sqft)`, unit: "KG", engQty: intPuttyKg, procQty: Math.ceil(intPuttyKg), rate: puttyRate.rate, rateFound: puttyRate.found, amount: puttyCost },
+        { code: primerRate.itemCode || "MAT-PRM-01", category: "Material", description: `Interior Wall Primer (750 sqft)`, unit: "LTR", engQty: intPrimerLtr, procQty: Math.ceil(intPrimerLtr), rate: primerRate.rate, rateFound: primerRate.found, amount: intPrimerCost },
+        { code: emulsionRate.itemCode || "MAT-PNT-01", category: "Material", description: `Interior Emulsion Paint (750 sqft)`, unit: "LTR", engQty: intPaintLtr, procQty: Math.ceil(intPaintLtr), rate: emulsionRate.rate, rateFound: emulsionRate.found, amount: intPaintCost },
+        { code: primerRate.itemCode || "MAT-PRM-01", category: "Material", description: `Exterior Weatherproof Wall Primer (250 sqft)`, unit: "LTR", engQty: extPrimerLtr, procQty: Math.ceil(extPrimerLtr), rate: primerRate.rate, rateFound: primerRate.found, amount: extPrimerCost },
+        { code: exteriorRate.itemCode || "MAT-PNT-EXT", category: "Material", description: `Exterior Weatherproof Emulsion Paint (250 sqft)`, unit: "LTR", engQty: extPaintLtr, procQty: Math.ceil(extPaintLtr), rate: exteriorRate.rate, rateFound: exteriorRate.found, amount: extPaintCost }
+      );
     } else {
-      regularPaintLtr = (paintArea / getCoverage(paintType)) * effectivePaintCoats;
+      const isExternal = q.locationScope === 'External Painting';
+      const puttyKg = (isRepaint || isTouchup || isExternal) ? 0 : (paintableArea / COVERAGES.putty);
+      const primerLtr = isTouchup ? 0 : (paintableArea / COVERAGES.primer) * (isRepaint ? 0.5 : q.primerCoats);
+
+      const activePaintRate = getPaintRateObj(q.paintType);
+      const paintCoverage = getCoverageFactor(q.paintType);
+      const effectivePaintCoats = isTouchup ? 1 : q.paintCoats;
+      const paintLtr = (paintableArea / paintCoverage) * (effectivePaintCoats / 2);
+
+      if (!puttyRate.found && puttyKg > 0) { unpricedCount++; unpricedList.push("Wall Putty"); }
+      if (!primerRate.found && primerLtr > 0) { unpricedCount++; unpricedList.push("Wall Primer"); }
+      if (!activePaintRate.found) { unpricedCount++; unpricedList.push(q.paintType); }
+
+      const puttyCost = puttyKg * (puttyRate.found ? puttyRate.rate : 0);
+      const primerCost = primerLtr * (primerRate.found ? primerRate.rate : 0);
+      const paintCost = paintLtr * (activePaintRate.found ? activePaintRate.rate : 0);
+
+      grandMatCost = puttyCost + primerCost + paintCost;
+
+      if (puttyKg > 0) {
+        resultItems.push({
+          code: puttyRate.itemCode || "MAT-PUT-01",
+          category: "Material",
+          description: `Interior Wall Putty (2 Coats) - ${Math.ceil(puttyKg / 40)} Bags (40kg)`,
+          unit: "KG",
+          engQty: puttyKg,
+          procQty: Math.ceil(puttyKg),
+          rate: puttyRate.rate,
+          rateFound: puttyRate.found,
+          amount: puttyCost
+        });
+      }
+
+      resultItems.push(
+        {
+          code: primerRate.itemCode || "MAT-PRM-01",
+          category: "Material",
+          description: isExternal ? `Exterior Weatherproof Wall Primer (${q.primerCoats} Coat)` : `Interior Wall Primer (${q.primerCoats} Coat)`,
+          unit: "LTR",
+          engQty: primerLtr,
+          procQty: Math.ceil(primerLtr),
+          rate: primerRate.rate,
+          rateFound: primerRate.found,
+          amount: primerCost
+        },
+        {
+          code: activePaintRate.itemCode || "MAT-PNT-01",
+          category: "Material",
+          description: isExternal ? `Exterior Weatherproof Emulsion Paint (${q.paintCoats} Coats)` : `${q.paintType} (${q.paintCoats} Coats)`,
+          unit: "LTR",
+          engQty: paintLtr,
+          procQty: Math.ceil(paintLtr),
+          rate: activePaintRate.rate,
+          rateFound: activePaintRate.found,
+          amount: paintCost
+        }
+      );
     }
 
-    const shutterPaintLtr = calculationMode === "Full Building" ? 0 : shutterArea / coverage.enamel;
-    const framePaintLtr = calculationMode === "Full Building" ? 0 : frameRft / 100;
-
-    const specialRows = specialPaints.map((p) => {
-      const cov = p.type === "Texture" ? coverage.texture : p.type === "Royal" ? coverage.royal : p.type === "Design" ? coverage.design : coverage.stencil;
-      const rate = p.type === "Texture" ? textureRate.rate : p.type === "Royal" ? royalRate.rate : designRate.rate;
-      const ltr = p.area / cov;
-      return { item: `${p.type} Paint`, quantity: ltr, unit: "L", cost: ltr * rate };
+    const labourCost = paintableArea * (labourRate.found ? labourRate.rate : 0);
+    resultItems.push({
+      code: labourRate.itemCode || "SRV-PNT-LAY",
+      category: "Labour",
+      description: `Painting Labour (${q.locationScope} - ${q.finishType})`,
+      unit: "SQFT",
+      engQty: paintableArea,
+      procQty: paintableArea,
+      rate: labourRate.rate,
+      rateFound: labourRate.found,
+      amount: labourCost
     });
 
-    const puttyCost = puttyKg * puttyRate.rate;
-    const primerCost = primerLtr * primerRate.rate;
-    const internalEmulsionCost = internalEmulsionLtr * emulsionRate.rate;
-    const externalWeatherCost = externalWeatherLtr * exteriorRate.rate;
-    const enamelPrimerCost = enamelPrimerLtr * primerRate.rate;
-    const enamelPaintCost = enamelPaintLtr * enamelRate.rate;
-    const regularPaintCost = calculationMode === "Full Building"
-      ? internalEmulsionCost + externalWeatherCost + enamelPrimerCost + enamelPaintCost
-      : regularPaintLtr * getPaintRate(paintType);
-    const enamelCost = calculationMode === "Full Building" ? 0 : (shutterPaintLtr + framePaintLtr) * enamelRate.rate;
-    const specialCost = specialRows.reduce((sum, r) => sum + r.cost, 0);
-
-    const materialTotal = puttyCost + primerCost + regularPaintCost + enamelCost + specialCost;
-    const labourCost = paintArea * labourRate.rate;
-    const grandTotal = materialTotal + labourCost;
-
-    const rows = [
-      { item: "BUA / Floor Area Reference", quantity: bua || length * height, unit: "sqft", cost: "" },
-      { item: "Gross Wall Area", quantity: wallArea, unit: "sqft", cost: "" },
-      { item: "Opening Deduction", quantity: openingArea, unit: "sqft", cost: "" },
-      { item: "Ceiling Area", quantity: ceilingArea, unit: "sqft", cost: "" },
-      { item: "Net Paint Area", quantity: paintArea, unit: "sqft", cost: "" },
-      { item: "Wall Putty", quantity: puttyKg, unit: "kg", cost: puttyCost },
-      { item: "Primer", quantity: primerLtr, unit: "L", cost: primerCost },
-      ...(calculationMode === "Full Building" ? [
-        { item: "Internal Emulsion Paint", quantity: internalEmulsionLtr, unit: "L", cost: internalEmulsionCost },
-        { item: "External Weatherproof Paint", quantity: externalWeatherLtr, unit: "L", cost: externalWeatherCost },
-        { item: "Enamel Primer", quantity: enamelPrimerLtr, unit: "L", cost: enamelPrimerCost },
-        { item: "Enamel / Oil Paint", quantity: enamelPaintLtr, unit: "L", cost: enamelPaintCost }
-      ] : [
-        { item: paintType, quantity: regularPaintLtr, unit: "L", cost: regularPaintCost },
-        { item: "Enamel for Shutters / Frames", quantity: shutterPaintLtr + framePaintLtr, unit: "L", cost: enamelCost }
-      ]),
-      ...specialRows,
-      { item: "Material Total", quantity: "", unit: "", cost: materialTotal },
-      { item: "Labour", quantity: paintArea, unit: "sqft", cost: labourCost },
-      { item: "GRAND TOTAL", quantity: "", unit: "", cost: grandTotal }
-    ];
+    const grandTotal = grandMatCost + labourCost;
+    const costPerSqft = paintableArea > 0 ? grandTotal / paintableArea : 0;
 
     return {
-      netArea: formatNumber(paintArea),
-      puttyKg,
-      primerLtr,
-      totalCost: grandTotal,
-      materials: rows.map((r) => ({
-        item: r.item,
-        quantity: typeof r.quantity === "number" ? formatNumber(r.quantity) : r.quantity,
-        unit: r.unit,
-        cost: typeof r.cost === "number" ? formatNumber(r.cost) : r.cost
-      }))
+      paintableArea,
+      grandMatCost,
+      grandLabCost: labourCost,
+      grandTotal,
+      costPerSqft,
+      resultItems,
+      unpricedCount,
+      unpricedList
     };
-  };
+  }, [quickInputs, puttyRate, primerRate, labourRate, exteriorRate, emulsionRate]);
 
-  const handleGenerate = () => {
-    setResults(calculateResults());
-    setGenerated(true);
-  };
+  // 2. DETAILED WALL-WISE CALCULATION ENGINE
+  const detailedCalcResults = useMemo(() => {
+    const d = detailedInputs;
 
-  const handleBack = () => router.push("/calculators");
+    const grossWallArea = d.length * d.height * d.wallNos;
+    const ceilingArea = d.includeCeiling ? (d.length * d.height) : 0;
 
+    let totalOpeningArea = 0;
+    let totalShutterArea = 0;
+    let totalFrameRft = 0;
+
+    openings.forEach(o => {
+      totalOpeningArea += o.area;
+      if (o.hasShutter) totalShutterArea += o.area * 2;
+      if (o.hasFrame) totalFrameRft += 2 * (o.width + o.height) * o.nos;
+    });
+
+    const netWallArea = Math.max(0, grossWallArea - totalOpeningArea);
+    const totalPaintArea = netWallArea + ceilingArea;
+
+    const isRepaint = d.finishType === 'Repaint';
+    const isTouchup = d.finishType === 'One Coat Touch-up';
+    const isExternal = d.locationScope === 'External Painting';
+
+    const puttyKg = (isRepaint || isTouchup || isExternal) ? 0 : (totalPaintArea / COVERAGES.putty);
+    const primerLtr = isTouchup ? 0 : (totalPaintArea / COVERAGES.primer) * (isRepaint ? 0.5 : d.primerCoats);
+
+    const activePaintRate = getPaintRateObj(d.paintType);
+    const paintCoverage = getCoverageFactor(d.paintType);
+    const effectivePaintCoats = isTouchup ? 1 : d.paintCoats;
+    const paintLtr = (totalPaintArea / paintCoverage) * (effectivePaintCoats / 2);
+
+    const enamelLtr = (totalShutterArea / COVERAGES.enamel) + (totalFrameRft / 100);
+
+    let unpricedCount = 0;
+    const unpricedList: string[] = [];
+
+    if (!puttyRate.found && puttyKg > 0) { unpricedCount++; unpricedList.push("Wall Putty"); }
+    if (!primerRate.found && primerLtr > 0) { unpricedCount++; unpricedList.push("Wall Primer"); }
+    if (!activePaintRate.found) { unpricedCount++; unpricedList.push(d.paintType); }
+    if (!enamelRate.found && enamelLtr > 0) { unpricedCount++; unpricedList.push("Enamel Paint"); }
+    if (!labourRate.found) { unpricedCount++; unpricedList.push("Painting Labour"); }
+
+    const puttyCost = puttyKg * (puttyRate.found ? puttyRate.rate : 0);
+    const primerCost = primerLtr * (primerRate.found ? primerRate.rate : 0);
+    const paintCost = paintLtr * (activePaintRate.found ? activePaintRate.rate : 0);
+    const enamelCost = enamelLtr * (enamelRate.found ? enamelRate.rate : 0);
+    const labourCost = totalPaintArea * (labourRate.found ? labourRate.rate : 0);
+
+    let specialCostTotal = 0;
+    const specialResultRows: any[] = [];
+    specialPaints.forEach(sp => {
+      const spRateObj = getPaintRateObj(sp.type);
+      const spLtr = sp.area / COVERAGES.texture;
+      const spCost = spLtr * (spRateObj.found ? spRateObj.rate : 0);
+      specialCostTotal += spCost;
+
+      specialResultRows.push({
+        code: spRateObj.itemCode || "MAT-PNT-TXT",
+        category: "Special Paint",
+        description: `${sp.type} Design Paint (${sp.area} sqft)`,
+        unit: "LTR",
+        engQty: spLtr,
+        procQty: Math.ceil(spLtr),
+        rate: spRateObj.rate,
+        rateFound: spRateObj.found,
+        amount: spCost
+      });
+    });
+
+    const grandMatCost = puttyCost + primerCost + paintCost + enamelCost + specialCostTotal;
+    const grandTotal = grandMatCost + labourCost;
+    const costPerSqft = totalPaintArea > 0 ? grandTotal / totalPaintArea : 0;
+
+    const resultItems: any[] = [];
+
+    if (puttyKg > 0) {
+      resultItems.push({
+        code: puttyRate.itemCode || "MAT-PUT-01",
+        category: "Material",
+        description: `Interior Wall Putty (2 Coats) - ${Math.ceil(puttyKg / 40)} Bags (40kg)`,
+        unit: "KG",
+        engQty: puttyKg,
+        procQty: Math.ceil(puttyKg),
+        rate: puttyRate.rate,
+        rateFound: puttyRate.found,
+        amount: puttyCost
+      });
+    }
+
+    resultItems.push(
+      {
+        code: primerRate.itemCode || "MAT-PRM-01",
+        category: "Material",
+        description: isExternal ? `Exterior Weatherproof Wall Primer (${d.primerCoats} Coat)` : `Interior Wall Primer (${d.primerCoats} Coat)`,
+        unit: "LTR",
+        engQty: primerLtr,
+        procQty: Math.ceil(primerLtr),
+        rate: primerRate.rate,
+        rateFound: primerRate.found,
+        amount: primerCost
+      },
+      {
+        code: activePaintRate.itemCode || "MAT-PNT-01",
+        category: "Material",
+        description: isExternal ? `Exterior Weatherproof Emulsion Paint (${d.paintCoats} Coats)` : `${d.paintType} (${d.paintCoats} Coats)`,
+        unit: "LTR",
+        engQty: paintLtr,
+        procQty: Math.ceil(paintLtr),
+        rate: activePaintRate.rate,
+        rateFound: activePaintRate.found,
+        amount: paintCost
+      }
+    );
+
+    if (enamelLtr > 0) {
+      resultItems.push({
+        code: enamelRate.itemCode || "MAT-ENM-01",
+        category: "Material",
+        description: `Enamel Paint for Door/Window Frames & Shutters`,
+        unit: "LTR",
+        engQty: enamelLtr,
+        procQty: Math.ceil(enamelLtr),
+        rate: enamelRate.rate,
+        rateFound: enamelRate.found,
+        amount: enamelCost
+      });
+    }
+
+    resultItems.push(...specialResultRows);
+
+    resultItems.push({
+      code: labourRate.itemCode || "SRV-PNT-LAY",
+      category: "Labour",
+      description: `Painting Labour (${d.locationScope} - ${d.finishType})`,
+      unit: "SQFT",
+      engQty: totalPaintArea,
+      procQty: totalPaintArea,
+      rate: labourRate.rate,
+      rateFound: labourRate.found,
+      amount: labourCost
+    });
+
+    return {
+      grossWallArea,
+      totalOpeningArea,
+      netWallArea,
+      ceilingArea,
+      totalPaintArea,
+      grandMatCost,
+      grandLabCost: labourCost,
+      grandTotal,
+      costPerSqft,
+      resultItems,
+      unpricedCount,
+      unpricedList
+    };
+  }, [detailedInputs, openings, specialPaints, puttyRate, primerRate, labourRate, enamelRate]);
+
+  // Export Excel
   const handleExportExcel = () => {
-    if (!results) return;
-    const data = results.materials.map((m: any) => ({ Item: m.item, Quantity: m.quantity, Unit: m.unit, Cost: m.cost ? `₹${m.cost}` : "-" }));
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Paint");
-    XLSX.writeFile(wb, `Paint_${new Date().toISOString().split("T")[0]}.xlsx`);
+    checkAndRun(() => {
+      const items = calcMode === 'quick' ? quickCalcResults.resultItems : detailedCalcResults.resultItems;
+      const data = items.map(item => ({
+        "Master Item Code": item.code,
+        "Category": item.category,
+        "Description": item.description,
+        "Unit": item.unit,
+        "Engineering Qty": item.engQty,
+        "Procurement Qty": item.procQty,
+        "Approved Rate (₹)": item.rateFound ? item.rate : "Rate Unavailable in Admin Master",
+        "Amount (₹)": item.rateFound ? item.amount : 0
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Paint Estimation Results");
+      XLSX.writeFile(wb, `BuildMitra_Paint_Calculator_${calcMode}.xlsx`);
+    });
   };
 
-  const handleWhatsApp = () => {
-    if (!results) return;
-    const materialList = results.materials.map((m: any) => `${m.item}: ${m.quantity} ${m.unit}${m.cost ? ` - ₹${m.cost}` : ""}`).join("\n");
-    const message = `🎨 PAINT CALCULATION\n\nMode: ${calculationMode}\nFinish: ${finishType}\nPaint: ${paintType}\n\n${materialList}`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank");
+  // Share WhatsApp
+  const handleShareWhatsApp = () => {
+    checkAndRun(() => {
+      const res = calcMode === 'quick' ? quickCalcResults : detailedCalcResults;
+      const msg = `*BuildMitra Paint Calculator Report*%0A` +
+        `*Estimation Mode*: ${calcMode === 'quick' ? 'Quick Calculation' : 'Detailed Wall-Wise Calculation'}%0A` +
+        `----------------------------------------%0A` +
+        `• *Net Paint Area*: ${formatNumber(calcMode === 'quick' ? quickCalcResults.paintableArea : detailedCalcResults.totalPaintArea)} Sqft%0A` +
+        `• *Material Cost*: ${formatCurrency(res.grandMatCost)}%0A` +
+        `• *Labour Cost*: ${formatCurrency(res.grandLabCost)}%0A` +
+        `• *TOTAL ESTIMATED COST*: ${formatCurrency(res.grandTotal)} (${formatCurrency(res.costPerSqft)}/Sqft)%0A%0A` +
+        `*Generated via BuildMitra Professional Estimator*`;
+      window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+    });
   };
 
-  return React.createElement("div", { style: styles.container },
-    React.createElement("div", { style: styles.header },
-      React.createElement("button", { onClick: handleBack, style: styles.backButton }, "←"),
-      React.createElement("h1", { style: styles.headerTitle }, "🎨 Paint Calculator")
-    ),
+  return (
+    <div style={styles.container}>
+      {/* 1. Header */}
+      <div style={styles.header}>
+        <div>
+          <button style={styles.backBtn} onClick={() => router.push('/calculators')}>← Back to Calculators</button>
+        </div>
+        <h1 style={styles.headerTitle}>
+          🎨 Paint Calculator
+          <span style={styles.badge}>IS 2395 / IS 5410 Compliant</span>
+        </h1>
+        <div>
+          <span style={{ fontSize: '11px', color: '#e0f2fe' }}>BuildMitra Professional Edition</span>
+        </div>
+      </div>
 
-    React.createElement("div", { style: styles.rateInfo },
-      React.createElement("span", null, `💰 Admin Master Rates: Putty ₹${puttyRate.rate}/kg | Primer ₹${primerRate.rate}/L | Paint ₹${getPaintRate(paintType)}/L | Enamel ₹${enamelRate.rate}/L | Labour ₹${labourRate.rate}/sqft`),
-      rateMsg && React.createElement("div", { style: { color: "#856404", marginTop: 4 } }, rateMsg)
-    ),
+      {/* 2. Single Live Market Rate Ticker */}
+      <MarketRateTrend />
 
-    React.createElement("div", { style: styles.sectionTitle }, "📐 Surface Details"),
-    React.createElement("div", { style: styles.row6 },
-      React.createElement("div", null, React.createElement("label", { style: styles.label }, "Calculation Mode"), React.createElement("select", { value: calculationMode, onChange: (e: any) => setCalculationMode(e.target.value), style: styles.select },
-        React.createElement("option", null, "Particular Wall / Room"),
-        React.createElement("option", null, "Full Building")
-      )),
-      React.createElement("div", null, React.createElement("label", { style: styles.label }, "Finish Type"), React.createElement("select", { value: finishType, onChange: (e: any) => setFinishType(e.target.value), style: styles.select },
-        React.createElement("option", null, "Fresh Coat"),
-        React.createElement("option", null, "Repaint"),
-        React.createElement("option", null, "One Coat Touch-up")
-      )),
-      React.createElement("div", null, React.createElement("label", { style: styles.label }, "Paint Type"), React.createElement("select", { value: paintType, onChange: (e: any) => setPaintType(e.target.value), style: styles.select },
-        React.createElement("option", null, "Regular Emulsion"),
-        React.createElement("option", null, "Premium / Royal Paint"),
-        React.createElement("option", null, "Exterior Weatherproof Paint"),
-        React.createElement("option", null, "Enamel Paint"),
-        React.createElement("option", null, "Texture Paint"),
-        React.createElement("option", null, "Design / Stencil Paint"),
-        React.createElement("option", null, "Ceiling Paint")
-      )),
-      React.createElement("div", null, React.createElement("label", { style: styles.label }, "Include Ceiling"), React.createElement("select", { value: String(includeCeiling), onChange: (e: any) => setIncludeCeiling(e.target.value === "true"), style: styles.select },
-        React.createElement("option", { value: "true" }, "Yes"),
-        React.createElement("option", { value: "false" }, "No")
-      )),
-      React.createElement("div", null, React.createElement("label", { style: styles.label }, "Primer Coats"), React.createElement("select", { value: primerCoats, onChange: (e: any) => setPrimerCoats(parseFloat(e.target.value)), style: styles.select },
-        React.createElement("option", { value: 1 }, "1 Coat"),
-        React.createElement("option", { value: 2 }, "2 Coats")
-      )),
-      React.createElement("div", null, React.createElement("label", { style: styles.label }, "Paint Coats"), React.createElement("select", { value: paintCoats, onChange: (e: any) => setPaintCoats(parseFloat(e.target.value)), style: styles.select },
-        React.createElement("option", { value: 1 }, "1 Coat"),
-        React.createElement("option", { value: 2 }, "2 Coats"),
-        React.createElement("option", { value: 3 }, "3 Coats")
-      ))
-    ),
+      {/* 3. Estimation Method Dropdown Selector */}
+      <div style={styles.dropdownCard}>
+        <label style={styles.dropdownLabel}>Select Estimation Method</label>
+        <select
+          style={styles.modeSelect}
+          value={calcMode}
+          onChange={(e) => setCalcMode(e.target.value as 'quick' | 'detailed')}
+        >
+          <option value="quick">⚡ Quick Calculation (Estimate from Total Surface or Built-Up Area)</option>
+          <option value="detailed">📐 Detailed Wall-Wise Calculation (Exact Room & Opening Measurements)</option>
+        </select>
+      </div>
 
-    calculationMode === "Full Building" && React.createElement("div", { style: styles.row6 },
-      React.createElement("div", null, React.createElement("label", { style: styles.label }, "Plot Length (ft)"), React.createElement("input", { type: "number", value: plotLength, onChange: (e: any) => setPlotLength(parseFloat(e.target.value)), style: styles.input })),
-      React.createElement("div", null, React.createElement("label", { style: styles.label }, "Plot Width (ft)"), React.createElement("input", { type: "number", value: plotWidth, onChange: (e: any) => setPlotWidth(parseFloat(e.target.value)), style: styles.input })),
-      React.createElement("div", null, React.createElement("label", { style: styles.label }, "No. of Floors"), React.createElement("input", { type: "number", value: floors, onChange: (e: any) => setFloors(parseFloat(e.target.value)), style: styles.input })),
-      React.createElement("div", null, React.createElement("label", { style: styles.label }, "Floor Height (ft)"), React.createElement("input", { type: "number", value: floorHeight, onChange: (e: any) => setFloorHeight(parseFloat(e.target.value)), style: styles.input }))
-    ),
+      {/* ========================================================= */}
+      {/* 4. QUICK CALCULATION MODE */}
+      {/* ========================================================= */}
+      {calcMode === 'quick' && (
+        <>
+          <div style={styles.stepperCard}>
+            <div style={styles.sectionHeader}>
+              <span>⚡ Quick Paint Calculation Inputs</span>
+            </div>
 
-    calculationMode !== "Full Building" && React.createElement("div", { style: styles.row6 },
-      React.createElement("div", null, React.createElement("label", { style: styles.label }, "Length (ft)"), React.createElement("input", { type: "number", value: length, onChange: (e: any) => setLength(parseFloat(e.target.value)), style: styles.input })),
-      React.createElement("div", null, React.createElement("label", { style: styles.label }, "Height (ft)"), React.createElement("input", { type: "number", value: height, onChange: (e: any) => setHeight(parseFloat(e.target.value)), style: styles.input })),
-      React.createElement("div", null, React.createElement("label", { style: styles.label }, "No. of Walls"), React.createElement("input", { type: "number", value: wallNos, onChange: (e: any) => setWallNos(parseFloat(e.target.value)), style: styles.input }))
-    ),
+            <div style={styles.noteBox}>
+              💡 <strong>IS 2395 Recommendations & Standards</strong>:
+              <br />• <strong>External Painting</strong>: Exterior Weatherproof Primer + Exterior Weatherproof Emulsion.
+              <br />• <strong>Internal Painting</strong>: Interior Putty (2 Coats ~0.10 kg/sqft) + Interior Primer + Acrylic / Royal Emulsion.
+            </div>
 
-    React.createElement("div", { style: styles.sectionTitle }, "🚪 Openings"),
-    React.createElement("div", { style: styles.row6 },
-      React.createElement("div", null, React.createElement("label", { style: styles.label }, "Type"), React.createElement("select", { value: openingType, onChange: (e: any) => setOpeningType(e.target.value), style: styles.select },
-        React.createElement("option", null, "Door"),
-        React.createElement("option", null, "Window"),
-        React.createElement("option", null, "Ventilation")
-      )),
-      React.createElement("div", null, React.createElement("label", { style: styles.label }, "Width (ft)"), React.createElement("input", { type: "number", value: openingWidth, onChange: (e: any) => setOpeningWidth(parseFloat(e.target.value)), style: styles.input })),
-      React.createElement("div", null, React.createElement("label", { style: styles.label }, "Height (ft)"), React.createElement("input", { type: "number", value: openingHeight, onChange: (e: any) => setOpeningHeight(parseFloat(e.target.value)), style: styles.input })),
-      React.createElement("div", null, React.createElement("label", { style: styles.label }, "Nos"), React.createElement("input", { type: "number", value: openingNos, onChange: (e: any) => setOpeningNos(parseFloat(e.target.value)), style: styles.input })),
-      React.createElement("div", null, React.createElement("label", { style: styles.label }, "Has Shutter"), React.createElement("select", { value: String(hasShutter), onChange: (e: any) => setHasShutter(e.target.value === "true"), style: styles.select }, React.createElement("option", { value: "true" }, "Yes"), React.createElement("option", { value: "false" }, "No"))),
-      React.createElement("div", null, React.createElement("label", { style: styles.label }, "Has Frame"), React.createElement("select", { value: String(hasFrame), onChange: (e: any) => setHasFrame(e.target.value === "true"), style: styles.select }, React.createElement("option", { value: "true" }, "Yes"), React.createElement("option", { value: "false" }, "No")))
-    ),
-    React.createElement("div", { style: styles.row6 }, React.createElement("div", null, React.createElement("button", { onClick: addOpening, style: styles.buttonSmall }, "+ Add Opening"))),
+            <div style={styles.grid3}>
+              <div style={styles.fieldGroup}>
+                <label style={styles.label}>Painting Location / Scope</label>
+                <select
+                  style={{ ...styles.select, border: '2px solid #0f766e', backgroundColor: '#f0fdfa', fontWeight: '700' }}
+                  value={quickInputs.locationScope}
+                  onChange={e => handleQuickLocationChange(e.target.value)}
+                >
+                  <option value="Internal Painting">Internal Painting (Interior Putty + Primer + Emulsion)</option>
+                  <option value="External Painting">External Painting (Exterior Weatherproof Primer + Emulsion)</option>
+                  <option value="Both (Internal & External)">Both Internal & External Combined (75% Int / 25% Ext)</option>
+                </select>
+              </div>
 
-    openings.length > 0 && React.createElement("div", { style: styles.tableContainer },
-      React.createElement("table", { style: styles.table },
-        React.createElement("thead", null, React.createElement("tr", null, ["Type", "Size", "Nos", "Area", "Shutter", "Frame", ""].map(h => React.createElement("th", { key: h, style: styles.th }, h)))),
-        React.createElement("tbody", null,
-          openings.map((o, idx) => React.createElement("tr", { key: idx, style: idx % 2 === 0 ? styles.evenRow : {} },
-            React.createElement("td", { style: styles.td }, o.type),
-            React.createElement("td", { style: styles.td }, `${o.width}' x ${o.height}'`),
-            React.createElement("td", { style: styles.td }, o.nos),
-            React.createElement("td", { style: styles.td }, formatNumber(o.area)),
-            React.createElement("td", { style: styles.td }, o.hasShutter ? "Yes" : "No"),
-            React.createElement("td", { style: styles.td }, o.hasFrame ? "Yes" : "No"),
-            React.createElement("td", { style: styles.td }, React.createElement("button", { onClick: () => removeOpening(idx), style: { ...styles.buttonSmall, backgroundColor: "#dc3545" } }, "X"))
-          ))
-        )
-      )
-    ),
+              <div style={styles.fieldGroup}>
+                <label style={styles.label}>Area Type Reference</label>
+                <select
+                  style={styles.select}
+                  value={quickInputs.areaType}
+                  onChange={e => setQuickInputs({ ...quickInputs, areaType: e.target.value })}
+                >
+                  <option value="Net Paintable Surface Area">Net Paintable Surface Area (Sqft)</option>
+                  <option value="Built-Up / Floor Area">Total Built-Up / Floor Area (Sqft)</option>
+                </select>
+              </div>
 
-    React.createElement("div", { style: styles.sectionTitle }, "🎨 Special / Design Paints"),
-    React.createElement("div", { style: styles.row6 },
-      React.createElement("div", null, React.createElement("label", { style: styles.label }, "Type"), React.createElement("select", { value: specialType, onChange: (e: any) => setSpecialType(e.target.value), style: styles.select },
-        React.createElement("option", null, "Texture"),
-        React.createElement("option", null, "Royal"),
-        React.createElement("option", null, "Design"),
-        React.createElement("option", null, "Stencil")
-      )),
-      React.createElement("div", null, React.createElement("label", { style: styles.label }, "Area (sqft)"), React.createElement("input", { type: "number", value: specialArea, onChange: (e: any) => setSpecialArea(parseFloat(e.target.value)), style: styles.input })),
-      React.createElement("div", null, React.createElement("button", { onClick: addSpecialPaint, style: styles.buttonSmall }, "+ Add Special Paint"))
-    ),
+              <div style={styles.fieldGroup}>
+                <label style={styles.label}>Area Input (Sqft)</label>
+                <input
+                  type="number"
+                  style={styles.input}
+                  value={quickInputs.totalArea}
+                  onChange={e => setQuickInputs({ ...quickInputs, totalArea: parseFloat(e.target.value) || 0 })}
+                />
+              </div>
+            </div>
 
-    specialPaints.length > 0 && React.createElement("div", { style: styles.tableContainer },
-      React.createElement("table", { style: styles.table },
-        React.createElement("thead", null, React.createElement("tr", null, ["Type", "Area", ""].map(h => React.createElement("th", { key: h, style: styles.th }, h)))),
-        React.createElement("tbody", null,
-          specialPaints.map((p, idx) => React.createElement("tr", { key: idx, style: idx % 2 === 0 ? styles.evenRow : {} },
-            React.createElement("td", { style: styles.td }, p.type),
-            React.createElement("td", { style: styles.td }, formatNumber(p.area)),
-            React.createElement("td", { style: styles.td }, React.createElement("button", { onClick: () => removeSpecialPaint(idx), style: { ...styles.buttonSmall, backgroundColor: "#dc3545" } }, "X"))
-          ))
-        )
-      )
-    ),
+            <div style={styles.grid4}>
+              <div style={styles.fieldGroup}>
+                <label style={styles.label}>Finish Type</label>
+                <select
+                  style={styles.select}
+                  value={quickInputs.finishType}
+                  onChange={e => setQuickInputs({ ...quickInputs, finishType: e.target.value })}
+                >
+                  <option value="Fresh Coat">Fresh Coat (Putty + Primer + Paint)</option>
+                  <option value="Repaint">Repaint (Primer + Paint)</option>
+                  <option value="One Coat Touch-up">One Coat Touch-up (Paint Only)</option>
+                </select>
+              </div>
 
-    React.createElement("div", { style: styles.buttonRow },
-      React.createElement("button", { onClick: handleGenerate, style: styles.buttonGenerate }, "🔨 Generate"),
-      generated && results && React.createElement(React.Fragment, null,
-        React.createElement("button", { onClick: () => checkAndRun('calculator_export', 'paint-calculator', handleExportExcel), style: styles.buttonExport }, "📊 Excel"),
-        React.createElement("button", { onClick: () => checkAndRun('calculator_export', 'paint-calculator', handleWhatsApp), style: styles.buttonWhatsapp }, "💬 Share")
-      )
-    ),
+              <div style={styles.fieldGroup}>
+                <label style={styles.label}>Main Paint Selection</label>
+                <select
+                  style={styles.select}
+                  value={quickInputs.paintType}
+                  onChange={e => setQuickInputs({ ...quickInputs, paintType: e.target.value })}
+                >
+                  <option value="Regular Emulsion">Regular Acrylic Emulsion</option>
+                  <option value="Exterior Weatherproof Paint">Exterior Weatherproof Paint</option>
+                  <option value="Premium / Royal Paint">Premium / Royal Luxury Emulsion</option>
+                  <option value="Enamel Paint">Enamel / Oil Paint</option>
+                  <option value="Ceiling Paint">Ceiling White Paint</option>
+                </select>
+              </div>
 
-    generated && results && React.createElement("div", null,
-      React.createElement("div", { style: styles.cardContainer },
-        React.createElement("div", { style: { ...styles.card, ...styles.cardBlue } }, React.createElement("div", null, "🎨"), React.createElement("div", null, "Paint Area"), React.createElement("div", { style: styles.cardValue }, `${results.netArea} sqft`)),
-        React.createElement("div", { style: { ...styles.card, ...styles.cardLightGreen } }, React.createElement("div", null, "🪣"), React.createElement("div", null, "Putty"), React.createElement("div", { style: styles.cardValue }, `${formatNumber(results.puttyKg)} kg`)),
-        React.createElement("div", { style: { ...styles.card, ...styles.cardLightOrange } }, React.createElement("div", null, "🎨"), React.createElement("div", null, "Primer"), React.createElement("div", { style: styles.cardValue }, `${formatNumber(results.primerLtr)} L`)),
-        React.createElement("div", { style: { ...styles.card, ...styles.cardLightTeal } }, React.createElement("div", null, "💰"), React.createElement("div", null, "Total Cost"), React.createElement("div", { style: styles.cardValue }, `₹${formatNumber(results.totalCost)}`))
-      ),
+              <div style={styles.fieldGroup}>
+                <label style={styles.label}>Primer Coats</label>
+                <select
+                  style={styles.select}
+                  value={quickInputs.primerCoats}
+                  onChange={e => setQuickInputs({ ...quickInputs, primerCoats: parseInt(e.target.value) })}
+                >
+                  <option value={1}>1 Coat Primer</option>
+                  <option value={2}>2 Coats Primer</option>
+                </select>
+              </div>
 
-      React.createElement("div", { style: styles.tableContainer },
-        React.createElement("table", { style: styles.table },
-          React.createElement("thead", null, React.createElement("tr", null, ["Item", "Quantity", "Unit", "Cost (₹)"].map(h => React.createElement("th", { key: h, style: styles.th }, h)))),
-          React.createElement("tbody", null,
-            results.materials.map((item: any, idx: number) => React.createElement("tr", { key: idx, style: idx % 2 === 0 ? {} : styles.evenRow },
-              React.createElement("td", { style: styles.td }, item.item),
-              React.createElement("td", { style: styles.td }, item.quantity),
-              React.createElement("td", { style: styles.td }, item.unit),
-              React.createElement("td", { style: styles.td }, item.cost ? `₹${item.cost}` : "-")
-            ))
-          )
-        )
-      )
-    )
+              <div style={styles.fieldGroup}>
+                <label style={styles.label}>Paint Coats</label>
+                <select
+                  style={styles.select}
+                  value={quickInputs.paintCoats}
+                  onChange={e => setQuickInputs({ ...quickInputs, paintCoats: parseInt(e.target.value) })}
+                >
+                  <option value={1}>1 Coat Paint</option>
+                  <option value={2}>2 Coats Paint</option>
+                  <option value={3}>3 Coats Paint</option>
+                </select>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
+              <button style={styles.btnReset} onClick={handleResetQuick}>🔄 Reset Quick Form</button>
+            </div>
+          </div>
+
+          {/* Quick Results Summary & BOQ */}
+          <div style={styles.stepperCard}>
+            <div style={styles.sectionHeader}>
+              <span>📊 Paint Calculation Results & Materials BOQ</span>
+            </div>
+
+            {quickCalcResults.unpricedCount > 0 ? (
+              <div style={styles.warnBanner}>
+                ⚠️ Partial Estimate: Admin Master Rates unavailable for: {quickCalcResults.unpricedList.join(', ')}.
+              </div>
+            ) : (
+              <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', padding: '10px', borderRadius: '8px', marginBottom: '16px', fontSize: '12px', fontWeight: '700' }}>
+                ✓ Complete Estimate: All rates verified against BuildMitra Admin Master Database.
+              </div>
+            )}
+
+            {/* Summary Metric Cards */}
+            <div style={styles.summaryGrid}>
+              <div style={{ ...styles.metricCard, ...styles.metricTeal }}>
+                <span style={styles.metricTitle}>Net Paint Area</span>
+                <span style={styles.metricVal}>{formatNumber(quickCalcResults.paintableArea)} Sqft</span>
+              </div>
+              <div style={{ ...styles.metricCard, ...styles.metricBlue }}>
+                <span style={styles.metricTitle}>Material Cost</span>
+                <span style={styles.metricVal}>{formatCurrency(quickCalcResults.grandMatCost)}</span>
+              </div>
+              <div style={{ ...styles.metricCard, ...styles.metricOrange }}>
+                <span style={styles.metricTitle}>Labour Cost</span>
+                <span style={styles.metricVal}>{formatCurrency(quickCalcResults.grandLabCost)}</span>
+              </div>
+              <div style={{ ...styles.metricCard, ...styles.metricGreen }}>
+                <span style={styles.metricTitle}>Grand Total</span>
+                <span style={styles.metricVal}>{formatCurrency(quickCalcResults.grandTotal)}</span>
+                <span style={{ fontSize: '11px', opacity: 0.9 }}>({formatCurrency(quickCalcResults.costPerSqft)} / Sqft)</span>
+              </div>
+            </div>
+
+            {/* BOQ Table */}
+            <div style={styles.tableContainer}>
+              <table style={styles.table}>
+                <thead>
+                  <tr>
+                    <th style={styles.th}>Master Code</th>
+                    <th style={styles.th}>Category</th>
+                    <th style={styles.th}>Item Description</th>
+                    <th style={styles.th}>Unit</th>
+                    <th style={styles.th}>Eng Qty</th>
+                    <th style={styles.th}>Proc Qty</th>
+                    <th style={styles.th}>Approved Rate</th>
+                    <th style={styles.th}>Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {quickCalcResults.resultItems.map((item, idx) => (
+                    <tr key={idx}>
+                      <td style={styles.td}><code>{item.code}</code></td>
+                      <td style={styles.td}>
+                        <span style={{
+                          backgroundColor: item.category === 'Material' ? '#e0f2fe' : '#ffedd5',
+                          color: item.category === 'Material' ? '#0369a1' : '#c2410c',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          fontWeight: '700',
+                          fontSize: '10px'
+                        }}>
+                          {item.category}
+                        </span>
+                      </td>
+                      <td style={styles.td}><strong>{item.description}</strong></td>
+                      <td style={styles.td}>{item.unit}</td>
+                      <td style={styles.td}>{formatNumber(item.engQty)}</td>
+                      <td style={styles.td}><strong>{formatNumber(item.procQty)}</strong></td>
+                      <td style={styles.td}>
+                        {item.rateFound ? (
+                          <span style={styles.rateTag}>{formatCurrency(item.rate)}</span>
+                        ) : (
+                          <span style={styles.rateTagWarn}>Rate Unavailable</span>
+                        )}
+                      </td>
+                      <td style={styles.td}><strong>{formatCurrency(item.amount)}</strong></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+              <button style={styles.btnSecondary} onClick={handleExportExcel}>📥 Export BOQ to Excel</button>
+              <button style={styles.btnSuccess} onClick={handleShareWhatsApp}>📲 Share Estimate on WhatsApp</button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ========================================================= */}
+      {/* 5. DETAILED WALL-WISE CALCULATION MODE */}
+      {/* ========================================================= */}
+      {calcMode === 'detailed' && (
+        <div style={styles.stepperCard}>
+          <div style={styles.sectionHeader}>
+            <span>📐 Detailed Wall-Wise Paint Calculation Inputs</span>
+          </div>
+
+          <div style={styles.grid4}>
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Painting Location Scope</label>
+              <select
+                style={{ ...styles.select, border: '2px solid #0f766e', backgroundColor: '#f0fdfa', fontWeight: '700' }}
+                value={detailedInputs.locationScope}
+                onChange={e => handleDetailedLocationChange(e.target.value)}
+              >
+                <option value="Internal Painting">Internal Painting (Interior Putty + Primer + Emulsion)</option>
+                <option value="External Painting">External Painting (Exterior Weatherproof Primer + Emulsion)</option>
+              </select>
+            </div>
+
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Finish Type</label>
+              <select
+                style={styles.select}
+                value={detailedInputs.finishType}
+                onChange={e => setDetailedInputs({ ...detailedInputs, finishType: e.target.value })}
+              >
+                <option value="Fresh Coat">Fresh Coat (Putty + Primer + Paint)</option>
+                <option value="Repaint">Repaint (Primer + Paint)</option>
+                <option value="One Coat Touch-up">One Coat Touch-up (Paint Only)</option>
+              </select>
+            </div>
+
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Main Paint Selection</label>
+              <select
+                style={styles.select}
+                value={detailedInputs.paintType}
+                onChange={e => setDetailedInputs({ ...detailedInputs, paintType: e.target.value })}
+              >
+                <option value="Regular Emulsion">Regular Acrylic Emulsion</option>
+                <option value="Exterior Weatherproof Paint">Exterior Weatherproof Paint</option>
+                <option value="Premium / Royal Paint">Premium / Royal Luxury Emulsion</option>
+                <option value="Enamel Paint">Enamel / Oil Paint</option>
+              </select>
+            </div>
+
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Length per Wall (Ft)</label>
+              <input
+                type="number"
+                style={styles.input}
+                value={detailedInputs.length}
+                onChange={e => setDetailedInputs({ ...detailedInputs, length: parseFloat(e.target.value) || 0 })}
+              />
+            </div>
+
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Height per Wall (Ft)</label>
+              <input
+                type="number"
+                style={styles.input}
+                value={detailedInputs.height}
+                onChange={e => setDetailedInputs({ ...detailedInputs, height: parseFloat(e.target.value) || 0 })}
+              />
+            </div>
+
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Number of Walls (Nos)</label>
+              <input
+                type="number"
+                style={styles.input}
+                value={detailedInputs.wallNos}
+                onChange={e => setDetailedInputs({ ...detailedInputs, wallNos: parseInt(e.target.value) || 1 })}
+              />
+            </div>
+
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Include Ceiling</label>
+              <select
+                style={styles.select}
+                value={String(detailedInputs.includeCeiling)}
+                onChange={e => setDetailedInputs({ ...detailedInputs, includeCeiling: e.target.value === 'true' })}
+              >
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+              </select>
+            </div>
+
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Primer Coats</label>
+              <select
+                style={styles.select}
+                value={detailedInputs.primerCoats}
+                onChange={e => setDetailedInputs({ ...detailedInputs, primerCoats: parseInt(e.target.value) })}
+              >
+                <option value={1}>1 Coat</option>
+                <option value={2}>2 Coats</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Openings Section */}
+          <div style={{ backgroundColor: '#f1f5f9', padding: '12px', borderRadius: '8px', marginBottom: '16px' }}>
+            <div style={{ fontSize: '13px', fontWeight: '700', color: '#0f766e', marginBottom: '8px' }}>🚪 Openings (Doors & Windows Deduction & Enamel Paint)</div>
+            <div style={styles.grid4}>
+              <div style={styles.fieldGroup}>
+                <label style={styles.label}>Type</label>
+                <select style={styles.select} value={openingInput.type} onChange={e => setOpeningInput({ ...openingInput, type: e.target.value })}>
+                  <option value="Door">Door</option>
+                  <option value="Window">Window</option>
+                  <option value="Ventilation">Ventilation</option>
+                </select>
+              </div>
+              <div style={styles.fieldGroup}>
+                <label style={styles.label}>Width (Ft)</label>
+                <input type="number" style={styles.input} value={openingInput.width} onChange={e => setOpeningInput({ ...openingInput, width: parseFloat(e.target.value) || 0 })} />
+              </div>
+              <div style={styles.fieldGroup}>
+                <label style={styles.label}>Height (Ft)</label>
+                <input type="number" style={styles.input} value={openingInput.height} onChange={e => setOpeningInput({ ...openingInput, height: parseFloat(e.target.value) || 0 })} />
+              </div>
+              <div style={styles.fieldGroup}>
+                <label style={styles.label}>Quantity (Nos)</label>
+                <input type="number" style={styles.input} value={openingInput.nos} onChange={e => setOpeningInput({ ...openingInput, nos: parseInt(e.target.value) || 1 })} />
+              </div>
+            </div>
+            <button style={styles.btnPrimary} onClick={handleAddOpening}>+ Add Opening</button>
+
+            {openings.length > 0 && (
+              <div style={{ marginTop: '10px', ...styles.tableContainer }}>
+                <table style={styles.table}>
+                  <thead>
+                    <tr>
+                      <th style={styles.th}>Type</th>
+                      <th style={styles.th}>Size</th>
+                      <th style={styles.th}>Nos</th>
+                      <th style={styles.th}>Area</th>
+                      <th style={styles.th}>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {openings.map((o, idx) => (
+                      <tr key={idx}>
+                        <td style={styles.td}>{o.type}</td>
+                        <td style={styles.td}>{o.width}' x {o.height}'</td>
+                        <td style={styles.td}>{o.nos}</td>
+                        <td style={styles.td}><strong>{formatNumber(o.area)} Sqft</strong></td>
+                        <td style={styles.td}>
+                          <button style={styles.btnDanger} onClick={() => handleRemoveOpening(idx)}>Remove</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* Special / Design Paints Section */}
+          <div style={{ backgroundColor: '#f1f5f9', padding: '12px', borderRadius: '8px', marginBottom: '16px' }}>
+            <div style={{ fontSize: '13px', fontWeight: '700', color: '#0f766e', marginBottom: '8px' }}>🎨 Special / Texture Design Paints</div>
+            <div style={styles.grid3}>
+              <div style={styles.fieldGroup}>
+                <label style={styles.label}>Design Type</label>
+                <select style={styles.select} value={specialInput.type} onChange={e => setSpecialInput({ ...specialInput, type: e.target.value })}>
+                  <option value="Texture">Texture Finish Paint</option>
+                  <option value="Royal">Royal Luxury Paint</option>
+                  <option value="Design">Design / Stencil Paint</option>
+                </select>
+              </div>
+              <div style={styles.fieldGroup}>
+                <label style={styles.label}>Area (Sqft)</label>
+                <input type="number" style={styles.input} value={specialInput.area} onChange={e => setSpecialInput({ ...specialInput, area: parseFloat(e.target.value) || 0 })} />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+                <button style={styles.btnPrimary} onClick={handleAddSpecialPaint}>+ Add Special Paint</button>
+              </div>
+            </div>
+
+            {specialPaints.length > 0 && (
+              <div style={{ marginTop: '10px', ...styles.tableContainer }}>
+                <table style={styles.table}>
+                  <thead>
+                    <tr>
+                      <th style={styles.th}>Design Type</th>
+                      <th style={styles.th}>Area</th>
+                      <th style={styles.th}>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {specialPaints.map((sp, idx) => (
+                      <tr key={idx}>
+                        <td style={styles.td}>{sp.type} Paint</td>
+                        <td style={styles.td}><strong>{formatNumber(sp.area)} Sqft</strong></td>
+                        <td style={styles.td}>
+                          <button style={styles.btnDanger} onClick={() => handleRemoveSpecialPaint(idx)}>Remove</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+            <button style={styles.btnReset} onClick={handleResetDetailed}>🔄 Reset Detailed Form</button>
+          </div>
+
+          {/* DETAILED RESULTS TABLE */}
+          <div style={{ marginTop: '16px' }}>
+            <div style={styles.sectionHeader}>
+              <span>📊 Detailed Paint Calculation Results & Materials BOQ</span>
+            </div>
+
+            {detailedCalcResults.unpricedCount > 0 ? (
+              <div style={styles.warnBanner}>
+                ⚠️ Partial Estimate: Admin Master Rates unavailable for: {detailedCalcResults.unpricedList.join(', ')}.
+              </div>
+            ) : (
+              <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', padding: '10px', borderRadius: '8px', marginBottom: '16px', fontSize: '12px', fontWeight: '700' }}>
+                ✓ Complete Estimate: All rates verified against BuildMitra Admin Master Database.
+              </div>
+            )}
+
+            <div style={styles.summaryGrid}>
+              <div style={{ ...styles.metricCard, ...styles.metricTeal }}>
+                <span style={styles.metricTitle}>Net Paint Area</span>
+                <span style={styles.metricVal}>{formatNumber(detailedCalcResults.totalPaintArea)} Sqft</span>
+              </div>
+              <div style={{ ...styles.metricCard, ...styles.metricBlue }}>
+                <span style={styles.metricTitle}>Material Cost</span>
+                <span style={styles.metricVal}>{formatCurrency(detailedCalcResults.grandMatCost)}</span>
+              </div>
+              <div style={{ ...styles.metricCard, ...styles.metricOrange }}>
+                <span style={styles.metricTitle}>Labour Cost</span>
+                <span style={styles.metricVal}>{formatCurrency(detailedCalcResults.grandLabCost)}</span>
+              </div>
+              <div style={{ ...styles.metricCard, ...styles.metricGreen }}>
+                <span style={styles.metricTitle}>Grand Total</span>
+                <span style={styles.metricVal}>{formatCurrency(detailedCalcResults.grandTotal)}</span>
+                <span style={{ fontSize: '11px', opacity: 0.9 }}>({formatCurrency(detailedCalcResults.costPerSqft)} / Sqft)</span>
+              </div>
+            </div>
+
+            <div style={styles.tableContainer}>
+              <table style={styles.table}>
+                <thead>
+                  <tr>
+                    <th style={styles.th}>Master Code</th>
+                    <th style={styles.th}>Category</th>
+                    <th style={styles.th}>Item Description</th>
+                    <th style={styles.th}>Unit</th>
+                    <th style={styles.th}>Eng Qty</th>
+                    <th style={styles.th}>Proc Qty</th>
+                    <th style={styles.th}>Approved Rate</th>
+                    <th style={styles.th}>Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {detailedCalcResults.resultItems.map((item, i) => (
+                    <tr key={i}>
+                      <td style={styles.td}><code>{item.code}</code></td>
+                      <td style={styles.td}>
+                        <span style={{
+                          backgroundColor: item.category === 'Material' ? '#e0f2fe' : '#ffedd5',
+                          color: item.category === 'Material' ? '#0369a1' : '#c2410c',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          fontWeight: '700',
+                          fontSize: '10px'
+                        }}>
+                          {item.category}
+                        </span>
+                      </td>
+                      <td style={styles.td}><strong>{item.description}</strong></td>
+                      <td style={styles.td}>{item.unit}</td>
+                      <td style={styles.td}>{formatNumber(item.engQty)}</td>
+                      <td style={styles.td}><strong>{formatNumber(item.procQty)}</strong></td>
+                      <td style={styles.td}>
+                        {item.rateFound ? (
+                          <span style={styles.rateTag}>{formatCurrency(item.rate)}</span>
+                        ) : (
+                          <span style={styles.rateTagWarn}>Rate Unavailable</span>
+                        )}
+                      </td>
+                      <td style={styles.td}><strong>{formatCurrency(item.amount)}</strong></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+              <button style={styles.btnSecondary} onClick={handleExportExcel}>📥 Export BOQ to Excel</button>
+              <button style={styles.btnSuccess} onClick={handleShareWhatsApp}>📲 Share Estimate on WhatsApp</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
-
-

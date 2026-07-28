@@ -1191,7 +1191,7 @@ const rejectRealEstate = async (propertyCode) => {
           React.createElement("div", { style: styles.cardTitle }, "Platform Overview"),
           React.createElement("div", null, React.createElement("strong", null, "Total Users:"), " ", totalUsers),
           React.createElement("div", null, React.createElement("strong", null, "Active Subscriptions:"), " ", activeSubscriptions),
-          React.createElement("div", null, React.createElement("strong", null, "Monthly Revenue:"), " â‚¹", totalRevenue.toLocaleString()),
+          React.createElement("div", null, React.createElement("strong", null, "Monthly Revenue:"), " ₹", totalRevenue.toLocaleString()),
           React.createElement("div", null, React.createElement("strong", null, "Pending KYC:"), " ", pendingKYC),
           React.createElement("div", null, React.createElement("strong", null, "Pending Payments:"), " ", pendingPayments.length)
         ),
@@ -1252,7 +1252,7 @@ const rejectRealEstate = async (propertyCode) => {
                 React.createElement("td", { style: styles.td },
                   e.provider || "Not specified",
                   React.createElement("br", null),
-                  React.createElement("span", { style: { fontSize: "10px" } }, `${e.providerUserCode || "-"} â€¢ ${e.providerRole || "-"}`)
+                  React.createElement("span", { style: { fontSize: "10px" } }, `${e.providerUserCode || "-"} • ${e.providerRole || "-"}`)
                 ),
                 React.createElement("td", { style: styles.td },
                   e.assignedProviderName || "Not assigned",
@@ -1376,10 +1376,10 @@ const rejectRealEstate = async (propertyCode) => {
       React.createElement("div", { style: styles.grid3, marginTop: "16px" },
         plans.map(p => React.createElement("div", { key: p.id, style: styles.card },
           React.createElement("h3", { style: { color: "#800020", margin: "0 0 8px 0" } }, p.name),
-          React.createElement("p", null, React.createElement("span", { style: { fontSize: "24px", fontWeight: "bold" } }, "â‚¹", p.monthly), " /month"),
-          React.createElement("p", null, "â‚¹", p.yearly, " /year"),
+          React.createElement("p", null, React.createElement("span", { style: { fontSize: "24px", fontWeight: "bold" } }, "₹", p.monthly), " /month"),
+          React.createElement("p", null, "₹", p.yearly, " /year"),
           React.createElement("ul", { style: { paddingLeft: "20px", fontSize: "12px" } },
-            p.features.map((f, idx) => React.createElement("li", { key: idx }, "âœ“ ", f))
+            p.features.map((f, idx) => React.createElement("li", { key: idx }, "✓ ", f))
           ),
           React.createElement("p", { style: { marginTop: "8px" } }, "Status: ", React.createElement("span", { style: { color: p.status === "active" ? "#28a745" : "#dc3545" } }, p.status))
         ))
@@ -1393,7 +1393,7 @@ const rejectRealEstate = async (propertyCode) => {
           React.createElement("div", { style: styles.qrBox },
             qrImage ? React.createElement("img", { src: qrImage, alt: "UPI QR Code", style: { width: "200px", height: "200px", objectFit: "contain" } }) :
               React.createElement("div", { style: { padding: "40px", textAlign: "center" } },
-                React.createElement("div", { style: { fontSize: "48px" } }, "ðŸ“±"),
+                React.createElement("div", { style: { fontSize: "48px" } }, "📱"),
                 React.createElement("p", null, "No QR code uploaded")
               ),
             React.createElement("button", { onClick: () => setShowQRModal(true), style: { ...styles.button, marginTop: "12px" } }, "Upload QR Code")
@@ -1408,7 +1408,7 @@ const rejectRealEstate = async (propertyCode) => {
           pendingPayments.length === 0 ? React.createElement("div", { style: { textAlign: "center", padding: "40px", color: "#666" } }, "No pending payments") :
             pendingPayments.map(p => React.createElement("div", { key: p.id, style: { border: "1px solid #eee", borderRadius: "8px", padding: "12px", marginBottom: "12px" } },
               React.createElement("div", null, React.createElement("strong", null, p.userName), " - ", p.planName, " Plan (", p.type, ")"),
-              React.createElement("div", null, "Amount: â‚¹", p.amount),
+              React.createElement("div", null, "Amount: ₹", p.amount),
               React.createElement("div", null, "Date: ", p.date),
               React.createElement("div", { style: { display: "flex", gap: "8px", marginTop: "8px" } },
                 React.createElement("button", { onClick: () => approvePayment(p.id), style: styles.buttonSuccess }, "Approve"),
@@ -1432,7 +1432,7 @@ const rejectRealEstate = async (propertyCode) => {
               transactions.map(t => React.createElement("tr", { key: t.id },
                 React.createElement("td", { style: styles.td }, t.id),
                 React.createElement("td", { style: styles.td }, t.userName),
-                React.createElement("td", { style: styles.td }, "â‚¹", t.amount.toLocaleString()),
+                React.createElement("td", { style: styles.td }, "₹", t.amount.toLocaleString()),
                 React.createElement("td", { style: styles.td }, t.plan),
                 React.createElement("td", { style: styles.td }, t.date),
                 React.createElement("td", { style: styles.td }, React.createElement("span", { style: { backgroundColor: "#d4edda", padding: "4px 8px", borderRadius: "4px" } }, t.status))
@@ -1476,187 +1476,147 @@ const rejectRealEstate = async (propertyCode) => {
           )
         )
       )
-    ) || false && React.createElement("div", { style: styles.card },
-      React.createElement("div", { style: styles.cardTitle }, "Support Tickets (", tickets.length, ")"),
-      React.createElement("div", { style: { overflowX: "auto" } },
-        React.createElement("table", { style: styles.table },
-          React.createElement("thead", null,
-            React.createElement("tr", null,
-              React.createElement("th", { style: styles.th }, "ID"), React.createElement("th", { style: styles.th }, "User"),
-              React.createElement("th", { style: styles.th }, "Subject"), React.createElement("th", { style: styles.th }, "Priority"),
-              React.createElement("th", { style: styles.th }, "Status"), React.createElement("th", { style: styles.th }, "Created"), React.createElement("th", { style: styles.th }, "Action")
-            )
-          ),
-          React.createElement("tbody", null,
-            tickets.map(t => React.createElement("tr", { key: t.id },
-              React.createElement("td", { style: styles.td }, "#", t.id),
-              React.createElement("td", { style: styles.td }, t.userName),
-              React.createElement("td", { style: styles.td }, t.subject),
-              React.createElement("td", { style: styles.td }, React.createElement("span", { style: { backgroundColor: t.priority === "High" ? "#f8d7da" : "#fff3cd", padding: "4px 8px", borderRadius: "4px" } }, t.priority)),
-              React.createElement("td", { style: styles.td },
-                React.createElement("select", { value: t.status, onChange: (e) => updateTicketStatus(t.id, e.target.value), style: { padding: "4px", borderRadius: "4px" } },
-                  React.createElement("option", null, "Open"), React.createElement("option", null, "In Progress"),
-                  React.createElement("option", null, "Resolved"), React.createElement("option", null, "Closed")
-                )
-              ),
-              React.createElement("td", { style: styles.td }, t.createdAt),
-              React.createElement("td", { style: styles.td }, React.createElement("button", { onClick: () => alert(t.description), style: styles.buttonInfo }, "View"))
-            ))
-          )
-        )
-      )
     ),
-
 
     activeTab === "masterRates" && React.createElement("div", null,
       React.createElement("div", { style: styles.card },
-        React.createElement("div", { style: styles.cardTitle }, "Master Rate Management - Single Source for BOQ, Calculators & Marketplace"),
-        React.createElement("p", { style: { color: "#666", fontSize: "13px" } }, "All material, labour and equipment rates should come from this admin master sheet. Backend API will later replace localStorage."),
-
-        React.createElement("div", { style: { display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "12px" } },
-          React.createElement("button", { onClick: addMaterialRate, style: styles.button }, "+ Material Rate"),
-          React.createElement("button", { onClick: addLabourRate, style: styles.buttonInfo }, "+ Labour Rate"),
-          React.createElement("button", { onClick: addServiceRate, style: styles.buttonSuccess }, "+ Service Rate"),
-          React.createElement("button", { onClick: addEquipmentRate, style: styles.buttonWarning }, "+ Equipment Rate"),
-          React.createElement("button", { onClick: cleanLegacyRates, style: styles.buttonDanger }, "Clean Legacy No-Code Rates"),
-          React.createElement("button", { onClick: () => exportReport("materials"), style: styles.buttonInfo }, "Export Materials"),
-          React.createElement("button", { onClick: () => exportReport("labour"), style: styles.buttonInfo }, "Export Labour"),
-          React.createElement("button", { onClick: () => exportReport("services"), style: styles.buttonInfo }, "Export Services"),
-          React.createElement("button", { onClick: () => exportReport("equipment"), style: styles.buttonInfo }, "Export Equipment")
+        React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" } },
+          React.createElement("div", { style: styles.cardTitle }, "Master Items & Rates Management"),
+          React.createElement("div", { style: { display: "flex", gap: "8px", flexWrap: "wrap" } },
+            React.createElement("button", { onClick: () => window.location.href = "/admin-master-image-library", style: styles.buttonSuccess }, "🖼️ Master Image Library"),
+            React.createElement("button", { onClick: () => exportReport("materials"), style: styles.buttonInfo }, "📊 Export Rates")
+          )
+        ),
+        React.createElement("p", { style: { color: "#666", fontSize: "13px", marginTop: "4px" } },
+          "Central Master Item Library — Single source of truth for Engineering Calculators, BOQ Costing, Labour Rates, and BuildMitra Reference Rates."
         ),
 
-        React.createElement("h3", null, "Bulk Upload / Templates"),
-        React.createElement("div", { style: { display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "18px" } },
-          React.createElement("button", { onClick: () => downloadTemplate("materials"), style: styles.buttonInfo }, "Download Material Format"),
-          React.createElement("label", { style: styles.button }, "Upload Materials", React.createElement("input", { type: "file", accept: ".xlsx,.xls,.csv", onChange: (e) => bulkUploadRates(e, "materials"), style: { display: "none" } })),
-          React.createElement("button", { onClick: () => downloadTemplate("labour"), style: styles.buttonInfo }, "Download Labour Format"),
-          React.createElement("label", { style: styles.button }, "Upload Labour", React.createElement("input", { type: "file", accept: ".xlsx,.xls,.csv", onChange: (e) => bulkUploadRates(e, "labour"), style: { display: "none" } })),
-          React.createElement("button", { onClick: () => downloadTemplate("services"), style: styles.buttonInfo }, "Download Service Format"),
-          React.createElement("label", { style: styles.button }, "Upload Services", React.createElement("input", { type: "file", accept: ".xlsx,.xls,.csv", onChange: (e) => bulkUploadRates(e, "services"), style: { display: "none" } })),
-          React.createElement("button", { onClick: () => downloadTemplate("equipment"), style: styles.buttonInfo }, "Download Equipment Format"),
-          React.createElement("label", { style: styles.button }, "Upload Equipment", React.createElement("input", { type: "file", accept: ".xlsx,.xls,.csv", onChange: (e) => bulkUploadRates(e, "equipment"), style: { display: "none" } }))
+        React.createElement("div", { style: { display: "flex", gap: "8px", flexWrap: "wrap", margin: "14px 0" } },
+          React.createElement("button", {
+            onClick: async () => {
+              const code = prompt("Enter Master Item Code (or search term):");
+              if (!code) return;
+              const rate = Number(prompt("Enter Admin Master Rate (₹):", "0"));
+              if (!rate || rate <= 0) return alert("Valid rate required");
+              const city = prompt("City / Region:", "Bengaluru") || "Bengaluru";
+              const unit = prompt("Unit (e.g. BAG, KG, CFT, SQFT, NOS):", "NOS") || "NOS";
+
+              try {
+                const res = await fetch(`${API_BASE}/api/rates/add`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json", "x-user-role": "admin" },
+                  body: JSON.stringify({ masterItemCode: code, itemCode: code, currentRate: rate, city, unit })
+                });
+                const data = await res.json();
+                if (data.success) {
+                  alert(`Admin Master Rate saved for ${code} (₹${rate}/${unit} - ${city}).`);
+                  window.location.reload();
+                } else {
+                  alert(data.message || "Failed to add rate");
+                }
+              } catch (err: any) {
+                alert(err.message || "Error adding rate");
+              }
+            },
+            style: styles.button
+          }, "➕ Add Master Rate"),
+
+          React.createElement("label", { style: { ...styles.buttonInfo, cursor: "pointer", display: "inline-block" } },
+            "📁 Bulk Upload Rates",
+            React.createElement("input", {
+              type: "file",
+              accept: ".xlsx,.xls,.csv",
+              style: { display: "none" },
+              onChange: (e) => bulkUploadRates(e, "materials")
+            })
+          ),
+
+          React.createElement("button", {
+            onClick: () => {
+              const template = [
+                {
+                  "Master Item Code": "MAT-CEM-01",
+                  "Master Item Name": "Cement OPC 53 Grade",
+                  "Category": "Cement",
+                  "Subcategory": "Structural",
+                  "Specification": "OPC 53 Grade IS 12269",
+                  "Rate": 410,
+                  "Unit": "BAG",
+                  "City": "Bengaluru",
+                  "State": "Karnataka",
+                  "Region": "South",
+                  "Effective Date": new Date().toISOString().split("T")[0],
+                  "GST": 28,
+                  "Source": "BuildMitra Approved",
+                  "Active Status": "Active",
+                  "Approval Status": "Approved",
+                  "Remarks": "Standard reference rate"
+                },
+                {
+                  "Master Item Code": "MAT-STL-01",
+                  "Master Item Name": "TMT Steel Fe500D",
+                  "Category": "Steel",
+                  "Subcategory": "Structural",
+                  "Specification": "Fe500D TMT Rebar IS 1786",
+                  "Rate": 67,
+                  "Unit": "KG",
+                  "City": "Bengaluru",
+                  "State": "Karnataka",
+                  "Region": "South",
+                  "Effective Date": new Date().toISOString().split("T")[0],
+                  "GST": 18,
+                  "Source": "BuildMitra Approved",
+                  "Active Status": "Active",
+                  "Approval Status": "Approved",
+                  "Remarks": "Standard reference rate"
+                }
+              ];
+              const ws = XLSX.utils.json_to_sheet(template);
+              const wb = XLSX.utils.book_new();
+              XLSX.utils.book_append_sheet(wb, ws, "AdminRatesTemplate");
+              XLSX.writeFile(wb, "BuildMitra_Admin_Master_Rates_Template.xlsx");
+            },
+            style: styles.buttonSuccess
+          }, "📥 Download 16-Column Template"),
+
+          React.createElement("button", { onClick: cleanLegacyRates, style: styles.buttonDanger }, "🧹 Clean Legacy No-Code Rates")
         ),
 
-        React.createElement("h3", null, "Material Rates"),
+        React.createElement("h3", { style: { marginTop: "16px" } }, "Active Admin Master Rates"),
         React.createElement("div", { style: { overflowX: "auto" } },
           React.createElement("table", { style: styles.table },
             React.createElement("thead", null,
               React.createElement("tr", null,
-                React.createElement("th", { style: styles.th }, "Code"),
+                React.createElement("th", { style: styles.th }, "Master Code"),
                 React.createElement("th", { style: styles.th }, "Category"),
                 React.createElement("th", { style: styles.th }, "Item Name"),
-                React.createElement("th", { style: styles.th }, "Brand"),
-                React.createElement("th", { style: styles.th }, "Specification"),
+                React.createElement("th", { style: styles.th }, "Brand / Spec"),
                 React.createElement("th", { style: styles.th }, "Unit"),
-                React.createElement("th", { style: styles.th }, "Rate"),
+                React.createElement("th", { style: styles.th }, "Admin Rate"),
                 React.createElement("th", { style: styles.th }, "Status"),
-                React.createElement("th", { style: styles.th }, "Action")
+                React.createElement("th", { style: styles.th }, "Actions")
               )
             ),
             React.createElement("tbody", null,
-              materialRates.map(r => React.createElement("tr", { key: r.id },
-                React.createElement("td", { style: styles.td }, r.code || "-"),
+              materialRates.map((r: any) => React.createElement("tr", { key: r.id || r.code },
+                React.createElement("td", { style: styles.td }, React.createElement("strong", null, r.code || r.masterItemCode || "-")),
                 React.createElement("td", { style: styles.td }, r.category || "-"),
                 React.createElement("td", { style: styles.td }, r.item || r.itemName || "-"),
-                React.createElement("td", { style: styles.td }, r.brand || "-"),
-                React.createElement("td", { style: styles.td }, r.specification || "-"),
+                React.createElement("td", { style: styles.td }, `${r.brand || ''} ${r.specification || ''}`.trim() || "-"),
                 React.createElement("td", { style: styles.td }, r.unit || "-"),
-                React.createElement("td", { style: styles.td }, "â‚¹", r.rate),
-                React.createElement("td", { style: styles.td }, r.status || "Active"),
+                React.createElement("td", { style: { ...styles.td, fontWeight: "bold", color: "#0f766e" } }, "₹", r.rate || r.currentRate),
                 React.createElement("td", { style: styles.td },
-                  React.createElement("button", { onClick: () => updateRate("material", r.id, r.rate), style: styles.buttonInfo }, "Edit")
-                )
-              ))
-            )
-          )
-        ),
-
-        React.createElement("h3", { style: { marginTop: "20px" } }, "Labour Rates"),
-        React.createElement("div", { style: { overflowX: "auto" } },
-          React.createElement("table", { style: styles.table },
-            React.createElement("thead", null,
-              React.createElement("tr", null,
-                React.createElement("th", { style: styles.th }, "Code"),
-                React.createElement("th", { style: styles.th }, "Category"),
-                React.createElement("th", { style: styles.th }, "Labour Item"),
-                React.createElement("th", { style: styles.th }, "Description"),
-                React.createElement("th", { style: styles.th }, "Unit"),
-                React.createElement("th", { style: styles.th }, "Rate"),
-                React.createElement("th", { style: styles.th }, "Status"),
-                React.createElement("th", { style: styles.th }, "Action")
-              )
-            ),
-            React.createElement("tbody", null,
-              labourRates.map(r => React.createElement("tr", { key: r.id },
-                React.createElement("td", { style: styles.td }, r.code || "-"),
-                React.createElement("td", { style: styles.td }, r.category || "-"),
-                React.createElement("td", { style: styles.td }, r.trade || r.itemName || "-"),
-                React.createElement("td", { style: styles.td }, r.description || "-"),
-                React.createElement("td", { style: styles.td }, r.unit || "-"),
-                React.createElement("td", { style: styles.td }, "â‚¹", r.rate),
-                React.createElement("td", { style: styles.td }, r.status || "Active"),
-                React.createElement("td", { style: styles.td },
-                  React.createElement("button", { onClick: () => updateRate("labour", r.id, r.rate), style: styles.buttonInfo }, "Edit")
-                )
-              ))
-            )
-          )
-        ),
-
-        React.createElement("h3", { style: { marginTop: "20px" } }, "Service Rates"),
-        React.createElement("div", { style: { overflowX: "auto" } },
-          React.createElement("table", { style: styles.table },
-            React.createElement("thead", null,
-              React.createElement("tr", null,
-                React.createElement("th", { style: styles.th }, "Code"),
-                React.createElement("th", { style: styles.th }, "Category"),
-                React.createElement("th", { style: styles.th }, "Service Item"),
-                React.createElement("th", { style: styles.th }, "Description"),
-                React.createElement("th", { style: styles.th }, "Unit"),
-                React.createElement("th", { style: styles.th }, "Rate"),
-                React.createElement("th", { style: styles.th }, "Status"),
-                React.createElement("th", { style: styles.th }, "Action")
-              )
-            ),
-            React.createElement("tbody", null,
-              serviceRates.map(r => React.createElement("tr", { key: r.id },
-                React.createElement("td", { style: styles.td }, r.code || "-"),
-                React.createElement("td", { style: styles.td }, r.category || r.module || "-"),
-                React.createElement("td", { style: styles.td }, r.service || r.itemName || "-"),
-                React.createElement("td", { style: styles.td }, r.description || "-"),
-                React.createElement("td", { style: styles.td }, r.unit || "-"),
-                React.createElement("td", { style: styles.td }, "â‚¹", r.rate),
-                React.createElement("td", { style: styles.td }, r.status || "Active"),
-                React.createElement("td", { style: styles.td },
-                  React.createElement("button", { onClick: () => updateRate("service", r.id, r.rate), style: styles.buttonInfo }, "Edit")
-                )
-              ))
-            )
-          )
-        ),
-
-        React.createElement("h3", { style: { marginTop: "20px" } }, "Equipment Rates"),
-        React.createElement("div", { style: { overflowX: "auto" } },
-          React.createElement("table", { style: styles.table },
-            React.createElement("thead", null,
-              React.createElement("tr", null,
-                React.createElement("th", { style: styles.th }, "Code"),
-                React.createElement("th", { style: styles.th }, "Equipment"),
-                React.createElement("th", { style: styles.th }, "Unit"),
-                React.createElement("th", { style: styles.th }, "Rate"),
-                React.createElement("th", { style: styles.th }, "Status"),
-                React.createElement("th", { style: styles.th }, "Action")
-              )
-            ),
-            React.createElement("tbody", null,
-              equipmentRates.map(r => React.createElement("tr", { key: r.id },
-                React.createElement("td", { style: styles.td }, r.code || "-"),
-                React.createElement("td", { style: styles.td }, r.item || r.itemName || "-"),
-                React.createElement("td", { style: styles.td }, r.unit || "-"),
-                React.createElement("td", { style: styles.td }, "â‚¹", r.rate),
-                React.createElement("td", { style: styles.td }, r.status || "Active"),
-                React.createElement("td", { style: styles.td },
-                  React.createElement("button", { onClick: () => updateRate("equipment", r.id, r.rate), style: styles.buttonInfo }, "Edit")
+                  React.createElement("span", { style: { backgroundColor: r.status === "Inactive" ? "#f8d7da" : "#d4edda", padding: "3px 8px", borderRadius: "4px" } }, r.status || "Active")
+                ),
+                React.createElement("td", { style: { ...styles.td, display: "flex", gap: "4px" } },
+                  React.createElement("button", { onClick: () => updateRate("material", r.id, r.rate), style: styles.buttonInfo }, "Edit"),
+                  React.createElement("button", {
+                    onClick: async () => {
+                      if (!confirm(`Deactivate rate for ${r.code || r.item}?`)) return;
+                      setMaterialRates(materialRates.map((x: any) => x.id === r.id ? { ...x, status: "Inactive" } : x));
+                    },
+                    style: styles.buttonDanger
+                  }, "Deactivate")
                 )
               ))
             )
@@ -1945,7 +1905,8 @@ const rejectRealEstate = async (propertyCode) => {
       )
     )
   ),
-    false && activeTab === "marketplaceApproval" && React.createElement("div", { style: styles.card },
+
+    activeTab === "marketplaceApproval" && React.createElement("div", { style: styles.card },
       React.createElement("div", { style: styles.cardTitle }, "Marketplace Approval - Providers"),
       React.createElement("p", { style: { color: "#666" } }, "Control provider marketplace visibility."),
       React.createElement("div", { style: { overflowX: "auto" } },
@@ -2070,24 +2031,3 @@ const rejectRealEstate = async (propertyCode) => {
     )
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

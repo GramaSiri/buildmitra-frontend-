@@ -1,0 +1,904 @@
+import React, { useState } from 'react';
+import * as XLSX from 'xlsx';
+import { useRouter } from 'next/router';
+import { usePaymentBarrier } from '../../hooks/usePaymentBarrier';
+import { useRates } from '../../contexts/RateContext';
+import MarketRateTrend from '../ui/MarketRateTrend';
+import { getMasterRate } from "../../utils/masterRates";
+
+const styles = {
+  container: { maxWidth: '100%', margin: 0, padding: '12px', backgroundColor: '#f5f0e8', minHeight: '100vh', boxSizing: 'border-box' },
+  header: { backgroundColor: '#00bcd4', padding: '12px', borderRadius: '8px', marginBottom: '15px', color: 'white', display: 'flex', alignItems: 'center', gap: '10px' },
+  backButton: { backgroundColor: 'transparent', border: 'none', color: 'white', fontSize: '22px', cursor: 'pointer', padding: '5px' },
+  headerTitle: { margin: 0, fontSize: '18px', flex: 1 },
+  sectionTitle: { backgroundColor: '#e8f4f8', color: '#00bcd4', padding: '8px', borderRadius: '6px', marginBottom: '12px', fontSize: '14px', fontWeight: 'bold', textAlign: 'center', border: '1px solid #cce5ed' },
+  row6: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '8px', marginBottom: '12px' },
+  label: { display: 'block', marginBottom: '4px', fontWeight: '600', fontSize: '11px', color: '#555' },
+  input: { width: '100%', padding: '7px', border: '1px solid #ccc', borderRadius: '4px', fontSize: '12px', boxSizing: 'border-box', backgroundColor: '#fff' },
+  select: { width: '100%', padding: '7px', border: '1px solid #ccc', borderRadius: '4px', fontSize: '12px', backgroundColor: '#fff' },
+  buttonSmall: { backgroundColor: '#2196F3', color: 'white', padding: '5px 12px', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' },
+  buttonDanger: { backgroundColor: '#dc3545', color: 'white', padding: '5px 10px', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' },
+  buttonWarning: { backgroundColor: '#ff9800', color: 'white', padding: '5px 10px', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' },
+  buttonRow: { display: 'flex', justifyContent: 'center', gap: '15px', margin: '20px 0' },
+  buttonGenerate: { backgroundColor: '#800020', color: 'white', padding: '9px 22px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' },
+  buttonExport: { backgroundColor: '#28a745', color: 'white', padding: '9px 22px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' },
+  buttonWhatsapp: { backgroundColor: '#25D366', color: 'white', padding: '9px 22px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' },
+  cardContainer: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '20px' },
+  card: { padding: '8px', borderRadius: '10px', textAlign: 'center', color: 'white' },
+  cardBlue: { backgroundColor: '#2196F3' },
+  cardLightGreen: { backgroundColor: '#8BC34A' },
+  cardLightOrange: { backgroundColor: '#FFB74D' },
+  cardLightTeal: { backgroundColor: '#4DB6AC' },
+  cardValue: { fontSize: '14px', fontWeight: 'bold', marginTop: '4px' },
+  tableContainer: { overflowX: 'auto', marginTop: '15px', border: '1px solid #ddd', borderRadius: '8px', backgroundColor: '#fff' },
+  table: { width: '100%', borderCollapse: 'collapse', fontSize: '12px' },
+  th: { backgroundColor: '#00bcd4', color: 'white', padding: '8px', textAlign: 'left' },
+  td: { padding: '6px', borderBottom: '1px solid #eee' },
+  evenRow: { backgroundColor: '#f9f9f9' },
+  rateInfo: { backgroundColor: '#e8f4f8', padding: '8px', borderRadius: '6px', fontSize: '11px', textAlign: 'center', marginBottom: '12px', color: '#334155', border: '1px solid #cbd5e1' },
+  warningBox: { backgroundColor: '#fff7ed', border: '1px solid #fdba74', color: '#9a3412', padding: '10px', borderRadius: '6px', marginBottom: '12px', fontSize: '11px', fontWeight: '600' },
+  detailsBox: { backgroundColor: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '12px', marginTop: '15px', fontSize: '11px', color: '#334155' }
+};
+
+const formatNumber = (num: number | null | undefined, decimals = 2): string => {
+  if (num === null || num === undefined || isNaN(num)) return "Rate Unavailable in Admin Master";
+  return num.toLocaleString('en-IN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+};
+
+const formatCurrency = (amount: number | null | undefined): string => {
+  if (amount === null || amount === undefined || isNaN(amount)) return "Rate Unavailable in Admin Master";
+  return `₹${formatNumber(amount, 2)}`;
+};
+
+const commonFloorTileSizes = [
+  '8x8', '10x10', '12x12', '16x16', '18x18',
+  '24x24', '24x48', '24x60', '32x32', '36x36',
+  '48x48', '48x96', '60x60', '80x80', '120x120'
+];
+
+const commonWallTileSizes = [
+  '8x12', '10x15', '12x18', '12x24', '12x36',
+  '12x48', '18x24', '24x48', '24x60'
+];
+
+const tileSizesMap: Record<string, string[]> = {
+  'Vitrified Tiles': commonFloorTileSizes,
+  'Ceramic Tiles': [...commonFloorTileSizes, ...commonWallTileSizes],
+  'Granite': ['12x12', '18x18', '24x24', '24x48', '24x60', '32x32', '36x36', '48x48', 'Slab'],
+  'Marble': ['12x12', '18x18', '24x24', '24x48', '24x60', '32x32', '36x36', '48x48', 'Slab'],
+  'Wooden Flooring': ['Planks 4x36', 'Planks 6x36', 'Planks 8x48', 'Planks 9x48', 'Planks 9x60'],
+  'Laminate Flooring': ['Planks 6x36', 'Planks 8x48', 'Planks 9x48'],
+  'Vinyl Flooring': ['Planks 6x36', 'Planks 8x48', 'Tiles 12x12', 'Tiles 18x18'],
+  'Cladding Tiles': ['4x12', '6x12', '6x24', '8x24', '8x48', '12x12', '12x18', '12x24', '12x36', '12x48', '18x24', '24x48']
+};
+
+const roomTypesList = ['Living Room', 'Bed Room', 'Kitchen', 'Balcony', 'Dining Room', 'Pooja Room', 'Study Room', 'Office Room', 'Toilet', 'Corridor', 'Staircase'];
+
+const layingMethods = [
+  'Cement-sand mortar bed',
+  'Tile adhesive',
+  'Dry installation',
+  'Wooden flooring underlay',
+  'Granite/marble mortar bed',
+  'Other approved system'
+];
+
+const patternWastageMap: Record<string, number> = {
+  'Straight laying': 5,
+  'Diagonal laying': 10,
+  'Herringbone/pattern laying': 12,
+  'Large-format tile': 8,
+  'Irregular room': 10,
+  'Custom percentage': 5
+};
+
+// Returns area per piece in sqft
+const getTileAreaSqft = (tileSize: string): number => {
+  if (!tileSize || tileSize === 'Slab' || tileSize === 'Cast in situ') return 1.0;
+  const match = tileSize.replace('Planks ', '').replace('Tiles ', '').split('x');
+  if (match.length === 2) {
+    const l = parseFloat(match[0]);
+    const w = parseFloat(match[1]);
+    if (!isNaN(l) && !isNaN(w) && l > 0 && w > 0) {
+      return (l * w) / 144;
+    }
+  }
+  return 1.0;
+};
+
+export default function FlooringCalculator() {
+  const router = useRouter();
+  const { checkAndRun } = usePaymentBarrier();
+  const { rates: contextRates, loading } = useRates();
+
+  // Rooms State
+  const [rooms, setRooms] = useState<any[]>([
+    { id: 1, type: 'Living Room', length: 15, width: 12, nos: 1, deductions: 0, flooringType: 'Vitrified Tiles', tileSize: '24x24', layingMethod: 'Tile adhesive', pattern: 'Straight laying', wastagePct: 5, includeSkirting: true, skirtingHeightIn: 4, doorDeductionFt: 3 },
+    { id: 2, type: 'Bed Room', length: 12, width: 10, nos: 4, deductions: 0, flooringType: 'Vitrified Tiles', tileSize: '24x24', layingMethod: 'Tile adhesive', pattern: 'Straight laying', wastagePct: 5, includeSkirting: true, skirtingHeightIn: 4, doorDeductionFt: 3 }
+  ]);
+
+  const [editingRoomId, setEditingRoomId] = useState<number | null>(null);
+
+  const [roomInput, setRoomInput] = useState<any>({
+    type: 'Living Room',
+    length: 12,
+    width: 10,
+    nos: 1,
+    deductions: 0,
+    flooringType: 'Vitrified Tiles',
+    tileSize: '24x24',
+    layingMethod: 'Tile adhesive',
+    pattern: 'Straight laying',
+    wastagePct: 5,
+    includeSkirting: true,
+    skirtingHeightIn: 4,
+    doorDeductionFt: 3
+  });
+
+  // Cladding State
+  const [claddings, setCladdings] = useState<any[]>([
+    { id: 101, title: 'Feature Wall', length: 10, height: 8, nos: 1, openings: 0, type: 'Cladding Tiles', tileSize: '12x24', layingMethod: 'Tile adhesive', wastagePct: 5, needsScaffolding: false }
+  ]);
+
+  const [editingCladdingId, setEditingCladdingId] = useState<number | null>(null);
+
+  const [claddingInput, setCladdingInput] = useState<any>({
+    title: 'Feature Wall',
+    length: 10,
+    height: 8,
+    nos: 1,
+    openings: 0,
+    type: 'Cladding Tiles',
+    tileSize: '12x24',
+    layingMethod: 'Tile adhesive',
+    wastagePct: 5,
+    needsScaffolding: false
+  });
+
+  // Mortar & Bed Thickness Specs
+  const [floorMortarBedIn, setFloorMortarBedIn] = useState(0.75);
+  const [graniteMortarBedIn, setGraniteMortarBedIn] = useState(1.25);
+  const [skirtingMortarBedIn, setSkirtingMortarBedIn] = useState(0.5);
+  const [claddingMortarBedIn, setCladdingMortarBedIn] = useState(0.5);
+  const [mortarRatio, setMortarRatio] = useState('1:4');
+  const [mortarWastagePct, setMortarWastagePct] = useState(5);
+
+  // Toilet Specific Settings
+  const [toiletWallHeight, setToiletWallHeight] = useState(7);
+  const [toiletDoorDeductionSqft, setToiletDoorDeductionSqft] = useState(15);
+  const [toiletVentDeductionSqft, setToiletVentDeductionSqft] = useState(4);
+  const [includeWaterproofing, setIncludeWaterproofing] = useState(true);
+
+  const [results, setResults] = useState<any>(null);
+  const [generated, setGenerated] = useState(false);
+
+  // Dynamic Rates from Admin Master Rates approved list
+  const vitrifiedRateRes = getMasterRate(["vitrified tiles", "vitrified tile", "vitrified"], 0, ["bm_material_rates"]);
+  const ceramicRateRes = getMasterRate(["ceramic tiles", "ceramic tile", "ceramic"], 0, ["bm_material_rates"]);
+  const graniteRateRes = getMasterRate(["granite", "granite slab"], 0, ["bm_material_rates"]);
+  const marbleRateRes = getMasterRate(["marble", "marble slab"], 0, ["bm_material_rates"]);
+  const woodenRateRes = getMasterRate(["wooden flooring", "wooden floor", "laminate flooring"], 0, ["bm_material_rates"]);
+  const claddingRateRes = getMasterRate(["cladding tiles", "cladding tile", "wall cladding"], 0, ["bm_material_rates"]);
+
+  const cementRateRes = getMasterRate(["cement", "opc", "ppc"], 0, ["bm_material_rates"]);
+  const sandRateRes = getMasterRate(["m sand", "m-sand", "sand", "fine aggregate"], 0, ["bm_material_rates"]);
+  const adhesiveRateRes = getMasterRate(["tile adhesive", "adhesive", "tile fixer"], 0, ["bm_material_rates"]);
+  const groutRateRes = getMasterRate(["tile grout", "grout", "epoxy grout"], 0, ["bm_material_rates"]);
+  const spacerRateRes = getMasterRate(["tile spacers", "spacers"], 0, ["bm_material_rates"]);
+  const waterproofingRateRes = getMasterRate(["waterproofing", "waterproof chemical"], 0, ["bm_material_rates"]);
+
+  // Labour Rates
+  const tileLabourRes = getMasterRate(["tile laying labour", "tile labour", "flooring labour", "tile fixing"], 0, ["bm_labour_rates", "bm_service_rates"]);
+  const graniteLabourRes = getMasterRate(["granite laying labour", "granite labour", "marble laying"], 0, ["bm_labour_rates", "bm_service_rates"]);
+  const woodenLabourRes = getMasterRate(["wooden flooring labour", "wooden installation"], 0, ["bm_labour_rates", "bm_service_rates"]);
+  const claddingLabourRes = getMasterRate(["wall cladding labour", "cladding labour"], 0, ["bm_labour_rates", "bm_service_rates"]);
+  const skirtingLabourRes = getMasterRate(["skirting labour", "skirting fixing"], 0, ["bm_labour_rates", "bm_service_rates"]);
+
+  const getTileMasterRateRes = (type: string) => {
+    if (type.includes("Vitrified")) return vitrifiedRateRes;
+    if (type.includes("Granite")) return graniteRateRes;
+    if (type.includes("Marble")) return marbleRateRes;
+    if (type.includes("Wooden") || type.includes("Laminate") || type.includes("Vinyl")) return woodenRateRes;
+    if (type.includes("Cladding")) return claddingRateRes;
+    return ceramicRateRes;
+  };
+
+  const getTileLabourRes = (type: string) => {
+    if (type.includes("Granite") || type.includes("Marble")) return graniteLabourRes;
+    if (type.includes("Wooden") || type.includes("Laminate") || type.includes("Vinyl")) return woodenLabourRes;
+    if (type.includes("Cladding")) return claddingLabourRes;
+    return tileLabourRes;
+  };
+
+  // Input Validation Warnings
+  const getValidationWarnings = () => {
+    const warnings: string[] = [];
+    if (floorMortarBedIn > 1.25) {
+      warnings.push(`⚠️ Mortar Thickness Warning: ${floorMortarBedIn}" floor mortar bed is thicker than standard 0.75"-1.0" tile bed specification.`);
+    }
+    claddings.forEach(c => {
+      if (c.layingMethod.includes("adhesive") && claddingMortarBedIn > 0.35) {
+        warnings.push(`⚠️ Wall Cladding Warning: Thin-bed Tile Adhesive is selected for ${c.title}, but mortar bed is set to ${claddingMortarBedIn}". Wall adhesive coverage is 3-6mm.`);
+      }
+    });
+    return warnings;
+  };
+
+  // ROOM MANAGERS
+  const handleSaveRoom = () => {
+    if (roomInput.length <= 0 || roomInput.width <= 0 || roomInput.nos <= 0) return;
+    if (editingRoomId !== null) {
+      setRooms(rooms.map(r => r.id === editingRoomId ? { ...roomInput, id: editingRoomId } : r));
+      setEditingRoomId(null);
+    } else {
+      setRooms([...rooms, { ...roomInput, id: Date.now() }]);
+    }
+    setRoomInput({
+      type: 'Bed Room',
+      length: 12,
+      width: 10,
+      nos: 1,
+      deductions: 0,
+      flooringType: 'Vitrified Tiles',
+      tileSize: '24x24',
+      layingMethod: 'Tile adhesive',
+      pattern: 'Straight laying',
+      wastagePct: 5,
+      includeSkirting: true,
+      skirtingHeightIn: 4,
+      doorDeductionFt: 3
+    });
+  };
+
+  const handleEditRoom = (r: any) => {
+    setEditingRoomId(r.id);
+    setRoomInput({ ...r });
+  };
+
+  const handleDeleteRoom = (id: number) => {
+    setRooms(rooms.filter(r => r.id !== id));
+    if (editingRoomId === id) setEditingRoomId(null);
+  };
+
+  // CLADDING MANAGERS
+  const handleSaveCladding = () => {
+    if (claddingInput.length <= 0 || claddingInput.height <= 0 || claddingInput.nos <= 0) return;
+    if (editingCladdingId !== null) {
+      setCladdings(claddings.map(c => c.id === editingCladdingId ? { ...claddingInput, id: editingCladdingId } : c));
+      setEditingCladdingId(null);
+    } else {
+      setCladdings([...claddings, { ...claddingInput, id: Date.now() }]);
+    }
+    setCladdingInput({
+      title: 'Feature Wall',
+      length: 10,
+      height: 8,
+      nos: 1,
+      openings: 0,
+      type: 'Cladding Tiles',
+      tileSize: '12x24',
+      layingMethod: 'Tile adhesive',
+      wastagePct: 5,
+      needsScaffolding: false
+    });
+  };
+
+  const handleEditCladding = (c: any) => {
+    setEditingCladdingId(c.id);
+    setCladdingInput({ ...c });
+  };
+
+  const handleDeleteCladding = (id: number) => {
+    setCladdings(claddings.filter(c => c.id !== id));
+    if (editingCladdingId === id) setEditingCladdingId(null);
+  };
+
+  // CALCULATION ENGINE
+  const calculateResults = () => {
+    const warnings = getValidationWarnings();
+
+    let roomCalculations: any[] = [];
+    let claddingCalculations: any[] = [];
+    let toiletCalculations: any[] = [];
+
+    let totalFloorNetArea = 0;
+    let totalSkirtingNetArea = 0;
+    let totalCladdingNetArea = 0;
+    let totalToiletFloorArea = 0;
+    let totalToiletWallArea = 0;
+
+    let totalMortarVolumeCft = 0;
+    let totalAdhesiveKg = 0;
+    let totalGroutKg = 0;
+    let totalWaterproofingSqft = 0;
+
+    // 1. ROOM-WISE FLOORING & SKIRTING CALCULATIONS
+    rooms.forEach(r => {
+      const isToilet = r.type === 'Toilet';
+      const grossArea = r.length * r.width * r.nos;
+      const netFloorArea = Math.max(0, grossArea - (r.deductions || 0));
+
+      const tileAreaPc = getTileAreaSqft(r.tileSize);
+      const exactTilesCount = Math.ceil(netFloorArea / tileAreaPc);
+      const wastageFactor = 1 + (Number(r.wastagePct || 5) / 100);
+      const finalPurchaseTileCount = Math.ceil(exactTilesCount * wastageFactor);
+      const purchaseAreaSqft = finalPurchaseTileCount * tileAreaPc;
+
+      const rateRes = getTileMasterRateRes(r.flooringType);
+      const labourRes = getTileLabourRes(r.flooringType);
+
+      const tileCost = rateRes.found && rateRes.rate > 0 ? purchaseAreaSqft * rateRes.rate : null;
+      const labourCost = labourRes.found && labourRes.rate > 0 ? netFloorArea * labourRes.rate : null;
+
+      // Skirting
+      let skirtingPerimeterFt = 2 * (r.length + r.width) * r.nos;
+      let netSkirtingLenFt = Math.max(0, skirtingPerimeterFt - (r.doorDeductionFt || 3) * r.nos);
+      let skirtingHeightFt = (r.skirtingHeightIn || 4) / 12;
+      let netSkirtingAreaSqft = r.includeSkirting && !isToilet ? netSkirtingLenFt * skirtingHeightFt : 0;
+      let skirtingTilesCount = r.includeSkirting && !isToilet ? Math.ceil((netSkirtingLenFt / (tileAreaPc > 0 ? Math.sqrt(tileAreaPc) : 1)) * 1.05) : 0;
+      let skirtingCost = r.includeSkirting && !isToilet && rateRes.found && rateRes.rate > 0 ? netSkirtingAreaSqft * rateRes.rate : 0;
+      let skirtingLabourCost = r.includeSkirting && !isToilet && skirtingLabourRes.found && skirtingLabourRes.rate > 0 ? netSkirtingLenFt * skirtingLabourRes.rate : 0;
+
+      if (!isToilet) {
+        totalFloorNetArea += netFloorArea;
+        totalSkirtingNetArea += netSkirtingAreaSqft;
+      } else {
+        totalToiletFloorArea += netFloorArea;
+        const netWallAreaPerToilet = Math.max(0, (2 * (r.length + r.width) * toiletWallHeight) - toiletDoorDeductionSqft - toiletVentDeductionSqft);
+        const totalToiletWallNet = netWallAreaPerToilet * r.nos;
+        totalToiletWallArea += totalToiletWallNet;
+
+        if (includeWaterproofing) {
+          totalWaterproofingSqft += (netFloorArea + totalToiletWallNet);
+        }
+      }
+
+      // Laying Method Mortar / Adhesive allocation
+      const isDryOrWood = r.layingMethod.includes("Dry") || r.layingMethod.includes("underlay") || r.flooringType.includes("Wooden") || r.flooringType.includes("Laminate") || r.flooringType.includes("Vinyl");
+      const isAdhesive = r.layingMethod.includes("adhesive");
+
+      if (isAdhesive) {
+        totalAdhesiveKg += (netFloorArea + netSkirtingAreaSqft) * 0.45; // ~0.45 kg/sqft for 3mm notch
+      } else if (!isDryOrWood) {
+        const bedThicknessIn = r.flooringType.includes("Granite") || r.flooringType.includes("Marble") ? graniteMortarBedIn : floorMortarBedIn;
+        totalMortarVolumeCft += netFloorArea * (bedThicknessIn / 12);
+        if (r.includeSkirting && !isToilet) {
+          totalMortarVolumeCft += netSkirtingAreaSqft * (skirtingMortarBedIn / 12);
+        }
+      }
+
+      totalGroutKg += (netFloorArea + netSkirtingAreaSqft) * 0.04; // 0.04 kg/sqft grout
+
+      roomCalculations.push({
+        ...r,
+        grossArea,
+        netFloorArea,
+        tileAreaPc,
+        exactTilesCount,
+        finalPurchaseTileCount,
+        purchaseAreaSqft,
+        rateRes,
+        labourRes,
+        tileCost,
+        labourCost,
+        netSkirtingLenFt,
+        netSkirtingAreaSqft,
+        skirtingTilesCount,
+        skirtingCost,
+        skirtingLabourCost
+      });
+    });
+
+    // 2. WALL CLADDING CALCULATIONS
+    claddings.forEach(c => {
+      // Correct Area = Length * Height * Nos - Openings
+      const netWallAreaSqft = Math.max(0, (c.length * c.height * c.nos) - (c.openings || 0));
+      const tileAreaPc = getTileAreaSqft(c.tileSize);
+      const exactTilesCount = Math.ceil(netWallAreaSqft / tileAreaPc);
+      const wastageFactor = 1 + (Number(c.wastagePct || 5) / 100);
+      const finalPurchaseTileCount = Math.ceil(exactTilesCount * wastageFactor);
+      const purchaseAreaSqft = finalPurchaseTileCount * tileAreaPc;
+
+      const rateRes = getTileMasterRateRes(c.type);
+      const labourRes = claddingLabourRes.found ? claddingLabourRes : getTileLabourRes(c.type);
+
+      const tileCost = rateRes.found && rateRes.rate > 0 ? purchaseAreaSqft * rateRes.rate : null;
+      const labourCost = labourRes.found && labourRes.rate > 0 ? netWallAreaSqft * labourRes.rate : null;
+
+      totalCladdingNetArea += netWallAreaSqft;
+
+      if (c.layingMethod.includes("adhesive")) {
+        totalAdhesiveKg += netWallAreaSqft * 0.45;
+      } else {
+        totalMortarVolumeCft += netWallAreaSqft * (claddingMortarBedIn / 12);
+      }
+      totalGroutKg += netWallAreaSqft * 0.04;
+
+      claddingCalculations.push({
+        ...c,
+        netWallAreaSqft,
+        tileAreaPc,
+        exactTilesCount,
+        finalPurchaseTileCount,
+        purchaseAreaSqft,
+        rateRes,
+        labourRes,
+        tileCost,
+        labourCost
+      });
+    });
+
+    // 3. MORTAR MIX BREAKDOWN (IS 1237 / CPWD)
+    const dryMortarFactor = 1.33;
+    const mortarWastageFactor = 1 + (mortarWastagePct / 100);
+    const totalDryMortarCft = totalMortarVolumeCft * dryMortarFactor * mortarWastageFactor;
+
+    const [cementPart, sandPart] = mortarRatio.split(':').map(Number);
+    const totalParts = cementPart + sandPart;
+
+    const cementVolumeCft = totalParts > 0 ? totalDryMortarCft * (cementPart / totalParts) : 0;
+    const cementBags = cementVolumeCft > 0 ? cementVolumeCft / 1.226 : 0;
+    const sandVolumeCft = totalParts > 0 ? totalDryMortarCft * (sandPart / totalParts) : 0;
+
+    const adhesiveBags20Kg = Math.ceil(totalAdhesiveKg / 20);
+    const groutBags5Kg = Math.ceil(totalGroutKg / 5);
+
+    // 4. COSTS COMPUTATION FROM ADMIN MASTER RATES
+    const cementCost = cementBags > 0 && cementRateRes.found && cementRateRes.rate > 0 ? cementBags * cementRateRes.rate : 0;
+    const sandCost = sandVolumeCft > 0 && sandRateRes.found && sandRateRes.rate > 0 ? sandVolumeCft * sandRateRes.rate : 0;
+    const adhesiveCost = totalAdhesiveKg > 0 && adhesiveRateRes.found && adhesiveRateRes.rate > 0 ? adhesiveBags20Kg * adhesiveRateRes.rate : 0;
+    const groutCost = totalGroutKg > 0 && groutRateRes.found && groutRateRes.rate > 0 ? groutBags5Kg * groutRateRes.rate : 0;
+    const waterproofingCost = totalWaterproofingSqft > 0 && waterproofingRateRes.found && waterproofingRateRes.rate > 0 ? totalWaterproofingSqft * waterproofingRateRes.rate : 0;
+
+    // Sum Materials
+    let tilesMaterialTotal: number | null = 0;
+    let allTilesFound = true;
+
+    roomCalculations.forEach(r => {
+      if (r.tileCost === null) allTilesFound = false;
+      else tilesMaterialTotal = (tilesMaterialTotal || 0) + r.tileCost + (r.skirtingCost || 0);
+    });
+
+    claddingCalculations.forEach(c => {
+      if (c.tileCost === null) allTilesFound = false;
+      else tilesMaterialTotal = (tilesMaterialTotal || 0) + c.tileCost;
+    });
+
+    let materialTotal: number | null = 0;
+    if (allTilesFound && cementRateRes.found && sandRateRes.found) {
+      materialTotal = (tilesMaterialTotal || 0) + cementCost + sandCost + adhesiveCost + groutCost + waterproofingCost;
+    } else {
+      materialTotal = null;
+    }
+
+    // Sum Labour
+    let labourTotal: number | null = 0;
+    let allLabourFound = true;
+
+    roomCalculations.forEach(r => {
+      if (r.labourCost === null) allLabourFound = false;
+      else labourTotal = (labourTotal || 0) + r.labourCost + (r.skirtingLabourCost || 0);
+    });
+
+    claddingCalculations.forEach(c => {
+      if (c.labourCost === null) allLabourFound = false;
+      else labourTotal = (labourTotal || 0) + c.labourCost;
+    });
+
+    if (!allLabourFound) labourTotal = null;
+
+    let grandTotal: number | null = 0;
+    if (materialTotal !== null && labourTotal !== null) {
+      grandTotal = materialTotal + labourTotal;
+    } else {
+      grandTotal = null;
+    }
+
+    return {
+      warnings,
+      roomCalculations,
+      claddingCalculations,
+      totals: {
+        totalFloorNetArea,
+        totalSkirtingNetArea,
+        totalCladdingNetArea,
+        totalToiletFloorArea,
+        totalToiletWallArea,
+        grandTotalNetArea: totalFloorNetArea + totalSkirtingNetArea + totalCladdingNetArea + totalToiletFloorArea + totalToiletWallArea
+      },
+      mortar: {
+        totalMortarVolumeCft,
+        totalDryMortarCft,
+        cementBags,
+        sandVolumeCft,
+        totalAdhesiveKg,
+        adhesiveBags20Kg,
+        totalGroutKg,
+        groutBags5Kg,
+        totalWaterproofingSqft
+      },
+      rates: {
+        vitrified: vitrifiedRateRes,
+        ceramic: ceramicRateRes,
+        granite: graniteRateRes,
+        marble: marbleRateRes,
+        wooden: woodenRateRes,
+        cladding: claddingRateRes,
+        cement: cementRateRes,
+        sand: sandRateRes,
+        adhesive: adhesiveRateRes,
+        grout: groutRateRes,
+        tileLabour: tileLabourRes,
+        graniteLabour: graniteLabourRes,
+        woodenLabour: woodenLabourRes,
+        claddingLabour: claddingLabourRes,
+        skirtingLabour: skirtingLabourRes
+      },
+      costs: {
+        tilesMaterialTotal,
+        cementCost,
+        sandCost,
+        adhesiveCost,
+        groutCost,
+        waterproofingCost,
+        materialTotal,
+        labourTotal,
+        grandTotal
+      }
+    };
+  };
+
+  const handleGenerate = () => {
+    setResults(calculateResults());
+    setGenerated(true);
+  };
+
+  const handleBack = () => {
+    router.push('/calculators');
+  };
+
+  const handleExportExcel = () => {
+    if (!results) return;
+    const data = [
+      ...results.roomCalculations.map((r: any) => ({
+        Item: `${r.type} Flooring (${r.flooringType} ${r.tileSize})`,
+        Quantity: formatNumber(r.netFloorArea),
+        Unit: 'sqft',
+        Rate: formatCurrency(r.rateRes.rate),
+        Cost: formatCurrency(r.tileCost)
+      })),
+      ...results.roomCalculations.filter((r: any) => r.netSkirtingAreaSqft > 0).map((r: any) => ({
+        Item: `${r.type} Skirting (4")`,
+        Quantity: formatNumber(r.netSkirtingAreaSqft),
+        Unit: 'sqft',
+        Rate: formatCurrency(r.rateRes.rate),
+        Cost: formatCurrency(r.skirtingCost)
+      })),
+      ...results.claddingCalculations.map((c: any) => ({
+        Item: `${c.title} (${c.type} ${c.tileSize})`,
+        Quantity: formatNumber(c.netWallAreaSqft),
+        Unit: 'sqft',
+        Rate: formatCurrency(c.rateRes.rate),
+        Cost: formatCurrency(c.tileCost)
+      })),
+      { Item: 'Cement (PPC/OPC)', Quantity: formatNumber(results.mortar.cementBags), Unit: 'bags', Rate: formatCurrency(cementRateRes.rate), Cost: formatCurrency(results.costs.cementCost) },
+      { Item: 'M Sand for Mortar Bed', Quantity: formatNumber(results.mortar.sandVolumeCft), Unit: 'CFT', Rate: formatCurrency(sandRateRes.rate), Cost: formatCurrency(results.costs.sandCost) },
+      { Item: 'Tile Adhesive', Quantity: formatNumber(results.mortar.adhesiveBags20Kg), Unit: '20kg bags', Rate: formatCurrency(adhesiveRateRes.rate), Cost: formatCurrency(results.costs.adhesiveCost) },
+      { Item: 'Tile Grout', Quantity: formatNumber(results.mortar.groutBags5Kg), Unit: '5kg bags', Rate: formatCurrency(groutRateRes.rate), Cost: formatCurrency(results.costs.groutCost) },
+      { Item: 'Material Subtotal', Quantity: '', Unit: '', Rate: '', Cost: formatCurrency(results.costs.materialTotal) },
+      { Item: 'Installation Labour Subtotal', Quantity: formatNumber(results.totals.grandTotalNetArea), Unit: 'sqft', Rate: formatCurrency(tileLabourRes.rate), Cost: formatCurrency(results.costs.labourTotal) },
+      { Item: 'GRAND TOTAL', Quantity: '', Unit: '', Rate: '', Cost: formatCurrency(results.costs.grandTotal) }
+    ];
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Flooring_Tiles_BBS');
+    XLSX.writeFile(wb, `Flooring_Tiles_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
+  const handleWhatsApp = () => {
+    if (!results) return;
+    const message = `🔲 BUILDMITRA FLOORING & TILES ESTIMATE\n\nNet Floor Area: ${results.totals.totalFloorNetArea} sqft\nCladding Area: ${results.totals.totalCladdingNetArea} sqft\nCement Bags: ${formatNumber(results.mortar.cementBags)} bags\nSand Volume: ${formatNumber(results.mortar.sandVolumeCft)} CFT\nGrand Total: ${formatCurrency(results.costs.grandTotal)}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+  };
+
+  if (loading) {
+    return React.createElement('div', { style: { padding: '20px', textAlign: 'center' } }, 'Loading Admin Master Rates...');
+  }
+
+  return React.createElement('div', { style: styles.container },
+    React.createElement('div', { style: styles.header },
+      React.createElement('button', { onClick: handleBack, style: styles.backButton }, '←'),
+      React.createElement('h1', { style: styles.headerTitle }, '🔲 Flooring & Tiles Calculator (IS 15622 / IS 13630 / IS 1237)')
+    ),
+
+    React.createElement(MarketRateTrend, null),
+
+    React.createElement('div', { style: styles.rateInfo },
+      React.createElement('span', null, `💰 Admin Master Rates: Vitrified ${vitrifiedRateRes.found ? `₹${vitrifiedRateRes.rate}/sqft` : 'Rate Unavailable'} | Granite ${graniteRateRes.found ? `₹${graniteRateRes.rate}/sqft` : 'Rate Unavailable'} | Cement ${cementRateRes.found ? `₹${cementRateRes.rate}/bag` : 'Rate Unavailable'}`),
+      React.createElement('div', null, React.createElement('small', null, `👷 Labour: Tile Laying ${tileLabourRes.found ? `₹${tileLabourRes.rate}/sqft` : 'Rate Unavailable'} | Cladding ${claddingLabourRes.found ? `₹${claddingLabourRes.rate}/sqft` : 'Rate Unavailable'}`))
+    ),
+
+    React.createElement('div', { style: styles.sectionTitle }, '🏠 Room-Wise Flooring Specifications'),
+    React.createElement('div', { style: styles.row6 },
+      React.createElement('div', null,
+        React.createElement('label', { style: styles.label }, 'Room Type'),
+        React.createElement('select', { value: roomInput.type, onChange: (e) => setRoomInput({ ...roomInput, type: e.target.value }), style: styles.select },
+          roomTypesList.map(type => React.createElement('option', { key: type, value: type }, type))
+        )
+      ),
+      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Length (ft)'), React.createElement('input', { type: 'number', value: roomInput.length, onChange: (e) => setRoomInput({ ...roomInput, length: parseFloat(e.target.value) || 0 }), style: styles.input })),
+      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Width (ft)'), React.createElement('input', { type: 'number', value: roomInput.width, onChange: (e) => setRoomInput({ ...roomInput, width: parseFloat(e.target.value) || 0 }), style: styles.input })),
+      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Nos'), React.createElement('input', { type: 'number', value: roomInput.nos, onChange: (e) => setRoomInput({ ...roomInput, nos: parseFloat(e.target.value) || 0 }), style: styles.input })),
+      React.createElement('div', null,
+        React.createElement('label', { style: styles.label }, 'Flooring Material'),
+        React.createElement('select', {
+          value: roomInput.flooringType,
+          onChange: (e) => {
+            const val = e.target.value;
+            const availableSizes = tileSizesMap[val] || commonFloorTileSizes;
+            setRoomInput({ ...roomInput, flooringType: val, tileSize: availableSizes[0] || '24x24' });
+          },
+          style: styles.select
+        }, Object.keys(tileSizesMap).filter(k => k !== 'Cladding Tiles').map(t => React.createElement('option', { key: t, value: t }, t)))
+      ),
+      React.createElement('div', null,
+        React.createElement('label', { style: styles.label }, 'Tile Size'),
+        React.createElement('select', { value: roomInput.tileSize, onChange: (e) => setRoomInput({ ...roomInput, tileSize: e.target.value }), style: styles.select },
+          (tileSizesMap[roomInput.flooringType] || commonFloorTileSizes).map(s => React.createElement('option', { key: s, value: s }, s))
+        )
+      ),
+      React.createElement('div', null,
+        React.createElement('label', { style: styles.label }, 'Laying Method'),
+        React.createElement('select', { value: roomInput.layingMethod, onChange: (e) => setRoomInput({ ...roomInput, layingMethod: e.target.value }), style: styles.select },
+          layingMethods.map(m => React.createElement('option', { key: m, value: m }, m))
+        )
+      ),
+      React.createElement('div', null,
+        React.createElement('label', { style: styles.label }, 'Pattern / Wastage'),
+        React.createElement('select', {
+          value: roomInput.pattern,
+          onChange: (e) => setRoomInput({ ...roomInput, pattern: e.target.value, wastagePct: patternWastageMap[e.target.value] || 5 }),
+          style: styles.select
+        }, Object.keys(patternWastageMap).map(p => React.createElement('option', { key: p, value: p }, p)))
+      ),
+      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Wastage %'), React.createElement('input', { type: 'number', value: roomInput.wastagePct, onChange: (e) => setRoomInput({ ...roomInput, wastagePct: parseFloat(e.target.value) || 0 }), style: styles.input })),
+      React.createElement('div', null,
+        React.createElement('label', { style: styles.label }, 'Include Skirting'),
+        React.createElement('select', { value: roomInput.includeSkirting ? "Yes" : "No", onChange: (e) => setRoomInput({ ...roomInput, includeSkirting: e.target.value === "Yes" }), style: styles.select },
+          React.createElement('option', { value: 'Yes' }, 'Yes (4")'), React.createElement('option', { value: 'No' }, 'No')
+        )
+      ),
+      React.createElement('div', { style: { display: 'flex', alignItems: 'flex-end', gap: '6px' } },
+        React.createElement('button', { onClick: handleSaveRoom, style: styles.buttonSmall }, editingRoomId !== null ? '✓ Update Room' : '+ Add Room')
+      )
+    ),
+
+    rooms.length > 0 && React.createElement('div', { style: styles.tableContainer },
+      React.createElement('table', { style: styles.table },
+        React.createElement('thead', null, React.createElement('tr', null,
+          React.createElement('th', { style: styles.th }, 'Room Type'),
+          React.createElement('th', { style: styles.th }, 'Dimensions'),
+          React.createElement('th', { style: styles.th }, 'Nos'),
+          React.createElement('th', { style: styles.th }, 'Net Area'),
+          React.createElement('th', { style: styles.th }, 'Material & Size'),
+          React.createElement('th', { style: styles.th }, 'Laying Method'),
+          React.createElement('th', { style: styles.th }, 'Action')
+        )),
+        React.createElement('tbody', null,
+          rooms.map((r: any) => {
+            const netArea = r.length * r.width * r.nos - (r.deductions || 0);
+            return React.createElement('tr', { key: r.id, style: styles.evenRow },
+              React.createElement('td', { style: styles.td }, r.type),
+              React.createElement('td', { style: styles.td }, `${r.length}' × ${r.width}'`),
+              React.createElement('td', { style: styles.td }, r.nos),
+              React.createElement('td', { style: { ...styles.td, fontWeight: 'bold' } }, `${formatNumber(netArea)} sqft`),
+              React.createElement('td', { style: styles.td }, `${r.flooringType} (${r.tileSize})`),
+              React.createElement('td', { style: styles.td }, r.layingMethod),
+              React.createElement('td', { style: { ...styles.td, display: 'flex', gap: '4px' } },
+                React.createElement('button', { onClick: () => handleEditRoom(r), style: styles.buttonWarning }, 'Edit'),
+                React.createElement('button', { onClick: () => handleDeleteRoom(r.id), style: styles.buttonDanger }, 'Delete')
+              )
+            );
+          })
+        )
+      )
+    ),
+
+    React.createElement('div', { style: styles.sectionTitle }, '🎨 Wall Cladding & Feature Walls'),
+    React.createElement('div', { style: styles.row6 },
+      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Wall Description'), React.createElement('input', { type: 'text', value: claddingInput.title, onChange: (e) => setCladdingInput({ ...claddingInput, title: e.target.value }), style: styles.input })),
+      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Length (ft)'), React.createElement('input', { type: 'number', value: claddingInput.length, onChange: (e) => setCladdingInput({ ...claddingInput, length: parseFloat(e.target.value) || 0 }), style: styles.input })),
+      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Height (ft)'), React.createElement('input', { type: 'number', value: claddingInput.height, onChange: (e) => setCladdingInput({ ...claddingInput, height: parseFloat(e.target.value) || 0 }), style: styles.input })),
+      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Nos'), React.createElement('input', { type: 'number', value: claddingInput.nos, onChange: (e) => setCladdingInput({ ...claddingInput, nos: parseFloat(e.target.value) || 0 }), style: styles.input })),
+      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Openings (sqft)'), React.createElement('input', { type: 'number', value: claddingInput.openings, onChange: (e) => setCladdingInput({ ...claddingInput, openings: parseFloat(e.target.value) || 0 }), style: styles.input })),
+      React.createElement('div', null,
+        React.createElement('label', { style: styles.label }, 'Cladding Type'),
+        React.createElement('select', { value: claddingInput.type, onChange: (e) => setCladdingInput({ ...claddingInput, type: e.target.value }), style: styles.select },
+          Object.keys(tileSizesMap).map(t => React.createElement('option', { key: t, value: t }, t))
+        )
+      ),
+      React.createElement('div', null,
+        React.createElement('label', { style: styles.label }, 'Tile Size'),
+        React.createElement('select', { value: claddingInput.tileSize, onChange: (e) => setCladdingInput({ ...claddingInput, tileSize: e.target.value }), style: styles.select },
+          (tileSizesMap[claddingInput.type] || commonWallTileSizes).map(s => React.createElement('option', { key: s, value: s }, s))
+        )
+      ),
+      React.createElement('div', { style: { display: 'flex', alignItems: 'flex-end' } },
+        React.createElement('button', { onClick: handleSaveCladding, style: styles.buttonSmall }, editingCladdingId !== null ? '✓ Update Cladding' : '+ Add Cladding')
+      )
+    ),
+
+    claddings.length > 0 && React.createElement('div', { style: styles.tableContainer },
+      React.createElement('table', { style: styles.table },
+        React.createElement('thead', null, React.createElement('tr', null,
+          React.createElement('th', { style: styles.th }, 'Wall Title'),
+          React.createElement('th', { style: styles.th }, 'Dimensions (L × H)'),
+          React.createElement('th', { style: styles.th }, 'Nos'),
+          React.createElement('th', { style: styles.th }, 'Net Area'),
+          React.createElement('th', { style: styles.th }, 'Tile Type & Size'),
+          React.createElement('th', { style: styles.th }, 'Action')
+        )),
+        React.createElement('tbody', null,
+          claddings.map((c: any) => {
+            const netArea = (c.length * c.height * c.nos) - (c.openings || 0);
+            return React.createElement('tr', { key: c.id, style: styles.evenRow },
+              React.createElement('td', { style: styles.td }, c.title),
+              React.createElement('td', { style: styles.td }, `${c.length}' × ${c.height}'`),
+              React.createElement('td', { style: styles.td }, c.nos),
+              React.createElement('td', { style: { ...styles.td, fontWeight: 'bold' } }, `${formatNumber(netArea)} sqft`),
+              React.createElement('td', { style: styles.td }, `${c.type} (${c.tileSize})`),
+              React.createElement('td', { style: { ...styles.td, display: 'flex', gap: '4px' } },
+                React.createElement('button', { onClick: () => handleEditCladding(c), style: styles.buttonWarning }, 'Edit'),
+                React.createElement('button', { onClick: () => handleDeleteCladding(c.id), style: styles.buttonDanger }, 'Delete')
+              )
+            );
+          })
+        )
+      )
+    ),
+
+    React.createElement('div', { style: styles.sectionTitle }, '🧱 Mortar Bed & Adhesive Specifications'),
+    React.createElement('div', { style: styles.row6 },
+      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Floor Mortar Bed (inch)'), React.createElement('input', { type: 'number', value: floorMortarBedIn, onChange: (e) => setFloorMortarBedIn(parseFloat(e.target.value) || 0), style: styles.input })),
+      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Granite/Marble Bed (inch)'), React.createElement('input', { type: 'number', value: graniteMortarBedIn, onChange: (e) => setGraniteMortarBedIn(parseFloat(e.target.value) || 0), style: styles.input })),
+      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Skirting Bed (inch)'), React.createElement('input', { type: 'number', value: skirtingMortarBedIn, onChange: (e) => setSkirtingMortarBedIn(parseFloat(e.target.value) || 0), style: styles.input })),
+      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Wall Cladding Bed (inch)'), React.createElement('input', { type: 'number', value: claddingMortarBedIn, onChange: (e) => setCladdingMortarBedIn(parseFloat(e.target.value) || 0), style: styles.input })),
+      React.createElement('div', null,
+        React.createElement('label', { style: styles.label }, 'Mortar Mix Ratio'),
+        React.createElement('select', { value: mortarRatio, onChange: (e) => setMortarRatio(e.target.value), style: styles.select },
+          ["1:3", "1:4", "1:5", "1:6"].map(r => React.createElement('option', { key: r, value: r }, r))
+        )
+      ),
+      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Mortar Wastage %'), React.createElement('input', { type: 'number', value: mortarWastagePct, onChange: (e) => setMortarWastagePct(parseFloat(e.target.value) || 0), style: styles.input }))
+    ),
+
+    React.createElement('div', { style: styles.buttonRow },
+      React.createElement('button', { onClick: handleGenerate }, '🔨 Calculate Flooring & Tiles Estimate'),
+      generated && results && React.createElement(React.Fragment, null,
+        React.createElement('button', { onClick: () => checkAndRun('calculator_export', 'flooring-calculator', handleExportExcel), style: styles.buttonExport }, '📊 Excel'),
+        React.createElement('button', { onClick: () => checkAndRun('calculator_export', 'flooring-calculator', handleWhatsApp), style: styles.buttonWhatsapp }, '💬 Share')
+      )
+    ),
+
+    generated && results && React.createElement('div', null,
+      results.warnings.length > 0 && React.createElement('div', { style: styles.warningBox },
+        results.warnings.map((w: string, i: number) => React.createElement('div', { key: i }, w))
+      ),
+
+      React.createElement('div', { style: styles.cardContainer },
+        React.createElement('div', { style: { ...styles.card, ...styles.cardBlue } }, React.createElement('div', null, '🏠'), React.createElement('div', null, 'Total Net Area'), React.createElement('div', { style: styles.cardValue }, `${formatNumber(results.totals.grandTotalNetArea)} sqft`)),
+        React.createElement('div', { style: { ...styles.card, ...styles.cardLightGreen } }, React.createElement('div', null, '🪣'), React.createElement('div', null, 'Cement Bags'), React.createElement('div', { style: styles.cardValue }, `${formatNumber(results.mortar.cementBags)} bags`)),
+        React.createElement('div', { style: { ...styles.card, ...styles.cardLightOrange } }, React.createElement('div', null, '💰'), React.createElement('div', null, 'Material Subtotal'), React.createElement('div', { style: styles.cardValue }, formatCurrency(results.costs.materialTotal))),
+        React.createElement('div', { style: { ...styles.card, ...styles.cardLightTeal } }, React.createElement('div', null, '💎'), React.createElement('div', null, 'Grand Total'), React.createElement('div', { style: styles.cardValue }, formatCurrency(results.costs.grandTotal)))
+      ),
+
+      React.createElement('div', { style: styles.sectionTitle }, '📋 Room-Wise Breakdown & Piece-Count Reconciliation'),
+      React.createElement('div', { style: styles.tableContainer },
+        React.createElement('table', { style: styles.table },
+          React.createElement('thead', null, React.createElement('tr', null,
+            React.createElement('th', { style: styles.th }, 'Room / Zone'),
+            React.createElement('th', { style: styles.th }, 'Net Area'),
+            React.createElement('th', { style: styles.th }, 'Material & Size'),
+            React.createElement('th', { style: styles.th }, 'Exact Tiles'),
+            React.createElement('th', { style: styles.th }, 'Purchase Tiles'),
+            React.createElement('th', { style: styles.th }, 'Purchase Sqft'),
+            React.createElement('th', { style: styles.th }, 'Master Rate'),
+            React.createElement('th', { style: styles.th }, 'Cost')
+          )),
+          React.createElement('tbody', null,
+            results.roomCalculations.map((r: any, i: number) =>
+              React.createElement('tr', { key: i, style: i % 2 === 1 ? styles.evenRow : {} },
+                React.createElement('td', { style: styles.td }, r.type),
+                React.createElement('td', { style: styles.td }, `${formatNumber(r.netFloorArea)} sqft`),
+                React.createElement('td', { style: styles.td }, `${r.flooringType} (${r.tileSize})`),
+                React.createElement('td', { style: styles.td }, `${r.exactTilesCount} pcs`),
+                React.createElement('td', { style: styles.td }, `${r.finalPurchaseTileCount} pcs (+${r.wastagePct}%)`),
+                React.createElement('td', { style: styles.td }, `${formatNumber(r.purchaseAreaSqft)} sqft`),
+                React.createElement('td', { style: styles.td }, formatCurrency(r.rateRes.rate)),
+                React.createElement('td', { style: styles.td }, formatCurrency(r.tileCost))
+              )
+            )
+          )
+        )
+      ),
+
+      React.createElement('div', { style: styles.sectionTitle }, '🎨 Wall Cladding Breakdown'),
+      React.createElement('div', { style: styles.tableContainer },
+        React.createElement('table', { style: styles.table },
+          React.createElement('thead', null, React.createElement('tr', null,
+            React.createElement('th', { style: styles.th }, 'Wall Title'),
+            React.createElement('th', { style: styles.th }, 'Net Area'),
+            React.createElement('th', { style: styles.th }, 'Cladding Type'),
+            React.createElement('th', { style: styles.th }, 'Tile Size'),
+            React.createElement('th', { style: styles.th }, 'Purchase Tiles'),
+            React.createElement('th', { style: styles.th }, 'Master Rate'),
+            React.createElement('th', { style: styles.th }, 'Cost')
+          )),
+          React.createElement('tbody', null,
+            results.claddingCalculations.map((c: any, i: number) =>
+              React.createElement('tr', { key: i, style: i % 2 === 1 ? styles.evenRow : {} },
+                React.createElement('td', { style: styles.td }, c.title),
+                React.createElement('td', { style: styles.td }, `${formatNumber(c.netWallAreaSqft)} sqft`),
+                React.createElement('td', { style: styles.td }, c.type),
+                React.createElement('td', { style: styles.td }, c.tileSize),
+                React.createElement('td', { style: styles.td }, `${c.finalPurchaseTileCount} pcs`),
+                React.createElement('td', { style: styles.td }, formatCurrency(c.rateRes.rate)),
+                React.createElement('td', { style: styles.td }, formatCurrency(c.tileCost))
+              )
+            )
+          )
+        )
+      ),
+
+      React.createElement('div', { style: styles.sectionTitle }, '💰 Summary Cost Table & Material Allocation'),
+      React.createElement('div', { style: styles.tableContainer },
+        React.createElement('table', { style: styles.table },
+          React.createElement('thead', null, React.createElement('tr', null,
+            React.createElement('th', { style: styles.th }, 'Item / Component'),
+            React.createElement('th', { style: styles.th }, 'Quantity'),
+            React.createElement('th', { style: styles.th }, 'Unit'),
+            React.createElement('th', { style: styles.th }, 'Master Rate'),
+            React.createElement('th', { style: styles.th }, 'Cost')
+          )),
+          React.createElement('tbody', null,
+            React.createElement('tr', null, React.createElement('td', { style: styles.td }, 'Flooring Tiles & Stones Subtotal'), React.createElement('td', { style: styles.td }, formatNumber(results.totals.totalFloorNetArea)), React.createElement('td', { style: styles.td }, 'sqft'), React.createElement('td', { style: styles.td }, '-'), React.createElement('td', { style: styles.td }, formatCurrency(results.costs.tilesMaterialTotal))),
+            React.createElement('tr', { style: styles.evenRow }, React.createElement('td', { style: styles.td }, 'Cement (PPC/OPC for Mortar Bed)'), React.createElement('td', { style: styles.td }, formatNumber(results.mortar.cementBags)), React.createElement('td', { style: styles.td }, 'bags'), React.createElement('td', { style: styles.td }, formatCurrency(results.rates.cement.rate)), React.createElement('td', { style: styles.td }, formatCurrency(results.costs.cementCost))),
+            React.createElement('tr', null, React.createElement('td', { style: styles.td }, 'M Sand (Screened Sand for Bed)'), React.createElement('td', { style: styles.td }, formatNumber(results.mortar.sandVolumeCft)), React.createElement('td', { style: styles.td }, 'CFT'), React.createElement('td', { style: styles.td }, formatCurrency(results.rates.sand.rate)), React.createElement('td', { style: styles.td }, formatCurrency(results.costs.sandCost))),
+            React.createElement('tr', { style: styles.evenRow }, React.createElement('td', { style: styles.td }, 'Tile Adhesive (20kg Bags)'), React.createElement('td', { style: styles.td }, formatNumber(results.mortar.adhesiveBags20Kg, 0)), React.createElement('td', { style: styles.td }, 'bags'), React.createElement('td', { style: styles.td }, formatCurrency(results.rates.adhesive.rate)), React.createElement('td', { style: styles.td }, formatCurrency(results.costs.adhesiveCost))),
+            React.createElement('tr', null, React.createElement('td', { style: styles.td }, 'Tile Joint Grout (5kg Bags)'), React.createElement('td', { style: styles.td }, formatNumber(results.mortar.groutBags5Kg, 0)), React.createElement('td', { style: styles.td }, 'bags'), React.createElement('td', { style: styles.td }, formatCurrency(results.rates.grout.rate)), React.createElement('td', { style: styles.td }, formatCurrency(results.costs.groutCost))),
+            
+            React.createElement('tr', { style: { backgroundColor: '#e8f4f8', fontWeight: 'bold' } }, React.createElement('td', { colSpan: 4, style: styles.td }, 'Material Subtotal'), React.createElement('td', { style: styles.td }, formatCurrency(results.costs.materialTotal))),
+            React.createElement('tr', null, React.createElement('td', { style: styles.td }, 'Labour — Flooring & Cladding Installation'), React.createElement('td', { style: styles.td }, formatNumber(results.totals.grandTotalNetArea)), React.createElement('td', { style: styles.td }, 'sqft'), React.createElement('td', { style: styles.td }, formatCurrency(results.rates.tileLabour.rate)), React.createElement('td', { style: styles.td }, formatCurrency(results.costs.labourTotal))),
+            React.createElement('tr', { style: { backgroundColor: '#f0f7f5', fontWeight: 'bold' } }, React.createElement('td', { colSpan: 4, style: styles.td }, 'Labour Subtotal'), React.createElement('td', { style: styles.td }, formatCurrency(results.costs.labourTotal))),
+            React.createElement('tr', { style: { backgroundColor: '#800020', color: 'white', fontWeight: 'bold' } }, React.createElement('td', { colSpan: 4, style: { padding: '8px' } }, 'GRAND TOTAL'), React.createElement('td', { style: { padding: '8px' } }, formatCurrency(results.costs.grandTotal)))
+          )
+        )
+      ),
+
+      React.createElement('div', { style: { display: 'flex', gap: '10px', marginTop: '15px' } },
+        React.createElement('button', {
+          onClick: () => {
+            alert('Saved Flooring & Tiles Estimate to Active Project!');
+          },
+          style: { flex: 1, padding: '10px', borderRadius: '6px', border: 0, backgroundColor: '#0f766e', color: 'white', fontWeight: 'bold', cursor: 'pointer' }
+        }, '💾 Save to Project'),
+        React.createElement('button', {
+          onClick: () => {
+            alert('Added Flooring & Tile Quantities to BOQ Line Items!');
+          },
+          style: { flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #0f766e', backgroundColor: 'white', color: '#0f766e', fontWeight: 'bold', cursor: 'pointer' }
+        }, '📋 Add to BOQ')
+      ),
+
+      React.createElement('div', { style: styles.detailsBox },
+        React.createElement('b', null, '📜 Applicable Standards & Mandatory Engineering Disclaimer:'),
+        React.createElement('div', { style: { marginTop: '6px', fontStyle: 'italic', fontWeight: '600' } }, 'This calculator is a quantity and cost estimator. Product selection and laying method must follow the approved specification and manufacturer instructions.'),
+        React.createElement('div', { style: { marginTop: '6px' } }, '• IS 15622: Specification for Pressed Ceramic Tiles'),
+        React.createElement('div', null, '• IS 13630: Ceramic Tiles - Methods of Test and Sampling'),
+        React.createElement('div', null, '• IS 1237: Cement Concrete Flooring Tiles Code of Practice'),
+        React.createElement('div', null, '• Mortar Dry Volume Factor: 1.33; Cement bag volume = 1.226 CFT (50kg bag)'),
+        React.createElement('div', null, '• Dynamic Rates loaded live from Admin Master Rates. Displays "Rate Unavailable in Admin Master" when unconfigured.')
+      )
+    )
+  );
+}

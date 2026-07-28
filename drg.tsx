@@ -1,1 +1,1 @@
-PASTE_NEW_CONTENT_HERE
+export { default } from "./pages/drg";

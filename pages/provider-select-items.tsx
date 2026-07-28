@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+﻿import React, { useEffect, useMemo, useState } from "react";
 import { normalizeImageUrl, resolveListingImage } from "../utils/imageUrl";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
@@ -131,16 +131,50 @@ export default function ProviderSelectItems() {
         return;
       }
 
-      const uploadedFiles = data.files || [];
-      const newImgs = uploadedFiles.map((f: any, idx: number) => ({
-        url: f.url,
-        isPrimary: existingCount === 0 && idx === 0,
+      const uploadedFiles =
+        Array.isArray(data.images) && data.images.length
+          ? data.images
+          : Array.isArray(data.files)
+            ? data.files
+            : [];
+
+      const newImgs = uploadedFiles
+        .map((file: any, index: number) => ({
+          url: String(file?.url || "").trim(),
+          isPrimary:
+            existingCount === 0 &&
+            index === 0,
+        }))
+        .filter((image: any) => image.url);
+
+      if (!newImgs.length) {
+        alert("Upload completed, but no valid image URL was returned.");
+        return;
+      }
+
+      setItemImages((previous) => {
+        const existing = previous[masterItemCode] || [];
+        const combined = [...existing, ...newImgs].slice(0, 5);
+
+        if (!combined.some((image) => image.isPrimary) && combined.length) {
+          combined[0] = {
+            ...combined[0],
+            isPrimary: true,
+          };
+        }
+
+        return {
+          ...previous,
+          [masterItemCode]: combined,
+        };
+      });
+
+      setSelected((previous) => ({
+        ...previous,
+        [masterItemCode]: true,
       }));
 
-      setItemImages((prev) => ({
-        ...prev,
-        [masterItemCode]: [...(prev[masterItemCode] || []), ...newImgs],
-      }));
+      e.target.value = "";
     } catch (err: any) {
       alert(err.message || "Image upload failed");
     } finally {
@@ -173,13 +207,26 @@ export default function ProviderSelectItems() {
     const rows = Object.keys(selected)
       .filter((code) => selected[code])
       .map((masterItemCode) => {
-        const imgs = itemImages[masterItemCode] || [];
-        const primaryObj = imgs.find((i) => i.isPrimary) || imgs[0];
+        const imgs = (itemImages[masterItemCode] || [])
+          .map((image) => ({
+            url: String(image.url || "").trim(),
+            isPrimary: Boolean(image.isPrimary),
+          }))
+          .filter((image) => image.url);
+
+        if (imgs.length && !imgs.some((image) => image.isPrimary)) {
+          imgs[0].isPrimary = true;
+        }
+
+        const primaryObj =
+          imgs.find((image) => image.isPrimary) ||
+          imgs[0];
+
         return {
           masterItemCode,
           rate: Number(rates[masterItemCode] || 0),
           images: imgs,
-          imageUrl: primaryObj ? primaryObj.url : "",
+          imageUrl: primaryObj?.url || "",
         };
       })
       .filter((row) => row.rate > 0);
@@ -288,7 +335,16 @@ export default function ProviderSelectItems() {
               <tr><td style={styles.td} colSpan={9}>No master items found.</td></tr>
             ) : visibleItems.map((item) => {
               const uploadedImgs = itemImages[item.masterItemCode] || [];
-              const displayUrl = uploadedImgs.find((i) => i.isPrimary)?.url || uploadedImgs[0]?.url || resolveListingImage(item) || normalizeImageUrl(item.imageUrl);
+              const uploadedDisplayUrl =
+                normalizeImageUrl(
+                  uploadedImgs.find((image) => image.isPrimary)?.url ||
+                  uploadedImgs[0]?.url
+                );
+
+              const displayUrl =
+                uploadedDisplayUrl ||
+                resolveListingImage(item) ||
+                normalizeImageUrl(item.imageUrl);
 
               return (
                 <tr key={item.masterItemCode}>
@@ -297,7 +353,7 @@ export default function ProviderSelectItems() {
                     {displayUrl ? (
                       <img src={displayUrl} alt={item.itemName} style={styles.thumb} onError={(e) => { (e.currentTarget as HTMLElement).style.display = "none"; }} />
                     ) : (
-                      <div style={styles.placeholderThumb}>🏗️</div>
+                      <div style={styles.placeholderThumb}>ðŸ—ï¸</div>
                     )}
                   </td>
                   <td style={styles.td}><strong>{item.masterItemCode}</strong>{selectedCodes.has(item.masterItemCode) ? <div style={styles.badge}>Submitted</div> : null}</td>
@@ -317,7 +373,7 @@ export default function ProviderSelectItems() {
                         onChange={(e) => handleImageUpload(item.masterItemCode, e)}
                       />
                       <label htmlFor={`file-${item.masterItemCode}`} style={styles.uploadBtn}>
-                        {uploadingItem === item.masterItemCode ? "Uploading..." : `📷 Select Photos (${uploadedImgs.length}/5)`}
+                        {uploadingItem === item.masterItemCode ? "Uploading..." : `ðŸ“· Select Photos (${uploadedImgs.length}/5)`}
                       </label>
 
                       {/* Image Previews */}
@@ -337,7 +393,7 @@ export default function ProviderSelectItems() {
                                 onClick={() => removeUploadedImage(item.masterItemCode, idx)}
                                 title="Remove photo"
                               >
-                                ×
+                                Ã—
                               </span>
                             </div>
                           ))}
@@ -402,3 +458,4 @@ const styles: Record<string, React.CSSProperties> = {
   sectionTitle: { margin: "0 0 12px", fontSize: 20 },
   requestGrid: { display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8 },
 };
+

@@ -4,28 +4,44 @@ const API_BASE = (
   "http://localhost:5000"
 ).replace(/\/+$/, "");
 
-/**
- * Normalizes relative uploaded image paths to full browser-accessible URLs.
- */
-export function normalizeImageUrl(url: string | null | undefined): string | null {
+export function normalizeImageUrl(
+  url: string | null | undefined
+): string | null {
   if (!url || typeof url !== "string") return null;
+
   const trimmed = url.trim();
-  if (!trimmed || trimmed === "/placeholder-material.png" || trimmed === "null" || trimmed === "undefined") {
+
+  if (
+    !trimmed ||
+    trimmed === "/placeholder-material.png" ||
+    trimmed === "null" ||
+    trimmed === "undefined"
+  ) {
     return null;
   }
 
-  // Already absolute or base64
-  if (trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("data:")) {
+  if (
+    trimmed.startsWith("http://") ||
+    trimmed.startsWith("https://") ||
+    trimmed.startsWith("data:") ||
+    trimmed.startsWith("blob:")
+  ) {
     return trimmed;
   }
 
-  // Relative backend upload path
-  if (trimmed.startsWith("/uploads/") || trimmed.startsWith("uploads/")) {
-    const cleanPath = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+  if (
+    trimmed.startsWith("/api/marketplace/images/") ||
+    trimmed.startsWith("api/marketplace/images/") ||
+    trimmed.startsWith("/uploads/") ||
+    trimmed.startsWith("uploads/")
+  ) {
+    const cleanPath = trimmed.startsWith("/")
+      ? trimmed
+      : `/${trimmed}`;
+
     return `${API_BASE}${cleanPath}`;
   }
 
-  // Other relative assets
   if (trimmed.startsWith("/")) {
     return trimmed;
   }
@@ -33,42 +49,55 @@ export function normalizeImageUrl(url: string | null | undefined): string | null
   return `${API_BASE}/${trimmed}`;
 }
 
-/**
- * Resolves the primary product image from listing object supporting canonical images[] and legacy fields.
- */
 export function resolveListingImage(item: any): string | null {
   if (!item || typeof item !== "object") return null;
 
-  // 1. Check canonical images array for primary
   if (Array.isArray(item.images) && item.images.length > 0) {
-    const primary = item.images.find((img: any) => img && img.isPrimary && (img.url || img.imageUrl));
+    const activeImages = item.images.filter(
+      (image: any) =>
+        image &&
+        image.status !== "rejected" &&
+        image.isActive !== false
+    );
+
+    const primary = activeImages.find(
+      (image: any) =>
+        image &&
+        image.isPrimary &&
+        (image.url || image.imageUrl)
+    );
+
     if (primary) {
-      const url = normalizeImageUrl(primary.url || primary.imageUrl);
-      if (url) return url;
+      const resolved = normalizeImageUrl(
+        primary.url || primary.imageUrl
+      );
+
+      if (resolved) return resolved;
     }
-    const first = item.images[0];
+
+    const first = activeImages[0];
+
     if (first) {
-      const url = normalizeImageUrl(typeof first === "string" ? first : (first.url || first.imageUrl));
-      if (url) return url;
+      const resolved = normalizeImageUrl(
+        typeof first === "string"
+          ? first
+          : first.url || first.imageUrl
+      );
+
+      if (resolved) return resolved;
     }
   }
 
-  // 2. Legacy imageUrl field
-  if (item.imageUrl) {
-    const url = normalizeImageUrl(item.imageUrl);
-    if (url) return url;
-  }
+  const legacyCandidates = [
+    item.imageUrl,
+    item.productImage,
+    item.image,
+  ];
 
-  // 3. Legacy productImage field
-  if (item.productImage) {
-    const url = normalizeImageUrl(item.productImage);
-    if (url) return url;
-  }
+  for (const candidate of legacyCandidates) {
+    const resolved = normalizeImageUrl(candidate);
 
-  // 4. Legacy image field
-  if (item.image) {
-    const url = normalizeImageUrl(item.image);
-    if (url) return url;
+    if (resolved) return resolved;
   }
 
   return null;
