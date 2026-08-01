@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { clearBuildMitraSession, getBuildMitraUser } from "../utils/session";
+import BuildMitraLogo from "./branding/BuildMitraLogo";
 
 const styles = {
   sidebar: {
@@ -258,6 +259,7 @@ export default function Sidebar({ children, currentPath }: { children?: any; cur
   // ---------------- BOQ ----------------
   const boqTabs = [
     { name: "Civil BOQ", path: "/boq-civil", icon: "📄" },
+    { name: "PEB Building BOQ", path: "/peb-building-boq", icon: "🏗️" },
     { name: "Interior BOQ", path: "/boq-interior", icon: "🪑" },
     { name: "Plumbing BOQ", path: "/boq-plumbing", icon: "🔧" },
     { name: "Electrical BOQ", path: "/boq-electrical", icon: "⚡" },
@@ -374,7 +376,7 @@ if (isMobile) {
         boxShadow: "0 2px 10px rgba(0,0,0,0.18)"
       }}>
         <div>
-          <div style={{ fontSize: 20, fontWeight: 900 }}>🏗️ BuildMitra</div>
+          <div data-buildmitra-brand><BuildMitraLogo variant="sidebar" /></div>
           <div style={{ fontSize: 11, opacity: 0.8 }}>
             Build Smarter. Save Bigger.
           </div>
@@ -488,9 +490,8 @@ if (isMobile) {
 
         {/* LOGO */}
         {!collapsed && (
-          <div style={styles.logo}>
-            <span style={styles.logoIcon}>🏗️</span>
-            <span>BuildMitra</span>
+          <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", borderBottom: "1px solid #2a2a4a" }}>
+            <BuildMitraLogo width={36} height={36} showText />
           </div>
         )}
 
@@ -599,7 +600,7 @@ if (isMobile) {
           onMouseLeave={() => setHoveredMain(null)}
           onClick={() => toggle("boq")}
         >
-          <span>📋 BOQ MODULES (6)</span>
+          <span>📋 BOQ MODULES (7)</span>
           <span>{open.boq ? "▼" : "▶"}</span>
         </div>
 
@@ -647,6 +648,7 @@ if (isMobile) {
     </div>
   );
 }
+
 
 
 

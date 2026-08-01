@@ -286,45 +286,54 @@ export default function PricingPage() {
 
         {/* TAB 3: SUBSCRIPTION PLANS */}
         {activeTab === "plans" && (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "20px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "20px" }}>
             <div style={{ background: "#ffffff", borderRadius: "16px", padding: "28px", textAlign: "center", border: "1px solid #e2e8f0" }}>
-              <h3 style={{ color: "#0f172a", fontSize: "20px", fontWeight: "800" }}>Basic Contractor</h3>
-              <p style={{ fontSize: "32px", fontWeight: "900", margin: "12px 0", color: "#2563eb" }}>₹250 <span style={{ fontSize: "14px", color: "#64748b" }}>/mo</span></p>
+              <h3 style={{ color: "#0f172a", fontSize: "20px", fontWeight: "800" }}>Basic Plan</h3>
+              <p style={{ fontSize: "32px", fontWeight: "900", margin: "12px 0", color: "#800020" }}>₹250 <span style={{ fontSize: "14px", color: "#64748b" }}>/mo</span></p>
+              <p style={{ fontSize: "12px", color: "#16a34a", fontWeight: "700" }}>₹2,500 / year (Save 17%)</p>
               <ul style={{ listStyle: "none", padding: 0, margin: "20px 0", textAlign: "left", fontSize: "13px", color: "#475569", lineHeight: "2" }}>
-                <li>✓ Access to 19 Construction Calculators</li>
-                <li>✓ Civil & Interior BOQ Export</li>
-                <li>✓ Standard 2D DRG Floor Plans</li>
+                <li>⚡ Unlimited 19+ Engineering Calculators</li>
+                <li>📊 Standard BOQ & Cost Estimator Export</li>
+                <li>📐 2D Architectural Floor Plans Viewer</li>
+                <li>📈 Live Mandi Material Rates (5 Cities)</li>
+                <li>📁 1 Active User Account</li>
               </ul>
-              <button style={{ width: "100%", padding: "10px", borderRadius: "8px", background: "#f1f5f9", color: "#0f172a", border: 0, fontWeight: "800", cursor: "pointer" }}>
-                Select Plan
+              <button onClick={() => router.push("/subscription?plan=basic")} style={{ width: "100%", padding: "12px", borderRadius: "10px", background: "#f1f5f9", color: "#0f172a", border: "1px solid #cbd5e1", fontWeight: "800", cursor: "pointer" }}>
+                Subscribe to Basic (₹250)
               </button>
             </div>
 
-            <div style={{ background: "#ffffff", borderRadius: "16px", padding: "28px", textAlign: "center", border: "2px solid #2563eb", boxShadow: "0 8px 24px rgba(37, 99, 235, 0.15)" }}>
-              <span style={{ background: "#2563eb", color: "#ffffff", padding: "4px 12px", borderRadius: "20px", fontSize: "10px", fontWeight: "900" }}>RECOMMENDED</span>
-              <h3 style={{ color: "#0f172a", fontSize: "20px", fontWeight: "800", marginTop: "8px" }}>Professional Builder</h3>
-              <p style={{ fontSize: "32px", fontWeight: "900", margin: "12px 0", color: "#2563eb" }}>₹350 <span style={{ fontSize: "14px", color: "#64748b" }}>/mo</span></p>
+            <div style={{ background: "#ffffff", borderRadius: "16px", padding: "28px", textAlign: "center", border: "3px solid #800020", boxShadow: "0 8px 24px rgba(128, 0, 32, 0.18)", position: "relative" }}>
+              <span style={{ position: "absolute", top: -12, right: 20, background: "#800020", color: "#ffffff", padding: "4px 12px", borderRadius: "20px", fontSize: "10px", fontWeight: "900" }}>🔥 MOST POPULAR</span>
+              <h3 style={{ color: "#0f172a", fontSize: "20px", fontWeight: "800", marginTop: "8px" }}>Professional Plan</h3>
+              <p style={{ fontSize: "32px", fontWeight: "900", margin: "12px 0", color: "#800020" }}>₹350 <span style={{ fontSize: "14px", color: "#64748b" }}>/mo</span></p>
+              <p style={{ fontSize: "12px", color: "#16a34a", fontWeight: "700" }}>₹3,500 / year (Save 17%)</p>
               <ul style={{ listStyle: "none", padding: 0, margin: "20px 0", textAlign: "left", fontSize: "13px", color: "#475569", lineHeight: "2" }}>
-                <li>✓ All 19 Calculators + 6 BOQ Modules</li>
-                <li>✓ Live Bengaluru Market Rates API & Charts</li>
-                <li>✓ FMB Polygon Plot Generator & DRG Export</li>
-                <li>✓ Learn & Earn Quiz Certification</li>
+                <li>⭐ All Basic Features Included</li>
+                <li>💬 Direct WhatsApp Supplier Contact Unlocks</li>
+                <li>🏢 Layout & Plotted Land Development Studio</li>
+                <li>🚜 Machinery Rental Benchmark Rates</li>
+                <li>🔔 Mandi Live Rate Drop Alerts</li>
+                <li>👥 5 Team Member Accounts</li>
               </ul>
-              <button style={{ width: "100%", padding: "10px", borderRadius: "8px", background: "#2563eb", color: "#ffffff", border: 0, fontWeight: "800", cursor: "pointer" }}>
-                Upgrade to Professional
+              <button onClick={() => router.push("/subscription?plan=professional")} style={{ width: "100%", padding: "12px", borderRadius: "10px", background: "#800020", color: "#ffffff", border: 0, fontWeight: "900", cursor: "pointer", boxShadow: "0 4px 12px rgba(128, 0, 32, 0.3)" }}>
+                Upgrade to Professional (₹350)
               </button>
             </div>
 
             <div style={{ background: "#ffffff", borderRadius: "16px", padding: "28px", textAlign: "center", border: "1px solid #e2e8f0" }}>
-              <h3 style={{ color: "#0f172a", fontSize: "20px", fontWeight: "800" }}>Enterprise / Developer</h3>
-              <p style={{ fontSize: "32px", fontWeight: "900", margin: "12px 0", color: "#2563eb" }}>₹450 <span style={{ fontSize: "14px", color: "#64748b" }}>/mo</span></p>
+              <h3 style={{ color: "#0f172a", fontSize: "20px", fontWeight: "800" }}>Enterprise Plan</h3>
+              <p style={{ fontSize: "32px", fontWeight: "900", margin: "12px 0", color: "#800020" }}>₹450 <span style={{ fontSize: "14px", color: "#64748b" }}>/mo</span></p>
+              <p style={{ fontSize: "12px", color: "#16a34a", fontWeight: "700" }}>₹4,500 / year (Save 17%)</p>
               <ul style={{ listStyle: "none", padding: 0, margin: "20px 0", textAlign: "left", fontSize: "13px", color: "#475569", lineHeight: "2" }}>
-                <li>✓ Unlimited Multi-User Team Access</li>
-                <li>✓ Dedicated Account Manager</li>
-                <li>✓ Custom API Hooks & Report Branding</li>
+                <li>👑 All Professional Features Included</li>
+                <li>📜 Custom White-Label BOQ & Quotations</li>
+                <li>🤝 Full Marketplace & Real Estate Direct Access</li>
+                <li>⚡ Unlimited Team User Accounts</li>
+                <li>📱 Dedicated Account Manager & 24/7 Hotline</li>
               </ul>
-              <button style={{ width: "100%", padding: "10px", borderRadius: "8px", background: "#0f172a", color: "#ffffff", border: 0, fontWeight: "800", cursor: "pointer" }}>
-                Contact Enterprise
+              <button onClick={() => router.push("/subscription?plan=enterprise")} style={{ width: "100%", padding: "12px", borderRadius: "10px", background: "#1e293b", color: "#ffffff", border: 0, fontWeight: "800", cursor: "pointer" }}>
+                Subscribe to Enterprise (₹450)
               </button>
             </div>
           </div>

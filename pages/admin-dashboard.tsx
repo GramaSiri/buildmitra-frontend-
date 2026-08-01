@@ -239,6 +239,72 @@ export default function AdminDashboard() {
   const [approvalMessage, setApprovalMessage] = useState("");
   const [projects, setProjects] = useState(() => loadLocalData("bm_admin_projects", []));
 
+  const [masterSupplierItems, setMasterSupplierItems] = useState<any[]>([]);
+  const [masterSearch, setMasterSearch] = useState("");
+  const [masterCategoryFilter, setMasterCategoryFilter] = useState("all");
+  const [loadingMasterItems, setLoadingMasterItems] = useState(false);
+
+  const loadMasterSupplierDatabase = async () => {
+    setLoadingMasterItems(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/provider/master-items?limit=3000`);
+      const data = await res.json();
+      if (data && Array.isArray(data.items) && data.items.length > 0) {
+        setMasterSupplierItems(data.items);
+      } else {
+        const res2 = await fetch(`${API_BASE}/api/master-images`);
+        const data2 = await res2.json();
+        if (data2 && Array.isArray(data2.items) && data2.items.length > 0) {
+          setMasterSupplierItems(data2.items);
+        }
+      }
+    } catch (err) {
+      console.warn("Could not load supplier master items from backend API:", err);
+    } finally {
+      setLoadingMasterItems(false);
+    }
+  };
+
+  useEffect(() => {
+    loadMasterSupplierDatabase();
+  }, []);
+
+  const displayMasterRates = React.useMemo(() => {
+    const combined = [...materialRates];
+    const existingCodes = new Set(
+      combined.map((r: any) => String(r.code || r.masterItemCode || "").toUpperCase())
+    );
+
+    (masterSupplierItems || []).forEach((m: any) => {
+      const code = String(m.masterItemCode || m.code || m.itemCode || "").toUpperCase();
+      if (code && !existingCodes.has(code)) {
+        combined.push({
+          id: m._id || code,
+          code: code,
+          masterItemCode: code,
+          category: m.category || m.itemType || "Material",
+          item: m.itemName || m.title || "Master Item",
+          itemName: m.itemName || m.title || "Master Item",
+          brand: m.brand || "",
+          specification: m.specification || "",
+          unit: m.unit || "NOS",
+          rate: m.currentRate || m.rate || m.price || 0,
+          status: m.status || "Active"
+        });
+      }
+    });
+
+    return combined.filter((r: any) => {
+      const searchMatch = !masterSearch.trim() || [
+        r.code, r.masterItemCode, r.item, r.itemName, r.category, r.brand, r.specification
+      ].some(field => String(field || "").toLowerCase().includes(masterSearch.trim().toLowerCase()));
+
+      const categoryMatch = masterCategoryFilter === "all" || String(r.category || "").toLowerCase() === masterCategoryFilter.toLowerCase();
+
+      return searchMatch && categoryMatch;
+    });
+  }, [materialRates, masterSupplierItems, masterSearch, masterCategoryFilter]);
+
   useEffect(() => { localStorage.setItem("users", JSON.stringify(users)); localStorage.setItem("bm_admin_users", JSON.stringify(users)); }, [users]);
   useEffect(() => { localStorage.setItem("bm_admin_transactions", JSON.stringify(transactions)); }, [transactions]);
   useEffect(() => { localStorage.setItem("bm_admin_pending_payments", JSON.stringify(pendingPayments)); }, [pendingPayments]);
@@ -1579,10 +1645,44 @@ const rejectRealEstate = async (propertyCode) => {
             style: styles.buttonSuccess
           }, "📥 Download 16-Column Template"),
 
-          React.createElement("button", { onClick: cleanLegacyRates, style: styles.buttonDanger }, "🧹 Clean Legacy No-Code Rates")
+          React.createElement("button", { onClick: cleanLegacyRates, style: styles.buttonDanger }, "🧹 Clean Legacy No-Code Rates"),
+          React.createElement("button", { onClick: loadMasterSupplierDatabase, style: styles.buttonInfo }, loadingMasterItems ? "⏳ Loading Supplier DB..." : "🔄 Sync 2,880 Supplier DB Items")
         ),
 
-        React.createElement("h3", { style: { marginTop: "16px" } }, "Active Admin Master Rates"),
+        React.createElement("div", { style: { display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center", margin: "16px 0 12px 0" } },
+          React.createElement("input", {
+            placeholder: "🔍 Search 2,880 master items by code, name, category, brand, spec",
+            value: masterSearch,
+            onChange: (e) => setMasterSearch(e.target.value),
+            style: { padding: "10px 14px", border: "1px solid #cbd5e1", borderRadius: "8px", width: "340px", maxWidth: "100%", fontSize: "13px" }
+          }),
+          React.createElement("select", {
+            value: masterCategoryFilter,
+            onChange: (e) => setMasterCategoryFilter(e.target.value),
+            style: { padding: "10px 14px", border: "1px solid #cbd5e1", borderRadius: "8px", fontSize: "13px" }
+          },
+            React.createElement("option", { value: "all" }, "All Categories"),
+            React.createElement("option", { value: "Sanitaryware & CP Fittings" }, "Sanitaryware & CP Fittings"),
+            React.createElement("option", { value: "Hardware, Locks & Fasteners" }, "Hardware, Locks & Fasteners"),
+            React.createElement("option", { value: "Plywood & Laminates" }, "Plywood & Laminates"),
+            React.createElement("option", { value: "Cement, RMC & Aggregates" }, "Cement, RMC & Aggregates"),
+            React.createElement("option", { value: "Cement" }, "Cement"),
+            React.createElement("option", { value: "TMT Steel & Structural Steel" }, "TMT Steel & Structural Steel"),
+            React.createElement("option", { value: "Steel" }, "Steel"),
+            React.createElement("option", { value: "Electrical Wires & Switches" }, "Electrical Wires & Switches"),
+            React.createElement("option", { value: "Plumbing Pipes & Fittings" }, "Plumbing Pipes & Fittings"),
+            React.createElement("option", { value: "Paints & Waterproofing" }, "Paints & Waterproofing"),
+            React.createElement("option", { value: "Tiles, Granite & Marble" }, "Tiles, Granite & Marble"),
+            React.createElement("option", { value: "Doors, Frames & Windows" }, "Doors, Frames & Windows"),
+            React.createElement("option", { value: "Glass & Architectural Items" }, "Glass & Architectural Items"),
+            React.createElement("option", { value: "Machinery & Tools" }, "Machinery & Tools")
+          ),
+          React.createElement("span", { style: { fontSize: "13px", fontWeight: "bold", color: "#0f766e" } },
+            `Showing: ${displayMasterRates.length} Master Items`
+          )
+        ),
+
+        React.createElement("h3", { style: { marginTop: "12px" } }, "Active Supplier Database & Master Rates Library"),
         React.createElement("div", { style: { overflowX: "auto" } },
           React.createElement("table", { style: styles.table },
             React.createElement("thead", null,
@@ -1598,13 +1698,15 @@ const rejectRealEstate = async (propertyCode) => {
               )
             ),
             React.createElement("tbody", null,
-              materialRates.map((r: any) => React.createElement("tr", { key: r.id || r.code },
+              displayMasterRates.length === 0 ? React.createElement("tr", null,
+                React.createElement("td", { colSpan: 8, style: { ...styles.td, textAlign: "center", color: "#666" } }, "No master items match your search filter.")
+              ) : displayMasterRates.slice(0, 200).map((r: any, idx: number) => React.createElement("tr", { key: r.id || r.code || idx },
                 React.createElement("td", { style: styles.td }, React.createElement("strong", null, r.code || r.masterItemCode || "-")),
                 React.createElement("td", { style: styles.td }, r.category || "-"),
                 React.createElement("td", { style: styles.td }, r.item || r.itemName || "-"),
                 React.createElement("td", { style: styles.td }, `${r.brand || ''} ${r.specification || ''}`.trim() || "-"),
                 React.createElement("td", { style: styles.td }, r.unit || "-"),
-                React.createElement("td", { style: { ...styles.td, fontWeight: "bold", color: "#0f766e" } }, "₹", r.rate || r.currentRate),
+                React.createElement("td", { style: { ...styles.td, fontWeight: "bold", color: "#0f766e" } }, "₹", (r.rate || r.currentRate || 0).toLocaleString()),
                 React.createElement("td", { style: styles.td },
                   React.createElement("span", { style: { backgroundColor: r.status === "Inactive" ? "#f8d7da" : "#d4edda", padding: "3px 8px", borderRadius: "4px" } }, r.status || "Active")
                 ),

@@ -230,6 +230,57 @@ export default function PreFloorPlanDrgPage() {
         <aside className="inputPanel">
           <h2 className="panelTitle">INPUT PARAMETERS</h2>
 
+          {/* QUICK PRESETS ROW */}
+          <div style={{ marginBottom: "14px", padding: "10px", background: "#f8fafc", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
+            <span style={{ fontSize: "11px", fontWeight: "800", color: "#334155", display: "block", marginBottom: "6px" }}>⚡ Quick Plot Presets:</span>
+            <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setDraft(p => ({ ...p, plotWidth: 30, plotLength: 40, facing: "East", floors: 2, bedrooms: 3 }));
+                  setRequirement({ ...defaultRequirement, plotWidth: 30, plotLength: 40, facing: "East", floors: 2, bedrooms: 3 });
+                  setGenerated(true);
+                }}
+                style={{ padding: "5px 10px", background: "#0f172a", color: "#fff", border: 0, borderRadius: "6px", fontSize: "10px", fontWeight: "700", cursor: "pointer" }}
+              >
+                📍 30×40 East (3 BHK)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDraft(p => ({ ...p, plotWidth: 30, plotLength: 50, facing: "North", floors: 3, bedrooms: 4 }));
+                  setRequirement({ ...defaultRequirement, plotWidth: 30, plotLength: 50, facing: "North", floors: 3, bedrooms: 4 });
+                  setGenerated(true);
+                }}
+                style={{ padding: "5px 10px", background: "#0f172a", color: "#fff", border: 0, borderRadius: "6px", fontSize: "10px", fontWeight: "700", cursor: "pointer" }}
+              >
+                📍 30×50 North (4 BHK)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDraft(p => ({ ...p, plotWidth: 40, plotLength: 60, facing: "West", floors: 2, bedrooms: 4 }));
+                  setRequirement({ ...defaultRequirement, plotWidth: 40, plotLength: 60, facing: "West", floors: 2, bedrooms: 4 });
+                  setGenerated(true);
+                }}
+                style={{ padding: "5px 10px", background: "#0f172a", color: "#fff", border: 0, borderRadius: "6px", fontSize: "10px", fontWeight: "700", cursor: "pointer" }}
+              >
+                📍 40×60 West (Villa)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDraft(p => ({ ...p, plotWidth: 20, plotLength: 30, facing: "South", floors: 2, bedrooms: 2 }));
+                  setRequirement({ ...defaultRequirement, plotWidth: 20, plotLength: 30, facing: "South", floors: 2, bedrooms: 2 });
+                  setGenerated(true);
+                }}
+                style={{ padding: "5px 10px", background: "#0f172a", color: "#fff", border: 0, borderRadius: "6px", fontSize: "10px", fontWeight: "700", cursor: "pointer" }}
+              >
+                📍 20×30 South (2 BHK)
+              </button>
+            </div>
+          </div>
+
           <div className="twoColumnFields">
             <Field label="Plot Width (ft)">
               <input

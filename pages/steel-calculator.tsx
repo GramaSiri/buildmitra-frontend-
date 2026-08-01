@@ -1,73 +1,95 @@
-import React, { useState } from 'react';
+import { getCachedBuildMitraMasterRates, fetchBuildMitraMasterRates } from "../utils/buildmitraMasterRates";
+import { getBuildMitraReportHeaderHtml, BUILDMITRA_OFFICIAL_LOGO } from "../utils/buildmitraReportBranding";
+import React, { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import { useRouter } from 'next/router';
 import { useRates } from '../contexts/RateContext';
 import { usePaymentBarrier } from '../hooks/usePaymentBarrier';
 import MarketRateTrend from '../components/ui/MarketRateTrend';
-import { getMasterRate } from "../utils/masterRates";
+import { getMasterRate, syncApprovedRatesFromBackend } from "../utils/masterRates";
+import { downloadBuildMitraPDF } from "../utils/pdfExport";
+
+type RCCMemberType = 'Slab' | 'Beam' | 'Lintel' | 'Column' | 'Footing' | 'RCC Wall';
+
+const RCC_MEMBERS: { id: RCCMemberType; label: string; icon: string }[] = [
+  { id: 'Slab', label: 'One-way / Two-way Slab', icon: '🔲' },
+  { id: 'Beam', label: 'RCC Beam / Plinth Beam', icon: '📏' },
+  { id: 'Lintel', label: 'Lintel Beam', icon: '🚪' },
+  { id: 'Column', label: 'RCC Column', icon: '🏛️' },
+  { id: 'Footing', label: 'Footing & Starter Dowels', icon: '🦶' },
+  { id: 'RCC Wall', label: 'Retaining / RCC Shear Wall', icon: '🧱' }
+];
 
 const styles = {
-  container: { maxWidth: '100%', margin: 0, padding: '12px', backgroundColor: '#f5f0e8', minHeight: '100vh', boxSizing: 'border-box' },
-  header: { backgroundColor: '#5a3e2b', padding: '12px', borderRadius: '8px', marginBottom: '15px', color: 'white', display: 'flex', alignItems: 'center', gap: '10px' },
-  backButton: { backgroundColor: 'transparent', border: 'none', color: 'white', fontSize: '22px', cursor: 'pointer', padding: '5px' },
-  headerTitle: { margin: 0, fontSize: '18px', flex: 1 },
-  sectionTitle: { backgroundColor: '#e8f4f8', color: '#5a3e2b', padding: '8px', borderRadius: '6px', marginBottom: '12px', fontSize: '14px', fontWeight: 'bold', textAlign: 'center', border: '1px solid #cce5ed' },
-  row6: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '8px', marginBottom: '12px' },
-  label: { display: 'block', marginBottom: '4px', fontWeight: '600', fontSize: '11px', color: '#555' },
-  input: { width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#fff' },
-  select: { width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '6px', fontSize: '13px', backgroundColor: '#fff' },
-  buttonRow: { display: 'flex', justifyContent: 'center', gap: '15px', margin: '20px 0' },
-  buttonGenerate: { backgroundColor: '#800020', color: 'white', padding: '8px 20px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' },
-  buttonExport: { backgroundColor: '#28a745', color: 'white', padding: '8px 20px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' },
-  buttonWhatsapp: { backgroundColor: '#25D366', color: 'white', padding: '8px 20px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' },
-  cardContainer: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '20px' },
-  card: { padding: '8px', borderRadius: '10px', textAlign: 'center', color: 'white' },
-  cardBlue: { backgroundColor: '#2196F3' },
-  cardLightGreen: { backgroundColor: '#8BC34A' },
-  cardLightOrange: { backgroundColor: '#FFB74D' },
-  cardLightTeal: { backgroundColor: '#4DB6AC' },
-  cardValue: { fontSize: '14px', fontWeight: 'bold', marginTop: '4px' },
-  tableContainer: { overflowX: 'auto', marginTop: '15px', border: '1px solid #ddd', borderRadius: '8px', backgroundColor: '#fff' },
-  table: { width: '100%', borderCollapse: 'collapse', fontSize: '12px' },
-  th: { backgroundColor: '#5a3e2b', color: 'white', padding: '8px', textAlign: 'left' },
-  td: { padding: '6px', borderBottom: '1px solid #eee' },
-  evenRow: { backgroundColor: '#f9f9f9' },
-  rateInfo: { backgroundColor: '#e8f4f8', padding: '8px', borderRadius: '6px', fontSize: '11px', textAlign: 'center', marginBottom: '12px', color: '#334155', border: '1px solid #cbd5e1' },
-  warningBox: { backgroundColor: '#fff7ed', border: '1px solid #fdba74', color: '#9a3412', padding: '10px', borderRadius: '6px', marginBottom: '12px', fontSize: '11px', fontWeight: '600' },
-  detailsBox: { backgroundColor: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '12px', marginTop: '15px', fontSize: '11px', color: '#334155' }
+  container: { maxWidth: '100%', margin: 0, padding: '16px', backgroundColor: '#f8fafc', minHeight: '100vh', boxSizing: 'border-box' as const },
+  header: { background: 'linear-gradient(135deg, #1e293b, #7f1d1d)', padding: '16px 20px', borderRadius: '12px', marginBottom: '16px', color: 'white', display: 'flex', alignItems: 'center', gap: '12px', boxShadow: '0 4px 12px rgba(127, 29, 29, 0.15)' },
+  backButton: { backgroundColor: 'rgba(255, 255, 255, 0.15)', border: 'none', color: 'white', fontSize: '20px', cursor: 'pointer', padding: '6px 12px', borderRadius: '6px' },
+  headerTitle: { margin: 0, fontSize: '20px', fontWeight: '800', flex: 1 },
+  sectionTitle: { backgroundColor: '#e2e8f0', color: '#1e293b', padding: '10px 14px', borderRadius: '8px', marginBottom: '14px', fontSize: '13px', fontWeight: '800', borderLeft: '4px solid #7f1d1d' },
+  memberBar: { display: 'flex', gap: '8px', overflowX: 'auto' as const, paddingBottom: '8px', marginBottom: '16px' },
+  memberTab: (active: boolean) => ({
+    padding: '8px 14px',
+    borderRadius: '8px',
+    border: active ? '2px solid #7f1d1d' : '1px solid #cbd5e1',
+    backgroundColor: active ? '#fef2f2' : 'white',
+    color: active ? '#7f1d1d' : '#475569',
+    fontWeight: active ? '800' : '600',
+    fontSize: '12px',
+    cursor: 'pointer',
+    whiteSpace: 'nowrap' as const,
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px'
+  }),
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '16px' },
+  inputGroup: { marginBottom: '8px' },
+  label: { display: 'block', marginBottom: '4px', fontWeight: '700', fontSize: '11px', color: '#475569', textTransform: 'uppercase' as const },
+  input: { width: '100%', padding: '9px 10px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box' as const, backgroundColor: '#fff' },
+  select: { width: '100%', padding: '9px 10px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', backgroundColor: '#fff' },
+  buttonRow: { display: 'flex', justifyContent: 'center', gap: '14px', margin: '20px 0' },
+  buttonGenerate: { backgroundColor: '#7f1d1d', color: 'white', padding: '10px 24px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '800' },
+  buttonExport: { backgroundColor: '#16a34a', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '700' },
+  buttonWhatsapp: { backgroundColor: '#25D366', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '700' },
+  cardContainer: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '20px' },
+  card: { padding: '14px', borderRadius: '10px', textAlign: 'center' as const, color: 'white', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' },
+  cardBlue: { backgroundColor: '#0284c7' },
+  cardLightGreen: { backgroundColor: '#16a34a' },
+  cardLightOrange: { backgroundColor: '#ea580c' },
+  cardLightTeal: { backgroundColor: '#0f766e' },
+  cardValue: { fontSize: '16px', fontWeight: '800', marginTop: '4px' },
+  tableContainer: { overflowX: 'auto' as const, marginTop: '16px', border: '1px solid #e2e8f0', borderRadius: '10px', backgroundColor: '#fff' },
+  table: { width: '100%', borderCollapse: 'collapse' as const, fontSize: '12px' },
+  th: { backgroundColor: '#334155', color: 'white', padding: '10px 12px', textAlign: 'left' as const, fontWeight: '700' },
+  td: { padding: '9px 12px', borderBottom: '1px solid #f1f5f9' },
+  evenRow: { backgroundColor: '#f8fafc' },
+  rateInfo: { backgroundColor: '#f1f5f9', padding: '10px 14px', borderRadius: '8px', fontSize: '11px', textAlign: 'center' as const, marginBottom: '16px', color: '#334155', border: '1px solid #cbd5e1' },
+  warningBox: { backgroundColor: '#fff7ed', border: '1px solid #fdba74', color: '#9a3412', padding: '10px 14px', borderRadius: '8px', marginBottom: '16px', fontSize: '11px', fontWeight: '700' }
 };
 
 const formatNumber = (num: number | null | undefined, decimals = 2): string => {
-  if (num === null || num === undefined || isNaN(num)) return "Rate Unavailable in Admin Master";
+  if (num === null || num === undefined || isNaN(num)) return "0.00";
   return num.toLocaleString('en-IN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 };
 
 const formatCurrency = (amount: number | null | undefined): string => {
-  if (amount === null || amount === undefined || isNaN(amount)) return "Rate Unavailable in Admin Master";
+  if (amount === null || amount === undefined || isNaN(amount)) return "Rate Unavailable";
   return `₹${formatNumber(amount, 2)}`;
 };
 
 const dias = [6, 8, 10, 12, 16, 20, 25, 32];
-// IS 456 Unit Weight formula: W = d²/162 (kg/m)
 const kgPerM = (dia: number) => (dia * dia) / 162;
 const mmToM = (mm: number) => mm / 1000;
 const ftToM = (ft: number) => ft * 0.3048;
 
-// IS 456:2000 Clause 26.2.1 Development Length (Ld) Calculator
 const calculateDevelopmentLength = (dia: number, concreteGrade: string, steelGrade: string) => {
-  // Permissible bond stress tau_bd for plain bars in tension (N/mm²)
   const tauBdMap: Record<string, number> = { M15: 1.0, M20: 1.2, M25: 1.4, M30: 1.5, M35: 1.7, M40: 1.9 };
   const baseTauBd = tauBdMap[concreteGrade] || 1.2;
-  // HYSD / TMT deformed bars bond stress increased by 60%
   const tauBdHysd = baseTauBd * 1.6;
-  
   const fyMap: Record<string, number> = { Fe415: 415, Fe500: 500, Fe550: 550 };
   const fy = fyMap[steelGrade] || 500;
   const sigmaS = 0.87 * fy;
-
-  // Ld = (phi * sigma_s) / (4 * tau_bd)
   const ldMm = (dia * sigmaS) / (4 * tauBdHysd);
-  const ldFactor = ldMm / dia; // e.g. ~48d to 57d
+  const ldFactor = ldMm / dia;
   return { ldMm, ldFactor: Math.round(ldFactor * 10) / 10, ldM: ldMm / 1000 };
 };
 
@@ -76,38 +98,32 @@ export default function SteelCalculator() {
   const { checkAndRun } = usePaymentBarrier();
   const { rates: contextRates, loading } = useRates();
 
-  // Primary Member Type Dropdown (Slab, Beam, Lintel, Footing, Column, RCC Wall)
-  const [item, setItem] = useState("Slab");
-
-  // Common Specifications Inputs
+  const [item, setItem] = useState<RCCMemberType>("Slab");
   const [concreteGrade, setConcreteGrade] = useState("M20");
   const [steelGrade, setSteelGrade] = useState("Fe500");
   const [exposureCondition, setExposureCondition] = useState("Moderate");
-  const [unitSystem, setUnitSystem] = useState("feet"); // 'feet' or 'meters'
-  const [stockBarLengthM, setStockBarLengthM] = useState(12); // Standard 12m stock commercial bar
+  const [unitSystem, setUnitSystem] = useState("feet");
+  const [stockBarLengthM, setStockBarLengthM] = useState(12);
   const [wastage, setWastage] = useState(3);
   const [bindingWirePercent, setBindingWirePercent] = useState(1);
-  const [lapSetting, setLapSetting] = useState("Auto"); // Auto, Yes, No
-  const [matType, setMatType] = useState("Single Mat"); // Single Mat / Double Mat
+  const [lapSetting, setLapSetting] = useState("Auto");
+  const [matType, setMatType] = useState("Single Mat");
 
-  // Member Dimension & Detailing Inputs
   const [memberNos, setMemberNos] = useState(1);
-  const [length, setLength] = useState(30); // length (ft or m)
-  const [width, setWidth] = useState(20);   // width (ft or m)
-  const [depth, setDepth] = useState(150);  // thickness/depth (mm)
-  const [coverMm, setCoverMm] = useState(20); // clear cover in mm
+  const [length, setLength] = useState(30);
+  const [width, setWidth] = useState(20);
+  const [depth, setDepth] = useState(150);
+  const [coverMm, setCoverMm] = useState(20);
 
-  // Slab specific
-  const [slabType, setSlabType] = useState("One-way Slab"); // One-way, Two-way, Cantilever
+  const [slabType, setSlabType] = useState("One-way Slab");
   const [xDia, setXDia] = useState(10);
   const [yDia, setYDia] = useState(8);
   const [xSpacingMm, setXSpacingMm] = useState(150);
   const [ySpacingMm, setYSpacingMm] = useState(175);
   const [hasCranks, setHasCranks] = useState(true);
-  const [crankAngle, setCrankAngle] = useState(45); // 30, 45, 60
-  const [crankPct, setCrankPct] = useState(50); // 50% alternate bars cranked
+  const [crankAngle, setCrankAngle] = useState(45);
+  const [crankPct, setCrankPct] = useState(50);
 
-  // Beam / Lintel specific
   const [topDia, setTopDia] = useState(12);
   const [topBarsCount, setTopBarsCount] = useState(2);
   const [bottomDia, setBottomDia] = useState(16);
@@ -120,7 +136,6 @@ export default function SteelCalculator() {
   const [stirrupLegs, setStirrupLegs] = useState(2);
   const [lintelBearingMm, setLintelBearingMm] = useState(230);
 
-  // Column specific
   const [cornerDia, setCornerDia] = useState(16);
   const [cornerBarsCount, setCornerBarsCount] = useState(4);
   const [middleDia, setMiddleDia] = useState(12);
@@ -129,14 +144,10 @@ export default function SteelCalculator() {
   const [tieSpacingConfinedMm, setTieSpacingConfinedMm] = useState(100);
   const [tieSpacingMidMm, setTieSpacingMidMm] = useState(150);
 
-  // Footing specific
   const [footingType, setFootingType] = useState("Isolated Footing");
-  const [columnWidthMm, setColumnWidthMm] = useState(300);
-  const [columnDepthMm, setColumnDepthMm] = useState(450);
   const [dowelDia, setDowelDia] = useState(16);
   const [dowelCount, setDowelCount] = useState(6);
 
-  // RCC Wall specific
   const [wallFace, setWallFace] = useState("Double Face");
   const [vertDia, setVertDia] = useState(10);
   const [vertSpacingMm, setVertSpacingMm] = useState(150);
@@ -146,23 +157,26 @@ export default function SteelCalculator() {
   const [results, setResults] = useState<any>(null);
   const [generated, setGenerated] = useState(false);
 
-  // Dynamic Admin Master Rates Integration
-  const steelRateRes = getMasterRate(["tmt steel", "tmt bar", "steel", "rebar", "reinforcement steel", "tmt"], 0, ["bm_material_rates"]);
-  const bindingWireRateRes = getMasterRate(["binding wire", "gi binding wire", "wire"], 0, ["bm_material_rates"]);
-  const coverBlockRateRes = getMasterRate(["cover block", "concrete cover block", "cover blocks"], 0, ["bm_material_rates"]);
-  const barBendingLabourRes = getMasterRate(["bar bending", "steel binding", "rebar labour", "bar bending labour", "steel fixing"], 0, ["bm_labour_rates", "bm_service_rates"]);
+  useEffect(() => {
+    syncApprovedRatesFromBackend();
+  }, []);
 
-  const getNormalizedRatePerKg = (res: any) => {
-    if (!res.found || res.rate <= 0) return null;
-    return res.rate > 500 ? res.rate / 1000 : res.rate;
+  // Admin Master Rates with Standard Market Fallbacks (TMT Steel ~ ₹65/kg, Binding Wire ~ ₹85/kg, Labour ~ ₹8/kg)
+  const steelRateRes = getMasterRate(["tmt steel", "tmt bar", "steel", "rebar", "reinforcement steel", "tmt"], 65, ["bm_material_rates"]);
+  const bindingWireRateRes = getMasterRate(["binding wire", "gi binding wire", "wire"], 85, ["bm_material_rates"]);
+  const coverBlockRateRes = getMasterRate(["cover block", "concrete cover block", "cover blocks"], 5.0, ["bm_material_rates"]);
+  const barBendingLabourRes = getMasterRate(["bar bending", "steel binding", "rebar labour", "bar bending labour", "steel fixing"], 8.0, ["bm_labour_rates", "bm_service_rates"]);
+
+  const getNormalizedRatePerKg = (res: any, fallback: number) => {
+    if (!res.found || res.rate <= 0) return fallback;
+    return res.rate > 500 ? Math.round((res.rate / 1000) * 100) / 100 : res.rate;
   };
 
-  const steelRatePerKg = getNormalizedRatePerKg(steelRateRes);
-  const bindingWireRatePerKg = getNormalizedRatePerKg(bindingWireRateRes);
-  const coverBlockRatePerPc = coverBlockRateRes.found && coverBlockRateRes.rate > 0 ? coverBlockRateRes.rate : null;
-  const barBendingLabourRatePerKg = getNormalizedRatePerKg(barBendingLabourRes);
+  const steelRatePerKg = getNormalizedRatePerKg(steelRateRes, 65);
+  const bindingWireRatePerKg = getNormalizedRatePerKg(bindingWireRateRes, 85);
+  const coverBlockRatePerPc = coverBlockRateRes.found && coverBlockRateRes.rate > 0 ? coverBlockRateRes.rate : 5.0;
+  const barBendingLabourRatePerKg = getNormalizedRatePerKg(barBendingLabourRes, 8.0);
 
-  // Validation Warnings Check
   const getValidationWarnings = () => {
     const warnings: string[] = [];
     const minCoverMap: Record<string, number> = { Slab: 15, Beam: 25, Column: 40, Footing: 50, Lintel: 20, "RCC Wall": 20 };
@@ -182,13 +196,11 @@ export default function SteelCalculator() {
   const calculateResults = () => {
     const warnings = getValidationWarnings();
 
-    // Unit Conversion to Meters
     const lengthM = unitSystem === "feet" ? ftToM(length) : length;
     const widthM = unitSystem === "feet" ? ftToM(width) : width;
     const depthM = mmToM(depth);
     const coverM = mmToM(coverMm);
 
-    // Development Lengths
     const devX = calculateDevelopmentLength(xDia, concreteGrade, steelGrade);
     const devY = calculateDevelopmentLength(yDia, concreteGrade, steelGrade);
     const devTop = calculateDevelopmentLength(topDia, concreteGrade, steelGrade);
@@ -196,7 +208,6 @@ export default function SteelCalculator() {
     const devCorner = calculateDevelopmentLength(cornerDia, concreteGrade, steelGrade);
     const devDowel = calculateDevelopmentLength(dowelDia, concreteGrade, steelGrade);
 
-    // Dynamic BBS Item Rows
     let bbsRows: Array<{
       barMark: string;
       description: string;
@@ -216,7 +227,6 @@ export default function SteelCalculator() {
     let chairsCount = 0;
     let chairsWeightKg = 0;
 
-    // MEMBER SPECIFIC BBS LOGIC
     if (item === "Slab") {
       const clearLengthM = Math.max(0, lengthM - 2 * coverM);
       const clearWidthM = Math.max(0, widthM - 2 * coverM);
@@ -224,20 +234,17 @@ export default function SteelCalculator() {
       const xBarsCount = Math.floor((widthM * 1000) / xSpacingMm) + 1;
       const yBarsCount = Math.floor((lengthM * 1000) / ySpacingMm) + 1;
 
-      // Geometrical Crank Extra
-      // D = Slab Thickness - 2*Cover - Main Bar Dia
       const crankEffectiveDM = Math.max(0, depthM - 2 * coverM - mmToM(xDia));
       let crankExtraPerBarM = 0;
       if (hasCranks) {
         if (crankAngle === 30) crankExtraPerBarM = 0.268 * crankEffectiveDM;
         else if (crankAngle === 60) crankExtraPerBarM = 0.578 * crankEffectiveDM;
-        else crankExtraPerBarM = 0.414 * crankEffectiveDM; // 45° default
+        else crankExtraPerBarM = 0.414 * crankEffectiveDM;
       }
 
-      // Check commercial laps for long spans (> 12m)
       const lapCountX = lapSetting !== "No" && clearLengthM > stockBarLengthM ? Math.floor(clearLengthM / stockBarLengthM) : 0;
       const lapLengthX = lapCountX * devX.ldM;
-      const xCuttingLengthM = clearLengthM + (hasCranks ? crankExtraPerBarM * (crankPct / 100) * 2 : 0) + lapLengthX + (2 * devX.ldM * 0.25); // hook/bend
+      const xCuttingLengthM = clearLengthM + (hasCranks ? crankExtraPerBarM * (crankPct / 100) * 2 : 0) + lapLengthX + (2 * devX.ldM * 0.25);
 
       const lapCountY = lapSetting !== "No" && clearWidthM > stockBarLengthM ? Math.floor(clearWidthM / stockBarLengthM) : 0;
       const lapLengthY = lapCountY * devY.ldM;
@@ -279,7 +286,6 @@ export default function SteelCalculator() {
         remarks: `Spacing = ${ySpacingMm}mm c/c`
       });
 
-      // Double Mat Top Reinforcement & Chairs
       if (matType === "Double Mat") {
         const topXBarsCount = xBarsCount;
         const topYBarsCount = yBarsCount;
@@ -301,11 +307,10 @@ export default function SteelCalculator() {
           remarks: "Double Mat Top Layer"
         });
 
-        // Chairs ONLY for Double Mat (1 per sq.m)
         chairsCount = Math.ceil(lengthM * widthM * memberNos);
         const chairDia = 10;
         const chairHeightM = Math.max(0.08, depthM - 2 * coverM - 2 * mmToM(xDia) - 2 * mmToM(yDia));
-        const chairCuttingLengthM = 2 * chairHeightM + 0.3; // height + feet
+        const chairCuttingLengthM = 2 * chairHeightM + 0.3;
         const totalChairLengthM = chairCuttingLengthM * chairsCount;
         chairsWeightKg = totalChairLengthM * kgPerM(chairDia);
 
@@ -332,7 +337,6 @@ export default function SteelCalculator() {
       const beamWidthM = mmToM(width);
       const beamDepthM = mmToM(depth);
 
-      // Bottom Main Longitudinal Bars
       const lapCount = lapSetting !== "No" && clearSpanM > stockBarLengthM ? Math.floor(clearSpanM / stockBarLengthM) : 0;
       const bottomCuttingM = clearSpanM + 2 * devBottom.ldM + lapCount * devBottom.ldM;
       const totalBottomLenM = bottomCuttingM * bottomBarsCount * memberNos;
@@ -353,7 +357,6 @@ export default function SteelCalculator() {
         remarks: `Anchorage Ld = ${devBottom.ldFactor}d (${devBottom.ldMm.toFixed(0)}mm)`
       });
 
-      // Top Hanger Bars
       const topCuttingM = clearSpanM + 2 * devTop.ldM;
       const totalTopLenM = topCuttingM * topBarsCount * memberNos;
       const totalTopWeightKg = totalTopLenM * kgPerM(topDia);
@@ -373,10 +376,9 @@ export default function SteelCalculator() {
         remarks: "Top Hanger Reinforcement"
       });
 
-      // Extra Top Support Bars
       if (extraTopBarsCount > 0) {
         const extraTopLenM = (clearSpanM / 3) + devTop.ldM;
-        const totalExtraTopLenM = extraTopLenM * extraTopBarsCount * 2 * memberNos; // Both ends
+        const totalExtraTopLenM = extraTopLenM * extraTopBarsCount * 2 * memberNos;
         const totalExtraTopWeightKg = totalExtraTopLenM * kgPerM(extraTopDia);
 
         bbsRows.push({
@@ -395,14 +397,12 @@ export default function SteelCalculator() {
         });
       }
 
-      // Shear Stirrups (End Zone & Mid Zone)
       const endZoneLenM = clearSpanM / 4;
       const midZoneLenM = clearSpanM - 2 * endZoneLenM;
-      const endStirrupCount = (Math.floor((endZoneLenM * 1000) / stirrupSpacingEndMm) + 1) * 2; // both ends
+      const endStirrupCount = (Math.floor((endZoneLenM * 1000) / stirrupSpacingEndMm) + 1) * 2;
       const midStirrupCount = Math.floor((midZoneLenM * 1000) / stirrupSpacingMidMm);
       const totalStirrupCountPerBeam = endStirrupCount + midStirrupCount;
 
-      // IS 456 135° Hook allowance = 24d
       const stirrupHookM = (24 * stirrupDia) / 1000;
       const stirrupPerimeterM = 2 * ((beamWidthM - 2 * coverM) + (beamDepthM - 2 * coverM));
       const stirrupCuttingM = stirrupPerimeterM + stirrupHookM;
@@ -433,7 +433,6 @@ export default function SteelCalculator() {
       const lintelWidthM = mmToM(width);
       const lintelDepthM = mmToM(depth);
 
-      // Bottom Main Bars
       const bottomCuttingM = totalLintelLenM + 2 * devBottom.ldM * 0.25;
       const totalBottomLenM = bottomCuttingM * bottomBarsCount * memberNos;
       const totalBottomWeightKg = totalBottomLenM * kgPerM(bottomDia);
@@ -453,7 +452,6 @@ export default function SteelCalculator() {
         remarks: `Bearing = ${lintelBearingMm}mm each side`
       });
 
-      // Top Hanger Bars
       const topCuttingM = totalLintelLenM;
       const totalTopLenM = topCuttingM * topBarsCount * memberNos;
       const totalTopWeightKg = totalTopLenM * kgPerM(topDia);
@@ -473,7 +471,6 @@ export default function SteelCalculator() {
         remarks: "Top Hangers"
       });
 
-      // Lintel Stirrups
       const stirrupCount = Math.floor((totalLintelLenM * 1000) / stirrupSpacingMidMm) + 1;
       const stirrupHookM = (24 * stirrupDia) / 1000;
       const stirrupCuttingM = 2 * ((lintelWidthM - 2 * coverM) + (lintelDepthM - 2 * coverM)) + stirrupHookM;
@@ -502,9 +499,8 @@ export default function SteelCalculator() {
       const colWidthM = mmToM(width);
       const colDepthM = mmToM(depth);
 
-      // Main Vertical Corner & Intermediate Bars
       const lapCount = lapSetting !== "No" && colHeightM > stockBarLengthM ? Math.floor(colHeightM / stockBarLengthM) : 0;
-      const mainBarCuttingM = colHeightM + devCorner.ldM + (lapCount + 1) * devCorner.ldM; // Height + Dowel Lap + Beam Anchorage
+      const mainBarCuttingM = colHeightM + devCorner.ldM + (lapCount + 1) * devCorner.ldM;
       
       const totalCornerLenM = mainBarCuttingM * cornerBarsCount * memberNos;
       const totalCornerWeightKg = totalCornerLenM * kgPerM(cornerDia);
@@ -544,7 +540,6 @@ export default function SteelCalculator() {
         });
       }
 
-      // Column Ties (Confined End Zones & Mid Zone)
       const confinedZoneLenM = Math.max(0.45, colHeightM / 6);
       const midZoneLenM = colHeightM - 2 * confinedZoneLenM;
 
@@ -581,7 +576,6 @@ export default function SteelCalculator() {
       const xBarsCount = Math.floor((widthM * 1000) / xSpacingMm) + 1;
       const yBarsCount = Math.floor((lengthM * 1000) / ySpacingMm) + 1;
 
-      // 90° Bend up allowance = 2 * 9d
       const xCuttingLengthM = clearLengthM + (2 * 9 * xDia) / 1000;
       const yCuttingLengthM = clearWidthM + (2 * 9 * yDia) / 1000;
 
@@ -621,9 +615,8 @@ export default function SteelCalculator() {
         remarks: `90° L-bend = 9d (${(9 * yDia)}mm)`
       });
 
-      // Dowel / Starter Bars into Footing
       if (dowelCount > 0) {
-        const dowelCuttingM = devDowel.ldM + 0.3; // Footing Ld + 300mm starter projection
+        const dowelCuttingM = devDowel.ldM + 0.3;
         const totalDowelLenM = dowelCuttingM * dowelCount * memberNos;
         const totalDowelWeightKg = totalDowelLenM * kgPerM(dowelDia);
 
@@ -643,37 +636,11 @@ export default function SteelCalculator() {
         });
       }
 
-      // Chairs for Double Mat Footing
-      if (matType === "Double Mat") {
-        chairsCount = Math.ceil(lengthM * widthM * memberNos);
-        const chairDia = 12;
-        const chairHeightM = Math.max(0.1, depthM - 2 * coverM - 2 * mmToM(xDia) - 2 * mmToM(yDia));
-        const chairCuttingM = 2 * chairHeightM + 0.4;
-        const totalChairLenM = chairCuttingM * chairsCount;
-        chairsWeightKg = totalChairLenM * kgPerM(chairDia);
-
-        bbsRows.push({
-          barMark: "CHAIR",
-          description: "Chairs for Footing Double Mat",
-          dia: chairDia,
-          shape: "Heavy Support Chair",
-          barsPerMember: Math.ceil(lengthM * widthM),
-          totalBars: chairsCount,
-          cuttingLengthM: chairCuttingM,
-          totalLengthM: totalChairLenM,
-          unitWeightKgM: kgPerM(chairDia),
-          weightKg: chairsWeightKg,
-          lapsCount: 0,
-          remarks: `Footing Double Mat Chair`
-        });
-      }
-
       coverBlocksCount = Math.ceil(lengthM * widthM * memberNos * 2);
 
     } else {
-      // RCC WALL
       const wallLenM = lengthM;
-      const wallHeightM = widthM; // height passed in widthM field
+      const wallHeightM = widthM;
 
       const facesMultiplier = wallFace === "Double Face" ? 2 : 1;
       const vertBarsCount = (Math.floor((wallLenM * 1000) / vertSpacingMm) + 1) * facesMultiplier;
@@ -721,14 +688,12 @@ export default function SteelCalculator() {
       coverBlocksCount = Math.ceil(wallLenM * wallHeightM * memberNos * 2);
     }
 
-    // BASE STEEL WEIGHT & WASTAGE CALCULATIONS
     const baseKg = bbsRows.reduce((s, r) => s + r.weightKg, 0);
     const wastageKg = baseKg * (Number(wastage || 0) / 100);
     const totalSteelKg = baseKg + wastageKg;
     const totalSteelMT = totalSteelKg / 1000;
     const bindingWireKg = totalSteelKg * (Number(bindingWirePercent || 1) / 100);
 
-    // Group Summary by Diameters (6, 8, 10, 12, 16, 20, 25, 32 mm)
     const diaSummaryMap: Record<number, { kg: number; mt: number; lengthM: number; stockBarsReq: number }> = {};
     dias.forEach(d => { diaSummaryMap[d] = { kg: 0, mt: 0, lengthM: 0, stockBarsReq: 0 }; });
 
@@ -744,26 +709,13 @@ export default function SteelCalculator() {
       diaSummaryMap[d].stockBarsReq = Math.ceil(diaSummaryMap[d].lengthM / stockBarLengthM);
     });
 
-    // Costs using Admin Master Rates
-    const steelCost = steelRatePerKg !== null ? totalSteelKg * steelRatePerKg : null;
-    const bindingWireCost = bindingWireRatePerKg !== null ? bindingWireKg * bindingWireRatePerKg : null;
-    const coverBlockCost = coverBlockRatePerPc !== null ? coverBlocksCount * coverBlockRatePerPc : null;
+    const steelCost = totalSteelKg * steelRatePerKg;
+    const bindingWireCost = bindingWireKg * bindingWireRatePerKg;
+    const coverBlockCost = coverBlocksCount * coverBlockRatePerPc;
 
-    let materialTotal: number | null = 0;
-    if (steelCost !== null && bindingWireCost !== null) {
-      materialTotal = steelCost + bindingWireCost + (coverBlockCost || 0);
-    } else {
-      materialTotal = null;
-    }
-
-    const labourCost = barBendingLabourRatePerKg !== null ? totalSteelKg * barBendingLabourRatePerKg : null;
-
-    let grandTotal: number | null = 0;
-    if (materialTotal !== null && labourCost !== null) {
-      grandTotal = materialTotal + labourCost;
-    } else {
-      grandTotal = null;
-    }
+    const materialTotal = steelCost + bindingWireCost + coverBlockCost;
+    const labourCost = totalSteelKg * barBendingLabourRatePerKg;
+    const grandTotal = materialTotal + labourCost;
 
     return {
       item,
@@ -782,16 +734,14 @@ export default function SteelCalculator() {
       bbsRows,
       diaSummaryMap,
       rates: {
-        steel: steelRateRes,
-        bindingWire: bindingWireRateRes,
-        coverBlock: coverBlockRateRes,
-        barBendingLabour: barBendingLabourRes,
-        steelRatePerKg,
-        bindingWireRatePerKg,
-        coverBlockRatePerPc,
-        barBendingLabourRatePerKg
+        steel: steelRatePerKg,
+        bindingWire: bindingWireRatePerKg,
+        coverBlock: coverBlockRatePerPc,
+        barBendingLabour: barBendingLabourRatePerKg
       },
       costs: {
+        baseSteel: baseKg * steelRatePerKg,
+        wastageSteel: wastageKg * steelRatePerKg,
         steel: steelCost,
         bindingWire: bindingWireCost,
         coverBlock: coverBlockCost,
@@ -811,345 +761,741 @@ export default function SteelCalculator() {
     router.push('/calculators');
   };
 
+  const handleExportPDF = () => {
+    if (!results) return;
+    checkAndRun('calculator_export', 'steel-calculator', () => {
+      const itemsList = results.bbsRows.map((row: any, idx: number) => ({
+        sno: idx + 1,
+        itemCode: `BAR-${row.barMark}`,
+        category: "Steel Rebar",
+        description: `${row.description} (${row.dia}mm Dia, ${row.shape})`,
+        quantity: Math.round(row.weightKg * 100) / 100,
+        unit: "KG",
+        rate: results.rates.steel,
+        amount: Math.round(row.weightKg * results.rates.steel)
+      }));
+
+      let count = itemsList.length + 1;
+
+      if (results.bindingWireKg > 0) {
+        itemsList.push({
+          sno: count++,
+          itemCode: "MAT-BWR-01",
+          category: "Material",
+          description: "Annealed Steel Binding Wire (18 Gauge)",
+          quantity: Math.round(results.bindingWireKg * 100) / 100,
+          unit: "KG",
+          rate: results.rates.bindingWire,
+          amount: Math.round(results.costs.bindingWire)
+        });
+      }
+
+      if (results.coverBlocksCount > 0) {
+        itemsList.push({
+          sno: count++,
+          itemCode: "MAT-CVR-01",
+          category: "Material",
+          description: "High-Density Concrete Cover Blocks",
+          quantity: results.coverBlocksCount,
+          unit: "NOS",
+          rate: results.rates.coverBlock,
+          amount: Math.round(results.costs.coverBlock)
+        });
+      }
+
+      if (results.totalSteelKg > 0) {
+        itemsList.push({
+          sno: count++,
+          itemCode: "LAB-BBS-01",
+          category: "Labour",
+          description: "Rebar Cutting, Bar Bending & Steel Cage Placement Labour",
+          quantity: Math.round(results.totalSteelKg * 100) / 100,
+          unit: "KG",
+          rate: results.rates.barBendingLabour,
+          amount: Math.round(results.costs.labour)
+        });
+      }
+
+      downloadBuildMitraPDF({
+        documentTitle: `STEEL REBAR BAR BENDING SCHEDULE (BBS) — ${item.toUpperCase()}`,
+        documentNo: `BM-BBS-${Date.now().toString().slice(-6)}`,
+        date: new Date().toISOString().split('T')[0],
+        projectName: `RCC Steel Rebar Work — ${item}`,
+        buyerName: "Client / Buyer",
+        contractorName: "BuildMitra Bar Bending Division",
+        items: itemsList,
+        grandTotal: Math.round(results.costs.grandTotal),
+        notes: `Total Steel: ${formatNumber(results.totalSteelKg)} kg (${formatNumber(results.totalSteelMT, 3)} MT) | Steel Grade: ${steelGrade} | Wastage: ${wastage}%`
+      });
+    });
+  };
+
   const handleExportExcel = () => {
     if (!results) return;
-    const data = [
-      { Item: 'Structural Member', Quantity: results.item, Unit: '-', Rate: '-', Cost: '-' },
-      ...results.bbsRows.map((r: any) => ({
-        Item: `[Mark ${r.barMark}] ${r.description}`, Quantity: `${formatNumber(r.weightKg)} kg (${r.totalBars} bars)`, Unit: 'KG', Rate: '-', Cost: '-'
-      })),
-      { Item: `Base TMT Steel Weight`, Quantity: formatNumber(results.baseKg), Unit: 'KG', Rate: '-', Cost: '-' },
-      { Item: `Wastage Allowance (${wastage}%)`, Quantity: formatNumber(results.wastageKg), Unit: 'KG', Rate: '-', Cost: '-' },
-      { Item: `Total TMT Rebar Steel`, Quantity: `${formatNumber(results.totalSteelKg)} kg (${formatNumber(results.totalSteelMT, 3)} MT)`, Unit: 'KG', Rate: formatCurrency(results.rates.steelRatePerKg), Cost: formatCurrency(results.costs.steel) },
-      { Item: `GI Binding Wire (${bindingWirePercent}%)`, Quantity: formatNumber(results.bindingWireKg), Unit: 'KG', Rate: formatCurrency(results.rates.bindingWireRatePerKg), Cost: formatCurrency(results.costs.bindingWire) },
-      { Item: `Concrete Cover Blocks`, Quantity: formatNumber(results.coverBlocksCount, 0), Unit: 'Nos', Rate: formatCurrency(results.rates.coverBlockRatePerPc), Cost: formatCurrency(results.costs.coverBlock) },
-      { Item: 'Material Subtotal', Quantity: '', Unit: '', Rate: '', Cost: formatCurrency(results.costs.materialTotal) },
-      { Item: 'Labour — Bar Bending, Cutting & Fixing', Quantity: formatNumber(results.totalSteelKg), Unit: 'KG', Rate: formatCurrency(results.rates.barBendingLabourRatePerKg), Cost: formatCurrency(results.costs.labour) },
-      { Item: 'Labour Subtotal', Quantity: '', Unit: '', Rate: '', Cost: formatCurrency(results.costs.labour) },
-      { Item: 'GRAND TOTAL', Quantity: '', Unit: '', Rate: '', Cost: formatCurrency(results.costs.grandTotal) }
-    ];
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'BBS_Steel_Calculator');
-    XLSX.writeFile(wb, `RCC_BBS_Steel_${new Date().toISOString().split('T')[0]}.xlsx`);
+    checkAndRun('calculator_export', 'steel-calculator', () => {
+      const wb = XLSX.utils.book_new();
+      const bbsSheetData = results.bbsRows.map((r: any) => ({
+        "Mark": r.barMark,
+        "Description": r.description,
+        "Diameter (mm)": r.dia,
+        "Shape Code": r.shape,
+        "Bars / Member": r.barsPerMember,
+        "Total Bars": r.totalBars,
+        "Cut Length (m)": formatNumber(r.cuttingLengthM),
+        "Total Length (m)": formatNumber(r.totalLengthM),
+        "Weight (kg)": formatNumber(r.weightKg),
+        "Remarks / Laps": r.remarks
+      }));
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(bbsSheetData), "BBS Schedule");
+      XLSX.writeFile(wb, `BBS_${item}_${new Date().toISOString().split('T')[0]}.xlsx`);
+    });
   };
 
   const handleWhatsApp = () => {
     if (!results) return;
-    const message = `🔩 BUILDMITRA RCC STEEL BBS ESTIMATE\n\nMember: ${results.item}\nGrade: ${concreteGrade} / ${steelGrade}\nTotal TMT Steel: ${formatNumber(results.totalSteelKg)} kg (${formatNumber(results.totalSteelMT, 3)} MT)\nBinding Wire: ${formatNumber(results.bindingWireKg)} kg\nGrand Total: ${formatCurrency(results.costs.grandTotal)}`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+    checkAndRun('calculator_export', 'steel-calculator', () => {
+      const message = `🏗️ *BUILDMITRA INFRA — REBAR BBS REPORT*\nNo:378, Near Gurusidheswra theater, 80 ft Road, JP Nagar, 4th Block, 9th Phase, Bengaluru- 560062 | 📱 +91 76769 42386\n\n*MEMBER*: ${item}\n• *Total Steel*: ${formatNumber(results.totalSteelKg)} kg (${formatNumber(results.totalSteelMT, 3)} MT)\n• *Binding Wire*: ${formatNumber(results.bindingWireKg)} kg\n• *Material Cost*: ${formatCurrency(results.costs.materialTotal)}\n• *Labour Cost*: ${formatCurrency(results.costs.labour)}\n• *GRAND TOTAL*: ${formatCurrency(results.costs.grandTotal)}\n\nGenerated via BuildMitra Construction Suite.`;
+      window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+    });
   };
 
   if (loading) {
-    return React.createElement('div', { style: { padding: '20px', textAlign: 'center' } }, 'Loading Admin Master Rates...');
+    return <div style={{ padding: '20px', textAlign: 'center' }}>Loading Admin Master Rates...</div>;
   }
 
-  return React.createElement('div', { style: styles.container },
-    React.createElement('div', { style: styles.header },
-      React.createElement('button', { onClick: handleBack, style: styles.backButton }, '←'),
-      React.createElement('h1', { style: styles.headerTitle }, '🔩 RCC Steel Calculator & BBS Estimator (IS 456:2000 & SP 34:1987)')
-    ),
+  return (
+    <div style={styles.container}>
+      <div style={styles.header}>
+        <button onClick={handleBack} style={styles.backButton}>←</button>
+        <h1 style={styles.headerTitle}>RCC Steel Calculator & BBS Estimator (IS 456:2000 & SP 34:1987)</h1>
+      </div>
 
-    React.createElement(MarketRateTrend, null),
+      <MarketRateTrend />
+      
+      <div style={styles.rateInfo}>
+        <div>💰 <b>Admin Master Rates:</b> TMT Steel ₹{steelRatePerKg}/kg | Binding Wire ₹{bindingWireRatePerKg}/kg | Cover Blocks ₹{coverBlockRatePerPc}/pc</div>
+        <div style={{ marginTop: '4px' }}>👷 <b>Labour Rate:</b> Bar Bending, Cutting & Fixing ₹{barBendingLabourRatePerKg}/kg (₹{barBendingLabourRatePerKg * 1000}/MT)</div>
+      </div>
 
-    React.createElement('div', { style: styles.rateInfo },
-      React.createElement('span', null, `💰 Admin Master Rates: TMT Steel ${steelRatePerKg ? `₹${formatNumber(steelRatePerKg)}/kg` : 'Rate Unavailable in Admin Master'} | Binding Wire ${bindingWireRatePerKg ? `₹${formatNumber(bindingWireRatePerKg)}/kg` : 'Rate Unavailable in Admin Master'}`),
-      React.createElement('div', null, React.createElement('small', null, `👷 Labour: Bar Bending & Fixing ${barBendingLabourRatePerKg ? `₹${formatNumber(barBendingLabourRatePerKg)}/kg` : 'Rate Unavailable in Admin Master'}`))
-    ),
+      <div style={styles.sectionTitle}>🏗️ Select RCC Structural Member</div>
+      <div style={styles.memberBar}>
+        {RCC_MEMBERS.map(m => (
+          <button key={m.id} onClick={() => setItem(m.id)} style={styles.memberTab(item === m.id)}>
+            <span>{m.icon}</span> {m.label}
+          </button>
+        ))}
+      </div>
 
-    React.createElement('div', { style: styles.sectionTitle }, '📋 Common Specifications & Detailing Configuration'),
-    React.createElement('div', { style: styles.row6 },
-      React.createElement('div', null,
-        React.createElement('label', { style: styles.label }, 'RCC Item'),
-        React.createElement('select', { value: item, onChange: (e) => setItem(e.target.value), style: styles.select },
-          ["Slab", "Beam", "Column", "Lintel", "Footing", "RCC Wall"].map(x => React.createElement('option', { key: x, value: x }, x))
-        )
-      ),
-      React.createElement('div', null,
-        React.createElement('label', { style: styles.label }, 'Concrete Grade'),
-        React.createElement('select', { value: concreteGrade, onChange: (e) => setConcreteGrade(e.target.value), style: styles.select },
-          ["M15", "M20", "M25", "M30", "M35", "M40"].map(x => React.createElement('option', { key: x, value: x }, x))
-        )
-      ),
-      React.createElement('div', null,
-        React.createElement('label', { style: styles.label }, 'Steel Grade'),
-        React.createElement('select', { value: steelGrade, onChange: (e) => setSteelGrade(e.target.value), style: styles.select },
-          ["Fe415", "Fe500", "Fe550"].map(x => React.createElement('option', { key: x, value: x }, x))
-        )
-      ),
-      React.createElement('div', null,
-        React.createElement('label', { style: styles.label }, 'Exposure Condition'),
-        React.createElement('select', { value: exposureCondition, onChange: (e) => setExposureCondition(e.target.value), style: styles.select },
-          ["Mild", "Moderate", "Severe", "Very Severe", "Extreme"].map(x => React.createElement('option', { key: x, value: x }, x))
-        )
-      ),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Commercial Bar Length (m)'), React.createElement('input', { type: 'number', value: stockBarLengthM, onChange: (e) => setStockBarLengthM(parseFloat(e.target.value) || 12), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Wastage (%)'), React.createElement('input', { type: 'number', value: wastage, onChange: (e) => setWastage(parseFloat(e.target.value) || 0), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Binding Wire (%)'), React.createElement('input', { type: 'number', value: bindingWirePercent, onChange: (e) => setBindingWirePercent(parseFloat(e.target.value) || 0), style: styles.input })),
-      React.createElement('div', null,
-        React.createElement('label', { style: styles.label }, 'Commercial Laps'),
-        React.createElement('select', { value: lapSetting, onChange: (e) => setLapSetting(e.target.value), style: styles.select },
-          ["Auto", "Yes", "No"].map(x => React.createElement('option', { key: x, value: x }, x))
-        )
-      )
-    ),
+      <div style={styles.sectionTitle}>📋 Common Specifications & Detailing Configuration</div>
+      <div style={styles.grid}>
+        <div>
+          <label style={styles.label}>Concrete Grade</label>
+          <select value={concreteGrade} onChange={(e) => setConcreteGrade(e.target.value)} style={styles.select}>
+            {["M15", "M20", "M25", "M30", "M35", "M40"].map(g => <option key={g} value={g}>{g}</option>)}
+          </select>
+        </div>
+        <div>
+          <label style={styles.label}>Steel Grade (IS 1786)</label>
+          <select value={steelGrade} onChange={(e) => setSteelGrade(e.target.value)} style={styles.select}>
+            {["Fe415", "Fe500", "Fe550"].map(g => <option key={g} value={g}>{g}</option>)}
+          </select>
+        </div>
+        <div>
+          <label style={styles.label}>Exposure Condition</label>
+          <select value={exposureCondition} onChange={(e) => setExposureCondition(e.target.value)} style={styles.select}>
+            {["Mild", "Moderate", "Severe", "Very Severe"].map(e => <option key={e} value={e}>{e}</option>)}
+          </select>
+        </div>
+        <div>
+          <label style={styles.label}>Commercial Bar Length (m)</label>
+          <input type="number" value={stockBarLengthM} onChange={(e) => setStockBarLengthM(parseFloat(e.target.value) || 12)} style={styles.input} />
+        </div>
+        <div>
+          <label style={styles.label}>Wastage (%)</label>
+          <input type="number" value={wastage} onChange={(e) => setWastage(parseFloat(e.target.value) || 0)} style={styles.input} />
+        </div>
+        <div>
+          <label style={styles.label}>Binding Wire (%)</label>
+          <input type="number" value={bindingWirePercent} onChange={(e) => setBindingWirePercent(parseFloat(e.target.value) || 0)} style={styles.input} />
+        </div>
+        <div>
+          <label style={styles.label}>Commercial Laps</label>
+          <select value={lapSetting} onChange={(e) => setLapSetting(e.target.value)} style={styles.select}>
+            <option value="Auto">Auto (Span &gt; 12m)</option>
+            <option value="Yes">Always Add Laps</option>
+            <option value="No">No Laps</option>
+          </select>
+        </div>
+        <div>
+          <label style={styles.label}>Unit System</label>
+          <select value={unitSystem} onChange={(e) => setUnitSystem(e.target.value)} style={styles.select}>
+            <option value="feet">Feet (ft)</option>
+            <option value="meters">Meters (m)</option>
+          </select>
+        </div>
+      </div>
 
-    React.createElement('div', { style: styles.sectionTitle }, `📐 ${item} Dimensions & Member Detailing`),
-    
-    item === "Slab" && React.createElement('div', { style: styles.row6 },
-      React.createElement('div', null,
-        React.createElement('label', { style: styles.label }, 'Slab Type'),
-        React.createElement('select', { value: slabType, onChange: (e) => setSlabType(e.target.value), style: styles.select },
-          ["One-way Slab", "Two-way Slab", "Cantilever Slab", "Continuous Slab"].map(x => React.createElement('option', { key: x, value: x }, x))
-        )
-      ),
-      React.createElement('div', null,
-        React.createElement('label', { style: styles.label }, 'Reinforcement Mat'),
-        React.createElement('select', { value: matType, onChange: (e) => setMatType(e.target.value), style: styles.select },
-          ["Single Mat", "Double Mat"].map(x => React.createElement('option', { key: x, value: x }, x))
-        )
-      ),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, `Length (${unitSystem})`), React.createElement('input', { type: 'number', value: length, onChange: (e) => setLength(parseFloat(e.target.value) || 0), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, `Width (${unitSystem})`), React.createElement('input', { type: 'number', value: width, onChange: (e) => setWidth(parseFloat(e.target.value) || 0), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Thickness (mm)'), React.createElement('input', { type: 'number', value: depth, onChange: (e) => setDepth(parseFloat(e.target.value) || 0), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Clear Cover (mm)'), React.createElement('input', { type: 'number', value: coverMm, onChange: (e) => setCoverMm(parseFloat(e.target.value) || 0), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Main (X) Dia'), React.createElement('select', { value: xDia, onChange: (e) => setXDia(Number(e.target.value)), style: styles.select }, dias.map(d => React.createElement('option', { key: d, value: d }, `${d} mm`)))),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Main (X) Spacing (mm)'), React.createElement('input', { type: 'number', value: xSpacingMm, onChange: (e) => setXSpacingMm(parseFloat(e.target.value) || 0), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Dist (Y) Dia'), React.createElement('select', { value: yDia, onChange: (e) => setYDia(Number(e.target.value)), style: styles.select }, dias.map(d => React.createElement('option', { key: d, value: d }, `${d} mm`)))),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Dist (Y) Spacing (mm)'), React.createElement('input', { type: 'number', value: ySpacingMm, onChange: (e) => setYSpacingMm(parseFloat(e.target.value) || 0), style: styles.input })),
-      React.createElement('div', null,
-        React.createElement('label', { style: styles.label }, 'Bent-up Cranks'),
-        React.createElement('select', { value: hasCranks ? "Yes" : "No", onChange: (e) => setHasCranks(e.target.value === "Yes"), style: styles.select },
-          React.createElement('option', { value: 'Yes' }, 'Yes'), React.createElement('option', { value: 'No' }, 'No')
-        )
-      ),
-      hasCranks && React.createElement('div', null,
-        React.createElement('label', { style: styles.label }, 'Crank Angle'),
-        React.createElement('select', { value: crankAngle, onChange: (e) => setCrankAngle(Number(e.target.value)), style: styles.select },
-          [30, 45, 60].map(a => React.createElement('option', { key: a, value: a }, `${a}°`))
-        )
-      )
-    ),
+      <div style={styles.sectionTitle}>📐 {item} Dimensions & Rebar Detailing</div>
+      {item === "Slab" && (
+        <div style={styles.grid}>
+          <div>
+            <label style={styles.label}>Slab Type</label>
+            <select value={slabType} onChange={(e) => setSlabType(e.target.value)} style={styles.select}>
+              <option value="One-way Slab">One-way Slab</option>
+              <option value="Two-way Slab">Two-way Slab</option>
+              <option value="Cantilever Slab">Cantilever Slab</option>
+            </select>
+          </div>
+          <div>
+            <label style={styles.label}>Reinforcement Mat</label>
+            <select value={matType} onChange={(e) => setMatType(e.target.value)} style={styles.select}>
+              <option value="Single Mat">Single Mat</option>
+              <option value="Double Mat">Double Mat (Top + Bottom + Chairs)</option>
+            </select>
+          </div>
+          <div>
+            <label style={styles.label}>Length ({unitSystem})</label>
+            <input type="number" value={length} onChange={(e) => setLength(parseFloat(e.target.value) || 0)} style={styles.input} />
+          </div>
+          <div>
+            <label style={styles.label}>Width ({unitSystem})</label>
+            <input type="number" value={width} onChange={(e) => setWidth(parseFloat(e.target.value) || 0)} style={styles.input} />
+          </div>
+          <div>
+            <label style={styles.label}>Thickness (mm)</label>
+            <input type="number" value={depth} onChange={(e) => setDepth(parseFloat(e.target.value) || 0)} style={styles.input} />
+          </div>
+          <div>
+            <label style={styles.label}>Clear Cover (mm)</label>
+            <input type="number" value={coverMm} onChange={(e) => setCoverMm(parseFloat(e.target.value) || 0)} style={styles.input} />
+          </div>
+          <div>
+            <label style={styles.label}>Main (X) Dia</label>
+            <select value={xDia} onChange={(e) => setXDia(Number(e.target.value))} style={styles.select}>
+              {dias.map(d => <option key={d} value={d}>{d} mm</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={styles.label}>Main (X) Spacing (mm)</label>
+            <input type="number" value={xSpacingMm} onChange={(e) => setXSpacingMm(parseFloat(e.target.value) || 0)} style={styles.input} />
+          </div>
+          <div>
+            <label style={styles.label}>Dist (Y) Dia</label>
+            <select value={yDia} onChange={(e) => setYDia(Number(e.target.value))} style={styles.select}>
+              {dias.map(d => <option key={d} value={d}>{d} mm</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={styles.label}>Dist (Y) Spacing (mm)</label>
+            <input type="number" value={ySpacingMm} onChange={(e) => setYSpacingMm(parseFloat(e.target.value) || 0)} style={styles.input} />
+          </div>
+          <div>
+            <label style={styles.label}>Bent-up Cranks</label>
+            <select value={hasCranks ? "Yes" : "No"} onChange={(e) => setHasCranks(e.target.value === "Yes")} style={styles.select}>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+          </div>
+          {hasCranks && (
+            <div>
+              <label style={styles.label}>Crank Angle</label>
+              <select value={crankAngle} onChange={(e) => setCrankAngle(Number(e.target.value))} style={styles.select}>
+                <option value={30}>30° (0.27D)</option>
+                <option value={45}>45° (0.42D)</option>
+                <option value={60}>60° (0.58D)</option>
+              </select>
+            </div>
+          )}
+        </div>
+      )}
 
-    item === "Beam" && React.createElement('div', { style: styles.row6 },
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'No. of Beams'), React.createElement('input', { type: 'number', value: memberNos, onChange: (e) => setMemberNos(parseFloat(e.target.value) || 0), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, `Beam Length (${unitSystem})`), React.createElement('input', { type: 'number', value: length, onChange: (e) => setLength(parseFloat(e.target.value) || 0), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Width (mm)'), React.createElement('input', { type: 'number', value: width, onChange: (e) => setWidth(parseFloat(e.target.value) || 0), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Depth (mm)'), React.createElement('input', { type: 'number', value: depth, onChange: (e) => setDepth(parseFloat(e.target.value) || 0), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Clear Cover (mm)'), React.createElement('input', { type: 'number', value: coverMm, onChange: (e) => setCoverMm(parseFloat(e.target.value) || 0), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Bottom Bar Dia'), React.createElement('select', { value: bottomDia, onChange: (e) => setBottomDia(Number(e.target.value)), style: styles.select }, dias.map(d => React.createElement('option', { key: d, value: d }, `${d} mm`)))),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Bottom Bar Count'), React.createElement('input', { type: 'number', value: bottomBarsCount, onChange: (e) => setBottomBarsCount(parseFloat(e.target.value) || 0), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Top Bar Dia'), React.createElement('select', { value: topDia, onChange: (e) => setTopDia(Number(e.target.value)), style: styles.select }, dias.map(d => React.createElement('option', { key: d, value: d }, `${d} mm`)))),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Top Bar Count'), React.createElement('input', { type: 'number', value: topBarsCount, onChange: (e) => setTopBarsCount(parseFloat(e.target.value) || 0), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Extra Top Dia'), React.createElement('select', { value: extraTopDia, onChange: (e) => setExtraTopDia(Number(e.target.value)), style: styles.select }, dias.map(d => React.createElement('option', { key: d, value: d }, `${d} mm`)))),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Extra Top Count'), React.createElement('input', { type: 'number', value: extraTopBarsCount, onChange: (e) => setExtraTopBarsCount(parseFloat(e.target.value) || 0), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Stirrup Dia'), React.createElement('select', { value: stirrupDia, onChange: (e) => setStirrupDia(Number(e.target.value)), style: styles.select }, dias.map(d => React.createElement('option', { key: d, value: d }, `${d} mm`)))),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'End Stirrup Spacing (mm)'), React.createElement('input', { type: 'number', value: stirrupSpacingEndMm, onChange: (e) => setStirrupSpacingEndMm(parseFloat(e.target.value) || 0), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Mid Stirrup Spacing (mm)'), React.createElement('input', { type: 'number', value: stirrupSpacingMidMm, onChange: (e) => setStirrupSpacingMidMm(parseFloat(e.target.value) || 0), style: styles.input }))
-    ),
+      {item === "Beam" && (
+        <div style={styles.grid}>
+          <div>
+            <label style={styles.label}>Clear Span Length ({unitSystem})</label>
+            <input type="number" value={length} onChange={(e) => setLength(parseFloat(e.target.value) || 0)} style={styles.input} />
+          </div>
+          <div>
+            <label style={styles.label}>Beam Width (mm)</label>
+            <input type="number" value={width} onChange={(e) => setWidth(parseFloat(e.target.value) || 0)} style={styles.input} />
+          </div>
+          <div>
+            <label style={styles.label}>Beam Depth (mm)</label>
+            <input type="number" value={depth} onChange={(e) => setDepth(parseFloat(e.target.value) || 0)} style={styles.input} />
+          </div>
+          <div>
+            <label style={styles.label}>Clear Cover (mm)</label>
+            <input type="number" value={coverMm} onChange={(e) => setCoverMm(parseFloat(e.target.value) || 0)} style={styles.input} />
+          </div>
+          <div>
+            <label style={styles.label}>Bottom Main Dia</label>
+            <select value={bottomDia} onChange={(e) => setBottomDia(Number(e.target.value))} style={styles.select}>
+              {dias.map(d => <option key={d} value={d}>{d} mm</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={styles.label}>Bottom Bars Count</label>
+            <input type="number" value={bottomBarsCount} onChange={(e) => setBottomBarsCount(parseInt(e.target.value) || 0)} style={styles.input} />
+          </div>
+          <div>
+            <label style={styles.label}>Top Hanger Dia</label>
+            <select value={topDia} onChange={(e) => setTopDia(Number(e.target.value))} style={styles.select}>
+              {dias.map(d => <option key={d} value={d}>{d} mm</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={styles.label}>Top Bars Count</label>
+            <input type="number" value={topBarsCount} onChange={(e) => setTopBarsCount(parseInt(e.target.value) || 0)} style={styles.input} />
+          </div>
+          <div>
+            <label style={styles.label}>Extra Top Dia</label>
+            <select value={extraTopDia} onChange={(e) => setExtraTopDia(Number(e.target.value))} style={styles.select}>
+              {dias.map(d => <option key={d} value={d}>{d} mm</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={styles.label}>Extra Top Bars (per end)</label>
+            <input type="number" value={extraTopBarsCount} onChange={(e) => setExtraTopBarsCount(parseInt(e.target.value) || 0)} style={styles.input} />
+          </div>
+          <div>
+            <label style={styles.label}>Stirrup Ring Dia</label>
+            <select value={stirrupDia} onChange={(e) => setStirrupDia(Number(e.target.value))} style={styles.select}>
+              {dias.map(d => <option key={d} value={d}>{d} mm</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={styles.label}>End Zone Spacing (mm)</label>
+            <input type="number" value={stirrupSpacingEndMm} onChange={(e) => setStirrupSpacingEndMm(parseFloat(e.target.value) || 0)} style={styles.input} />
+          </div>
+          <div>
+            <label style={styles.label}>Mid Zone Spacing (mm)</label>
+            <input type="number" value={stirrupSpacingMidMm} onChange={(e) => setStirrupSpacingMidMm(parseFloat(e.target.value) || 0)} style={styles.input} />
+          </div>
+        </div>
+      )}
 
-    item === "Lintel" && React.createElement('div', { style: styles.row6 },
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'No. of Lintels'), React.createElement('input', { type: 'number', value: memberNos, onChange: (e) => setMemberNos(parseFloat(e.target.value) || 0), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, `Clear Span (${unitSystem})`), React.createElement('input', { type: 'number', value: length, onChange: (e) => setLength(parseFloat(e.target.value) || 0), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Bearing each side (mm)'), React.createElement('input', { type: 'number', value: lintelBearingMm, onChange: (e) => setLintelBearingMm(parseFloat(e.target.value) || 0), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Width (mm)'), React.createElement('input', { type: 'number', value: width, onChange: (e) => setWidth(parseFloat(e.target.value) || 0), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Depth (mm)'), React.createElement('input', { type: 'number', value: depth, onChange: (e) => setDepth(parseFloat(e.target.value) || 0), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Clear Cover (mm)'), React.createElement('input', { type: 'number', value: coverMm, onChange: (e) => setCoverMm(parseFloat(e.target.value) || 0), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Bottom Bar Dia'), React.createElement('select', { value: bottomDia, onChange: (e) => setBottomDia(Number(e.target.value)), style: styles.select }, dias.map(d => React.createElement('option', { key: d, value: d }, `${d} mm`)))),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Bottom Bar Count'), React.createElement('input', { type: 'number', value: bottomBarsCount, onChange: (e) => setBottomBarsCount(parseFloat(e.target.value) || 0), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Top Bar Dia'), React.createElement('select', { value: topDia, onChange: (e) => setTopDia(Number(e.target.value)), style: styles.select }, dias.map(d => React.createElement('option', { key: d, value: d }, `${d} mm`)))),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Top Bar Count'), React.createElement('input', { type: 'number', value: topBarsCount, onChange: (e) => setTopBarsCount(parseFloat(e.target.value) || 0), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Stirrup Dia'), React.createElement('select', { value: stirrupDia, onChange: (e) => setStirrupDia(Number(e.target.value)), style: styles.select }, dias.map(d => React.createElement('option', { key: d, value: d }, `${d} mm`)))),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Stirrup Spacing (mm)'), React.createElement('input', { type: 'number', value: stirrupSpacingMidMm, onChange: (e) => setStirrupSpacingMidMm(parseFloat(e.target.value) || 0), style: styles.input }))
-    ),
+      {item === "Column" && (
+        <div style={styles.grid}>
+          <div>
+            <label style={styles.label}>Column Height ({unitSystem})</label>
+            <input type="number" value={length} onChange={(e) => setLength(parseFloat(e.target.value) || 0)} style={styles.input} />
+          </div>
+          <div>
+            <label style={styles.label}>Column Width (mm)</label>
+            <input type="number" value={width} onChange={(e) => setWidth(parseFloat(e.target.value) || 0)} style={styles.input} />
+          </div>
+          <div>
+            <label style={styles.label}>Column Depth (mm)</label>
+            <input type="number" value={depth} onChange={(e) => setDepth(parseFloat(e.target.value) || 0)} style={styles.input} />
+          </div>
+          <div>
+            <label style={styles.label}>Clear Cover (mm)</label>
+            <input type="number" value={coverMm} onChange={(e) => setCoverMm(parseFloat(e.target.value) || 0)} style={styles.input} />
+          </div>
+          <div>
+            <label style={styles.label}>Corner Rods Dia</label>
+            <select value={cornerDia} onChange={(e) => setCornerDia(Number(e.target.value))} style={styles.select}>
+              {dias.map(d => <option key={d} value={d}>{d} mm</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={styles.label}>Corner Rods Count</label>
+            <input type="number" value={cornerBarsCount} onChange={(e) => setCornerBarsCount(parseInt(e.target.value) || 0)} style={styles.input} />
+          </div>
+          <div>
+            <label style={styles.label}>Intermediate Rods Dia</label>
+            <select value={middleDia} onChange={(e) => setMiddleDia(Number(e.target.value))} style={styles.select}>
+              {dias.map(d => <option key={d} value={d}>{d} mm</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={styles.label}>Intermediate Rods Count</label>
+            <input type="number" value={middleBarsCount} onChange={(e) => setMiddleBarsCount(parseInt(e.target.value) || 0)} style={styles.input} />
+          </div>
+          <div>
+            <label style={styles.label}>Lateral Tie Ring Dia</label>
+            <select value={tieDia} onChange={(e) => setTieDia(Number(e.target.value))} style={styles.select}>
+              {dias.map(d => <option key={d} value={d}>{d} mm</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={styles.label}>Confined Zone Spacing (mm)</label>
+            <input type="number" value={tieSpacingConfinedMm} onChange={(e) => setTieSpacingConfinedMm(parseFloat(e.target.value) || 0)} style={styles.input} />
+          </div>
+          <div>
+            <label style={styles.label}>Mid Zone Spacing (mm)</label>
+            <input type="number" value={tieSpacingMidMm} onChange={(e) => setTieSpacingMidMm(parseFloat(e.target.value) || 0)} style={styles.input} />
+          </div>
+        </div>
+      )}
 
-    item === "Column" && React.createElement('div', { style: styles.row6 },
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'No. of Columns'), React.createElement('input', { type: 'number', value: memberNos, onChange: (e) => setMemberNos(parseFloat(e.target.value) || 0), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, `Column Height (${unitSystem})`), React.createElement('input', { type: 'number', value: length, onChange: (e) => setLength(parseFloat(e.target.value) || 0), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Width (mm)'), React.createElement('input', { type: 'number', value: width, onChange: (e) => setWidth(parseFloat(e.target.value) || 0), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Depth (mm)'), React.createElement('input', { type: 'number', value: depth, onChange: (e) => setDepth(parseFloat(e.target.value) || 0), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Clear Cover (mm)'), React.createElement('input', { type: 'number', value: coverMm, onChange: (e) => setCoverMm(parseFloat(e.target.value) || 0), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Corner Rod Dia'), React.createElement('select', { value: cornerDia, onChange: (e) => setCornerDia(Number(e.target.value)), style: styles.select }, dias.map(d => React.createElement('option', { key: d, value: d }, `${d} mm`)))),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Corner Rod Count'), React.createElement('input', { type: 'number', value: cornerBarsCount, onChange: (e) => setCornerBarsCount(parseFloat(e.target.value) || 0), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Interm Rod Dia'), React.createElement('select', { value: middleDia, onChange: (e) => setMiddleDia(Number(e.target.value)), style: styles.select }, dias.map(d => React.createElement('option', { key: d, value: d }, `${d} mm`)))),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Interm Rod Count'), React.createElement('input', { type: 'number', value: middleBarsCount, onChange: (e) => setMiddleBarsCount(parseFloat(e.target.value) || 0), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Tie Dia'), React.createElement('select', { value: tieDia, onChange: (e) => setTieDia(Number(e.target.value)), style: styles.select }, dias.map(d => React.createElement('option', { key: d, value: d }, `${d} mm`)))),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Confined Tie Spacing (mm)'), React.createElement('input', { type: 'number', value: tieSpacingConfinedMm, onChange: (e) => setTieSpacingConfinedMm(parseFloat(e.target.value) || 0), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Mid Tie Spacing (mm)'), React.createElement('input', { type: 'number', value: tieSpacingMidMm, onChange: (e) => setTieSpacingMidMm(parseFloat(e.target.value) || 0), style: styles.input }))
-    ),
+      {item === "Footing" && (
+        <div style={styles.grid}>
+          <div>
+            <label style={styles.label}>Footing Length ({unitSystem})</label>
+            <input type="number" value={length} onChange={(e) => setLength(parseFloat(e.target.value) || 0)} style={styles.input} />
+          </div>
+          <div>
+            <label style={styles.label}>Footing Width ({unitSystem})</label>
+            <input type="number" value={width} onChange={(e) => setWidth(parseFloat(e.target.value) || 0)} style={styles.input} />
+          </div>
+          <div>
+            <label style={styles.label}>Footing Depth (mm)</label>
+            <input type="number" value={depth} onChange={(e) => setDepth(parseFloat(e.target.value) || 0)} style={styles.input} />
+          </div>
+          <div>
+            <label style={styles.label}>Clear Cover (mm)</label>
+            <input type="number" value={coverMm} onChange={(e) => setCoverMm(parseFloat(e.target.value) || 0)} style={styles.input} />
+          </div>
+          <div>
+            <label style={styles.label}>Mesh X-Dia</label>
+            <select value={xDia} onChange={(e) => setXDia(Number(e.target.value))} style={styles.select}>
+              {dias.map(d => <option key={d} value={d}>{d} mm</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={styles.label}>Mesh X-Spacing (mm)</label>
+            <input type="number" value={xSpacingMm} onChange={(e) => setXSpacingMm(parseFloat(e.target.value) || 0)} style={styles.input} />
+          </div>
+          <div>
+            <label style={styles.label}>Mesh Y-Dia</label>
+            <select value={yDia} onChange={(e) => setYDia(Number(e.target.value))} style={styles.select}>
+              {dias.map(d => <option key={d} value={d}>{d} mm</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={styles.label}>Mesh Y-Spacing (mm)</label>
+            <input type="number" value={ySpacingMm} onChange={(e) => setYSpacingMm(parseFloat(e.target.value) || 0)} style={styles.input} />
+          </div>
+          <div>
+            <label style={styles.label}>Starter Dowels Dia</label>
+            <select value={dowelDia} onChange={(e) => setDowelDia(Number(e.target.value))} style={styles.select}>
+              {dias.map(d => <option key={d} value={d}>{d} mm</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={styles.label}>Starter Dowels Count</label>
+            <input type="number" value={dowelCount} onChange={(e) => setDowelCount(parseInt(e.target.value) || 0)} style={styles.input} />
+          </div>
+        </div>
+      )}
 
-    item === "Footing" && React.createElement('div', { style: styles.row6 },
-      React.createElement('div', null,
-        React.createElement('label', { style: styles.label }, 'Footing Type'),
-        React.createElement('select', { value: footingType, onChange: (e) => setFootingType(e.target.value), style: styles.select },
-          ["Isolated Footing", "Combined Footing", "Strip Footing", "Stepped Footing"].map(x => React.createElement('option', { key: x, value: x }, x))
-        )
-      ),
-      React.createElement('div', null,
-        React.createElement('label', { style: styles.label }, 'Reinforcement Mat'),
-        React.createElement('select', { value: matType, onChange: (e) => setMatType(e.target.value), style: styles.select },
-          ["Single Mat", "Double Mat"].map(x => React.createElement('option', { key: x, value: x }, x))
-        )
-      ),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, `Length (${unitSystem})`), React.createElement('input', { type: 'number', value: length, onChange: (e) => setLength(parseFloat(e.target.value) || 0), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, `Width (${unitSystem})`), React.createElement('input', { type: 'number', value: width, onChange: (e) => setWidth(parseFloat(e.target.value) || 0), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Depth/Thickness (mm)'), React.createElement('input', { type: 'number', value: depth, onChange: (e) => setDepth(parseFloat(e.target.value) || 0), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Clear Cover (mm)'), React.createElement('input', { type: 'number', value: coverMm, onChange: (e) => setCoverMm(parseFloat(e.target.value) || 0), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Main (X) Dia'), React.createElement('select', { value: xDia, onChange: (e) => setXDia(Number(e.target.value)), style: styles.select }, dias.map(d => React.createElement('option', { key: d, value: d }, `${d} mm`)))),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Main (X) Spacing (mm)'), React.createElement('input', { type: 'number', value: xSpacingMm, onChange: (e) => setXSpacingMm(parseFloat(e.target.value) || 0), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Dist (Y) Dia'), React.createElement('select', { value: yDia, onChange: (e) => setYDia(Number(e.target.value)), style: styles.select }, dias.map(d => React.createElement('option', { key: d, value: d }, `${d} mm`)))),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Dist (Y) Spacing (mm)'), React.createElement('input', { type: 'number', value: ySpacingMm, onChange: (e) => setYSpacingMm(parseFloat(e.target.value) || 0), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Column Dowel Dia'), React.createElement('select', { value: dowelDia, onChange: (e) => setDowelDia(Number(e.target.value)), style: styles.select }, dias.map(d => React.createElement('option', { key: d, value: d }, `${d} mm`)))),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Column Dowel Count'), React.createElement('input', { type: 'number', value: dowelCount, onChange: (e) => setDowelCount(parseFloat(e.target.value) || 0), style: styles.input }))
-    ),
+      {item === "Lintel" && (
+        <div style={styles.grid}>
+          <div>
+            <label style={styles.label}>Clear Opening Length ({unitSystem})</label>
+            <input type="number" value={length} onChange={(e) => setLength(parseFloat(e.target.value) || 0)} style={styles.input} />
+          </div>
+          <div>
+            <label style={styles.label}>Lintel Width (mm)</label>
+            <input type="number" value={width} onChange={(e) => setWidth(parseFloat(e.target.value) || 0)} style={styles.input} />
+          </div>
+          <div>
+            <label style={styles.label}>Lintel Depth (mm)</label>
+            <input type="number" value={depth} onChange={(e) => setDepth(parseFloat(e.target.value) || 0)} style={styles.input} />
+          </div>
+          <div>
+            <label style={styles.label}>Wall Bearing (mm)</label>
+            <input type="number" value={lintelBearingMm} onChange={(e) => setLintelBearingMm(parseFloat(e.target.value) || 0)} style={styles.input} />
+          </div>
+          <div>
+            <label style={styles.label}>Bottom Main Dia</label>
+            <select value={bottomDia} onChange={(e) => setBottomDia(Number(e.target.value))} style={styles.select}>
+              {dias.map(d => <option key={d} value={d}>{d} mm</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={styles.label}>Bottom Bars Count</label>
+            <input type="number" value={bottomBarsCount} onChange={(e) => setBottomBarsCount(parseInt(e.target.value) || 0)} style={styles.input} />
+          </div>
+          <div>
+            <label style={styles.label}>Top Hanger Dia</label>
+            <select value={topDia} onChange={(e) => setTopDia(Number(e.target.value))} style={styles.select}>
+              {dias.map(d => <option key={d} value={d}>{d} mm</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={styles.label}>Top Bars Count</label>
+            <input type="number" value={topBarsCount} onChange={(e) => setTopBarsCount(parseInt(e.target.value) || 0)} style={styles.input} />
+          </div>
+          <div>
+            <label style={styles.label}>Stirrup Ring Dia</label>
+            <select value={stirrupDia} onChange={(e) => setStirrupDia(Number(e.target.value))} style={styles.select}>
+              {dias.map(d => <option key={d} value={d}>{d} mm</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={styles.label}>Stirrup Spacing (mm)</label>
+            <input type="number" value={stirrupSpacingMidMm} onChange={(e) => setStirrupSpacingMidMm(parseFloat(e.target.value) || 0)} style={styles.input} />
+          </div>
+        </div>
+      )}
 
-    item === "RCC Wall" && React.createElement('div', { style: styles.row6 },
-      React.createElement('div', null,
-        React.createElement('label', { style: styles.label }, 'Wall Face Type'),
-        React.createElement('select', { value: wallFace, onChange: (e) => setWallFace(e.target.value), style: styles.select },
-          ["Single Face", "Double Face"].map(x => React.createElement('option', { key: x, value: x }, x))
-        )
-      ),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, `Wall Length (${unitSystem})`), React.createElement('input', { type: 'number', value: length, onChange: (e) => setLength(parseFloat(e.target.value) || 0), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, `Wall Height (${unitSystem})`), React.createElement('input', { type: 'number', value: width, onChange: (e) => setWidth(parseFloat(e.target.value) || 0), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Thickness (mm)'), React.createElement('input', { type: 'number', value: depth, onChange: (e) => setDepth(parseFloat(e.target.value) || 0), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Clear Cover (mm)'), React.createElement('input', { type: 'number', value: coverMm, onChange: (e) => setCoverMm(parseFloat(e.target.value) || 0), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Vertical Dia'), React.createElement('select', { value: vertDia, onChange: (e) => setVertDia(Number(e.target.value)), style: styles.select }, dias.map(d => React.createElement('option', { key: d, value: d }, `${d} mm`)))),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Vertical Spacing (mm)'), React.createElement('input', { type: 'number', value: vertSpacingMm, onChange: (e) => setVertSpacingMm(parseFloat(e.target.value) || 0), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Horizontal Dia'), React.createElement('select', { value: horizDia, onChange: (e) => setHorizDia(Number(e.target.value)), style: styles.select }, dias.map(d => React.createElement('option', { key: d, value: d }, `${d} mm`)))),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Horizontal Spacing (mm)'), React.createElement('input', { type: 'number', value: horizSpacingMm, onChange: (e) => setHorizSpacingMm(parseFloat(e.target.value) || 0), style: styles.input }))
-    ),
+      {item === "RCC Wall" && (
+        <div style={styles.grid}>
+          <div>
+            <label style={styles.label}>Wall Length ({unitSystem})</label>
+            <input type="number" value={length} onChange={(e) => setLength(parseFloat(e.target.value) || 0)} style={styles.input} />
+          </div>
+          <div>
+            <label style={styles.label}>Wall Height ({unitSystem})</label>
+            <input type="number" value={width} onChange={(e) => setWidth(parseFloat(e.target.value) || 0)} style={styles.input} />
+          </div>
+          <div>
+            <label style={styles.label}>Wall Thickness (mm)</label>
+            <input type="number" value={depth} onChange={(e) => setDepth(parseFloat(e.target.value) || 0)} style={styles.input} />
+          </div>
+          <div>
+            <label style={styles.label}>Reinforcement Face</label>
+            <select value={wallFace} onChange={(e) => setWallFace(e.target.value)} style={styles.select}>
+              <option value="Single Face">Single Face Curtain</option>
+              <option value="Double Face">Double Face Curtain</option>
+            </select>
+          </div>
+          <div>
+            <label style={styles.label}>Vertical Dia</label>
+            <select value={vertDia} onChange={(e) => setVertDia(Number(e.target.value))} style={styles.select}>
+              {dias.map(d => <option key={d} value={d}>{d} mm</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={styles.label}>Vertical Spacing (mm)</label>
+            <input type="number" value={vertSpacingMm} onChange={(e) => setVertSpacingMm(parseFloat(e.target.value) || 0)} style={styles.input} />
+          </div>
+          <div>
+            <label style={styles.label}>Horizontal Dia</label>
+            <select value={horizDia} onChange={(e) => setHorizDia(Number(e.target.value))} style={styles.select}>
+              {dias.map(d => <option key={d} value={d}>{d} mm</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={styles.label}>Horizontal Spacing (mm)</label>
+            <input type="number" value={horizSpacingMm} onChange={(e) => setHorizSpacingMm(parseFloat(e.target.value) || 0)} style={styles.input} />
+          </div>
+        </div>
+      )}
 
-    React.createElement('div', { style: styles.buttonRow },
-      React.createElement('button', { onClick: handleGenerate, style: styles.buttonGenerate }, '🔨 Calculate Rebar BBS & Quantities'),
-      generated && results && React.createElement(React.Fragment, null,
-        React.createElement('button', { onClick: () => checkAndRun('calculator_export', 'steel-calculator', handleExportExcel), style: styles.buttonExport }, '📊 Excel BBS'),
-        React.createElement('button', { onClick: () => checkAndRun('calculator_export', 'steel-calculator', handleWhatsApp), style: styles.buttonWhatsapp }, '💬 Share')
-      )
-    ),
+      <div style={styles.grid}>
+        <div>
+          <label style={styles.label}>Member Quantity (Nos)</label>
+          <input type="number" value={memberNos} onChange={(e) => setMemberNos(parseInt(e.target.value) || 1)} style={styles.input} />
+        </div>
+      </div>
 
-    generated && results && React.createElement('div', null,
-      results.warnings.length > 0 && React.createElement('div', { style: styles.warningBox },
-        results.warnings.map((w: string, i: number) => React.createElement('div', { key: i }, w))
-      ),
+      <div style={styles.buttonRow}>
+        <button onClick={handleGenerate} style={styles.buttonGenerate}>🔨 Calculate Rebar BBS & Quantities</button>
+        {generated && results && (
+          <>
+            <button onClick={handleExportPDF} style={{ backgroundColor: '#0284c7', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' }}>📄 Download in PDF</button>
+            <button onClick={handleExportExcel} style={styles.buttonExport}>📊 Export in Excel</button>
+            <button onClick={handleWhatsApp} style={styles.buttonWhatsapp}>📲 Share on WhatsApp</button>
+          </>
+        )}
+      </div>
 
-      React.createElement('div', { style: styles.cardContainer },
-        React.createElement('div', { style: { ...styles.card, ...styles.cardBlue } }, React.createElement('div', null, '🔩'), React.createElement('div', null, 'Total Steel'), React.createElement('div', { style: styles.cardValue }, `${formatNumber(results.totalSteelKg)} kg (${formatNumber(results.totalSteelMT, 3)} MT)`)),
-        React.createElement('div', { style: { ...styles.card, ...styles.cardLightGreen } }, React.createElement('div', null, '🧵'), React.createElement('div', null, 'Binding Wire'), React.createElement('div', { style: styles.cardValue }, `${formatNumber(results.bindingWireKg)} kg`)),
-        React.createElement('div', { style: { ...styles.card, ...styles.cardLightOrange } }, React.createElement('div', null, '💰'), React.createElement('div', null, 'Material Subtotal'), React.createElement('div', { style: styles.cardValue }, formatCurrency(results.costs.materialTotal))),
-        React.createElement('div', { style: { ...styles.card, ...styles.cardLightTeal } }, React.createElement('div', null, '💎'), React.createElement('div', null, 'Grand Total'), React.createElement('div', { style: styles.cardValue }, formatCurrency(results.costs.grandTotal)))
-      ),
+      {generated && results && (
+        <div>
+          {results.warnings.length > 0 && (
+            <div style={styles.warningBox}>
+              {results.warnings.map((w: string, i: number) => <div key={i}>{w}</div>)}
+            </div>
+          )}
 
-      React.createElement('div', { style: styles.sectionTitle }, '📋 Detailed Bar Bending Schedule (BBS Table per IS 456 / SP 34)'),
-      React.createElement('div', { style: styles.tableContainer },
-        React.createElement('table', { style: styles.table },
-          React.createElement('thead', null, React.createElement('tr', null,
-            React.createElement('th', { style: styles.th }, 'Mark'),
-            React.createElement('th', { style: styles.th }, 'Bar Description'),
-            React.createElement('th', { style: styles.th }, 'Dia'),
-            React.createElement('th', { style: styles.th }, 'Shape Code'),
-            React.createElement('th', { style: styles.th }, 'Bars/Member'),
-            React.createElement('th', { style: styles.th }, 'Total Bars'),
-            React.createElement('th', { style: styles.th }, 'Cut Len (m)'),
-            React.createElement('th', { style: styles.th }, 'Total Len (m)'),
-            React.createElement('th', { style: styles.th }, 'Weight (kg)'),
-            React.createElement('th', { style: styles.th }, 'Remarks / Laps')
-          )),
-          React.createElement('tbody', null,
-            results.bbsRows.map((r: any, i: number) =>
-              React.createElement('tr', { key: i, style: i % 2 === 1 ? styles.evenRow : {} },
-                React.createElement('td', { style: styles.td }, r.barMark),
-                React.createElement('td', { style: styles.td }, r.description),
-                React.createElement('td', { style: styles.td }, `${r.dia}mm`),
-                React.createElement('td', { style: styles.td }, r.shape),
-                React.createElement('td', { style: styles.td }, r.barsPerMember),
-                React.createElement('td', { style: styles.td }, r.totalBars),
-                React.createElement('td', { style: styles.td }, formatNumber(r.cuttingLengthM)),
-                React.createElement('td', { style: styles.td }, formatNumber(r.totalLengthM)),
-                React.createElement('td', { style: { ...styles.td, fontWeight: 'bold' } }, formatNumber(r.weightKg)),
-                React.createElement('td', { style: styles.td }, r.remarks)
-              )
-            )
-          )
-        )
-      ),
+          <div style={styles.cardContainer}>
+            <div style={{ ...styles.card, ...styles.cardBlue }}>
+              <div>🔩</div>
+              <div>Total Steel Weight</div>
+              <div style={styles.cardValue}>{formatNumber(results.totalSteelKg)} kg ({formatNumber(results.totalSteelMT, 3)} MT)</div>
+            </div>
+            <div style={{ ...styles.card, ...styles.cardLightGreen }}>
+              <div>🧵</div>
+              <div>Binding Wire (GI)</div>
+              <div style={styles.cardValue}>{formatNumber(results.bindingWireKg)} kg</div>
+            </div>
+            <div style={{ ...styles.card, ...styles.cardLightOrange }}>
+              <div>💰</div>
+              <div>Material Subtotal</div>
+              <div style={styles.cardValue}>{formatCurrency(results.costs.materialTotal)}</div>
+            </div>
+            <div style={{ ...styles.card, ...styles.cardLightTeal }}>
+              <div>💎</div>
+              <div>Estimated Grand Total</div>
+              <div style={styles.cardValue}>{formatCurrency(results.costs.grandTotal)}</div>
+            </div>
+          </div>
 
-      React.createElement('div', { style: styles.sectionTitle }, '📦 Rebar Diameter Summary & 12m Commercial Stock Requirement'),
-      React.createElement('div', { style: styles.tableContainer },
-        React.createElement('table', { style: styles.table },
-          React.createElement('thead', null, React.createElement('tr', null,
-            React.createElement('th', { style: styles.th }, 'Diameter'),
-            React.createElement('th', { style: styles.th }, 'Unit Weight (kg/m)'),
-            React.createElement('th', { style: styles.th }, 'Total Length (m)'),
-            React.createElement('th', { style: styles.th }, '12m Stock Bars Req'),
-            React.createElement('th', { style: styles.th }, 'Weight (kg)'),
-            React.createElement('th', { style: styles.th }, 'Weight (MT)')
-          )),
-          React.createElement('tbody', null,
-            dias.map((d: number) => {
-              const info = results.diaSummaryMap[d];
-              if (!info || info.kg <= 0) return null;
-              return React.createElement('tr', { key: d },
-                React.createElement('td', { style: { ...styles.td, fontWeight: 'bold' } }, `${d} mm`),
-                React.createElement('td', { style: styles.td }, formatNumber(kgPerM(d), 3)),
-                React.createElement('td', { style: styles.td }, formatNumber(info.lengthM)),
-                React.createElement('td', { style: styles.td }, `${info.stockBarsReq} nos`),
-                React.createElement('td', { style: styles.td }, formatNumber(info.kg)),
-                React.createElement('td', { style: styles.td }, formatNumber(info.mt, 3))
-              );
-            })
-          )
-        )
-      ),
+          {/* DETAILED BBS SCHEDULE TABLE */}
+          <div style={styles.tableContainer}>
+            <div style={{ padding: '12px 16px', background: '#334155', color: 'white', fontWeight: '800', fontSize: '13px' }}>
+              📋 Detailed Bar Bending Schedule (BBS Table per IS 456 / SP 34)
+            </div>
+            <table style={styles.table}>
+              <thead>
+                <tr>
+                  <th style={styles.th}>Mark</th>
+                  <th style={styles.th}>Bar Description</th>
+                  <th style={styles.th}>Dia</th>
+                  <th style={styles.th}>Shape Code</th>
+                  <th style={styles.th}>Bars/Member</th>
+                  <th style={styles.th}>Total Bars</th>
+                  <th style={styles.th}>Cut Len (m)</th>
+                  <th style={styles.th}>Total Len (m)</th>
+                  <th style={styles.th}>Weight (kg)</th>
+                  <th style={styles.th}>Remarks / Laps</th>
+                </tr>
+              </thead>
+              <tbody>
+                {results.bbsRows.map((r: any, idx: number) => (
+                  <tr key={idx} style={idx % 2 === 1 ? styles.evenRow : undefined}>
+                    <td style={styles.td}><b>{r.barMark}</b></td>
+                    <td style={styles.td}>{r.description}</td>
+                    <td style={styles.td}>{r.dia} mm</td>
+                    <td style={styles.td}>{r.shape}</td>
+                    <td style={styles.td}>{r.barsPerMember}</td>
+                    <td style={styles.td}><b>{r.totalBars}</b></td>
+                    <td style={styles.td}>{formatNumber(r.cuttingLengthM)} m</td>
+                    <td style={styles.td}>{formatNumber(r.totalLengthM)} m</td>
+                    <td style={styles.td}><b>{formatNumber(r.weightKg)} kg</b></td>
+                    <td style={styles.td}><small>{r.remarks}</small></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-      React.createElement('div', { style: styles.sectionTitle }, '💰 Admin Master Rates Cost Estimation'),
-      React.createElement('div', { style: styles.tableContainer },
-        React.createElement('table', { style: styles.table },
-          React.createElement('thead', null, React.createElement('tr', null,
-            React.createElement('th', { style: styles.th }, 'Item / Material'),
-            React.createElement('th', { style: styles.th }, 'Quantity'),
-            React.createElement('th', { style: styles.th }, 'Unit'),
-            React.createElement('th', { style: styles.th }, 'Master Rate'),
-            React.createElement('th', { style: styles.th }, 'Cost')
-          )),
-          React.createElement('tbody', null,
-            React.createElement('tr', null, React.createElement('td', { style: styles.td }, `Base TMT Rebar Steel (${steelGrade})`), React.createElement('td', { style: styles.td }, formatNumber(results.baseKg)), React.createElement('td', { style: styles.td }, 'KG'), React.createElement('td', { style: styles.td }, '-'), React.createElement('td', { style: styles.td }, '-')),
-            React.createElement('tr', { style: styles.evenRow }, React.createElement('td', { style: styles.td }, `Wastage Allowance (${wastage}%)`), React.createElement('td', { style: styles.td }, formatNumber(results.wastageKg)), React.createElement('td', { style: styles.td }, 'KG'), React.createElement('td', { style: styles.td }, '-'), React.createElement('td', { style: styles.td }, '-')),
-            React.createElement('tr', { style: { fontWeight: 'bold' } }, React.createElement('td', { style: styles.td }, 'Total TMT Rebar Steel'), React.createElement('td', { style: styles.td }, `${formatNumber(results.totalSteelKg)} kg (${formatNumber(results.totalSteelMT, 3)} MT)`), React.createElement('td', { style: styles.td }, 'KG'), React.createElement('td', { style: styles.td }, formatCurrency(results.rates.steelRatePerKg)), React.createElement('td', { style: styles.td }, formatCurrency(results.costs.steel))),
-            React.createElement('tr', { style: styles.evenRow }, React.createElement('td', { style: styles.td }, `GI Binding Wire (${bindingWirePercent}%)`), React.createElement('td', { style: styles.td }, formatNumber(results.bindingWireKg)), React.createElement('td', { style: styles.td }, 'KG'), React.createElement('td', { style: styles.td }, formatCurrency(results.rates.bindingWireRatePerKg)), React.createElement('td', { style: styles.td }, formatCurrency(results.costs.bindingWire))),
-            React.createElement('tr', null, React.createElement('td', { style: styles.td }, 'Concrete Cover Blocks'), React.createElement('td', { style: styles.td }, formatNumber(results.coverBlocksCount, 0)), React.createElement('td', { style: styles.td }, 'Nos'), React.createElement('td', { style: styles.td }, formatCurrency(results.rates.coverBlockRatePerPc)), React.createElement('td', { style: styles.td }, formatCurrency(results.costs.coverBlock))),
+          {/* DIAMETER WISE STOCK BAR SUMMARY */}
+          <div style={styles.tableContainer}>
+            <div style={{ padding: '12px 16px', background: '#0f766e', color: 'white', fontWeight: '800', fontSize: '13px' }}>
+              📦 Rebar Diameter Summary & 12m Commercial Stock Requirement
+            </div>
+            <table style={styles.table}>
+              <thead>
+                <tr>
+                  <th style={styles.th}>Diameter</th>
+                  <th style={styles.th}>Unit Weight (kg/m)</th>
+                  <th style={styles.th}>Total Length (m)</th>
+                  <th style={styles.th}>12m Stock Bars Req</th>
+                  <th style={styles.th}>Weight (kg)</th>
+                  <th style={styles.th}>Weight (MT)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(results.diaSummaryMap)
+                  .filter(([_, d]: any) => d.kg > 0)
+                  .map(([dia, data]: any, idx: number) => (
+                    <tr key={dia} style={idx % 2 === 1 ? styles.evenRow : undefined}>
+                      <td style={styles.td}><b>{dia} mm</b></td>
+                      <td style={styles.td}>{formatNumber(kgPerM(Number(dia)), 3)} kg/m</td>
+                      <td style={styles.td}>{formatNumber(data.lengthM)} m</td>
+                      <td style={{ ...styles.td, color: '#16a34a', fontWeight: '800' }}>{data.stockBarsReq} nos</td>
+                      <td style={styles.td}><b>{formatNumber(data.kg)} kg</b></td>
+                      <td style={styles.td}>{formatNumber(data.mt, 3)} MT</td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
 
-            React.createElement('tr', { style: { backgroundColor: '#e8f4f8', fontWeight: 'bold' } }, React.createElement('td', { colSpan: 4, style: styles.td }, 'Material Subtotal'), React.createElement('td', { style: styles.td }, formatCurrency(results.costs.materialTotal))),
-            React.createElement('tr', null, React.createElement('td', { style: styles.td }, 'Labour — Bar Bending, Cutting, Cranking & Fixing'), React.createElement('td', { style: styles.td }, formatNumber(results.totalSteelKg)), React.createElement('td', { style: styles.td }, 'KG'), React.createElement('td', { style: styles.td }, formatCurrency(results.rates.barBendingLabourRatePerKg)), React.createElement('td', { style: styles.td }, formatCurrency(results.costs.labour))),
-            React.createElement('tr', { style: { backgroundColor: '#f0f7f5', fontWeight: 'bold' } }, React.createElement('td', { colSpan: 4, style: styles.td }, 'Labour Subtotal'), React.createElement('td', { style: styles.td }, formatCurrency(results.costs.labour))),
-            React.createElement('tr', { style: { backgroundColor: '#800020', color: 'white', fontWeight: 'bold' } }, React.createElement('td', { colSpan: 4, style: { padding: '8px' } }, 'GRAND TOTAL'), React.createElement('td', { style: { padding: '8px' } }, formatCurrency(results.costs.grandTotal)))
-          )
-        )
-      ),
+          {/* COST ESTIMATE BREAKDOWN TABLE */}
+          <div style={styles.tableContainer}>
+            <div style={{ padding: '12px 16px', background: '#7f1d1d', color: 'white', fontWeight: '800', fontSize: '13px' }}>
+              💰 Admin Master Rates Cost Estimation
+            </div>
+            <table style={styles.table}>
+              <thead>
+                <tr>
+                  <th style={styles.th}>Item / Material</th>
+                  <th style={styles.th}>Quantity</th>
+                  <th style={styles.th}>Unit</th>
+                  <th style={styles.th}>Master Rate</th>
+                  <th style={styles.th}>Cost (INR)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style={styles.td}>Base TMT Rebar Steel ({steelGrade})</td>
+                  <td style={styles.td}>{formatNumber(results.baseKg)}</td>
+                  <td style={styles.td}>KG</td>
+                  <td style={styles.td}>₹{results.rates.steel}/kg</td>
+                  <td style={styles.td}><b>{formatCurrency(results.costs.baseSteel)}</b></td>
+                </tr>
+                <tr style={styles.evenRow}>
+                  <td style={styles.td}>Wastage Allowance ({wastage}%)</td>
+                  <td style={styles.td}>{formatNumber(results.wastageKg)}</td>
+                  <td style={styles.td}>KG</td>
+                  <td style={styles.td}>₹{results.rates.steel}/kg</td>
+                  <td style={styles.td}><b>{formatCurrency(results.costs.wastageSteel)}</b></td>
+                </tr>
+                <tr>
+                  <td style={styles.td}><b>Total TMT Rebar Steel</b></td>
+                  <td style={styles.td}><b>{formatNumber(results.totalSteelKg)} kg ({formatNumber(results.totalSteelMT, 3)} MT)</b></td>
+                  <td style={styles.td}>KG</td>
+                  <td style={styles.td}>₹{results.rates.steel}/kg</td>
+                  <td style={styles.td}><b>{formatCurrency(results.costs.steel)}</b></td>
+                </tr>
+                <tr style={styles.evenRow}>
+                  <td style={styles.td}>GI Binding Wire ({bindingWirePercent}%)</td>
+                  <td style={styles.td}>{formatNumber(results.bindingWireKg)}</td>
+                  <td style={styles.td}>KG</td>
+                  <td style={styles.td}>₹{results.rates.bindingWire}/kg</td>
+                  <td style={styles.td}><b>{formatCurrency(results.costs.bindingWire)}</b></td>
+                </tr>
+                <tr>
+                  <td style={styles.td}>Concrete Cover Blocks</td>
+                  <td style={styles.td}>{results.coverBlocksCount}</td>
+                  <td style={styles.td}>Nos</td>
+                  <td style={styles.td}>₹{results.rates.coverBlock}/pc</td>
+                  <td style={styles.td}><b>{formatCurrency(results.costs.coverBlock)}</b></td>
+                </tr>
+                <tr style={{ backgroundColor: '#e2e8f0', fontWeight: 'bold' }}>
+                  <td colSpan={4} style={styles.td}>MATERIAL SUBTOTAL</td>
+                  <td style={{ ...styles.td, color: '#0369a1', fontSize: '13px' }}>{formatCurrency(results.costs.materialTotal)}</td>
+                </tr>
+                <tr>
+                  <td style={styles.td}>Labour — Bar Bending, Cutting, Cranking & Fixing</td>
+                  <td style={styles.td}>{formatNumber(results.totalSteelKg)}</td>
+                  <td style={styles.td}>KG</td>
+                  <td style={styles.td}>₹{results.rates.barBendingLabour}/kg</td>
+                  <td style={styles.td}><b>{formatCurrency(results.costs.labour)}</b></td>
+                </tr>
+                <tr style={{ backgroundColor: '#f1f5f9', fontWeight: 'bold' }}>
+                  <td colSpan={4} style={styles.td}>LABOUR SUBTOTAL</td>
+                  <td style={{ ...styles.td, color: '#0f766e', fontSize: '13px' }}>{formatCurrency(results.costs.labour)}</td>
+                </tr>
+                <tr style={{ backgroundColor: '#7f1d1d', color: 'white', fontWeight: 'bold' }}>
+                  <td colSpan={4} style={{ padding: '12px' }}>ESTIMATED GRAND TOTAL (MATERIAL + LABOUR)</td>
+                  <td style={{ padding: '12px', fontSize: '14px' }}>{formatCurrency(results.costs.grandTotal)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
-      React.createElement('div', { style: { display: 'flex', gap: '10px', marginTop: '15px' } },
-        React.createElement('button', {
-          onClick: () => {
-            alert('Saved RCC Steel BBS Calculation to Active Project!');
-          },
-          style: { flex: 1, padding: '10px', borderRadius: '6px', border: 0, backgroundColor: '#0f766e', color: 'white', fontWeight: 'bold', cursor: 'pointer' }
-        }, '💾 Save to Project'),
-        React.createElement('button', {
-          onClick: () => {
-            alert('Added Rebar Quantities & BBS to BOQ Line Items!');
-          },
-          style: { flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #0f766e', backgroundColor: 'white', color: '#0f766e', fontWeight: 'bold', cursor: 'pointer' }
-        }, '📋 Add to BOQ')
-      ),
+          <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
+            <button
+              onClick={() => alert(`Saved ${item} Steel BBS Calculation to Active Project!`)}
+              style={{ flex: 1, padding: '12px', borderRadius: '8px', border: 0, backgroundColor: '#0f766e', color: 'white', fontWeight: 'bold', cursor: 'pointer' }}
+            >
+              💾 Save to Project
+            </button>
+            <button
+              onClick={() => alert(`Added ${item} Steel Rebar to BOQ Line Items!`)}
+              style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid #0f766e', backgroundColor: 'white', color: '#0f766e', fontWeight: 'bold', cursor: 'pointer' }}
+            >
+              📋 Add to BOQ
+            </button>
+          </div>
 
-      React.createElement('div', { style: styles.detailsBox },
-        React.createElement('b', null, '📜 Expandable Engineering Explanation & Standards (IS 456:2000 & SP 34:1987)'),
-        React.createElement('div', { style: { marginTop: '6px' } }, '• Rebar Unit Weight Formula: W = d²/162 kg/m (IS 1786 High Yield Strength Deformed Fe500 / Fe550 bars).'),
-        React.createElement('div', null, `• Dynamic Tension Development Length (Ld): Computed per Cl. 26.2.1. For ${steelGrade} in ${concreteGrade}, Ld = ${(calculateDevelopmentLength(16, concreteGrade, steelGrade).ldFactor)}d.`),
-        React.createElement('div', null, '• Geometrical Bent-up Bar Crank Extra: Calculated from angle theta (45° = 0.42D, 30° = 0.27D, 60° = 0.58D) where D = Depth - 2*Cover - BarDia.'),
-        React.createElement('div', null, '• Double Mat Chairs: Calculated as 1 per sq.m for double reinforcement mats only; height = Depth - 2*Cover - 4*BarDia.'),
-        React.createElement('div', null, '• Dynamic Rates loaded live from Admin Master Rates. Displays "Rate Unavailable in Admin Master" when unconfigured.')
-      )
-    )
+          <div style={{ marginTop: '20px', padding: '16px', borderRadius: '10px', border: '1px solid #cbd5e1', backgroundColor: '#ffffff', fontSize: '11px', color: '#334155', lineHeight: '1.6' }}>
+            <b style={{ fontSize: '12px', color: '#7f1d1d' }}>📜 Engineering Explanation & Standards (IS 456:2000 & SP 34:1987):</b>
+            <div style={{ marginTop: '6px' }}>• <b>Rebar Unit Weight Formula:</b> W = d²/162 kg/m (IS 1786 High Yield Strength Deformed Fe500 / Fe550 bars).</div>
+            <div>• <b>Dynamic Tension Development Length (Ld):</b> Computed per Cl. 26.2.1. For Fe500 in M20, Ld = 56.6d.</div>
+            <div>• <b>Geometrical Bent-up Bar Crank Extra:</b> Calculated from angle theta (45° = 0.414D, 30° = 0.268D, 60° = 0.578D) where D = Depth - 2*Cover - BarDia.</div>
+            <div>• <b>Double Mat Chairs:</b> Calculated as 1 per sq.m for double reinforcement mats only; height = Depth - 2*Cover - 4*BarDia.</div>
+            <div>• <b>Dynamic Master Rates:</b> Admin rates fallback to standard market values when unconfigured, preventing Rate Unavailable errors.</div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
+

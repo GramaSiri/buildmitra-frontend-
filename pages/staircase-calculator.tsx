@@ -1,9 +1,13 @@
+import { getCachedBuildMitraMasterRates, fetchBuildMitraMasterRates } from "../utils/buildmitraMasterRates";
+import { getBuildMitraReportHeaderHtml, BUILDMITRA_OFFICIAL_LOGO } from "../utils/buildmitraReportBranding";
 import React, { useState, useEffect, useMemo } from 'react';
 import * as XLSX from 'xlsx';
 import { useRouter } from 'next/router';
 import { usePaymentBarrier } from '../hooks/usePaymentBarrier';
 import MarketRateTrend from '../components/ui/MarketRateTrend';
+import EngineeringSpecimen from '../components/engineering/EngineeringSpecimen';
 import { getMasterRate, syncApprovedRatesFromBackend, MasterRateResult } from "../utils/masterRates";
+import { downloadBuildMitraPDF } from "../utils/pdfExport";
 
 const styles: Record<string, React.CSSProperties> = {
   container: { maxWidth: '1200px', margin: '0 auto', padding: '16px', backgroundColor: '#f8fafc', minHeight: '100vh', boxSizing: 'border-box', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' },
@@ -286,6 +290,31 @@ export default function StaircaseCalculator() {
     };
   }, [inputs, scopeOption, cementRate, steelRate, sandRate, ca20Rate, ca12Rate, wireRate, coverRate, waterRate, shutteringRate, finishRate, railingRate, rccLabourRate]);
 
+  // Export PDF BuildMitra Letterhead
+  const handleExportPDF = () => {
+    checkAndRun('calculator_export', 'staircase-calculator', () => {
+      downloadBuildMitraPDF({
+        documentTitle: `RCC STAIRCASE STRUCTURAL BOQ (${scopeOption.toUpperCase().replace('_', ' ')})`,
+        documentNo: `BM-STR-${Date.now().toString().slice(-6)}`,
+        date: new Date().toISOString().split('T')[0],
+        projectName: `RCC Staircase — ${inputs.floors} Floors`,
+        buyerName: "Client / Buyer",
+        contractorName: "BuildMitra Civil Engineering",
+        items: calcResults.resultItems.map((item, idx) => ({
+          sno: idx + 1,
+          itemCode: item.code,
+          category: item.category,
+          description: item.description,
+          quantity: item.procQty,
+          unit: item.unit,
+          rate: item.rateFound ? item.rate : 0,
+          amount: item.amount
+        })),
+        notes: `Floors: ${inputs.floors} | Risers: ${calcResults.totalRisers} Nos (${inputs.riserIn}" Riser x ${inputs.treadIn}" Tread x ${inputs.widthFt}ft Width) | Concrete Vol: ${formatNumber(calcResults.totalVolCft)} CFT | Grade: ${inputs.grade}`
+      });
+    });
+  };
+
   // Export Excel
   const handleExportExcel = () => {
     checkAndRun('calculator_export', 'staircase-calculator', () => {
@@ -310,25 +339,16 @@ export default function StaircaseCalculator() {
   // Share WhatsApp
   const handleShareWhatsApp = () => {
     checkAndRun('calculator_export', 'staircase-calculator', () => {
-      const msg = `*BuildMitra RCC Staircase Structural Report*%0A` +
-        `*Scope Option*: ${scopeOption === 'both' ? 'Both Concrete & Steel' : scopeOption === 'concrete_only' ? 'Only Concrete & Shuttering' : 'Only Steel Mesh'}` +
-        `----------------------------------------%0A` +
-        `• *Floors*: ${inputs.floors} | *Risers*: ${calcResults.totalRisers} Nos (${inputs.riserIn}" Riser x ${inputs.treadIn}" Tread x ${inputs.widthFt}ft Width)%0A` +
-        `• *Concrete Volume*: ${formatNumber(calcResults.totalVolCft)} CFT (${formatNumber(calcResults.totalVolCum, 3)} CUM)%0A` +
-        (calcResults.hasConcrete ? `• *Cement*: ${formatNumber(calcResults.cementBags)} Bags | *Shuttering*: ${formatNumber(calcResults.shutteringAreaSqft)} Sqft%0A` : '') +
-        (calcResults.hasSteel ? `• *Steel Rebar*: ${formatNumber(calcResults.totalSteelKg)} kg (${inputs.mainDia}mm Main + ${inputs.distDia}mm Dist)%0A` : '') +
-        `• *Finishes & Railing*: ${inputs.finishType} Finish (${formatNumber(calcResults.totalFinishAreaSqft)} Sqft) | ${inputs.railingType} Railing (${formatNumber(calcResults.railingLengthRmt)} RMT)%0A` +
-        `• *Material & Finishes Total*: ${formatCurrency(calcResults.grandMatCost)}%0A` +
-        `• *Labour Total*: ${formatCurrency(calcResults.rccLabourCost)}%0A` +
-        `• *TOTAL ESTIMATED COST*: ${formatCurrency(calcResults.grandTotal)} (${formatCurrency(calcResults.costPerCft)}/CFT)%0A%0A` +
-        `*Generated via BuildMitra Professional Estimator*`;
+      const msg = `🏗️ *BUILDMITRA INFRA — RCC STAIRCASE BOQ REPORT*\nNo:378, Near Gurusidheswra theater, 80 ft Road, JP Nagar, 4th Block, 9th Phase, Bengaluru- 560062 | 📱 +91 76769 42386\n\n*SCOPE*: ${scopeOption === 'both' ? 'Concrete & Steel' : scopeOption === 'concrete_only' ? 'Concrete Only' : 'Steel Only'}\n• *Floors*: ${inputs.floors} | *Risers*: ${calcResults.totalRisers} Nos\n• *Concrete Volume*: ${formatNumber(calcResults.totalVolCft)} CFT (${formatNumber(calcResults.totalVolCum, 3)} CUM)\n• *Steel Rebar*: ${formatNumber(calcResults.totalSteelKg, 1)} kg\n• *Estimated Cost*: ${formatCurrency(calcResults.grandTotal)}\n\n*ITEMIZED BOQ TABLE*\n${calcResults.resultItems.map((it, i) => `${i+1}. [${it.code}] ${it.description} — ${it.procQty} ${it.unit} @ ₹${it.rate} = ₹${it.amount}`).join('\n')}\n\nGenerated via BuildMitra Construction Suite.`;
       window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
     });
   };
 
   return (
     <div style={styles.container}>
-      {/* 1. Header */}
+            <div className="engineering-top-layout">
+        <div className="engineering-top-left">
+{/* 1. Header */}
       <div style={styles.header}>
         <div>
           <button style={styles.backBtn} onClick={() => router.push('/calculators')}>← Back to Calculators</button>
@@ -358,6 +378,35 @@ export default function StaircaseCalculator() {
           <option value="steel_only">⚙️ Only Steel Rebar & Bar Bending Schedule (No Concrete Mix)</option>
         </select>
       </div>
+        </div>
+        <div className="engineering-specimen-top">
+      <EngineeringSpecimen kind="staircase" title="Dynamic Staircase Specimen" material={inputs.finishType} data={{ heightFt: inputs.floorHeight, widthFt: inputs.widthFt, treadIn: inputs.treadIn, riserIn: inputs.riserIn, finishType: inputs.finishType, railingType: inputs.railingType, mainDia: inputs.mainDia, distDia: inputs.distDia, mainSpacingMm: inputs.mainSpacingMm, coverMm: inputs.coverMm, showSteel: calcResults.hasSteel, scopeOption }} />
+        </div>
+      </div>
+      <style jsx>{`
+        .engineering-top-layout {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 260px;
+          gap: 16px;
+          align-items: start;
+          margin-bottom: 18px;
+        }
+        .engineering-top-left { min-width: 0; overflow: hidden; }
+        .engineering-specimen-top {
+          width: 260px;
+          position: sticky;
+          top: 12px;
+          align-self: start;
+          z-index: 2;
+        }
+        @media (max-width: 900px) {
+          .engineering-top-layout { grid-template-columns: 1fr; }
+          .engineering-specimen-top {
+            width: 100%; max-width: 260px; position: static;
+            margin-left: auto; margin-right: auto;
+          }
+        }
+      `}</style>
 
       {/* 4. Detailed Input Form */}
       <div style={styles.stepperCard}>
@@ -655,8 +704,9 @@ export default function StaircaseCalculator() {
         </div>
 
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-          <button style={styles.btnSecondary} onClick={handleExportExcel}>📥 Export BOQ to Excel</button>
-          <button style={styles.btnSuccess} onClick={handleShareWhatsApp}>📲 Share Estimate on WhatsApp</button>
+          <button style={{ backgroundColor: '#0284c7', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' }} onClick={handleExportPDF}>📄 Download in PDF</button>
+          <button style={styles.btnSecondary} onClick={handleExportExcel}>📊 Export in Excel</button>
+          <button style={styles.btnSuccess} onClick={handleShareWhatsApp}>📲 Share on WhatsApp</button>
         </div>
       </div>
     </div>

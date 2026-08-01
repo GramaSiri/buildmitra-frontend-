@@ -1,3 +1,4 @@
+import BuildMitraLogo from "./BuildMitraLogo";
 import React from 'react';
 
 const Letterhead: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => {
@@ -13,7 +14,7 @@ const Letterhead: React.FC<{ title: string; children: React.ReactNode }> = ({ ti
       boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
     }}>
       <div style={{ textAlign: 'center', borderBottom: '2px solid #2563eb', paddingBottom: '16px', marginBottom: '24px' }}>
-        <h1 style={{ margin: 0, color: '#1e3c72' }}>🏗️ BuildMitra</h1>
+        <BuildMitraLogo width={165} style={{ margin: "0 auto" }} />
         <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#4a5570' }}>Construction Intelligence Platform</p>
       </div>
       <h2 style={{ color: '#2c3e50', borderLeft: '4px solid #2563eb', paddingLeft: '12px', marginTop: 0 }}>{title}</h2>
@@ -28,3 +29,4 @@ const Letterhead: React.FC<{ title: string; children: React.ReactNode }> = ({ ti
 };
 
 export default Letterhead;
+

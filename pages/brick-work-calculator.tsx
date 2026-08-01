@@ -3,7 +3,9 @@ import * as XLSX from 'xlsx';
 import { useRouter } from 'next/router';
 import { usePaymentBarrier } from '../hooks/usePaymentBarrier';
 import MarketRateTrend from '../components/ui/MarketRateTrend';
+import EngineeringSpecimen from '../components/engineering/EngineeringSpecimen';
 import { getMasterRate, syncApprovedRatesFromBackend, MasterRateResult } from "../utils/masterRates";
+import { downloadBuildMitraPDF } from "../utils/pdfExport";
 
 const styles: Record<string, React.CSSProperties> = {
   container: { maxWidth: '1200px', margin: '0 auto', padding: '16px', backgroundColor: '#f8fafc', minHeight: '100vh', boxSizing: 'border-box', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' },
@@ -364,6 +366,32 @@ export default function BrickWorkCalculator() {
     };
   }, [detailedInputs, openings, clayBrickRate, concreteBlockRate, aacBlockRate, cementRate, sandRate, waterRate, labourRate]);
 
+  // Export PDF BuildMitra Letterhead
+  const handleExportPDF = () => {
+    checkAndRun('calculator_export', 'brick-work-calculator', () => {
+      const res = calcMode === 'quick' ? quickCalcResults : detailedCalcResults;
+      downloadBuildMitraPDF({
+        documentTitle: `BRICK & BLOCK MASONRY BOQ REPORT (${calcMode.toUpperCase()})`,
+        documentNo: `BM-BRK-${Date.now().toString().slice(-6)}`,
+        date: new Date().toISOString().split('T')[0],
+        projectName: "Masonry Construction",
+        buyerName: "Client / Buyer",
+        contractorName: "BuildMitra Masonry Division",
+        items: res.resultItems.map((item: any, idx: number) => ({
+          sno: idx + 1,
+          itemCode: item.code,
+          category: item.category,
+          description: item.description,
+          quantity: item.procQty,
+          unit: item.unit,
+          rate: item.rateFound ? item.rate : 0,
+          amount: item.amount
+        })),
+        notes: `Net Wall Area: ${formatNumber(res.netWallArea)} Sqft | Masonry Vol: ${formatNumber(res.masonryVolCft)} CFT | Total Blocks: ${formatNumber(res.totalBlocks, 0)} Nos`
+      });
+    });
+  };
+
   // Export Excel
   const handleExportExcel = () => {
     checkAndRun('calculator_export', 'brick-work-calculator', () => {
@@ -390,32 +418,22 @@ export default function BrickWorkCalculator() {
   const handleShareWhatsApp = () => {
     checkAndRun('calculator_export', 'brick-work-calculator', () => {
       const res = calcMode === 'quick' ? quickCalcResults : detailedCalcResults;
-      const msg = `*BuildMitra Block/Brick Work Calculator Report*%0A` +
-        `*Estimation Mode*: ${calcMode === 'quick' ? 'Quick Calculation' : 'Detailed Wall-Wise Calculation'}%0A` +
-        `----------------------------------------%0A` +
-        `• *Net Wall Area*: ${formatNumber(res.netWallArea)} Sqft%0A` +
-        `• *Masonry Volume*: ${formatNumber(res.masonryVolCft)} CFT%0A` +
-        `• *Bricks / Blocks Quantity*: ${formatNumber(res.totalBlocks, 0)} Nos%0A` +
-        `• *Cement (50kg OPC 53)*: ${formatNumber(res.cemBags)} Bags%0A` +
-        `• *M-Sand*: ${formatNumber(res.sandCft)} CFT%0A` +
-        `• *Site Water*: ${formatNumber(res.waterLtr)} Litres%0A` +
-        `• *Material Cost*: ${formatCurrency(res.grandMatCost)}%0A` +
-        `• *Labour Cost*: ${formatCurrency(res.grandLabCost)}%0A` +
-        `• *TOTAL ESTIMATED COST*: ${formatCurrency(res.grandTotal)} (${formatCurrency(res.costPerSqft)}/Sqft)%0A%0A` +
-        `*Generated via BuildMitra Professional Estimator*`;
+      const msg = `🏗️ *BUILDMITRA INFRA — MASONRY BOQ REPORT*\nNo:378, Near Gurusidheswra theater, 80 ft Road, JP Nagar, 4th Block, 9th Phase, Bengaluru- 560062 | 📱 +91 76769 42386\n\n*MODE*: ${calcMode === 'quick' ? 'Quick Plot Area' : 'Detailed Wall-Wise'}\n• *Net Wall Area*: ${formatNumber(res.netWallArea)} Sqft\n• *Masonry Volume*: ${formatNumber(res.masonryVolCft)} CFT\n• *Bricks / Blocks*: ${formatNumber(res.totalBlocks, 0)} Nos\n• *Cement Bags*: ${formatNumber(res.cemBags, 1)} Bags\n• *Estimated Cost*: ${formatCurrency(res.grandTotal)}\n\n*BOQ ITEM BREAKDOWN*\n${res.resultItems.map((it: any, i: number) => `${i+1}. [${it.code}] ${it.description} — ${it.procQty} ${it.unit} @ ₹${it.rate} = ₹${it.amount}`).join('\n')}\n\nGenerated via BuildMitra Construction Suite.`;
       window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
     });
   };
 
   return (
     <div style={styles.container}>
-      {/* 1. Header */}
+            <div className="engineering-top-layout">
+        <div className="engineering-top-left">
+{/* 1. Header */}
       <div style={styles.header}>
         <div>
           <button style={styles.backBtn} onClick={() => router.push('/calculators')}>← Back to Calculators</button>
         </div>
         <h1 style={styles.headerTitle}>
-          🧱 Block/Brick Work Calculator
+          Block/Brick Work Calculator
           <span style={styles.badge}>IS 2212 / IS 2185 Compliant</span>
         </h1>
         <div>
@@ -434,10 +452,39 @@ export default function BrickWorkCalculator() {
           value={calcMode}
           onChange={(e) => setCalcMode(e.target.value as 'quick' | 'detailed')}
         >
-          <option value="quick">⚡ Quick Calculation (Estimate from Plot Dimensions L x W x Floors BUA)</option>
-          <option value="detailed">📐 Detailed Wall-Wise Calculation (Exact Room Dimensions & Openings)</option>
+          <option value="quick">Quick Calculation (Estimate from Plot Dimensions L x W x Floors BUA)</option>
+          <option value="detailed">Detailed Wall-Wise Calculation (Exact Room Dimensions & Openings)</option>
         </select>
       </div>
+        </div>
+        <div className="engineering-specimen-top">
+      <EngineeringSpecimen kind="masonry" title="Dynamic Brick / Block Specimen" material={calcMode === 'quick' ? quickInputs.blockType : detailedInputs.blockType} data={calcMode === 'quick' ? { length: quickInputs.plotLength, heightFt: 10, wallThicknessInches: quickInputs.internalWallSize.includes('4.5') ? 4.5 : quickInputs.internalWallSize.includes('6') ? 6 : 8, mortarThicknessMm: quickInputs.mortarThicknessMm } : { length: detailedInputs.length, heightFt: detailedInputs.height, wallThicknessInches: detailedInputs.wallThicknessInches, mortarThicknessMm: detailedInputs.mortarThicknessMm }} />
+        </div>
+      </div>
+      <style jsx>{`
+        .engineering-top-layout {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 260px;
+          gap: 16px;
+          align-items: start;
+          margin-bottom: 18px;
+        }
+        .engineering-top-left { min-width: 0; overflow: hidden; }
+        .engineering-specimen-top {
+          width: 260px;
+          position: sticky;
+          top: 12px;
+          align-self: start;
+          z-index: 2;
+        }
+        @media (max-width: 900px) {
+          .engineering-top-layout { grid-template-columns: 1fr; }
+          .engineering-specimen-top {
+            width: 100%; max-width: 260px; position: static;
+            margin-left: auto; margin-right: auto;
+          }
+        }
+      `}</style>
 
       {/* ========================================================= */}
       {/* 4. QUICK CALCULATION MODE */}
@@ -446,7 +493,7 @@ export default function BrickWorkCalculator() {
         <>
           <div style={styles.stepperCard}>
             <div style={styles.sectionHeader}>
-              <span>⚡ Quick Calculation (Plot Dimensions & Wall Thickness BUA Rule)</span>
+              <span>Quick Calculation (Plot Dimensions & Wall Thickness BUA Rule)</span>
             </div>
 
             <div style={styles.noteBox}>
@@ -677,8 +724,9 @@ export default function BrickWorkCalculator() {
             </div>
 
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-              <button style={styles.btnSecondary} onClick={handleExportExcel}>📥 Export BOQ to Excel</button>
-              <button style={styles.btnSuccess} onClick={handleShareWhatsApp}>📲 Share Estimate on WhatsApp</button>
+              <button style={{ backgroundColor: '#0284c7', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' }} onClick={handleExportPDF}>📄 Download in PDF</button>
+              <button style={styles.btnSecondary} onClick={handleExportExcel}>📊 Export in Excel</button>
+              <button style={styles.btnSuccess} onClick={handleShareWhatsApp}>📲 Share on WhatsApp</button>
             </div>
           </div>
         </>
@@ -944,8 +992,9 @@ export default function BrickWorkCalculator() {
             </div>
 
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-              <button style={styles.btnSecondary} onClick={handleExportExcel}>📥 Export BOQ to Excel</button>
-              <button style={styles.btnSuccess} onClick={handleShareWhatsApp}>📲 Share Estimate on WhatsApp</button>
+              <button style={{ backgroundColor: '#0284c7', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' }} onClick={handleExportPDF}>📄 Download in PDF</button>
+              <button style={styles.btnSecondary} onClick={handleExportExcel}>📊 Export in Excel</button>
+              <button style={styles.btnSuccess} onClick={handleShareWhatsApp}>📲 Share on WhatsApp</button>
             </div>
           </div>
         </div>

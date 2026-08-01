@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { useRouter } from "next/router";
+import BuildMitraLogo from "../components/branding/BuildMitraLogo";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL ||
@@ -242,7 +243,9 @@ if (!registrationSuccess) return;
   return (
     <main style={styles.page}>
       <section style={styles.card}>
-        <div style={styles.logo}>🏗️ BuildMitra</div>
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: "16px" }}>
+          <BuildMitraLogo width={50} height={50} showText />
+        </div>
         <h1 style={styles.title}>Create Your Account</h1>
         <p style={styles.subtitle}>
           One mobile number can be registered only once.

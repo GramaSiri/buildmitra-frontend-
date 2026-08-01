@@ -23,10 +23,30 @@ const [activeTab, setActiveTab] = useState("dashboard");
   const [newRate, setNewRate] = useState({ skill: "", baseRate: 0, overtimeRate: 0, notes: "" });
 
   const [workers, setWorkers] = useState([
-    { id: 1, name: "Ramesh Kumar", skill: "Mason", dailyWage: 800, mobile: "+919876511111", experience: "5 years", rating: 4.5, status: "Available", projectId: null },
-    { id: 2, name: "Suresh Patel", skill: "Carpenter", dailyWage: 700, mobile: "+919876522222", experience: "4 years", rating: 4.2, status: "Available", projectId: null },
+    { id: 1, name: "Ramesh Kumar", skill: "Mason", dailyWage: 800, mobile: "+919876511111", experience: "5 years", rating: 4.5, status: "Deployed", projectId: 1 },
+    { id: 2, name: "Suresh Patel", skill: "Carpenter", dailyWage: 700, mobile: "+919876522222", experience: "4 years", rating: 4.2, status: "Deployed", projectId: 1 },
     { id: 3, name: "Mahesh Singh", skill: "Helper", dailyWage: 500, mobile: "+919876533333", experience: "2 years", rating: 4.0, status: "Deployed", projectId: 1 },
-    { id: 4, name: "Amit Kumar", skill: "Electrician", dailyWage: 900, mobile: "+919876544444", experience: "6 years", rating: 4.8, status: "Available", projectId: null }
+    { id: 4, name: "Amit Kumar", skill: "Electrician", dailyWage: 900, mobile: "+919876544444", experience: "6 years", rating: 4.8, status: "Deployed", projectId: 1 },
+    { id: 5, name: "Ramesh Kumar", skill: "Helper", dailyWage: 500, mobile: "", experience: "3 years", rating: 4.1, status: "Deployed", projectId: 2 },
+    { id: 6, name: "Suresh Naik", skill: "Helper", dailyWage: 500, mobile: "", experience: "2 years", rating: 4.0, status: "Deployed", projectId: 2 },
+    { id: 7, name: "Mahesh Gowda", skill: "Helper", dailyWage: 500, mobile: "", experience: "3 years", rating: 4.2, status: "Deployed", projectId: 2 },
+    { id: 8, name: "Prakash Shetty", skill: "Helper", dailyWage: 500, mobile: "", experience: "2 years", rating: 4.0, status: "Available", projectId: null },
+    { id: 9, name: "Ravi Patil", skill: "Helper", dailyWage: 500, mobile: "", experience: "1 year", rating: 4.0, status: "Available", projectId: null },
+    { id: 10, name: "Anil Kumar", skill: "Helper", dailyWage: 500, mobile: "", experience: "2 years", rating: 4.1, status: "Available", projectId: null },
+    { id: 11, name: "Santosh Reddy", skill: "Helper", dailyWage: 500, mobile: "", experience: "3 years", rating: 4.3, status: "Available", projectId: null },
+    { id: 12, name: "Kiran Babu", skill: "Helper", dailyWage: 500, mobile: "", experience: "2 years", rating: 4.0, status: "Available", projectId: null },
+    { id: 13, name: "Nagaraj Rao", skill: "Helper", dailyWage: 500, mobile: "", experience: "4 years", rating: 4.4, status: "Available", projectId: null },
+    { id: 14, name: "Shivakumar", skill: "Helper", dailyWage: 500, mobile: "", experience: "2 years", rating: 4.0, status: "Available", projectId: null },
+    { id: 15, name: "Lokesh", skill: "Helper", dailyWage: 500, mobile: "", experience: "1 year", rating: 4.0, status: "Available", projectId: null },
+    { id: 16, name: "Manjunath", skill: "Helper", dailyWage: 500, mobile: "", experience: "3 years", rating: 4.2, status: "Available", projectId: null },
+    { id: 17, name: "Harish", skill: "Helper", dailyWage: 500, mobile: "", experience: "2 years", rating: 4.0, status: "Available", projectId: null },
+    { id: 18, name: "Vinod", skill: "Helper", dailyWage: 500, mobile: "", experience: "2 years", rating: 4.1, status: "Available", projectId: null },
+    { id: 19, name: "Krishna", skill: "Helper", dailyWage: 500, mobile: "", experience: "3 years", rating: 4.2, status: "Available", projectId: null },
+    { id: 20, name: "Raghavendra", skill: "Helper", dailyWage: 500, mobile: "", experience: "4 years", rating: 4.5, status: "Available", projectId: null },
+    { id: 21, name: "Basavaraj", skill: "Helper", dailyWage: 500, mobile: "", experience: "2 years", rating: 4.0, status: "Available", projectId: null },
+    { id: 22, name: "Shankar", skill: "Helper", dailyWage: 500, mobile: "", experience: "3 years", rating: 4.2, status: "Available", projectId: null },
+    { id: 23, name: "Mohan", skill: "Helper", dailyWage: 500, mobile: "", experience: "1 year", rating: 4.0, status: "Available", projectId: null },
+    { id: 24, name: "Deepak", skill: "Helper", dailyWage: 500, mobile: "", experience: "2 years", rating: 4.1, status: "Available", projectId: null }
   ]);
 
   const [attendance, setAttendance] = useState([
@@ -275,6 +295,7 @@ const [activeTab, setActiveTab] = useState("dashboard");
     { id: "dashboard", name: "Dashboard" },
     { id: "workers", name: "Workers" },
     { id: "attendance", name: "Attendance" },
+    { id: "geofence", name: "📍 50m Geofence Punch" },
     { id: "assignments", name: "Assignments" },
     { id: "ratecard", name: "Rate Card" },
     { id: "enquiries", name: "Enquiries" },
@@ -285,9 +306,10 @@ const [activeTab, setActiveTab] = useState("dashboard");
     React.createElement("div", { style: styles.header },
       React.createElement("div", null,
         React.createElement("h1", { style: styles.headerTitle }, "Labour Supply Dashboard"),
-        React.createElement("p", { style: styles.headerSub }, "Manage Workers, Attendance, Assignments & Rates")
+        React.createElement("p", { style: styles.headerSub }, "Manage Workers, 50m Geofence Attendance, Assignments & Rates")
       ),
-      React.createElement("div", { style: { display: "flex", gap: "10px" } },
+      React.createElement("div", { style: { display: "flex", gap: "10px", flexWrap: "wrap" } },
+        React.createElement("button", { onClick: () => window.location.href = "/labour-attendance", style: { backgroundColor: "#16a34a", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: "bold" } }, "📍 50m Geofence Terminal"),
         React.createElement("button", { onClick: () => setActiveTab("dashboard"), style: { ...styles.buttonInfo } }, "Dashboard"),
         React.createElement("button", { onClick: () => setActiveTab("enquiries"), style: { ...styles.buttonSuccess } }, "Enquiries"),
         React.createElement("button", { onClick: () => setActiveTab("enquiries"), style: { ...styles.button } }, "Quotes"),
@@ -417,6 +439,20 @@ const [activeTab, setActiveTab] = useState("dashboard");
             ))
           )
         )
+      )
+    ),
+    activeTab === "geofence" && React.createElement("div", { style: styles.card },
+      React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" } },
+        React.createElement("div", null,
+          React.createElement("h3", { style: { margin: 0, color: "#800020" } }, "📍 Real-Time 50m Geofence Attendance Terminal"),
+          React.createElement("p", { style: { margin: "4px 0 0", fontSize: "12px", color: "#666" } }, "Verify 50m radius GPS punch In/Out across multiple project locations.")
+        ),
+        React.createElement("button", { onClick: () => window.location.href = "/labour-attendance", style: styles.buttonSuccess }, "Open Full Mobile Terminal →")
+      ),
+      React.createElement("div", { style: { padding: "20px", backgroundColor: "#f8fafc", borderRadius: "12px", textAlign: "center", border: "2px dashed #800020" } },
+        React.createElement("h4", { style: { margin: "0 0 10px 0", fontSize: "18px", color: "#0f172a" } }, "📲 Launch Live 50m GPS Geofence Terminal"),
+        React.createElement("p", { style: { margin: "0 0 16px 0", fontSize: "14px", color: "#64748b" } }, "Allows workers and labour suppliers to Punch In/Out within 50m of Peenya, Whitefield, Electronic City or custom project sites."),
+        React.createElement("button", { onClick: () => window.location.href = "/labour-attendance", style: { backgroundColor: "#800020", color: "white", padding: "12px 24px", border: "none", borderRadius: "8px", fontWeight: "bold", fontSize: "15px", cursor: "pointer" } }, "📍 Launch Mobile Terminal Now")
       )
     ),
 

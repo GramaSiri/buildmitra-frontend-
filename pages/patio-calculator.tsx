@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import * as XLSX from 'xlsx';
 import { usePaymentBarrier } from '../hooks/usePaymentBarrier';
+import { downloadBuildMitraPDF } from '../utils/pdfExport';
 import { useRouter } from 'next/router';
 import { useRates } from '../contexts/RateContext';
 
@@ -129,6 +130,24 @@ const router = useRouter();
     router.push('/calculators');
   };
 
+  const handleDownloadPDF = () => {
+    if (!results) return;
+    downloadBuildMitraPDF({
+      documentTitle: 'BuildMitra Patio Slab Estimation Report',
+      items: [
+        { sno: 1, description: 'Patio Concrete Slab', quantity: results.area.sqft, unit: 'SQFT', rate: '', amount: '' },
+        { sno: 2, description: 'Concrete Volume', quantity: results.concrete.volumeCft, unit: 'CFT', rate: '', amount: '' },
+        { sno: 3, description: 'Cement (OPC 53)', quantity: results.concrete.cement, unit: 'BAG', rate: '', amount: results.costs.cement },
+        { sno: 4, description: 'M-Sand', quantity: results.concrete.sandCft, unit: 'CFT', rate: '', amount: results.costs.sand },
+        { sno: 5, description: '20mm Aggregate', quantity: results.concrete.agg20Cft, unit: 'CFT', rate: '', amount: results.costs.agg20 },
+        { sno: 6, description: '12mm Aggregate', quantity: results.concrete.agg12Cft, unit: 'CFT', rate: '', amount: results.costs.agg12 },
+        { sno: 7, description: 'Construction Water', quantity: results.concrete.water, unit: 'LTR', rate: '', amount: results.costs.water },
+        { sno: 8, description: 'Patio Formwork & Concreting Labour', quantity: results.concrete.volumeCum, unit: 'CUM', rate: '', amount: results.costs.labour }
+      ],
+      grandTotal: results.costs.grandTotal
+    });
+  };
+
   const handleExportExcel = () => {
     if (!results) return;
     const data = [
@@ -166,7 +185,7 @@ const router = useRouter();
   return React.createElement('div', { style: styles.container },
     React.createElement('div', { style: styles.header },
       React.createElement('button', { onClick: handleBack, style: styles.backButton }, '←'),
-      React.createElement('h1', { style: styles.headerTitle }, '🏡 Patio Calculator')
+      React.createElement('h1', { style: styles.headerTitle }, 'Patio Calculator')
     ),
     
     React.createElement('div', { style: styles.rateInfo },
@@ -187,8 +206,9 @@ const router = useRouter();
     React.createElement('div', { style: styles.buttonRow },
       React.createElement('button', { onClick: handleGenerate, style: styles.buttonGenerate }, '🔨 Generate'),
       generated && results && React.createElement(React.Fragment, null,
-        React.createElement('button', { onClick: () => checkAndRun('calculator_export', 'patio-calculator', handleExportExcel), style: styles.buttonExport }, '📊 Excel'),
-        React.createElement('button', { onClick: () => checkAndRun('calculator_export', 'patio-calculator', handleWhatsApp), style: styles.buttonWhatsapp }, '💬 Share')
+        React.createElement('button', { onClick: () => checkAndRun('calculator_export', 'patio-calculator', handleDownloadPDF), style: { ...styles.buttonExport, backgroundColor: '#0284c7', color: 'white' } }, '📄 Download in PDF'),
+        React.createElement('button', { onClick: () => checkAndRun('calculator_export', 'patio-calculator', handleExportExcel), style: styles.buttonExport }, '📊 Export in Excel'),
+        React.createElement('button', { onClick: () => checkAndRun('calculator_export', 'patio-calculator', handleWhatsApp), style: styles.buttonWhatsapp }, '📲 Share on WhatsApp')
       )
     ),
     

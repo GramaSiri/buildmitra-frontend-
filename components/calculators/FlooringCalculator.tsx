@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import * as XLSX from 'xlsx';
 import { useRouter } from 'next/router';
 import { usePaymentBarrier } from '../../hooks/usePaymentBarrier';
+import { downloadBuildMitraPDF } from '../../utils/pdfExport';
 import { useRates } from '../../contexts/RateContext';
 import MarketRateTrend from '../ui/MarketRateTrend';
 import { getMasterRate, syncApprovedRatesFromBackend, MasterRateResult } from "../../utils/masterRates";
@@ -813,6 +814,25 @@ export default function FlooringCalculator() {
     };
   }, [rooms]);
 
+  // Download PDF
+  const handleDownloadPDF = () => {
+    checkAndRun('calculator_export', 'flooring-calculator', () => {
+      const res = calcMode === 'quick' ? quickCalcResults : detailedCalcResults;
+      downloadBuildMitraPDF({
+        documentTitle: `BuildMitra Tile & Flooring Estimate (${calcMode.toUpperCase()})`,
+        items: res.resultItems.map((item: any, idx: number) => ({
+          sno: idx + 1,
+          description: `[${item.category}] ${item.description}`,
+          quantity: item.procQty,
+          unit: item.unit,
+          rate: item.rateFound ? item.rate : 0,
+          amount: item.rateFound ? item.amount : 0
+        })),
+        grandTotal: res.grandTotal
+      });
+    });
+  };
+
   // Export Excel
   const handleExportExcel = () => {
     checkAndRun(() => {
@@ -878,7 +898,7 @@ export default function FlooringCalculator() {
           value={calcMode}
           onChange={(e) => setCalcMode(e.target.value as 'quick' | 'detailed')}
         >
-          <option value="quick">⚡ Quick Calculation (Estimate from approximate total area)</option>
+          <option value="quick">Quick Calculation (Estimate from approximate total area)</option>
           <option value="detailed">📐 Detailed Room-Wise Calculation (Room-by-room exact measurements)</option>
         </select>
       </div>
@@ -890,7 +910,7 @@ export default function FlooringCalculator() {
         <>
           <div style={styles.stepperCard}>
             <div style={styles.sectionHeader}>
-              <span>⚡ Quick Calculation Inputs</span>
+              <span>Quick Calculation Inputs</span>
             </div>
 
             <div style={styles.noteBox}>
@@ -1059,7 +1079,7 @@ export default function FlooringCalculator() {
           {/* QUICK RESULTS TABLE */}
           <div style={styles.stepperCard}>
             <div style={styles.sectionHeader}>
-              <span>📊 Quick Calculation Results (Tiles Qty, Ancillary Materials & Labour)</span>
+              <span>Quick Calculation Results (Tiles Qty, Ancillary Materials & Labour)</span>
             </div>
 
             {quickCalcResults.unpricedCount > 0 ? (
@@ -1141,8 +1161,9 @@ export default function FlooringCalculator() {
             </div>
 
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-              <button style={styles.btnSecondary} onClick={handleExportExcel}>📥 Export BOQ to Excel</button>
-              <button style={styles.btnSuccess} onClick={handleShareWhatsApp}>📲 Share Estimate on WhatsApp</button>
+              <button style={{ backgroundColor: '#0284c7', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' }} onClick={handleDownloadPDF}>📄 Download in PDF</button>
+              <button style={styles.btnSecondary} onClick={handleExportExcel}>📊 Export in Excel</button>
+              <button style={styles.btnSuccess} onClick={handleShareWhatsApp}>📲 Share on WhatsApp</button>
             </div>
           </div>
         </>
@@ -1253,7 +1274,7 @@ export default function FlooringCalculator() {
           {/* DETAILED RESULTS TABLE WITH ANCILLARY MATERIALS & LABOUR */}
           <div style={{ marginTop: '16px' }}>
             <div style={styles.sectionHeader}>
-              <span>📊 Detailed Calculation Results (Tiles Qty, Ancillary Materials & Labour)</span>
+              <span>Detailed Calculation Results (Tiles Qty, Ancillary Materials & Labour)</span>
             </div>
 
             {detailedCalcResults.unpricedCount > 0 ? (
@@ -1337,8 +1358,9 @@ export default function FlooringCalculator() {
 
             {/* Action Buttons */}
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-              <button style={styles.btnSecondary} onClick={handleExportExcel}>📥 Export BOQ to Excel</button>
-              <button style={styles.btnSuccess} onClick={handleShareWhatsApp}>📲 Share Estimate on WhatsApp</button>
+              <button style={{ backgroundColor: '#0284c7', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' }} onClick={handleDownloadPDF}>📄 Download in PDF</button>
+              <button style={styles.btnSecondary} onClick={handleExportExcel}>📊 Export in Excel</button>
+              <button style={styles.btnSuccess} onClick={handleShareWhatsApp}>📲 Share on WhatsApp</button>
             </div>
           </div>
         </div>

@@ -1,3 +1,5 @@
+import { getCachedBuildMitraMasterRates, fetchBuildMitraMasterRates } from "../utils/buildmitraMasterRates";
+import { getBuildMitraReportHeaderHtml, BUILDMITRA_OFFICIAL_LOGO } from "../utils/buildmitraReportBranding";
 import React, { useState } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
@@ -10,7 +12,7 @@ export default function ReportsPage() {
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
 
   const reportCategories = [
-    { id: "boq", name: "📋 BOQ Statements (6 Modules)", desc: "Civil, Interior, Plumbing, Electrical, Painting, False Ceiling estimates with material & labour breakups." },
+    { id: "boq", name: "📋 BOQ Statements (7 Modules)", desc: "Civil, PEB Building, Interior, Plumbing, Electrical, Painting, False Ceiling estimates with material & labour breakups." },
     { id: "calculators", name: "📐 19 Technical Calculator Summaries", desc: "Concrete, Steel rebar schedule, Brickwork, Plaster, Tile, RCC Slab, Columns, Beams, Footing, Staircase." },
     { id: "layouts", name: "🏠 Floor Plans & FMB Plot Drawings", desc: "FMB polygon plot coordinates, setback schedules, room dimension summaries, and structural grid points." },
     { id: "pricing", name: "💰 1000 sqft Master Rate Sheet", desc: "Standardized Bengaluru material & labor unit rates for turnkey construction costing." },

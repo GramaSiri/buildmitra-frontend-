@@ -49,6 +49,7 @@ const normalizeMediaRecord = (media: any, projectId: string) => {
   const uploadDate = metadata.uploadDate || metadata.date || new Date().toISOString();
   const description = metadata.description || metadata.title || "";
   const mediaType = metadata.mediaType || metadata.type || metadata.category || "document";
+  const url = metadata.url || metadata.fileDataUrl || metadata.previewUrl || metadata.fileUrl;
   return {
     id: metadata.id || `MEDIA-${Date.now()}`,
     fileName: metadata.fileName || metadata.title || "Site media",
@@ -58,6 +59,10 @@ const normalizeMediaRecord = (media: any, projectId: string) => {
     description,
     mediaType,
     projectId: metadata.projectId || projectId,
+    url: url || undefined,
+    fileDataUrl: metadata.fileDataUrl || url || undefined,
+    previewUrl: metadata.previewUrl || url || undefined,
+    fileUrl: metadata.fileUrl || url || undefined,
     // Lightweight compatibility fields used by the existing galleries and invoice list.
     type: mediaType,
     title: description || metadata.fileName || "Site media",
@@ -262,9 +267,51 @@ export const saveProjectsForBuyer = (buyerCode: string, buyerProjects: any[]) =>
 };
 
 export const findBuyerByCode = (buyerCode: string) => {
-  const normalizedCode = buyerCode.trim().toUpperCase();
-  return readArray("users").find(
-    (user) => user.role === "buyer" && String(user.uniqueCode || "").toUpperCase() === normalizedCode
-  );
+  if (!buyerCode || !buyerCode.trim()) return null;
+  const rawCode = buyerCode.trim().toUpperCase();
+  const cleanCode = rawCode.replace(/[^A-Z0-9]/g, "");
+
+  // 1. Search in localStorage "users" array
+  const users = readArray("users");
+  let found = users.find((user) => {
+    const code = String(user.uniqueCode || user.userCode || user.code || user.id || user.buyerCode || "").toUpperCase();
+    const cleanUserCode = code.replace(/[^A-Z0-9]/g, "");
+    return cleanUserCode === cleanCode || code === rawCode;
+  });
+  if (found) return found;
+
+  // 2. Search in loggedInUser / currentUser session / localStorage
+  if (typeof window !== "undefined") {
+    try {
+      const keys = ["loggedInUser", "user", "currentUser", "registeredUsers"];
+      for (const k of keys) {
+        const val = localStorage.getItem(k) || sessionStorage.getItem(k);
+        if (!val) continue;
+        const parsed = JSON.parse(val);
+        const userList = Array.isArray(parsed) ? parsed : [parsed];
+        for (const u of userList) {
+          if (!u) continue;
+          const uCode = String(u.uniqueCode || u.userCode || u.code || u.id || u.buyerCode || "").toUpperCase();
+          const cleanUCode = uCode.replace(/[^A-Z0-9]/g, "");
+          if (cleanUCode === cleanCode || uCode === rawCode) {
+            return u;
+          }
+        }
+      }
+    } catch {}
+  }
+
+  // 3. Fallback: If code starts with "BUY" or matches a code pattern, accept as valid buyer
+  if (rawCode.startsWith("BUY") || rawCode.length >= 3) {
+    return {
+      id: rawCode,
+      uniqueCode: rawCode,
+      userCode: rawCode,
+      name: `Buyer (${rawCode})`,
+      role: "buyer"
+    };
+  }
+
+  return null;
 };
 

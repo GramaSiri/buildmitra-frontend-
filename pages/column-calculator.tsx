@@ -1,7 +1,10 @@
+import { getCachedBuildMitraMasterRates, fetchBuildMitraMasterRates } from "../utils/buildmitraMasterRates";
+import { getBuildMitraReportHeaderHtml, BUILDMITRA_OFFICIAL_LOGO } from "../utils/buildmitraReportBranding";
 import React, { useState, useEffect, useMemo } from 'react';
 import * as XLSX from 'xlsx';
 import { useRouter } from 'next/router';
 import { usePaymentBarrier } from '../hooks/usePaymentBarrier';
+import { downloadBuildMitraPDF } from '../utils/pdfExport';
 import MarketRateTrend from '../components/ui/MarketRateTrend';
 import { getMasterRate, syncApprovedRatesFromBackend, MasterRateResult } from "../utils/masterRates";
 
@@ -12,11 +15,11 @@ const styles: Record<string, React.CSSProperties> = {
   badge: { backgroundColor: '#a51d36', color: '#ffffff', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: '700' },
   backBtn: { backgroundColor: 'rgba(255,255,255,0.15)', border: 'none', color: 'white', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '600' },
 
-  dropdownCard: { backgroundColor: '#ffffff', borderRadius: '10px', border: '1px solid #cbd5e1', padding: '16px', marginBottom: '18px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' },
+  dropdownCard: { backgroundColor: '#eef3f8', borderRadius: '10px', border: '1px solid #94a3b8', padding: '16px', marginBottom: '18px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' },
   dropdownLabel: { fontSize: '12px', fontWeight: '800', color: '#800020', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '6px', display: 'block' },
   modeSelect: { width: '100%', padding: '12px 14px', border: '2px solid #800020', borderRadius: '8px', fontSize: '15px', fontWeight: '700', color: '#800020', backgroundColor: '#fff5f7', outline: 'none', cursor: 'pointer' },
 
-  stepperCard: { backgroundColor: '#ffffff', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '18px', marginBottom: '18px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' },
+  stepperCard: { backgroundColor: '#eef3f8', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '18px', marginBottom: '18px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' },
   sectionHeader: { fontSize: '15px', fontWeight: '700', color: '#800020', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '2px solid #fecdd3', paddingBottom: '8px' },
 
   grid3: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px', marginBottom: '14px' },
@@ -24,8 +27,8 @@ const styles: Record<string, React.CSSProperties> = {
 
   fieldGroup: { display: 'flex', flexDirection: 'column', gap: '4px' },
   label: { fontSize: '11px', fontWeight: '700', color: '#334155', textTransform: 'uppercase', letterSpacing: '0.3px' },
-  input: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#fff', outline: 'none' },
-  select: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', backgroundColor: '#fff', outline: 'none' },
+  input: { width: '100%', padding: '9px 12px', border: '1px solid #94a3b8', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#fff', outline: 'none' },
+  select: { width: '100%', padding: '9px 12px', border: '1px solid #94a3b8', borderRadius: '6px', fontSize: '13px', backgroundColor: '#fff', outline: 'none' },
 
   btnPrimary: { backgroundColor: '#800020', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '6px' },
   btnSecondary: { backgroundColor: '#2563eb', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' },
@@ -50,7 +53,7 @@ const styles: Record<string, React.CSSProperties> = {
   rateTagWarn: { backgroundColor: '#fff7ed', color: '#c2410c', border: '1px solid #ffedd5', padding: '2px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: '700' },
 
   warnBanner: { backgroundColor: '#fff7ed', border: '1px solid #fdba74', color: '#9a3412', padding: '12px', borderRadius: '8px', marginBottom: '16px', fontSize: '12px', fontWeight: '600' },
-  noteBox: { backgroundColor: '#fff5f7', border: '1px solid #fecdd3', padding: '12px', borderRadius: '8px', fontSize: '12px', color: '#800020', marginBottom: '14px' }
+  noteBox: { backgroundColor: '#fff5f7', border: '1px solid #fecdd3', padding: '12px', borderRadius: '8px', fontSize: '13px', color: '#7f1d1d', marginBottom: '14px' }
 };
 
 const formatCurrency = (val: number | null | undefined): string => {
@@ -62,6 +65,282 @@ const formatNumber = (val: number | null | undefined, decimals = 2): string => {
   if (val === null || val === undefined || isNaN(val)) return "0";
   return val.toLocaleString('en-IN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 };
+
+
+type ColumnSpecimenProps = {
+  heightFt: number;
+  widthIn: number;
+  depthIn: number;
+  grade: string;
+  cornerDia: number;
+  cornerNos: number;
+  middleDia: number;
+  middleNos: number;
+  tieDia: number;
+  tieSpacingMm: number;
+  coverMm: number;
+  showConcrete: boolean;
+  showSteel: boolean;
+};
+
+function ColumnSpecimen(props: ColumnSpecimenProps) {
+  const heightFt = Math.max(Number(props.heightFt) || 1, 1);
+  const widthIn = Math.max(Number(props.widthIn) || 1, 1);
+  const depthIn = Math.max(Number(props.depthIn) || 1, 1);
+
+  const visualHeight = Math.min(155, Math.max(75, 65 + heightFt * 7));
+  const visualWidth = Math.min(82, Math.max(45, widthIn * 5));
+  const visualDepth = Math.min(34, Math.max(17, depthIn * 2.5));
+
+  const x = 120;
+  const bottom = 188;
+  const top = bottom - visualHeight;
+  const left = x - visualWidth / 2;
+  const right = x + visualWidth / 2;
+
+  const spacing = Math.max(Number(props.tieSpacingMm) || 150, 50);
+  const tieCount = Math.min(
+    10,
+    Math.max(3, Math.round((heightFt * 304.8) / spacing))
+  );
+
+  return (
+    <div
+      style={{
+        width: '100%',
+        maxWidth: '260px',
+        marginLeft: 'auto',
+        padding: '10px',
+        backgroundColor: '#eef3f8',
+        border: '1px solid #94a3b8',
+        borderRadius: '10px',
+        boxShadow: '0 3px 10px rgba(15,23,42,0.16)',
+        boxSizing: 'border-box'
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '4px'
+        }}
+      >
+        <strong style={{ fontSize: '13px', color: '#7f1d1d' }}>
+          Dynamic Column Specimen
+        </strong>
+
+        <span
+          style={{
+            fontSize: '9px',
+            fontWeight: '700',
+            color: '#475569',
+            backgroundColor: '#f1f5f9',
+            padding: '3px 7px',
+            borderRadius: '10px'
+          }}
+        >
+          3D ISOMETRIC
+        </span>
+      </div>
+
+      <svg
+        viewBox="0 0 300 225"
+        width="100%"
+        height="195"
+        style={{ display: 'block' }}
+      >
+        <defs>
+          <marker
+            id="column-dimension-arrow"
+            markerWidth="7"
+            markerHeight="7"
+            refX="3.5"
+            refY="3.5"
+            orient="auto-start-reverse"
+          >
+            <path d="M0,0 L7,3.5 L0,7 Z" fill="#334155" />
+          </marker>
+        </defs>
+
+        <line
+          x1="35"
+          y1={bottom + 10}
+          x2="250"
+          y2={bottom + 10}
+          stroke="#94a3b8"
+          strokeWidth="1.5"
+        />
+
+        <polygon
+          points={`${left},${top} ${right},${top} ${right},${bottom} ${left},${bottom}`}
+          fill={props.showConcrete ? '#cbd5e1' : '#f8fafc'}
+          fillOpacity={props.showConcrete ? 0.9 : 0.4}
+          stroke="#334155"
+          strokeWidth="1.5"
+        />
+
+        <polygon
+          points={`${right},${top} ${right + visualDepth},${top - visualDepth * 0.48} ${right + visualDepth},${bottom - visualDepth * 0.48} ${right},${bottom}`}
+          fill={props.showConcrete ? '#94a3b8' : '#e2e8f0'}
+          fillOpacity={props.showConcrete ? 0.9 : 0.4}
+          stroke="#334155"
+          strokeWidth="1.5"
+        />
+
+        <polygon
+          points={`${left},${top} ${left + visualDepth},${top - visualDepth * 0.48} ${right + visualDepth},${top - visualDepth * 0.48} ${right},${top}`}
+          fill={props.showConcrete ? '#f1f5f9' : '#ffffff'}
+          stroke="#334155"
+          strokeWidth="1.5"
+        />
+
+        {props.showSteel && (
+          <>
+            <line
+              x1={left + 8}
+              y1={top + 5}
+              x2={left + 8}
+              y2={bottom - 5}
+              stroke="#b91c1c"
+              strokeWidth="3"
+            />
+
+            <line
+              x1={right - 8}
+              y1={top + 5}
+              x2={right - 8}
+              y2={bottom - 5}
+              stroke="#b91c1c"
+              strokeWidth="3"
+            />
+
+            <line
+              x1={right + visualDepth - 7}
+              y1={top - visualDepth * 0.48 + 6}
+              x2={right + visualDepth - 7}
+              y2={bottom - visualDepth * 0.48 - 5}
+              stroke="#b91c1c"
+              strokeWidth="3"
+            />
+
+            {Array.from({ length: tieCount }).map((_, index) => {
+              const ratio = tieCount === 1 ? 0 : index / (tieCount - 1);
+              const tieY = bottom - 8 - ratio * (visualHeight - 16);
+
+              return (
+                <polyline
+                  key={index}
+                  points={`${left + 5},${tieY} ${right - 5},${tieY} ${right + visualDepth - 5},${tieY - visualDepth * 0.48}`}
+                  fill="none"
+                  stroke="#15803d"
+                  strokeWidth="1.3"
+                  strokeDasharray="3 2"
+                />
+              );
+            })}
+          </>
+        )}
+
+        <line
+          x1={left - 23}
+          y1={top}
+          x2={left - 23}
+          y2={bottom}
+          stroke="#334155"
+          markerStart="url(#column-dimension-arrow)"
+          markerEnd="url(#column-dimension-arrow)"
+        />
+
+        <text
+          x={left - 31}
+          y={(top + bottom) / 2}
+          textAnchor="middle"
+          transform={`rotate(-90 ${left - 31} ${(top + bottom) / 2})`}
+          fill="#0f172a"
+          fontSize="11"
+          fontWeight="700"
+        >
+          H = {heightFt} ft
+        </text>
+
+        <line
+          x1={left}
+          y1={bottom + 25}
+          x2={right}
+          y2={bottom + 25}
+          stroke="#334155"
+          markerStart="url(#column-dimension-arrow)"
+          markerEnd="url(#column-dimension-arrow)"
+        />
+
+        <text
+          x={x}
+          y={bottom + 42}
+          textAnchor="middle"
+          fill="#0f172a"
+          fontSize="11"
+          fontWeight="700"
+        >
+          W = {widthIn}"
+        </text>
+
+        <text
+          x={right + visualDepth + 8}
+          y={bottom - visualDepth * 0.48}
+          fill="#0f172a"
+          fontSize="11"
+          fontWeight="700"
+        >
+          D = {depthIn}"
+        </text>
+
+        <rect
+          x="198"
+          y="23"
+          width="94"
+          height="122"
+          rx="7"
+          fill="#ffffff"
+          fillOpacity="0.94"
+          stroke="#cbd5e1"
+        />
+
+        <text x="205" y="38" fill="#7f1d1d" fontSize="11" fontWeight="700">
+          {props.grade}
+        </text>
+
+        {props.showSteel && (
+          <>
+            <text x="205" y="57" fill="#b91c1c" fontSize="10" fontWeight="700">
+              Main bars
+            </text>
+
+            <text x="205" y="71" fill="#334155" fontSize="10">
+              {props.cornerNos} x {props.cornerDia} mm
+            </text>
+
+            <text x="205" y="84" fill="#334155" fontSize="10">
+              {props.middleNos} x {props.middleDia} mm
+            </text>
+
+            <text x="205" y="103" fill="#15803d" fontSize="10" fontWeight="700">
+              Ties {props.tieDia} mm
+            </text>
+
+            <text x="205" y="116" fill="#334155" fontSize="10">
+              @ {props.tieSpacingMm} mm
+            </text>
+
+            <text x="205" y="135" fill="#334155" fontSize="10">
+              Cover {props.coverMm} mm
+            </text>
+          </>
+        )}
+      </svg>
+    </div>
+  );
+}
 
 export default function ColumnCalculator() {
   const router = useRouter();
@@ -250,6 +529,24 @@ export default function ColumnCalculator() {
     };
   }, [inputs, scopeOption, cementRate, steelRate, sandRate, ca20Rate, ca12Rate, wireRate, coverRate, waterRate, shutteringBoxRate, rccLabourRate]);
 
+  // Download PDF
+  const handleDownloadPDF = () => {
+    checkAndRun('calculator_export', 'column-calculator', () => {
+      downloadBuildMitraPDF({
+        documentTitle: `BuildMitra Column Structural Estimate (${scopeOption})`,
+        items: calcResults.resultItems.map((item: any, idx: number) => ({
+          sno: idx + 1,
+          description: `[${item.category}] ${item.description}`,
+          quantity: item.procQty,
+          unit: item.unit,
+          rate: item.rateFound ? item.rate : 0,
+          amount: item.rateFound ? item.amount : 0
+        })),
+        grandTotal: calcResults.grandTotal
+      });
+    });
+  };
+
   // Export Excel
   const handleExportExcel = () => {
     checkAndRun('calculator_export', 'column-calculator', () => {
@@ -291,36 +588,149 @@ export default function ColumnCalculator() {
 
   return (
     <div style={styles.container}>
-      {/* 1. Header */}
-      <div style={styles.header}>
-        <div>
-          <button style={styles.backBtn} onClick={() => router.push('/calculators')}>← Back to Calculators</button>
+      {/* Top Header, Live Rates, Scope and Dynamic Specimen */}
+      <div className="column-top-layout">
+
+        <div className="column-top-left">
+
+          {/* 1. Header */}
+          <div
+            style={{
+              ...styles.header,
+              justifyContent: 'flex-start',
+              gap: '16px',
+              marginBottom: '12px'
+            }}
+          >
+            <button
+              style={styles.backBtn}
+              onClick={() => router.push('/calculators')}
+            >
+              ← Back to Calculators
+            </button>
+
+            <h1
+              style={{
+                ...styles.headerTitle,
+                flex: 1,
+                minWidth: 0,
+                flexWrap: 'wrap'
+              }}
+            >
+              🏛️ RCC Column Structural & Formwork Box Calculator
+
+              <span style={styles.badge}>
+                IS 456 Column Bar Schedule
+              </span>
+            </h1>
+          </div>
+
+          {/* 2. Live Market Rates restricted to left area */}
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '100%',
+              overflow: 'hidden',
+              marginBottom: '12px'
+            }}
+          >
+            <MarketRateTrend />
+          </div>
+
+          {/* 3. Scope Option Dropdown */}
+          <div
+            style={{
+              ...styles.dropdownCard,
+              marginBottom: 0
+            }}
+          >
+            <label style={styles.dropdownLabel}>
+              Select Scope Option
+            </label>
+
+            <select
+              style={styles.modeSelect}
+              value={scopeOption}
+              onChange={(e) =>
+                setScopeOption(
+                  e.target.value as
+                    | 'both'
+                    | 'concrete_only'
+                    | 'steel_only'
+                )
+              }
+            >
+              <option value="both">
+                🔵 Both Concrete Materials & Steel Rebar
+              </option>
+
+              <option value="concrete_only">
+                🧱 Only Concrete Materials & Shuttering Box
+              </option>
+
+              <option value="steel_only">
+                ⚙️ Only Steel Rebar & Bar Bending Schedule
+              </option>
+            </select>
+          </div>
         </div>
-        <h1 style={styles.headerTitle}>
-          🏛️ RCC Column Structural & Formwork Box Calculator
-          <span style={styles.badge}>IS 456 Column Bar Schedule</span>
-        </h1>
-        <div>
-          <span style={{ fontSize: '11px', color: '#fecdd3' }}>BuildMitra Professional Edition</span>
+
+        {/* Fixed top-right dynamic specimen */}
+        <div className="column-specimen-top">
+          <ColumnSpecimen
+            heightFt={inputs.heightFt}
+            widthIn={inputs.widthIn}
+            depthIn={inputs.depthIn}
+            grade={inputs.grade}
+            cornerDia={inputs.cornerDia}
+            cornerNos={inputs.cornerNos}
+            middleDia={inputs.middleDia}
+            middleNos={inputs.middleNos}
+            tieDia={inputs.tieDia}
+            tieSpacingMm={inputs.tieSpacingMm}
+            coverMm={inputs.coverMm}
+            showConcrete={calcResults.hasConcrete}
+            showSteel={calcResults.hasSteel}
+          />
         </div>
       </div>
 
-      {/* 2. Single Live Market Rate Ticker */}
-      <MarketRateTrend />
+      <style jsx>{`
+        .column-top-layout {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 260px;
+          gap: 16px;
+          align-items: start;
+          margin-bottom: 18px;
+        }
 
-      {/* 3. Scope Option Dropdown Selector */}
-      <div style={styles.dropdownCard}>
-        <label style={styles.dropdownLabel}>Select Scope Option</label>
-        <select
-          style={styles.modeSelect}
-          value={scopeOption}
-          onChange={(e) => setScopeOption(e.target.value as 'both' | 'concrete_only' | 'steel_only')}
-        >
-          <option value="both">🔵 Both Concrete Materials & Steel Rebar (Complete RCC Column)</option>
-          <option value="concrete_only">🧱 Only Concrete Materials & Shuttering Box (No Steel Rebar)</option>
-          <option value="steel_only">⚙️ Only Steel Rebar & Bar Bending Schedule (No Concrete Mix)</option>
-        </select>
-      </div>
+        .column-top-left {
+          min-width: 0;
+          overflow: hidden;
+        }
+
+        .column-specimen-top {
+          width: 260px;
+          position: sticky;
+          top: 12px;
+          align-self: start;
+          z-index: 2;
+        }
+
+        @media (max-width: 900px) {
+          .column-top-layout {
+            grid-template-columns: 1fr;
+          }
+
+          .column-specimen-top {
+            width: 100%;
+            max-width: 260px;
+            position: static;
+            margin-left: auto;
+            margin-right: auto;
+          }
+        }
+      `}</style>
 
       {/* 4. Detailed Input Form */}
       <div style={styles.stepperCard}>
@@ -566,10 +976,15 @@ export default function ColumnCalculator() {
         </div>
 
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-          <button style={styles.btnSecondary} onClick={handleExportExcel}>📥 Export BOQ to Excel</button>
-          <button style={styles.btnSuccess} onClick={handleShareWhatsApp}>📲 Share Estimate on WhatsApp</button>
+          <button style={{ backgroundColor: '#0284c7', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' }} onClick={handleDownloadPDF}>📄 Download in PDF</button>
+          <button style={styles.btnSecondary} onClick={handleExportExcel}>📊 Export in Excel</button>
+          <button style={styles.btnSuccess} onClick={handleShareWhatsApp}>📲 Share on WhatsApp</button>
         </div>
       </div>
     </div>
   );
 }
+
+
+
+

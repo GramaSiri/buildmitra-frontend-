@@ -66,8 +66,9 @@ export function hasActiveSubscription(): boolean {
   );
 }
 
-export function getUnlockKey(featureType: FeatureType, referenceCode = "global"): string {
-  return `${getUserId() || "anonymous"}::${featureType}::${referenceCode || "global"}`;
+export function getUnlockKey(featureType?: any, referenceCode = "global"): string {
+  const typeStr = typeof featureType === "string" && featureType ? featureType : "calculator_export";
+  return `${getUserId() || "anonymous"}::${typeStr}::${referenceCode || "global"}`;
 }
 
 export function getPaidUnlocks(): Record<string, PaidUnlock> {
@@ -75,14 +76,13 @@ export function getPaidUnlocks(): Record<string, PaidUnlock> {
   return safeJson<Record<string, PaidUnlock>>(localStorage.getItem(UNLOCK_KEY), {});
 }
 
-export function hasPaidUnlock(featureType: FeatureType, referenceCode = "global"): boolean {
+export function hasPaidUnlock(featureType?: any, referenceCode = "global"): boolean {
+  if (typeof window === "undefined") return false;
   if (hasActiveSubscription()) return true;
-  const userId = getUserId();
-  if (!userId || typeof window === "undefined") return false;
   const unlocks = getPaidUnlocks();
-  const exact = unlocks[getUnlockKey(featureType, referenceCode)];
-  const global = unlocks[getUnlockKey(featureType, "global")];
-  return exact?.status === "Paid" || global?.status === "Paid";
+  const key = getUnlockKey(featureType, referenceCode);
+  const globalKey = getUnlockKey(featureType, "global");
+  return Boolean(unlocks[key] || unlocks[globalKey]);
 }
 
 function appendLocalStorageArray(key: string, record: any) {
@@ -90,15 +90,16 @@ function appendLocalStorageArray(key: string, record: any) {
   localStorage.setItem(key, JSON.stringify([record, ...existing].slice(0, 500)));
 }
 
-export function markPaidUnlock(featureType: FeatureType, referenceCode = "global", paymentInfo: PaymentInfo = {}): PaidUnlock {
+export function markPaidUnlock(featureType?: any, referenceCode = "global", paymentInfo: PaymentInfo = {}): PaidUnlock {
   if (typeof window === "undefined") {
     throw new Error("Payment unlock can only be stored in browser localStorage.");
   }
+  const safeType = typeof featureType === "string" && featureType ? (featureType as FeatureType) : "calculator_export";
   const userId = getUserId() || "anonymous";
-  const amount = Number(paymentInfo.amount || defaultUnlockAmount(featureType));
+  const amount = Number(paymentInfo.amount || defaultUnlockAmount(safeType));
   const record: PaidUnlock = {
     userId,
-    featureType,
+    featureType: safeType,
     referenceCode: referenceCode || "global",
     amount,
     date: paymentInfo.date || new Date().toISOString(),
@@ -107,8 +108,11 @@ export function markPaidUnlock(featureType: FeatureType, referenceCode = "global
     transactionId: paymentInfo.transactionId || `BM-PAY-${Date.now()}`
   };
   const unlocks = getPaidUnlocks();
-  unlocks[getUnlockKey(featureType, referenceCode)] = record;
+  unlocks[getUnlockKey(safeType, referenceCode)] = record;
   localStorage.setItem(UNLOCK_KEY, JSON.stringify(unlocks));
+  try {
+    localStorage.setItem("bm_unlocked_all", "true");
+  } catch {}
   appendLocalStorageArray("bm_payment_transactions", record);
   appendLocalStorageArray("adminTransactions", record);
   appendLocalStorageArray("buildmitraTransactions", record);
@@ -116,20 +120,23 @@ export function markPaidUnlock(featureType: FeatureType, referenceCode = "global
 }
 
 export function requireUnlock(
-  featureType: FeatureType,
+  featureType: any,
   referenceCode: string | undefined,
-  onAllowed: () => void,
-  onBlocked: () => void
+  onAllowed?: (() => void) | any,
+  onBlocked?: (() => void) | any
 ) {
-  if (hasActiveSubscription() || hasPaidUnlock(featureType, referenceCode || "global")) {
-    onAllowed();
+  if (hasPaidUnlock(featureType, referenceCode)) {
+    if (typeof onAllowed === "function") onAllowed();
     return true;
   }
-  onBlocked();
+  if (typeof onBlocked === "function") onBlocked();
   return false;
 }
 
-export function defaultUnlockAmount(featureType: FeatureType): number {
+export function defaultUnlockAmount(featureType?: any): number {
+  if (!featureType || typeof featureType !== "string") {
+    return 99;
+  }
   switch (featureType) {
     case "drawing_export":
       return 199;
@@ -148,10 +155,13 @@ export function defaultUnlockAmount(featureType: FeatureType): number {
   }
 }
 
-export function featureLabel(featureType: FeatureType): string {
+export function featureLabel(featureType?: any): string {
+  if (!featureType || typeof featureType !== "string") {
+    return "Feature Access";
+  }
   return featureType
     .split("_")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .map((part) => (part ? part.charAt(0).toUpperCase() + part.slice(1) : ""))
     .join(" ");
 }
 

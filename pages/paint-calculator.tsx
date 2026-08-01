@@ -2,7 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import * as XLSX from 'xlsx';
 import { useRouter } from 'next/router';
 import { usePaymentBarrier } from '../hooks/usePaymentBarrier';
+import { downloadBuildMitraPDF } from '../utils/pdfExport';
 import MarketRateTrend from '../components/ui/MarketRateTrend';
+import EngineeringSpecimen from '../components/engineering/EngineeringSpecimen';
 import { getMasterRate, syncApprovedRatesFromBackend, MasterRateResult } from "../utils/masterRates";
 
 const styles: Record<string, React.CSSProperties> = {
@@ -509,6 +511,25 @@ export default function PaintCalculator() {
     };
   }, [detailedInputs, openings, specialPaints, puttyRate, primerRate, labourRate, enamelRate]);
 
+  // Download PDF
+  const handleDownloadPDF = () => {
+    checkAndRun('calculator_export', 'paint-calculator', () => {
+      const res = calcMode === 'quick' ? quickCalcResults : detailedCalcResults;
+      downloadBuildMitraPDF({
+        documentTitle: `BuildMitra Paint Calculator Estimate (${calcMode.toUpperCase()})`,
+        items: res.resultItems.map((item: any, idx: number) => ({
+          sno: idx + 1,
+          description: `[${item.category}] ${item.description}`,
+          quantity: item.procQty,
+          unit: item.unit,
+          rate: item.rateFound ? item.rate : 0,
+          amount: item.rateFound ? item.amount : 0
+        })),
+        grandTotal: res.grandTotal
+      });
+    });
+  };
+
   // Export Excel
   const handleExportExcel = () => {
     checkAndRun(() => {
@@ -549,13 +570,15 @@ export default function PaintCalculator() {
 
   return (
     <div style={styles.container}>
-      {/* 1. Header */}
+            <div className="engineering-top-layout">
+        <div className="engineering-top-left">
+{/* 1. Header */}
       <div style={styles.header}>
         <div>
           <button style={styles.backBtn} onClick={() => router.push('/calculators')}>← Back to Calculators</button>
         </div>
         <h1 style={styles.headerTitle}>
-          🎨 Paint Calculator
+          Paint Calculator
           <span style={styles.badge}>IS 2395 / IS 5410 Compliant</span>
         </h1>
         <div>
@@ -574,10 +597,39 @@ export default function PaintCalculator() {
           value={calcMode}
           onChange={(e) => setCalcMode(e.target.value as 'quick' | 'detailed')}
         >
-          <option value="quick">⚡ Quick Calculation (Estimate from Total Surface or Built-Up Area)</option>
-          <option value="detailed">📐 Detailed Wall-Wise Calculation (Exact Room & Opening Measurements)</option>
+          <option value="quick">Quick Calculation (Estimate from Total Surface or Built-Up Area)</option>
+          <option value="detailed">Detailed Wall-Wise Calculation (Exact Room & Opening Measurements)</option>
         </select>
       </div>
+        </div>
+        <div className="engineering-specimen-top">
+      <EngineeringSpecimen kind="paint" title="Dynamic Paint Surface Specimen" material={calcMode === 'quick' ? quickInputs.paintType : detailedInputs.paintType} data={calcMode === 'quick' ? { lengthFt: Math.sqrt(quickInputs.totalArea), heightFt: Math.sqrt(quickInputs.totalArea), type: quickInputs.paintType } : { lengthFt: detailedInputs.length, heightFt: detailedInputs.height, type: detailedInputs.paintType }} />
+        </div>
+      </div>
+      <style jsx>{`
+        .engineering-top-layout {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 260px;
+          gap: 16px;
+          align-items: start;
+          margin-bottom: 18px;
+        }
+        .engineering-top-left { min-width: 0; overflow: hidden; }
+        .engineering-specimen-top {
+          width: 260px;
+          position: sticky;
+          top: 12px;
+          align-self: start;
+          z-index: 2;
+        }
+        @media (max-width: 900px) {
+          .engineering-top-layout { grid-template-columns: 1fr; }
+          .engineering-specimen-top {
+            width: 100%; max-width: 260px; position: static;
+            margin-left: auto; margin-right: auto;
+          }
+        }
+      `}</style>
 
       {/* ========================================================= */}
       {/* 4. QUICK CALCULATION MODE */}
@@ -779,8 +831,9 @@ export default function PaintCalculator() {
             </div>
 
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-              <button style={styles.btnSecondary} onClick={handleExportExcel}>📥 Export BOQ to Excel</button>
-              <button style={styles.btnSuccess} onClick={handleShareWhatsApp}>📲 Share Estimate on WhatsApp</button>
+              <button style={{ backgroundColor: '#0284c7', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' }} onClick={handleDownloadPDF}>📄 Download in PDF</button>
+              <button style={styles.btnSecondary} onClick={handleExportExcel}>📊 Export in Excel</button>
+              <button style={styles.btnSuccess} onClick={handleShareWhatsApp}>📲 Share on WhatsApp</button>
             </div>
           </div>
         </>
@@ -1083,8 +1136,9 @@ export default function PaintCalculator() {
             </div>
 
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-              <button style={styles.btnSecondary} onClick={handleExportExcel}>📥 Export BOQ to Excel</button>
-              <button style={styles.btnSuccess} onClick={handleShareWhatsApp}>📲 Share Estimate on WhatsApp</button>
+              <button style={{ backgroundColor: '#0284c7', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' }} onClick={handleDownloadPDF}>📄 Download in PDF</button>
+              <button style={styles.btnSecondary} onClick={handleExportExcel}>📊 Export in Excel</button>
+              <button style={styles.btnSuccess} onClick={handleShareWhatsApp}>📲 Share on WhatsApp</button>
             </div>
           </div>
         </div>

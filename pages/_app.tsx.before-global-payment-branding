@@ -1,0 +1,52 @@
+import * as React from "react";
+import { fetchBuildMitraMasterRates } from "../utils/buildmitraMasterRates";
+import GlobalBrandPaymentGuard from "../components/GlobalBrandPaymentGuard";
+import "../styles/globals.css";
+import Sidebar from "../components/Sidebar";
+import { useRouter } from "next/router";
+import ClientErrorBoundary from "../components/ClientErrorBoundary";
+import { PaymentBarrierProvider } from "../hooks/usePaymentBarrier";
+
+// buildmitra-master-rate-loader
+
+function BuildMitraMasterRateLoader() {
+  React.useEffect(() => {
+    fetchBuildMitraMasterRates(true).catch((error) => {
+      console.error("BuildMitra master-rate load failed:", error);
+    });
+  }, []);
+
+  return null;
+}
+export default function App({ Component, pageProps }) {
+  const router = useRouter();
+
+  const noSidebarPages = ["/login", "/", "/register", "/forgot-password"];
+  const isQuickQuote = router.pathname === "/quick-quote";
+  const showSidebar = !noSidebarPages.includes(router.pathname);
+
+  return (
+    <ClientErrorBoundary>
+      {isQuickQuote ? (
+        <GlobalBrandPaymentGuard><BuildMitraMasterRateLoader /><Component {...pageProps} /></GlobalBrandPaymentGuard>
+      ) : (
+      <PaymentBarrierProvider>
+        {showSidebar ? (
+          <Sidebar currentPath={router.pathname}>
+            <GlobalBrandPaymentGuard><BuildMitraMasterRateLoader /><Component {...pageProps} /></GlobalBrandPaymentGuard>
+          </Sidebar>
+        ) : (
+          <GlobalBrandPaymentGuard><BuildMitraMasterRateLoader /><Component {...pageProps} /></GlobalBrandPaymentGuard>
+        )}
+      </PaymentBarrierProvider>
+      )}
+    </ClientErrorBoundary>
+  );
+}
+
+
+
+
+
+
+

@@ -1,0 +1,1739 @@
+BUILDMITRA CALCULATOR ISOMETRIC AUDIT
+Generated: 07/29/2026 09:25:51
+Reference: pages\column-calculator.tsx
+Total remaining calculators: 26
+
+============================================================
+FILE: .\pages\arch-calculator.tsx
+============================================================
+1: import React, { useState } from 'react';
+8: container: { maxWidth: '100%', margin: 0, padding: '12px', backgroundColor: '#f5f0e8', minHeight: '100vh', boxSizing: 'border-box' },
+17: input: { width: '100%', padding: '6px', border: '1px solid #ccc', borderRadius: '4px', fontSize: '11px', boxSizing: 'border-box', backgroundColor: '#fff' },
+18: select: { width: '100%', padding: '6px', border: '1px solid #ccc', borderRadius: '4px', fontSize: '11px', backgroundColor: '#fff' },
+32: table: { width: '100%', borderCollapse: 'collapse', fontSize: '12px' },
+45: minHeight: '120px'
+48: maxWidth: '100%',
+49: maxHeight: '100px',
+66: 'Semi-circular': "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 150'%3E%3Crect width='200' height='150' fill='%231a1a2e'/%3E%3Cpath d='M30,120 L170,120' stroke='%23ffd700' stroke-width='3' fill='none'/%3E%3Cpath d='M30,120 A70,70 0 0,1 170,120' stroke='%23ffd700' stroke-width='3' fill='none'/%3E%3Ctext x='100' y='30' fill='white' font-size='12' text-anchor='middle' font-family='Arial'%3ESemi-circular Arch%3C/text%3E%3Ctext x='100' y='140' fill='%2390EE90' font-size='10' text-anchor='middle'%3ESpan: 10ft | Rise: 5ft%3C/text%3E%3C/svg%3E",
+67: 'Segmental': "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 150'%3E%3Crect width='200' height='150' fill='%231a1a2e'/%3E%3Cpath d='M30,120 L170,120' stroke='%23ffd700' stroke-width='3' fill='none'/%3E%3Cpath d='M40,120 A80,40 0 0,1 160,120' stroke='%23ffd700' stroke-width='3' fill='none'/%3E%3Ctext x='100' y='30' fill='white' font-size='12' text-anchor='middle' font-family='Arial'%3ESegmental Arch%3C/text%3E%3Ctext x='100' y='140' fill='%2390EE90' font-size='10' text-anchor='middle'%3ESpan: 12ft | Rise: 4ft%3C/text%3E%3C/svg%3E",
+68: 'Gothic': "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 150'%3E%3Crect width='200' height='150' fill='%231a1a2e'/%3E%3Cpath d='M30,120 L170,120' stroke='%23ffd700' stroke-width='3' fill='none'/%3E%3Cpath d='M30,120 L100,30 L170,120' stroke='%23ffd700' stroke-width='3' fill='none'/%3E%3Ccircle cx='100' cy='75' r='45' stroke='%23ffd700' stroke-width='2' fill='none' stroke-dasharray='4,4'/%3E%3Ctext x='100' y='30' fill='white' font-size='12' text-anchor='middle' font-family='Arial'%3EGothic Arch%3C/text%3E%3Ctext x='100' y='140' fill='%2390EE90' font-size='10' text-anchor='middle'%3ESpan: 12ft | Rise: 6ft%3C/text%3E%3C/svg%3E",
+69: 'Flat': "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 150'%3E%3Crect width='200' height='150' fill='%231a1a2e'/%3E%3Cpath d='M30,120 L170,120' stroke='%23ffd700' stroke-width='3' fill='none'/%3E%3Crect x='40' y='80' width='120' height='40' stroke='%23ffd700' stroke-width='3' fill='none'/%3E%3Ctext x='100' y='30' fill='white' font-size='12' text-anchor='middle' font-family='Arial'%3EFlat Arch%3C/text%3E%3Ctext x='100' y='140' fill='%2390EE90' font-size='10' text-anchor='middle'%3ESpan: 12ft | Height: 3ft%3C/text%3E%3C/svg%3E"
+72: export default function ArchPage() {
+78: const [archNos, setArchNos] = useState(1);
+79: const [span, setSpan] = useState(6);
+80: const [rise, setRise] = useState(3);
+81: const [archType, setArchType] = useState('Semi-circular');
+82: const [thickness, setThickness] = useState(0.3);
+83: const [width, setWidth] = useState(0.75);
+84: const [concreteGrade, setConcreteGrade] = useState('M20');
+85: const [cover, setCover] = useState(25);
+86: const [wastage, setWastage] = useState(3);
+88: const [mainBarDia, setMainBarDia] = useState(12);
+89: const [mainBarNos, setMainBarNos] = useState(4);
+90: const [distBarDia, setDistBarDia] = useState(10);
+91: const [distBarSpacing, setDistBarSpacing] = useState(150);
+92: const [stirrupDia, setStirrupDia] = useState(8);
+93: const [stirrupSpacing, setStirrupSpacing] = useState(150);
+95: const [results, setResults] = useState(null);
+96: const [generated, setGenerated] = useState(false);
+107: const calculateArchLength = () => {
+109: return Math.PI * (span / 2);
+111: const radius = (Math.pow(span, 2) + 4 * Math.pow(rise, 2)) / (8 * rise);
+112: const angle = 2 * Math.asin(span / (2 * radius));
+115: return (span * 2.2);
+117: return span + 2 * rise;
+122: const archLength = calculateArchLength();
+123: const archVolume = archLength * thickness * width * archNos;
+133: const mainTotalLengthM = archLength / 3.28084 * mainBarNos * archNos;
+134: const mainSteelWeight = mainTotalLengthM * getWeightPerMeter(mainBarDia);
+136: const archWidthInM = width / 3.28084;
+137: const distBarsNos = Math.floor(archWidthInM * 1000 / distBarSpacing) + 1;
+138: const distTotalLengthM = archLength / 3.28084 * distBarsNos * archNos;
+139: const distSteelWeight = distTotalLengthM * getWeightPerMeter(distBarDia);
+141: const stirrupPerimeterM = 2 * (thickness + width) - (8 * cover / 1000) + (24 * stirrupDia / 1000);
+142: const stirrupNosPerM = Math.ceil(archLength / (stirrupSpacing / 1000)) + 1;
+144: const stirrupTotalLengthM = stirrupPerimeterM * totalStirrupNos;
+145: const stirrupWeight = stirrupTotalLengthM * getWeightPerMeter(stirrupDia);
+182: arch: { type: archType, span: span, rise: rise, length: formatNumber(archLength), nos: archNos, thickness: thickness, width: width },
+212: { Item: 'Span', Quantity: results.arch.span, Unit: 'ft', Cost: '-' },
+213: { Item: 'Rise', Quantity: results.arch.rise, Unit: 'ft', Cost: '-' },
+235: const message = `⛩️ ARCH DESIGN\n\nType: ${results.arch.type}\nSpan: ${results.arch.span} ft\nRise: ${results.arch.rise} ft\nConcrete: ${results.concrete.volumeCft} CFT\nSteel: ${results.steel.total} kg\nTotal Cost: ₹${results.costs.grandTotal}`;
+255: React.createElement('span', null, `💰 Cement: ₹${cementRate}/bag | Steel: ₹${steelRate}/kg | Labour: ₹${labourRate}/CUM`)
+266: React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Span (ft)'), React.createElement('input', { type: 'number', value: span, onChange: (e) => setSpan(parseFloat(e.target.value)), style: styles.input })),
+267: React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Rise (ft)'), React.createElement('input', { type: 'number', value: rise, onChange: (e) => setRise(parseFloat(e.target.value)), style: styles.input })),
+268: React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Thickness (ft)'), React.createElement('input', { type: 'number', value: thickness, onChange: (e) => setThickness(parseFloat(e.target.value)), style: styles.input })),
+269: React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Width (ft)'), React.createElement('input', { type: 'number', value: width, onChange: (e) => setWidth(parseFloat(e.target.value)), style: styles.input }))
+273: React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Grade'), React.createElement('select', { value: concreteGrade, onChange: (e) => setConcreteGrade(e.target.value), style: styles.select },
+320: React.createElement('tr', { style: { backgroundColor: '#e8f4f8', fontWeight: 'bold' } }, React.createElement('td', { colSpan: 3, style: styles.td }, 'Material Total'), React.createElement('td', { style: styles.td }, `₹${results.costs.materialTotal}`)),
+321: React.createElement('tr', { style: styles.evenRow }, React.createElement('td', { colSpan: 3, style: styles.td }, 'Labour'), React.createElement('td', { style: styles.td }, `₹${results.costs.labour}`)),
+322: React.createElement('tr', { style: { backgroundColor: '#800020', color: 'white', fontWeight: 'bold' } }, React.createElement('td', { colSpan: 3, style: { padding: '8px' } }, 'GRAND TOTAL'), React.createElement('td', { style: { padding: '8px' } }, `₹${results.costs.grandTotal}`))
+
+============================================================
+FILE: .\pages\beam-calculator.tsx
+============================================================
+1: import React, { useState, useEffect, useMemo } from 'react';
+5: import MarketRateTrend from '../components/ui/MarketRateTrend';
+9: container: { maxWidth: '1200px', margin: '0 auto', padding: '16px', backgroundColor: '#f8fafc', minHeight: '100vh', boxSizing: 'border-box', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' },
+17: modeSelect: { width: '100%', padding: '12px 14px', border: '2px solid #800020', borderRadius: '8px', fontSize: '15px', fontWeight: '700', color: '#800020', backgroundColor: '#fff5f7', outline: 'none', cursor: 'pointer' },
+27: input: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#fff', outline: 'none' },
+28: select: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', backgroundColor: '#fff', outline: 'none' },
+45: table: { width: '100%', borderCollapse: 'collapse', fontSize: '12px' },
+66: export default function BeamCalculator() {
+75: const [scopeOption, setScopeOption] = useState<'both' | 'concrete_only' | 'steel_only'>('both');
+80: lengthFt: 40,       // Length in feet
+81: widthIn: 6,         // Width in inches (e.g. 6")
+82: depthIn: 12,        // Depth in inches (e.g. 12")
+83: grade: 'M20',       // Concrete grade: M20, M25, M30
+97: const [inputs, setInputs] = useState(initialInputs);
+111: const handleReset = () => setInputs(initialInputs);
+115: const hasConcrete = scopeOption === 'both' || scopeOption === 'concrete_only';
+116: const hasSteel = scopeOption === 'both' || scopeOption === 'steel_only';
+118: const H_m = inputs.lengthFt * 0.3048;
+119: const W_m = (inputs.widthIn * 25.4) / 1000;
+120: const D_m = (inputs.depthIn * 25.4) / 1000;
+132: if (inputs.grade === 'M25') {
+137: } else if (inputs.grade === 'M30') {
+150: const L_topM = (inputs.lengthFt * 0.3048) + (2 * 50 * inputs.topDia / 1000);
+151: const L_botM = (inputs.lengthFt * 0.3048) + (2 * 50 * inputs.bottomDia / 1000);
+157: const W_coreM = Math.max((inputs.widthIn * 25.4 - 2 * inputs.coverMm) / 1000, 0);
+158: const D_coreM = Math.max((inputs.depthIn * 25.4 - 2 * inputs.coverMm) / 1000, 0);
+159: const cuttingLengthStirrupM = (2 * (W_coreM + D_coreM)) + (24 * inputs.stirrupDia / 1000);
+161: const stirrupNosPerBeam = Math.ceil((inputs.lengthFt * 304.8) / inputs.spacingMm) + 1;
+163: const stirrupTotalWeightKg = hasSteel ? (totalStirrupNos * cuttingLengthStirrupM * ((inputs.stirrupDia * inputs.stirrupDia) / 162.2)) : 0;
+167: const coverBlockNos = hasSteel ? Math.ceil(inputs.beamNos * (inputs.lengthFt / 3) * 4) : 0;
+171: const shutteringAreaSqft = hasConcrete ? (((inputs.widthIn / 12) + (2 * inputs.depthIn / 12)) * inputs.lengthFt * inputs.beamNos) : 0;
+195: { code: cementRate.itemCode || "MAT-CEM-01", category: "Material", description: `Cement OPC 53 Grade (${inputs.grade} Mix)`, unit: "BAG", engQty: cementBags, procQty: Math.ceil(cementBags), rate: cementRate.rate, rateFound: cementRate.found, amount: cementCost },
+217: description: `Beam ${scopeOption === 'both' ? 'Concrete Casting & Bar Bending' : scopeOption === 'concrete_only' ? 'Concrete Casting & Shuttering' : 'Bar Bending & Steel Tying'} Labour`,
+250: }, [inputs, scopeOption, cementRate, steelRate, sandRate, ca20Rate, ca12Rate, wireRate, coverRate, waterRate, shutteringRate, rccLabourRate]);
+269: XLSX.writeFile(wb, `BuildMitra_Beam_Estimate_${scopeOption}.xlsx`);
+277: `*Scope Option*: ${scopeOption === 'both' ? 'Both Concrete & Steel' : scopeOption === 'concrete_only' ? 'Only Concrete & Shuttering' : 'Only Steel Rebar'}%0A` +
+279: `• *Beams*: ${inputs.beamNos} Nos (${inputs.widthIn}"x${inputs.depthIn}" x ${inputs.lengthFt}ft - ${inputs.grade})%0A` +
+300: <span style={styles.badge}>IS 456 Beam Bar Schedule</span>
+303: <span style={{ fontSize: '11px', color: '#fecdd3' }}>BuildMitra Professional Edition</span>
+308: <MarketRateTrend />
+315: value={scopeOption}
+316: onChange={(e) => setScopeOption(e.target.value as 'both' | 'concrete_only' | 'steel_only')}
+327: <span>📐 Beam Geometry & Structural Specifications</span>
+331: 💡 <strong>IS 456 Structural Beam Standards</strong>: Select whether to compute Concrete Materials, Steel Rebar, or Both. Includes nominal mix proportions, top & bottom bar anchorage lengths, stirrup 135° hooks, 25mm clear cover, and beam soffit/side formwork shuttering.
+341: onChange={e => setInputs({ ...inputs, beamNos: parseFloat(e.target.value) || 1 })}
+346: <label style={styles.label}>Length (Ft)</label>
+350: value={inputs.lengthFt}
+351: onChange={e => setInputs({ ...inputs, lengthFt: parseFloat(e.target.value) || 0 })}
+356: <label style={styles.label}>Width (Inches)</label>
+360: value={inputs.widthIn}
+361: onChange={e => setInputs({ ...inputs, widthIn: parseFloat(e.target.value) || 0 })}
+366: <label style={styles.label}>Depth (Inches)</label>
+370: value={inputs.depthIn}
+371: onChange={e => setInputs({ ...inputs, depthIn: parseFloat(e.target.value) || 0 })}
+377: <label style={styles.label}>Concrete Mix Grade</label>
+380: value={inputs.grade}
+381: onChange={e => setInputs({ ...inputs, grade: e.target.value })}
+402: onChange={e => setInputs({ ...inputs, topDia: parseFloat(e.target.value) || 16 })}
+412: onChange={e => setInputs({ ...inputs, topNos: parseFloat(e.target.value) || 2 })}
+422: onChange={e => setInputs({ ...inputs, bottomDia: parseFloat(e.target.value) || 12 })}
+432: onChange={e => setInputs({ ...inputs, bottomNos: parseFloat(e.target.value) || 3 })}
+450: onChange={e => setInputs({ ...inputs, stirrupDia: parseFloat(e.target.value) || 8 })}
+460: onChange={e => setInputs({ ...inputs, spacingMm: parseFloat(e.target.value) || 150 })}
+470: onChange={e => setInputs({ ...inputs, coverMm: parseFloat(e.target.value) || 25 })}
+485: <span>📊 Beam Results BOQ ({scopeOption === 'both' ? 'Concrete & Steel' : scopeOption === 'concrete_only' ? 'Concrete & Formwork' : 'Steel Rebar Only'})</span>
+491: <span style={styles.metricTitle}>Concrete Volume</span>
+492: <span style={styles.metricVal}>{formatNumber(calcResults.totalVolCft)} CFT</span>
+493: <span style={{ fontSize: '11px', opacity: 0.9 }}>({formatNumber(calcResults.totalVolCum, 3)} CUM @ {inputs.grade})</span>
+498: <span style={styles.metricTitle}>Cement & Water</span>
+499: <span style={styles.metricVal}>{formatNumber(calcResults.cementBags, 1)} Bags | {formatNumber(calcResults.waterLtr, 0)} Ltr</span>
+505: <span style={styles.metricTitle}>Steel Rebar</span>
+506: <span style={styles.metricVal}>{formatNumber(calcResults.totalSteelKg, 1)} kg</span>
+507: <span style={{ fontSize: '11px', opacity: 0.9 }}>({inputs.topDia}mm / {inputs.bottomDia}mm)</span>
+512: <span style={styles.metricTitle}>Total Cost</span>
+513: <span style={styles.metricVal}>{formatCurrency(calcResults.grandTotal)}</span>
+514: <span style={{ fontSize: '11px', opacity: 0.9 }}>({formatCurrency(calcResults.costPerCft)} / CFT)</span>
+538: <span style={{
+547: </span>
+555: <span style={styles.rateTag}>{formatCurrency(item.rate)}</span>
+557: <span style={styles.rateTagWarn}>Rate Unavailable</span>
+
+============================================================
+FILE: .\pages\brick-calculator.tsx
+============================================================
+
+============================================================
+FILE: .\pages\brick-work-calculator.tsx
+============================================================
+1: import React, { useState, useEffect, useMemo } from 'react';
+5: import MarketRateTrend from '../components/ui/MarketRateTrend';
+9: container: { maxWidth: '1200px', margin: '0 auto', padding: '16px', backgroundColor: '#f8fafc', minHeight: '100vh', boxSizing: 'border-box', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' },
+17: modeSelect: { width: '100%', padding: '12px 14px', border: '2px solid #0f766e', borderRadius: '8px', fontSize: '15px', fontWeight: '700', color: '#0f766e', backgroundColor: '#f0fdfa', outline: 'none', cursor: 'pointer' },
+27: input: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#fff', outline: 'none' },
+28: select: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', backgroundColor: '#fff', outline: 'none' },
+46: table: { width: '100%', borderCollapse: 'collapse', fontSize: '12px' },
+68: const BLOCK_SPECS: Record<string, { length: number; height: number; width: number; category: string }> = {
+69: 'Clay Brick (4.5" Wall)': { length: 9, height: 3, width: 4.5, category: 'Brick' },
+70: 'Clay Brick (9" Wall)': { length: 9, height: 3, width: 9.0, category: 'Brick' },
+71: 'Concrete Block (4")': { length: 16, height: 8, width: 4.0, category: 'Concrete Block' },
+72: 'Concrete Block (6")': { length: 16, height: 8, width: 6.0, category: 'Concrete Block' },
+73: 'Concrete Block (8")': { length: 16, height: 8, width: 8.0, category: 'Concrete Block' },
+74: 'AAC Block (4")': { length: 24, height: 8, width: 4.0, category: 'AAC Block' },
+75: 'AAC Block (6")': { length: 24, height: 8, width: 6.0, category: 'AAC Block' },
+76: 'AAC Block (8")': { length: 24, height: 8, width: 8.0, category: 'AAC Block' }
+79: export default function BrickWorkCalculator() {
+88: const [calcMode, setCalcMode] = useState<'quick' | 'detailed'>('quick');
+93: plotLength: 30, // ft
+94: plotWidth: 40,  // ft
+98: mortarThicknessMm: 10, // 10mm, 12mm, 15mm, 4mm
+103: const [quickInputs, setQuickInputs] = useState(initialQuickInputs);
+108: length: 10,
+109: height: 10,
+110: wallThicknessInches: 4.5, // 4.5", 6", 8", 9"
+111: mortarThicknessMm: 10, // 10mm, 12mm
+116: const [detailedInputs, setDetailedInputs] = useState(initialDetailedInputs);
+118: // Auto Sync Block Type when Wall Thickness changes
+119: const syncBlockTypeWithThickness = (thicknessInches: number, currentType: string) => {
+120: if (thicknessInches === 4.5 || thicknessInches === 4) {
+124: } else if (thicknessInches === 6) {
+128: } else if (thicknessInches === 8 || thicknessInches === 9) {
+137: const [openings, setOpenings] = useState<any[]>([
+138: { name: "Door", length: 3.5, width: 7, nos: 1, area: 24.5 },
+139: { name: "Window", length: 4, width: 5, nos: 2, area: 40 }
+141: const [openingInput, setOpeningInput] = useState({ name: 'Door', length: 3.5, width: 7, nos: 1 });
+159: if (openingInput.length > 0 && openingInput.width > 0 && openingInput.nos > 0) {
+160: const area = openingInput.length * openingInput.width * openingInput.nos;
+175: { name: "Door", length: 3.5, width: 7, nos: 1, area: 24.5 },
+176: { name: "Window", length: 4, width: 5, nos: 2, area: 40 }
+181: const calculateMasonry = (netWallArea: number, wallThicknessInches: number, mortarThickMm: number, blockTypeKey: string, mortarRatio: string, wastagePct: number) => {
+183: const wallThicknessFt = wallThicknessInches / 12;
+187: const masonryVolCft = netWallArea * wallThicknessFt;
+192: let blockL = spec.length * 0.0254; // meters
+193: let blockH = spec.height * 0.0254;
+194: let blockW = wallThicknessInches * 0.0254;
+250: description: `${blockTypeKey} (${spec.length}"x${spec.height}"x${wallThicknessInches}")`,
+261: description: `Cement (OPC 53 Grade 50kg Bags)`,
+294: description: `Brickwork / Blockwork Masonry Labour (${wallThicknessInches}" Wall)`,
+328: const plotArea = q.plotLength * q.plotWidth;
+337: const wallThickness = q.internalWallSize.includes("4.5") ? 4.5 : q.internalWallSize.includes("6") ? 6 : 8;
+338: const res = calculateMasonry(netWallArea, wallThickness, q.mortarThicknessMm, q.blockType, q.mortarRatio, q.wastagePct);
+343: plotArea: q.plotLength * q.plotWidth
+350: const grossWallArea = d.wallNos * d.length * d.height;
+354: openingArea += (o.length * o.width * o.nos);
+358: const res = calculateMasonry(netWallArea, d.wallThicknessInches, d.mortarThicknessMm, d.blockType, d.mortarRatio, d.wastagePct);
+419: <span style={styles.badge}>IS 2212 / IS 2185 Compliant</span>
+422: <span style={{ fontSize: '11px', color: '#e0f2fe' }}>BuildMitra Professional Edition</span>
+427: <MarketRateTrend />
+449: <span>⚡ Quick Calculation (Plot Dimensions & Wall Thickness BUA Rule)</span>
+453: 💡 <strong>IS Code Volumetric Rule</strong>: Block count, Cement Bags, Sand CFT, and Water Litres automatically scale with Wall Thickness (4.5", 6", 8", 9") and Mortar Joint Thickness.
+464: <option value="Plot Dimensions (L x W x Floors)">Plot Dimensions (Length x Width x Floors)</option>
+472: <label style={styles.label}>Plot Length (Ft)</label>
+476: value={quickInputs.plotLength}
+477: onChange={e => setQuickInputs({ ...quickInputs, plotLength: parseFloat(e.target.value) || 0 })}
+482: <label style={styles.label}>Plot Width (Ft)</label>
+486: value={quickInputs.plotWidth}
+487: onChange={e => setQuickInputs({ ...quickInputs, plotWidth: parseFloat(e.target.value) || 0 })}
+516: <label style={styles.label}>Wall Size / Thickness</label>
+521: const newThickness = e.target.value.includes("4.5") ? 4.5 : e.target.value.includes("6") ? 6 : 8;
+522: const syncedBlock = syncBlockTypeWithThickness(newThickness, quickInputs.blockType);
+533: <label style={styles.label}>Mortar Joint Thickness (mm)</label>
+536: value={quickInputs.mortarThicknessMm}
+537: onChange={e => setQuickInputs({ ...quickInputs, mortarThicknessMm: parseInt(e.target.value) || 10 })}
+560: <label style={styles.label}>Mortar Grade (Cement : Sand)</label>
+592: <span>📊 Block/Brick Work Calculation Results & Materials BOQ</span>
+608: <span style={styles.metricTitle}>Built-Up Area (BUA)</span>
+609: <span style={styles.metricVal}>{formatNumber(quickCalcResults.builtUpArea)} Sqft</span>
+612: <span style={styles.metricTitle}>Masonry Volume</span>
+613: <span style={styles.metricVal}>{formatNumber(quickCalcResults.masonryVolCft)} CFT</span>
+616: <span style={styles.metricTitle}>Bricks / Blocks</span>
+617: <span style={styles.metricVal}>{formatNumber(quickCalcResults.totalBlocks, 0)} Nos</span>
+620: <span style={styles.metricTitle}>Cement & Sand</span>
+621: <span style={styles.metricVal}>{formatNumber(quickCalcResults.cemBags, 1)} Bags | {formatNumber(quickCalcResults.sandCft, 1)} CFT</span>
+624: <span style={styles.metricTitle}>Grand Total</span>
+625: <span style={styles.metricVal}>{formatCurrency(quickCalcResults.grandTotal)}</span>
+626: <span style={{ fontSize: '11px', opacity: 0.9 }}>({formatCurrency(quickCalcResults.costPerSqft)} / Sqft)</span>
+650: <span style={{
+659: </span>
+667: <span style={styles.rateTag}>{formatCurrency(item.rate)}</span>
+669: <span style={styles.rateTagWarn}>Rate Unavailable</span>
+693: <span>📐 Detailed Wall-Wise Brickwork Calculation Inputs (IS 2212 Exact Rules)</span>
+708: <label style={styles.label}>Length per Wall (Ft)</label>
+712: value={detailedInputs.length}
+713: onChange={e => setDetailedInputs({ ...detailedInputs, length: parseFloat(e.target.value) || 0 })}
+718: <label style={styles.label}>Height per Wall (Ft)</label>
+722: value={detailedInputs.height}
+723: onChange={e => setDetailedInputs({ ...detailedInputs, height: parseFloat(e.target.value) || 0 })}
+728: <label style={styles.label}>Wall Size / Thickness (Inches)</label>
+731: value={detailedInputs.wallThicknessInches}
+733: const newThickness = parseFloat(e.target.value);
+734: const syncedBlock = syncBlockTypeWithThickness(newThickness, detailedInputs.blockType);
+735: setDetailedInputs({ ...detailedInputs, wallThicknessInches: newThickness, blockType: syncedBlock });
+746: <label style={styles.label}>Mortar Joint Thickness (mm)</label>
+749: value={detailedInputs.mortarThicknessMm}
+750: onChange={e => setDetailedInputs({ ...detailedInputs, mortarThicknessMm: parseInt(e.target.value) || 10 })}
+773: <label style={styles.label}>Mortar Grade (Cement : Sand)</label>
+810: <label style={styles.label}>Width (Ft)</label>
+811: <input type="number" style={styles.input} value={openingInput.length} onChange={e => setOpeningInput({ ...openingInput, length: parseFloat(e.target.value) || 0 })} />
+814: <label style={styles.label}>Height (Ft)</label>
+815: <input type="number" style={styles.input} value={openingInput.width} onChange={e => setOpeningInput({ ...openingInput, width: parseFloat(e.target.value) || 0 })} />
+824: {openings.length > 0 && (
+840: <td style={styles.td}>{`${o.length} ft x ${o.width} ft`}</td>
+842: <td style={styles.td}><strong>{formatNumber(o.length * o.width * o.nos)} Sqft</strong></td>
+861: <span>📊 Detailed Block/Brick Work Calculation Results & Materials BOQ</span>
+876: <span style={styles.metricTitle}>Net Wall Area</span>
+877: <span style={styles.metricVal}>{formatNumber(detailedCalcResults.netWallArea)} Sqft</span>
+880: <span style={styles.metricTitle}>Masonry Volume</span>
+881: <span style={styles.metricVal}>{formatNumber(detailedCalcResults.masonryVolCft)} CFT</span>
+884: <span style={styles.metricTitle}>Bricks / Blocks</span>
+885: <span style={styles.metricVal}>{formatNumber(detailedCalcResults.totalBlocks, 0)} Nos</span>
+888: <span style={styles.metricTitle}>Cement & Sand</span>
+889: <span style={styles.metricVal}>{formatNumber(detailedCalcResults.cemBags, 1)} Bags | {formatNumber(detailedCalcResults.sandCft, 1)} CFT</span>
+892: <span style={styles.metricTitle}>Grand Total</span>
+893: <span style={styles.metricVal}>{formatCurrency(detailedCalcResults.grandTotal)}</span>
+894: <span style={{ fontSize: '11px', opacity: 0.9 }}>({formatCurrency(detailedCalcResults.costPerSqft)} / Sqft)</span>
+917: <span style={{
+926: </span>
+934: <span style={styles.rateTag}>{formatCurrency(item.rate)}</span>
+936: <span style={styles.rateTagWarn}>Rate Unavailable</span>
+
+============================================================
+FILE: .\pages\calculator-template.tsx
+============================================================
+3: export default function CalculatorTemplate() {
+5: container: { padding: "24px", backgroundColor: "#f0f2f5", minHeight: "100vh" },
+
+============================================================
+FILE: .\pages\calculators.tsx
+============================================================
+1: import React, { useState } from 'react';
+4: import MarketRateTrend from "../components/ui/MarketRateTrend";
+17: { id: 'steel-calculator', name: 'Steel Rebar Weight & Cost', icon: '🔩', category: 'Masonry & Steel', unitBadge: 'Kg', description: 'Bar diameters 8mm-32mm, cutting length, bend deductions.' },
+22: { id: 'rcc-slab-calculator', name: 'RCC Slab & Beam', icon: '🏗️', category: 'Concrete & RCC', unitBadge: 'Cum', description: 'Slab thickness, main & distribution steel rebar weight.' },
+27: { id: 'staircase-calculator', name: 'Staircase Estimator', icon: '🪜', category: 'Structural Elements', unitBadge: 'Cum', description: 'Flight waist slab concrete, riser/tread step count.' },
+28: { id: 'water-tank-calculator', name: 'Water Sump Tank', icon: '💧', category: 'Finishing & Plumbing', unitBadge: 'Liters', description: 'UG sump capacity, slab/wall RCC volume & steel.' },
+29: { id: 'septic-tank-calculator', name: 'Septic Tank Design', icon: '🪠', category: 'Finishing & Plumbing', unitBadge: 'Liters', description: 'User load capacity, baffle wall, soak pit dimensions.' },
+32: { id: 'pile-foundation-calculator', name: 'Pile Foundation', icon: '⛏️', category: 'Structural Elements', unitBadge: 'Cum', description: 'Pile bore diameter, depth, reinforcement cage weight.' },
+33: { id: 'lintel-calculator', name: 'Lintel & Sunshade', icon: '📏', category: 'Structural Elements', unitBadge: 'Cum', description: 'Lintel length, bearing width, rebar schedule.' },
+34: { id: 'arch-calculator', name: 'Arch & Patio Masonry', icon: '⛩️', category: 'Masonry & Steel', unitBadge: 'Sft', description: 'Curved brickwork arc length, radius, mortar volume.' }
+37: export default function CalculatorsPage() {
+39: const [selectedCategory, setSelectedCategory] = useState<string>("All");
+40: const [searchQuery, setSearchQuery] = useState<string>("");
+57: <div style={{ padding: "24px", minHeight: "100vh", background: "#f8fafc", color: "#0f172a", fontFamily: "Inter, sans-serif" }}>
+63: <span style={{ background: "rgba(34, 197, 94, 0.2)", border: "1px solid rgba(34, 197, 94, 0.4)", color: "#4ade80", padding: "4px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "800" }}>
+65: </span>
+83: <MarketRateTrend />
+93: style={{ flex: 1, minWidth: "240px", padding: "10px 14px", border: "1px solid #cbd5e1", borderRadius: "8px", fontSize: "14px", outline: "none" }}
+141: <span style={{ fontSize: "32px" }}>{calc.icon}</span>
+142: <span style={{
+151: </span>
+157: <p style={{ margin: 0, fontSize: "13px", color: "#64748b", lineHeight: "1.5" }}>
+163: <span style={{ fontSize: "12px", color: "#2563eb", fontWeight: "700" }}>Open Calculator</span>
+164: <span style={{ color: "#2563eb", fontWeight: "900" }}>→</span>
+
+============================================================
+FILE: .\pages\concrete-calculator.tsx
+============================================================
+1: import React, { useState } from 'react';
+6: import MarketRateTrend from '../components/ui/MarketRateTrend';
+10: container: { maxWidth: '100%', margin: 0, padding: '12px', backgroundColor: '#f5f0e8', minHeight: '100vh', boxSizing: 'border-box' },
+18: input: { width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#fff' },
+19: select: { width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '6px', fontSize: '13px', backgroundColor: '#fff' },
+32: table: { width: '100%', borderCollapse: 'collapse', fontSize: '12px' },
+49: export default function ConcretePage() {
+54: const [length, setLength] = useState(26);
+55: const [width, setWidth] = useState(37);
+56: const [thickness, setThickness] = useState(150);
+57: const [unit, setUnit] = useState('feet');
+58: const [concreteGrade, setConcreteGrade] = useState('M20');
+59: const [wastage, setWastage] = useState(3);
+61: const [results, setResults] = useState<any>(null);
+62: const [generated, setGenerated] = useState(false);
+90: // Exact Volume Calculation (thickness is in mm)
+91: let lengthFt = unit === 'feet' ? length : length * 3.2808399;
+92: let widthFt = unit === 'feet' ? width : width * 3.2808399;
+93: let thicknessFt = thickness / 304.8; // 150 mm = 0.492126 ft
+95: let volumeCft = lengthFt * widthFt * thicknessFt; // 26 * 37 * (150/304.8) = 473.43 CFT
+99: // Contact Surface Area for Formwork (SQFT) = Bottom Area + Edge Perimeter * Thickness
+100: let shutteringAreaSqft = (lengthFt * widthFt) + (2 * (lengthFt + widthFt) * thicknessFt);
+104: const mix = concreteMix[concreteGrade] || concreteMix.M20;
+206: const isRmc = concreteGrade.startsWith("RMC");
+234: const message = `🧱 BUILDMITRA CONCRETE ESTIMATE\n\nDimensions: ${length} x ${width} x ${thickness}mm (${unit})\nGrade: ${concreteGrade}\nConcrete Volume: ${formatNumber(results.volumeCft)} CFT (${formatNumber(results.volumeCum)} m³)\nCement: ${formatNumber(results.quantities.cementBags)} bags\nGrand Total: ${formatCurrency(results.costs.grandTotal)}`;
+242: const isRmc = concreteGrade.startsWith("RMC");
+250: React.createElement(MarketRateTrend, null),
+253: React.createElement('span', null, `💰 Admin Master Rates: Cement ${cementRateRes.found ? `₹${cementRateRes.rate}/bag` : 'Rate Unavailable'} | Sand ${sandRateRes.found ? `₹${sandRateRes.rate}/CFT` : 'Rate Unavailable'} | 20mm Agg ${agg20RateRes.found ? `₹${agg20RateRes.rate}/CFT` : 'Rate Unavailable'}`),
+259: React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Length'), React.createElement('input', { type: 'number', value: length, onChange: (e) => setLength(parseFloat(e.target.value) || 0), style: styles.input })),
+260: React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Width'), React.createElement('input', { type: 'number', value: width, onChange: (e) => setWidth(parseFloat(e.target.value) || 0), style: styles.input })),
+261: React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Thickness (mm)'), React.createElement('input', { type: 'number', value: thickness, onChange: (e) => setThickness(parseFloat(e.target.value) || 0), style: styles.input })),
+263: React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Concrete Grade'), React.createElement('select', { value: concreteGrade, onChange: (e) => setConcreteGrade(e.target.value), style: styles.select },
+309: React.createElement('tr', { style: { backgroundColor: '#e8f4f8', fontWeight: 'bold' } }, React.createElement('td', { colSpan: 4, style: styles.td }, 'Material Subtotal'), React.createElement('td', { style: styles.td }, formatCurrency(results.costs.materialTotal))),
+313: React.createElement('tr', { style: { backgroundColor: '#f0f7f5', fontWeight: 'bold' } }, React.createElement('td', { colSpan: 4, style: styles.td }, 'Labour Subtotal'), React.createElement('td', { style: styles.td }, formatCurrency(results.costs.labourTotal))),
+314: React.createElement('tr', { style: { backgroundColor: '#800020', color: 'white', fontWeight: 'bold' } }, React.createElement('td', { colSpan: 4, style: { padding: '8px' } }, 'GRAND TOTAL'), React.createElement('td', { style: { padding: '8px' } }, formatCurrency(results.costs.grandTotal)))
+
+============================================================
+FILE: .\pages\flooring-calculator.tsx
+============================================================
+2: export default function FlooringCalculatorPage() { return <FlooringCalculator />; }
+
+============================================================
+FILE: .\pages\footing-calculator.tsx
+============================================================
+1: import React, { useState, useEffect, useMemo } from 'react';
+5: import MarketRateTrend from '../components/ui/MarketRateTrend';
+9: container: { maxWidth: '1200px', margin: '0 auto', padding: '16px', backgroundColor: '#f8fafc', minHeight: '100vh', boxSizing: 'border-box', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' },
+17: modeSelect: { width: '100%', padding: '12px 14px', border: '2px solid #800020', borderRadius: '8px', fontSize: '15px', fontWeight: '700', color: '#800020', backgroundColor: '#fff5f7', outline: 'none', cursor: 'pointer' },
+27: input: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#fff', outline: 'none' },
+28: select: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', backgroundColor: '#fff', outline: 'none' },
+45: table: { width: '100%', borderCollapse: 'collapse', fontSize: '12px' },
+66: export default function FootingCalculator() {
+75: const [scopeOption, setScopeOption] = useState<'both' | 'concrete_only' | 'steel_only'>('both');
+80: lengthFt: 5,        // Length in feet
+81: widthFt: 5,         // Width in feet
+82: depthFt: 1.5,       // RCC depth in feet
+83: excDepthFt: 4,      // Pit excavation depth in feet
+85: pccThickMm: 100,    // PCC thickness in mm
+87: grade: 'M20',       // Concrete grade: M20, M25, M30
+95: bendLengthMm: 300   // L-bend length in mm
+98: const [inputs, setInputs] = useState(initialInputs);
+113: const handleReset = () => setInputs(initialInputs);
+117: const hasConcrete = scopeOption === 'both' || scopeOption === 'concrete_only';
+118: const hasSteel = scopeOption === 'both' || scopeOption === 'steel_only';
+121: const pitLengthFt = inputs.lengthFt + 2 * inputs.workSpaceFt;
+122: const pitWidthFt = inputs.widthFt + 2 * inputs.workSpaceFt;
+123: const excVolCft = inputs.footingNos * pitLengthFt * pitWidthFt * inputs.excDepthFt;
+127: const pccLengthFt = inputs.lengthFt + 2 * (inputs.pccProjIn / 12);
+128: const pccWidthFt = inputs.widthFt + 2 * (inputs.pccProjIn / 12);
+129: const pccVolCft = inputs.footingNos * pccLengthFt * pccWidthFt * (inputs.pccThickMm / 304.8);
+134: const rccVolCft = inputs.footingNos * inputs.lengthFt * inputs.widthFt * inputs.depthFt;
+143: if (inputs.grade === 'M25') {
+148: } else if (inputs.grade === 'M30') {
+162: const mainBarLenM = (inputs.lengthFt * 0.3048 - 2 * (inputs.coverMm / 1000)) + 2 * (inputs.bendLengthMm / 1000);
+163: const mainBarCount = Math.ceil((inputs.widthFt * 304.8 - 2 * inputs.coverMm) / inputs.mainSpacingMm) + 1;
+166: const distBarLenM = (inputs.widthFt * 0.3048 - 2 * (inputs.coverMm / 1000)) + 2 * (inputs.bendLengthMm / 1000);
+167: const distBarCount = Math.ceil((inputs.lengthFt * 304.8 - 2 * inputs.coverMm) / inputs.distSpacingMm) + 1;
+176: const shutteringAreaSqft = hasConcrete ? (2 * (inputs.lengthFt + inputs.widthFt) * inputs.depthFt * inputs.footingNos) : 0;
+202: { code: cementRate.itemCode || "MAT-CEM-01", category: "Material", description: `Cement OPC 53 Grade (PCC Bed + RCC ${inputs.grade})`, unit: "BAG", engQty: totalCementBags, procQty: Math.ceil(totalCementBags), rate: cementRate.rate, rateFound: cementRate.found, amount: cementCost },
+223: description: `Footing ${scopeOption === 'both' ? 'Concrete Casting & Mesh Tying' : scopeOption === 'concrete_only' ? 'Concrete Casting & Shuttering' : 'Mesh Bar Bending & Steel Tying'} Labour`,
+260: }, [inputs, scopeOption, cementRate, steelRate, sandRate, ca20Rate, ca12Rate, wireRate, coverRate, waterRate, excRate, shutteringRate, rccLabourRate]);
+279: XLSX.writeFile(wb, `BuildMitra_Footing_Estimate_${scopeOption}.xlsx`);
+287: `*Scope Option*: ${scopeOption === 'both' ? 'Both Concrete & Steel' : scopeOption === 'concrete_only' ? 'Only Concrete, PCC & Shuttering' : 'Only Steel Mesh Mat'}%0A` +
+289: `• *Footings*: ${inputs.footingNos} Nos (${inputs.lengthFt}'x${inputs.widthFt}' x ${inputs.depthFt}ft - ${inputs.grade})%0A` +
+311: <span style={styles.badge}>IS 456 Mesh Mat & Excavation</span>
+314: <span style={{ fontSize: '11px', color: '#fecdd3' }}>BuildMitra Professional Edition</span>
+319: <MarketRateTrend />
+326: value={scopeOption}
+327: onChange={(e) => setScopeOption(e.target.value as 'both' | 'concrete_only' | 'steel_only')}
+338: <span>📐 Footing Geometry, Excavation & PCC Specifications</span>
+352: onChange={e => setInputs({ ...inputs, footingNos: parseFloat(e.target.value) || 1 })}
+357: <label style={styles.label}>Footing Length (Ft)</label>
+361: value={inputs.lengthFt}
+362: onChange={e => setInputs({ ...inputs, lengthFt: parseFloat(e.target.value) || 0 })}
+367: <label style={styles.label}>Footing Width (Ft)</label>
+371: value={inputs.widthFt}
+372: onChange={e => setInputs({ ...inputs, widthFt: parseFloat(e.target.value) || 0 })}
+377: <label style={styles.label}>Footing Depth (Ft)</label>
+381: value={inputs.depthFt}
+382: onChange={e => setInputs({ ...inputs, depthFt: parseFloat(e.target.value) || 0 })}
+387: <label style={styles.label}>Pit Excavation Depth (Ft)</label>
+391: value={inputs.excDepthFt}
+392: onChange={e => setInputs({ ...inputs, excDepthFt: parseFloat(e.target.value) || 0 })}
+402: onChange={e => setInputs({ ...inputs, workSpaceFt: parseFloat(e.target.value) || 0 })}
+412: onChange={e => setInputs({ ...inputs, pccThickMm: parseFloat(e.target.value) || 100 })}
+422: onChange={e => setInputs({ ...inputs, pccProjIn: parseFloat(e.target.value) || 6 })}
+428: <label style={styles.label}>Concrete Mix Grade</label>
+431: value={inputs.grade}
+432: onChange={e => setInputs({ ...inputs, grade: e.target.value })}
+453: onChange={e => setInputs({ ...inputs, mainDia: parseFloat(e.target.value) || 12 })}
+463: onChange={e => setInputs({ ...inputs, mainSpacingMm: parseFloat(e.target.value) || 150 })}
+473: onChange={e => setInputs({ ...inputs, distDia: parseFloat(e.target.value) || 12 })}
+483: onChange={e => setInputs({ ...inputs, distSpacingMm: parseFloat(e.target.value) || 150 })}
+493: onChange={e => setInputs({ ...inputs, coverMm: parseFloat(e.target.value) || 50 })}
+498: <label style={styles.label}>L-Bend Length (mm)</label>
+502: value={inputs.bendLengthMm}
+503: onChange={e => setInputs({ ...inputs, bendLengthMm: parseFloat(e.target.value) || 300 })}
+518: <span>📊 Footing Results BOQ ({scopeOption === 'both' ? 'Concrete & Steel' : scopeOption === 'concrete_only' ? 'Concrete & Formwork' : 'Steel Rebar Only'})</span>
+524: <span style={styles.metricTitle}>RCC Concrete Volume</span>
+525: <span style={styles.metricVal}>{formatNumber(calcResults.rccVolCft)} CFT</span>
+526: <span style={{ fontSize: '11px', opacity: 0.9 }}>({formatNumber(calcResults.rccVolCum, 3)} CUM @ {inputs.grade})</span>
+531: <span style={styles.metricTitle}>Excavation & Cement</span>
+532: <span style={styles.metricVal}>{formatNumber(calcResults.excVolCum, 2)} CUM | {formatNumber(calcResults.totalCementBags, 1)} Bags</span>
+538: <span style={styles.metricTitle}>Steel Rebar Mesh</span>
+539: <span style={styles.metricVal}>{formatNumber(calcResults.totalSteelKg, 1)} kg</span>
+540: <span style={{ fontSize: '11px', opacity: 0.9 }}>({inputs.mainDia}mm Main + {inputs.distDia}mm Dist)</span>
+545: <span style={styles.metricTitle}>Total Cost</span>
+546: <span style={styles.metricVal}>{formatCurrency(calcResults.grandTotal)}</span>
+547: <span style={{ fontSize: '11px', opacity: 0.9 }}>({formatCurrency(calcResults.costPerCft)} / CFT)</span>
+571: <span style={{
+580: </span>
+588: <span style={styles.rateTag}>{formatCurrency(item.rate)}</span>
+590: <span style={styles.rateTagWarn}>Rate Unavailable</span>
+
+============================================================
+FILE: .\pages\lintel-calculator.tsx
+============================================================
+1: import React, { useState, useEffect, useMemo } from 'react';
+5: import MarketRateTrend from '../components/ui/MarketRateTrend';
+9: container: { maxWidth: '1200px', margin: '0 auto', padding: '16px', backgroundColor: '#f8fafc', minHeight: '100vh', boxSizing: 'border-box', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' },
+17: modeSelect: { width: '100%', padding: '12px 14px', border: '2px solid #800020', borderRadius: '8px', fontSize: '15px', fontWeight: '700', color: '#800020', backgroundColor: '#fff5f7', outline: 'none', cursor: 'pointer' },
+27: input: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#fff', outline: 'none' },
+28: select: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', backgroundColor: '#fff', outline: 'none' },
+45: table: { width: '100%', borderCollapse: 'collapse', fontSize: '12px' },
+66: export default function LintelCalculator() {
+75: const [scopeOption, setScopeOption] = useState<'both' | 'concrete_only' | 'steel_only'>('both');
+80: clearLenFt: 5,        // Clear opening length in feet
+81: widthIn: 9,           // Lintel width in inches (9" or 6")
+82: depthIn: 6,           // Lintel depth in inches (6")
+83: grade: 'M20',         // Concrete grade: M20, M25, M30
+90: bearingMm: 150,       // Bearing length on each side in mm
+94: const [inputs, setInputs] = useState(initialInputs);
+108: const handleReset = () => setInputs(initialInputs);
+112: const hasConcrete = scopeOption === 'both' || scopeOption === 'concrete_only';
+113: const hasSteel = scopeOption === 'both' || scopeOption === 'steel_only';
+118: const widthFt = inputs.widthIn / 12;
+119: const depthFt = inputs.depthIn / 12;
+121: const volPerLintelCft = totalLenFt * widthFt * depthFt;
+131: if (inputs.grade === 'M25') {
+136: } else if (inputs.grade === 'M30') {
+152: const coreW_m = (inputs.widthIn * 25.4 - 2 * inputs.coverMm) / 1000;
+153: const coreD_m = (inputs.depthIn * 25.4 - 2 * inputs.coverMm) / 1000;
+164: const shutteringAreaSqft = hasConcrete ? (inputs.lintelNos * totalLenFt * (widthFt + 2 * depthFt)) : 0;
+188: { code: cementRate.itemCode || "MAT-CEM-01", category: "Material", description: `Cement OPC 53 Grade (${inputs.grade} Mix)`, unit: "BAG", engQty: cementBags, procQty: Math.ceil(cementBags), rate: cementRate.rate, rateFound: cementRate.found, amount: cementCost },
+209: description: `Lintel Beam ${scopeOption === 'both' ? 'Concrete Casting & Mesh Tying' : scopeOption === 'concrete_only' ? 'Concrete Casting & Shuttering' : 'Mesh Bar Bending & Steel Tying'} Labour`,
+241: }, [inputs, scopeOption, cementRate, steelRate, sandRate, ca20Rate, ca12Rate, wireRate, coverRate, waterRate, shutteringRate, rccLabourRate]);
+260: XLSX.writeFile(wb, `BuildMitra_Lintel_Beam_Estimate_${scopeOption}.xlsx`);
+268: `*Scope Option*: ${scopeOption === 'both' ? 'Both Concrete & Steel' : scopeOption === 'concrete_only' ? 'Only Concrete & Formwork' : 'Only Steel Rebar'}%0A` +
+270: `• *Lintels*: ${inputs.lintelNos} Nos (${inputs.clearLenFt}' Clear Span x ${inputs.widthIn}" W x ${inputs.depthIn}" D - ${inputs.grade})%0A` +
+291: <span style={styles.badge}>IS 456 Clear Span & Bearing Calculation</span>
+294: <span style={{ fontSize: '11px', color: '#fecdd3' }}>BuildMitra Professional Edition</span>
+299: <MarketRateTrend />
+306: value={scopeOption}
+307: onChange={(e) => setScopeOption(e.target.value as 'both' | 'concrete_only' | 'steel_only')}
+318: <span>📐 Lintel Geometry & Bearing Specifications</span>
+322: 💡 <strong>IS 456 Lintel Beam Design Standards</strong>: Computes clear span opening plus side wall bearing (default 150mm each side), total concrete volume, bottom soffit and side formwork shuttering, main longitudinal bars with $50d$ anchorage, and 2-legged 8mm stirrups.
+332: onChange={e => setInputs({ ...inputs, lintelNos: parseFloat(e.target.value) || 1 })}
+337: <label style={styles.label}>Clear Opening Span (Ft)</label>
+342: onChange={e => setInputs({ ...inputs, clearLenFt: parseFloat(e.target.value) || 0 })}
+347: <label style={styles.label}>Wall Width (Inches)</label>
+351: value={inputs.widthIn}
+352: onChange={e => setInputs({ ...inputs, widthIn: parseFloat(e.target.value) || 9 })}
+357: <label style={styles.label}>Lintel Depth (Inches)</label>
+361: value={inputs.depthIn}
+362: onChange={e => setInputs({ ...inputs, depthIn: parseFloat(e.target.value) || 6 })}
+372: onChange={e => setInputs({ ...inputs, bearingMm: parseFloat(e.target.value) || 150 })}
+378: <label style={styles.label}>Concrete Mix Grade</label>
+381: value={inputs.grade}
+382: onChange={e => setInputs({ ...inputs, grade: e.target.value })}
+403: onChange={e => setInputs({ ...inputs, mainDia: parseFloat(e.target.value) || 12 })}
+413: onChange={e => setInputs({ ...inputs, mainNos: parseFloat(e.target.value) || 4 })}
+423: onChange={e => setInputs({ ...inputs, stirrupDia: parseFloat(e.target.value) || 8 })}
+433: onChange={e => setInputs({ ...inputs, stirrupSpacingMm: parseFloat(e.target.value) || 150 })}
+443: onChange={e => setInputs({ ...inputs, coverMm: parseFloat(e.target.value) || 25 })}
+458: <span>📊 Lintel Beam Results BOQ ({scopeOption === 'both' ? 'Concrete & Steel' : scopeOption === 'concrete_only' ? 'Concrete & Formwork' : 'Steel Rebar Only'})</span>
+464: <span style={styles.metricTitle}>RCC Concrete Volume</span>
+465: <span style={styles.metricVal}>{formatNumber(calcResults.totalVolCft)} CFT</span>
+466: <span style={{ fontSize: '11px', opacity: 0.9 }}>({formatNumber(calcResults.totalVolCum, 3)} CUM @ {inputs.grade})</span>
+471: <span style={styles.metricTitle}>Cement & Shuttering</span>
+472: <span style={styles.metricVal}>{formatNumber(calcResults.cementBags, 1)} Bags | {formatNumber(calcResults.shutteringAreaSqft)} Sqft</span>
+478: <span style={styles.metricTitle}>Steel Rebar</span>
+479: <span style={styles.metricVal}>{formatNumber(calcResults.totalSteelKg, 1)} kg</span>
+480: <span style={{ fontSize: '11px', opacity: 0.9 }}>({inputs.mainDia}mm Main + {inputs.stirrupDia}mm Stirrups)</span>
+485: <span style={styles.metricTitle}>Total Cost</span>
+486: <span style={styles.metricVal}>{formatCurrency(calcResults.grandTotal)}</span>
+487: <span style={{ fontSize: '11px', opacity: 0.9 }}>({formatCurrency(calcResults.costPerCft)} / CFT)</span>
+511: <span style={{
+520: </span>
+528: <span style={styles.rateTag}>{formatCurrency(item.rate)}</span>
+530: <span style={styles.rateTagWarn}>Rate Unavailable</span>
+
+============================================================
+FILE: .\pages\paint-calculator.tsx
+============================================================
+1: import React, { useState, useEffect, useMemo } from 'react';
+5: import MarketRateTrend from '../components/ui/MarketRateTrend';
+9: container: { maxWidth: '1200px', margin: '0 auto', padding: '16px', backgroundColor: '#f8fafc', minHeight: '100vh', boxSizing: 'border-box', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' },
+17: modeSelect: { width: '100%', padding: '12px 14px', border: '2px solid #0f766e', borderRadius: '8px', fontSize: '15px', fontWeight: '700', color: '#0f766e', backgroundColor: '#f0fdfa', outline: 'none', cursor: 'pointer' },
+28: input: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#fff', outline: 'none' },
+29: select: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', backgroundColor: '#fff', outline: 'none' },
+47: table: { width: '100%', borderCollapse: 'collapse', fontSize: '12px' },
+80: export default function PaintCalculator() {
+89: const [calcMode, setCalcMode] = useState<'quick' | 'detailed'>('quick');
+103: const [quickInputs, setQuickInputs] = useState(initialQuickInputs);
+118: length: 20,
+119: height: 10,
+126: const [detailedInputs, setDetailedInputs] = useState(initialDetailedInputs);
+136: const [openings, setOpenings] = useState<any[]>([
+137: { type: 'Door', width: 3, height: 7, nos: 1, area: 21, hasShutter: true, hasFrame: true }
+140: const [openingInput, setOpeningInput] = useState({
+142: width: 3,
+143: height: 7,
+150: const [specialPaints, setSpecialPaints] = useState<any[]>([]);
+151: const [specialInput, setSpecialInput] = useState({
+187: if (openingInput.width > 0 && openingInput.height > 0 && openingInput.nos > 0) {
+188: const area = openingInput.width * openingInput.height * openingInput.nos;
+217: setOpenings([{ type: 'Door', width: 3, height: 7, nos: 1, area: 21, hasShutter: true, hasFrame: true }]);
+357: const grossWallArea = d.length * d.height * d.wallNos;
+358: const ceilingArea = d.includeCeiling ? (d.length * d.height) : 0;
+367: if (o.hasFrame) totalFrameRft += 2 * (o.width + o.height) * o.nos;
+559: <span style={styles.badge}>IS 2395 / IS 5410 Compliant</span>
+562: <span style={{ fontSize: '11px', color: '#e0f2fe' }}>BuildMitra Professional Edition</span>
+567: <MarketRateTrend />
+589: <span>⚡ Quick Paint Calculation Inputs</span>
+698: <span>📊 Paint Calculation Results & Materials BOQ</span>
+714: <span style={styles.metricTitle}>Net Paint Area</span>
+715: <span style={styles.metricVal}>{formatNumber(quickCalcResults.paintableArea)} Sqft</span>
+718: <span style={styles.metricTitle}>Material Cost</span>
+719: <span style={styles.metricVal}>{formatCurrency(quickCalcResults.grandMatCost)}</span>
+722: <span style={styles.metricTitle}>Labour Cost</span>
+723: <span style={styles.metricVal}>{formatCurrency(quickCalcResults.grandLabCost)}</span>
+726: <span style={styles.metricTitle}>Grand Total</span>
+727: <span style={styles.metricVal}>{formatCurrency(quickCalcResults.grandTotal)}</span>
+728: <span style={{ fontSize: '11px', opacity: 0.9 }}>({formatCurrency(quickCalcResults.costPerSqft)} / Sqft)</span>
+752: <span style={{
+761: </span>
+769: <span style={styles.rateTag}>{formatCurrency(item.rate)}</span>
+771: <span style={styles.rateTagWarn}>Rate Unavailable</span>
+795: <span>📐 Detailed Wall-Wise Paint Calculation Inputs</span>
+839: <label style={styles.label}>Length per Wall (Ft)</label>
+843: value={detailedInputs.length}
+844: onChange={e => setDetailedInputs({ ...detailedInputs, length: parseFloat(e.target.value) || 0 })}
+849: <label style={styles.label}>Height per Wall (Ft)</label>
+853: value={detailedInputs.height}
+854: onChange={e => setDetailedInputs({ ...detailedInputs, height: parseFloat(e.target.value) || 0 })}
+906: <label style={styles.label}>Width (Ft)</label>
+907: <input type="number" style={styles.input} value={openingInput.width} onChange={e => setOpeningInput({ ...openingInput, width: parseFloat(e.target.value) || 0 })} />
+910: <label style={styles.label}>Height (Ft)</label>
+911: <input type="number" style={styles.input} value={openingInput.height} onChange={e => setOpeningInput({ ...openingInput, height: parseFloat(e.target.value) || 0 })} />
+920: {openings.length > 0 && (
+936: <td style={styles.td}>{o.width}' x {o.height}'</td>
+971: {specialPaints.length > 0 && (
+1004: <span>📊 Detailed Paint Calculation Results & Materials BOQ</span>
+1019: <span style={styles.metricTitle}>Net Paint Area</span>
+1020: <span style={styles.metricVal}>{formatNumber(detailedCalcResults.totalPaintArea)} Sqft</span>
+1023: <span style={styles.metricTitle}>Material Cost</span>
+1024: <span style={styles.metricVal}>{formatCurrency(detailedCalcResults.grandMatCost)}</span>
+1027: <span style={styles.metricTitle}>Labour Cost</span>
+1028: <span style={styles.metricVal}>{formatCurrency(detailedCalcResults.grandLabCost)}</span>
+1031: <span style={styles.metricTitle}>Grand Total</span>
+1032: <span style={styles.metricVal}>{formatCurrency(detailedCalcResults.grandTotal)}</span>
+1033: <span style={{ fontSize: '11px', opacity: 0.9 }}>({formatCurrency(detailedCalcResults.costPerSqft)} / Sqft)</span>
+1056: <span style={{
+1065: </span>
+1073: <span style={styles.rateTag}>{formatCurrency(item.rate)}</span>
+1075: <span style={styles.rateTagWarn}>Rate Unavailable</span>
+
+============================================================
+FILE: .\pages\patio-calculator.tsx
+============================================================
+1: import React, { useState } from 'react';
+8: container: { maxWidth: '100%', margin: 0, padding: '12px', backgroundColor: '#f5f0e8', minHeight: '100vh', boxSizing: 'border-box' },
+16: input: { width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#fff' },
+17: select: { width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '6px', fontSize: '13px', backgroundColor: '#fff' },
+30: table: { width: '100%', borderCollapse: 'collapse', fontSize: '12px' },
+42: export default function PatioPage() {
+48: const [length, setLength] = useState(12);
+49: const [width, setWidth] = useState(10);
+50: const [thickness, setThickness] = useState(100);
+51: const [unit, setUnit] = useState('feet');
+52: const [concreteGrade, setConcreteGrade] = useState('M20');
+53: const [wastage, setWastage] = useState(3);
+55: const [results, setResults] = useState(null);
+56: const [generated, setGenerated] = useState(false);
+59: let L = unit === 'feet' ? length * 0.3048 : length;
+60: let W = unit === 'feet' ? width * 0.3048 : width;
+61: let T = unit === 'feet' ? thickness / 304.8 : thickness / 1000;
+67: if (concreteGrade === 'M20') {
+72: } else if (concreteGrade === 'M25') {
+119: area: { sqft: formatNumber(length * width) }
+158: const message = `🏡 PATIO CALCULATION\n\nDimensions: ${length} x ${width} ${unit === 'feet' ? 'ft' : 'm'}\nArea: ${results.area.sqft} sqft\nConcrete: ${results.concrete.volumeCft} CFT\nCement: ${results.concrete.cement} bags\nTotal Cost: ₹${results.costs.grandTotal}`;
+173: React.createElement('span', null, `💰 Material Rates: Cement ₹${rates?.cement || 400}/bag | Sand ₹${rates?.sand || 55}/CFT`),
+179: React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Length'), React.createElement('input', { type: 'number', value: length, onChange: (e) => setLength(parseFloat(e.target.value)), style: styles.input })),
+180: React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Width'), React.createElement('input', { type: 'number', value: width, onChange: (e) => setWidth(parseFloat(e.target.value)), style: styles.input })),
+181: React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Thickness (mm)'), React.createElement('input', { type: 'number', value: thickness, onChange: (e) => setThickness(parseFloat(e.target.value)), style: styles.input })),
+183: React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Grade'), React.createElement('select', { value: concreteGrade, onChange: (e) => setConcreteGrade(e.target.value), style: styles.select }, React.createElement('option', { value: 'M20' }, 'M20'), React.createElement('option', { value: 'M25' }, 'M25'), React.createElement('option', { value: 'M30' }, 'M30'))),
+214: React.createElement('tr', { style: { backgroundColor: '#e8f4f8', fontWeight: 'bold' } }, React.createElement('td', { colSpan: 3, style: styles.td }, 'Material Total'), React.createElement('td', { style: styles.td }, `₹${results.costs.materialTotal}`)),
+219: React.createElement('tr', { style: { backgroundColor: '#f0f7f5', fontWeight: 'bold' } }, React.createElement('td', { colSpan: 3, style: styles.td }, 'Total Labour'), React.createElement('td', { style: styles.td }, `₹${results.costs.labour}`)),
+220: React.createElement('tr', { style: { backgroundColor: '#800020', color: 'white', fontWeight: 'bold' } }, React.createElement('td', { colSpan: 3, style: { padding: '8px' } }, 'GRAND TOTAL'), React.createElement('td', { style: { padding: '8px' } }, `₹${results.costs.grandTotal}`))
+
+============================================================
+FILE: .\pages\pile-calculator.tsx
+============================================================
+1: import React, { useState } from 'react';
+8: container: { maxWidth: '100%', margin: 0, padding: '12px', backgroundColor: '#f5f0e8', minHeight: '100vh', boxSizing: 'border-box' },
+17: input: { width: '100%', padding: '6px', border: '1px solid #ccc', borderRadius: '4px', fontSize: '11px', boxSizing: 'border-box', backgroundColor: '#fff' },
+18: select: { width: '100%', padding: '6px', border: '1px solid #ccc', borderRadius: '4px', fontSize: '11px', backgroundColor: '#fff' },
+32: table: { width: '100%', borderCollapse: 'collapse', fontSize: '12px' },
+48: export default function PileCalculator() {
+54: const [pileNos, setPileNos] = useState(1);
+55: const [diameter, setDiameter] = useState(1);
+56: const [length, setLength] = useState(15);
+57: const [unit, setUnit] = useState('feet');
+58: const [concreteGrade, setConcreteGrade] = useState('M20');
+59: const [cover, setCover] = useState(50);
+60: const [wastage, setWastage] = useState(3);
+62: const [mainBarDia, setMainBarDia] = useState(16);
+63: const [mainBarNos, setMainBarNos] = useState(8);
+64: const [tieDia, setTieDia] = useState(8);
+65: const [tieSpacing, setTieSpacing] = useState(150);
+66: const [boringRate, setBoringRate] = useState(500);
+68: const [results, setResults] = useState(null);
+69: const [generated, setGenerated] = useState(false);
+81: let D = unit === 'feet' ? diameter * 0.3048 : diameter;
+82: let L = unit === 'feet' ? length * 0.3048 : length;
+95: const mainBarLengthM = L + 1.5;
+96: const mainTotalLengthM = mainBarLengthM * mainBarNos * pileNos;
+97: const mainSteelWeight = mainTotalLengthM * getWeightPerMeter(mainBarDia);
+101: const tiesLengthPerPile = circumference * tiesNos;
+102: const totalTiesLength = tiesLengthPerPile * pileNos;
+103: const tieSteelWeight = totalTiesLength * getWeightPerMeter(tieDia);
+112: const totalBoringLength = L * pileNos;
+113: const boringCost = totalBoringLength * boringRate;
+134: pile: { nos: pileNos, diameter: D, length: L, volume: formatNumber(totalVolumeCum) },
+139: boring: { length: formatNumber(totalBoringLength), cost: formatNumber(boringCost) },
+157: { Item: 'Pile Diameter', Quantity: results.pile.diameter, Unit: 'm', Cost: '-' },
+158: { Item: 'Pile Length', Quantity: results.pile.length, Unit: 'm', Cost: '-' },
+164: { Item: 'Boring', Quantity: results.boring.length, Unit: 'm', Cost: `₹${results.costs.boring}` },
+177: const message = `🥧 PILE FOUNDATION\n\nDiameter: ${results.pile.diameter} m\nLength: ${results.pile.length} m\nPiles: ${results.pile.nos} nos\nConcrete: ${results.concrete.volumeCft} CFT\nSteel: ${results.steel.total} kg\nTotal Cost: ₹${results.costs.grandTotal}`;
+192: React.createElement('span', null, `💰 Cement: ₹${cementRate}/bag | Steel: ₹${steelRate}/kg | Labour: ₹${labourRate}/CUM | Boring: ₹${boringRate}/m`)
+198: React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Diameter'), React.createElement('input', { type: 'number', value: diameter, onChange: (e) => setDiameter(parseFloat(e.target.value)), style: styles.input })),
+199: React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Length'), React.createElement('input', { type: 'number', value: length, onChange: (e) => setLength(parseFloat(e.target.value)), style: styles.input })),
+202: React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Grade'), React.createElement('select', { value: concreteGrade, onChange: (e) => setConcreteGrade(e.target.value), style: styles.select },
+244: React.createElement('tr', null, React.createElement('td', { style: styles.td }, 'Boring'), React.createElement('td', { style: styles.td }, results.boring.length), React.createElement('td', { style: styles.td }, 'm'), React.createElement('td', { style: styles.td }, `₹${results.costs.boring}`)),
+245: React.createElement('tr', { style: { backgroundColor: '#e8f4f8', fontWeight: 'bold' } }, React.createElement('td', { colSpan: 3, style: styles.td }, 'Material Total'), React.createElement('td', { style: styles.td }, `₹${results.costs.materialTotal}`)),
+246: React.createElement('tr', { style: styles.evenRow }, React.createElement('td', { colSpan: 3, style: styles.td }, 'Labour'), React.createElement('td', { style: styles.td }, `₹${results.costs.labour}`)),
+247: React.createElement('tr', { style: { backgroundColor: '#800020', color: 'white', fontWeight: 'bold' } }, React.createElement('td', { colSpan: 3, style: { padding: '8px' } }, 'GRAND TOTAL'), React.createElement('td', { style: { padding: '8px' } }, `₹${results.costs.grandTotal}`))
+
+============================================================
+FILE: .\pages\pile-foundation-calculator.tsx
+============================================================
+1: import React, { useState, useEffect, useMemo } from 'react';
+5: import MarketRateTrend from '../components/ui/MarketRateTrend';
+9: container: { maxWidth: '1200px', margin: '0 auto', padding: '16px', backgroundColor: '#f8fafc', minHeight: '100vh', boxSizing: 'border-box', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' },
+17: modeSelect: { width: '100%', padding: '12px 14px', border: '2px solid #800020', borderRadius: '8px', fontSize: '15px', fontWeight: '700', color: '#800020', backgroundColor: '#fff5f7', outline: 'none', cursor: 'pointer' },
+27: input: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#fff', outline: 'none' },
+28: select: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', backgroundColor: '#fff', outline: 'none' },
+45: table: { width: '100%', borderCollapse: 'collapse', fontSize: '12px' },
+66: export default function PileFoundationCalculator() {
+75: const [scopeOption, setScopeOption] = useState<'both' | 'boring_only' | 'cage_only'>('both');
+80: diameterFt: 1,        // Pile diameter in feet (e.g. 1ft = 300mm)
+81: lengthFt: 15,         // Pile depth/length in feet
+82: grade: 'M20',         // Tremie concrete grade: M20, M25, M30
+92: const [inputs, setInputs] = useState(initialInputs);
+106: const handleReset = () => setInputs(initialInputs);
+110: const hasConcrete = scopeOption === 'both' || scopeOption === 'boring_only';
+111: const hasSteel = scopeOption === 'both' || scopeOption === 'cage_only';
+114: const radiusFt = inputs.diameterFt / 2;
+115: const volPerPileCft = Math.PI * radiusFt * radiusFt * inputs.lengthFt;
+119: // Boring Depth (RMT)
+120: const boringLenM = hasConcrete ? (inputs.lengthFt * 0.3048 * inputs.pileNos) : 0;
+128: if (inputs.grade === 'M25') {
+133: } else if (inputs.grade === 'M30') {
+146: const mainBarLenM = (inputs.lengthFt * 0.3048) + (50 * inputs.mainDia / 1000);
+149: const coreDiaM = (inputs.diameterFt * 0.3048) - 2 * (inputs.coverMm / 1000);
+151: const tieNosPerPile = Math.ceil((inputs.lengthFt * 304.8) / inputs.tieSpacingMm) + 1;
+156: const coverBlockNos = hasSteel ? (inputs.pileNos * Math.ceil(inputs.lengthFt / 4) * 4) : 0;
+182: { code: cementRate.itemCode || "MAT-CEM-01", category: "Material", description: `Cement OPC 53 Grade (Tremie ${inputs.grade} Mix)`, unit: "BAG", engQty: cementBags, procQty: Math.ceil(cementBags), rate: cementRate.rate, rateFound: cementRate.found, amount: cementCost },
+202: description: `Pile Foundation ${scopeOption === 'both' ? 'Tremie Casting & Cage Tying' : scopeOption === 'boring_only' ? 'Tremie Concrete Casting' : 'Rebar Cage Fabricating'} Labour`,
+233: }, [inputs, scopeOption, cementRate, steelRate, sandRate, ca20Rate, ca12Rate, wireRate, coverRate, waterRate, boringRate, rccLabourRate]);
+252: XLSX.writeFile(wb, `BuildMitra_Pile_Foundation_Estimate_${scopeOption}.xlsx`);
+260: `*Scope Option*: ${scopeOption === 'both' ? 'Both Concrete, Boring & Steel' : scopeOption === 'boring_only' ? 'Only Concrete & Boring' : 'Only Steel Rebar Cage'}%0A` +
+262: `• *Piles*: ${inputs.pileNos} Nos (${inputs.diameterFt}' Dia x ${inputs.lengthFt}ft Depth - ${inputs.grade})%0A` +
+284: <span style={styles.badge}>IS 2911 Tremie Casting & Bar Schedule</span>
+287: <span style={{ fontSize: '11px', color: '#fecdd3' }}>BuildMitra Professional Edition</span>
+292: <MarketRateTrend />
+299: value={scopeOption}
+300: onChange={(e) => setScopeOption(e.target.value as 'both' | 'boring_only' | 'cage_only')}
+311: <span>📐 Pile Geometry & Boring Specifications</span>
+315: 💡 <strong>IS 2911 Pile Foundation Design Standards</strong>: Computes auger pit boring depth in RMT, tremie concrete volume, main longitudinal bar schedule with $50d$ anchorage, circular helical ties/rings, and heavy duty circular wheel spacers (50mm cover).
+325: onChange={e => setInputs({ ...inputs, pileNos: parseFloat(e.target.value) || 1 })}
+330: <label style={styles.label}>Pile Diameter (Ft)</label>
+335: value={inputs.diameterFt}
+336: onChange={e => setInputs({ ...inputs, diameterFt: parseFloat(e.target.value) || 1 })}
+341: <label style={styles.label}>Pile Length / Depth (Ft)</label>
+345: value={inputs.lengthFt}
+346: onChange={e => setInputs({ ...inputs, lengthFt: parseFloat(e.target.value) || 0 })}
+352: <label style={styles.label}>Tremie Concrete Grade</label>
+355: value={inputs.grade}
+356: onChange={e => setInputs({ ...inputs, grade: e.target.value })}
+377: onChange={e => setInputs({ ...inputs, mainDia: parseFloat(e.target.value) || 16 })}
+387: onChange={e => setInputs({ ...inputs, mainNos: parseFloat(e.target.value) || 8 })}
+397: onChange={e => setInputs({ ...inputs, tieDia: parseFloat(e.target.value) || 8 })}
+407: onChange={e => setInputs({ ...inputs, tieSpacingMm: parseFloat(e.target.value) || 150 })}
+417: onChange={e => setInputs({ ...inputs, coverMm: parseFloat(e.target.value) || 50 })}
+432: <span>📊 Pile Foundation Results BOQ ({scopeOption === 'both' ? 'Concrete & Steel' : scopeOption === 'boring_only' ? 'Concrete & Boring' : 'Steel Cage Only'})</span>
+438: <span style={styles.metricTitle}>RCC Concrete Volume</span>
+439: <span style={styles.metricVal}>{formatNumber(calcResults.totalVolCft)} CFT</span>
+440: <span style={{ fontSize: '11px', opacity: 0.9 }}>({formatNumber(calcResults.totalVolCum, 3)} CUM @ {inputs.grade})</span>
+445: <span style={styles.metricTitle}>Auger Boring & Cement</span>
+446: <span style={styles.metricVal}>{formatNumber(calcResults.boringLenM, 2)} RMT | {formatNumber(calcResults.cementBags, 1)} Bags</span>
+452: <span style={styles.metricTitle}>Steel Rebar Cage</span>
+453: <span style={styles.metricVal}>{formatNumber(calcResults.totalSteelKg, 1)} kg</span>
+454: <span style={{ fontSize: '11px', opacity: 0.9 }}>({inputs.mainDia}mm Main + {inputs.tieDia}mm Ties)</span>
+459: <span style={styles.metricTitle}>Total Cost</span>
+460: <span style={styles.metricVal}>{formatCurrency(calcResults.grandTotal)}</span>
+461: <span style={{ fontSize: '11px', opacity: 0.9 }}>({formatCurrency(calcResults.costPerCft)} / CFT)</span>
+485: <span style={{
+494: </span>
+502: <span style={styles.rateTag}>{formatCurrency(item.rate)}</span>
+504: <span style={styles.rateTagWarn}>Rate Unavailable</span>
+
+============================================================
+FILE: .\pages\plaster-calculator.tsx
+============================================================
+1: import React, { useState, useEffect, useMemo } from 'react';
+5: import MarketRateTrend from '../components/ui/MarketRateTrend';
+9: container: { maxWidth: '1200px', margin: '0 auto', padding: '16px', backgroundColor: '#f8fafc', minHeight: '100vh', boxSizing: 'border-box', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' },
+17: modeSelect: { width: '100%', padding: '12px 14px', border: '2px solid #0f766e', borderRadius: '8px', fontSize: '15px', fontWeight: '700', color: '#0f766e', backgroundColor: '#f0fdfa', outline: 'none', cursor: 'pointer' },
+27: input: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#fff', outline: 'none' },
+28: select: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', backgroundColor: '#fff', outline: 'none' },
+46: table: { width: '100%', borderCollapse: 'collapse', fontSize: '12px' },
+67: export default function PlasterCalculator() {
+76: const [calcMode, setCalcMode] = useState<'quick' | 'detailed'>('quick');
+81: plotLength: 30, // ft
+82: plotWidth: 40,  // ft
+86: thicknessMm: 12,
+90: const [quickInputs, setQuickInputs] = useState(initialQuickInputs);
+95: length: 100,
+96: height: 10,
+98: thicknessMm: 20,
+102: const [detailedInputs, setDetailedInputs] = useState(initialDetailedInputs);
+105: const [openings, setOpenings] = useState<any[]>([
+106: { name: "Door", length: 3.5, width: 7, nos: 2, area: 49 },
+107: { name: "Window", length: 5, width: 4, nos: 2, area: 40 }
+109: const [openingInput, setOpeningInput] = useState({ name: 'Door', length: 3.5, width: 7, nos: 1 });
+119: if (openingInput.length > 0 && openingInput.width > 0 && openingInput.nos > 0) {
+120: const area = openingInput.length * openingInput.width * openingInput.nos;
+135: { name: "Door", length: 3.5, width: 7, nos: 2, area: 49 },
+136: { name: "Window", length: 5, width: 4, nos: 2, area: 40 }
+141: const calculatePlasterMortar = (netArea: number, thicknessMm: number, mortarRatio: string, wastagePct: number, isExternal: boolean) => {
+142: const thicknessFt = thicknessMm / 304.8;
+143: const wetVolCft = netArea * thicknessFt;
+185: description: `Cement (OPC 53 Grade 50kg Bags)`,
+196: description: `Fine M-Sand / P-Sand (Mortar Grade)`,
+234: description: `Plastering Labour (${thicknessMm}mm ${mortarRatio})`,
+266: const plotArea = q.plotLength * q.plotWidth;
+276: const res = calculatePlasterMortar(netArea, q.thicknessMm, q.mortarRatio, q.wastagePct, isExternal);
+281: plotArea: q.plotLength * q.plotWidth
+288: const wallArea = d.nos * d.length * d.height;
+292: const area = o.length * o.width * o.nos;
+302: const res = calculatePlasterMortar(netArea, d.thicknessMm, d.mortarRatio, d.wastagePct, isExternal);
+307: grossOpeningArea: openings.reduce((s, o) => s + (o.length * o.width * o.nos), 0)
+361: <span style={styles.badge}>IS 1661 / IS 2250 / IS 1200 Compliant</span>
+364: <span style={{ fontSize: '11px', color: '#e0f2fe' }}>BuildMitra Professional Edition</span>
+369: <MarketRateTrend />
+391: <span>⚡ Quick Calculation (Plot Dimensions & BUA Civil Thumb Rule)</span>
+395: 💡 <strong>Civil Engineering Thumb Rule</strong>: Built-Up Area (BUA) = Plot Length x Plot Width x Floors. Plasterable Surface Area (Walls & Ceilings) = BUA x 3.5 Sqft.
+406: <option value="Plot Dimensions (L x W x Floors)">Plot Dimensions (Length x Width x Floors)</option>
+414: <label style={styles.label}>Plot Length (Ft)</label>
+418: value={quickInputs.plotLength}
+419: onChange={e => setQuickInputs({ ...quickInputs, plotLength: parseFloat(e.target.value) || 0 })}
+424: <label style={styles.label}>Plot Width (Ft)</label>
+428: value={quickInputs.plotWidth}
+429: onChange={e => setQuickInputs({ ...quickInputs, plotWidth: parseFloat(e.target.value) || 0 })}
+472: <label style={styles.label}>Thickness (mm)</label>
+475: value={quickInputs.thicknessMm}
+476: onChange={e => setQuickInputs({ ...quickInputs, thicknessMm: parseInt(e.target.value) })}
+517: <span>📊 Plaster Calculation Results & Materials BOQ</span>
+533: <span style={styles.metricTitle}>Built-Up Area (BUA)</span>
+534: <span style={styles.metricVal}>{formatNumber(quickCalcResults.builtUpArea)} Sqft</span>
+535: <span style={{ fontSize: '10px', opacity: 0.85 }}>{`(${quickInputs.plotLength} ft x ${quickInputs.plotWidth} ft x ${quickInputs.floors} floors)`}</span>
+538: <span style={styles.metricTitle}>Net Plaster Area</span>
+539: <span style={styles.metricVal}>{formatNumber(quickCalcResults.netArea)} Sqft</span>
+540: <span style={{ fontSize: '10px', opacity: 0.85 }}>(BUA x 3.5 Thumb Rule)</span>
+543: <span style={styles.metricTitle}>Material Cost</span>
+544: <span style={styles.metricVal}>{formatCurrency(quickCalcResults.grandMatCost)}</span>
+547: <span style={styles.metricTitle}>Labour Cost</span>
+548: <span style={styles.metricVal}>{formatCurrency(quickCalcResults.grandLabCost)}</span>
+551: <span style={styles.metricTitle}>Grand Total</span>
+552: <span style={styles.metricVal}>{formatCurrency(quickCalcResults.grandTotal)}</span>
+553: <span style={{ fontSize: '11px', opacity: 0.9 }}>({formatCurrency(quickCalcResults.costPerSqft)} / Sqft)</span>
+577: <span style={{
+586: </span>
+594: <span style={styles.rateTag}>{formatCurrency(item.rate)}</span>
+596: <span style={styles.rateTagWarn}>Rate Unavailable</span>
+620: <span>📐 Detailed Wall-Wise Plaster Calculation Inputs (IS 1661 & IS 1200 Exact Rules)</span>
+635: <label style={styles.label}>Length per Wall (Ft)</label>
+639: value={detailedInputs.length}
+640: onChange={e => setDetailedInputs({ ...detailedInputs, length: parseFloat(e.target.value) || 0 })}
+645: <label style={styles.label}>Height per Wall (Ft)</label>
+649: value={detailedInputs.height}
+650: onChange={e => setDetailedInputs({ ...detailedInputs, height: parseFloat(e.target.value) || 0 })}
+669: <label style={styles.label}>Thickness (mm)</label>
+672: value={detailedInputs.thicknessMm}
+673: onChange={e => setDetailedInputs({ ...detailedInputs, thicknessMm: parseInt(e.target.value) })}
+719: <label style={styles.label}>Width (Ft)</label>
+720: <input type="number" style={styles.input} value={openingInput.length} onChange={e => setOpeningInput({ ...openingInput, length: parseFloat(e.target.value) || 0 })} />
+723: <label style={styles.label}>Height (Ft)</label>
+724: <input type="number" style={styles.input} value={openingInput.width} onChange={e => setOpeningInput({ ...openingInput, width: parseFloat(e.target.value) || 0 })} />
+733: {openings.length > 0 && (
+749: <td style={styles.td}>{`${o.length} ft x ${o.width} ft`}</td>
+751: <td style={styles.td}><strong>{formatNumber(o.length * o.width * o.nos)} Sqft</strong></td>
+770: <span>📊 Detailed Plaster Calculation Results & Materials BOQ</span>
+785: <span style={styles.metricTitle}>Net Plaster Area</span>
+786: <span style={styles.metricVal}>{formatNumber(detailedCalcResults.netArea)} Sqft</span>
+789: <span style={styles.metricTitle}>Material Cost</span>
+790: <span style={styles.metricVal}>{formatCurrency(detailedCalcResults.grandMatCost)}</span>
+793: <span style={styles.metricTitle}>Labour Cost</span>
+794: <span style={styles.metricVal}>{formatCurrency(detailedCalcResults.grandLabCost)}</span>
+797: <span style={styles.metricTitle}>Grand Total</span>
+798: <span style={styles.metricVal}>{formatCurrency(detailedCalcResults.grandTotal)}</span>
+799: <span style={{ fontSize: '11px', opacity: 0.9 }}>({formatCurrency(detailedCalcResults.costPerSqft)} / Sqft)</span>
+822: <span style={{
+831: </span>
+839: <span style={styles.rateTag}>{formatCurrency(item.rate)}</span>
+841: <span style={styles.rateTagWarn}>Rate Unavailable</span>
+
+============================================================
+FILE: .\pages\rcc-calculator.tsx
+============================================================
+
+============================================================
+FILE: .\pages\rcc-slab-calculator.tsx
+============================================================
+1: import React, { useState, useEffect, useMemo } from 'react';
+5: import MarketRateTrend from '../components/ui/MarketRateTrend';
+9: container: { maxWidth: '1200px', margin: '0 auto', padding: '16px', backgroundColor: '#f8fafc', minHeight: '100vh', boxSizing: 'border-box', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' },
+17: modeSelect: { width: '100%', padding: '12px 14px', border: '2px solid #1e3a8a', borderRadius: '8px', fontSize: '15px', fontWeight: '700', color: '#1e3a8a', backgroundColor: '#eff6ff', outline: 'none', cursor: 'pointer' },
+27: input: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#fff', outline: 'none' },
+28: select: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', backgroundColor: '#fff', outline: 'none' },
+46: table: { width: '100%', borderCollapse: 'collapse', fontSize: '12px' },
+69: export default function RCCSlabCalculator() {
+78: const [calcMode, setCalcMode] = useState<'quick' | 'detailed'>('quick');
+83: plotLength: 30, // ft
+84: plotWidth: 40,  // ft
+87: slabThicknessMm: 150, // 125mm, 150mm, 175mm
+88: concreteGrade: 'M20', // M20, M25, M30
+92: const [quickInputs, setQuickInputs] = useState(initialQuickInputs);
+96: length: 30,
+97: width: 40,
+98: thicknessMm: 150,
+100: grade: "M20",
+119: beamLengthFt: 30,
+120: beamWidthIn: 9,   // 9 inches (0.225m)
+121: beamDepthIn: 12,  // 12 inches (0.300m)
+131: const [detailedInputs, setDetailedInputs] = useState(initialDetailedInputs);
+151: grade: string,
+164: if (grade === "M25") {
+170: } else if (grade === "M30") {
+218: description: `Cement OPC 53 Grade (${grade} Mix Design)`,
+229: description: `TMT Steel Reinforcement Rebar (Fe 500D Grade)`,
+240: description: `M-Sand (Washed Concrete Grade)`,
+345: slabAreaSqft = q.plotLength * q.plotWidth * q.floors;
+350: const slabVolCft = slabAreaSqft * (q.slabThicknessMm / 304.8);
+358: const res = calculateRccConcreteAndSteel(slabVolCft, beamVolCft, q.concreteGrade, steelKg);
+369: const Lm = d.length * 0.3048;
+370: const Wm = d.width * 0.3048;
+374: const slabVolCft = d.length * d.width * (d.thicknessMm / 304.8) * d.slabNos;
+380: const beamWidthFt = d.beamWidthIn / 12;
+381: const beamDepthFt = d.beamDepthIn / 12;
+382: beamVolCft = d.beamNos * d.beamLengthFt * beamWidthFt * beamDepthFt;
+384: const bLm = d.beamLengthFt * 0.3048;
+392: const hookLengthM = d.stirrupHookDeg === 135 ? (10 * d.stirrupDia * 2) / 1000 : (8 * d.stirrupDia * 2) / 1000;
+393: const beamWidthM = beamWidthFt * 0.3048;
+394: const beamDepthM = beamDepthFt * 0.3048;
+395: const stirrupLengthEachM = 2 * Math.max(beamWidthM - (2 * d.coverMm / 1000), 0.05) + 2 * Math.max(beamDepthM - (2 * d.coverMm / 1000), 0.05) + hookLengthM;
+396: stirrupKg = stirrupNos * stirrupLengthEachM * kgPerM(d.stirrupDia);
+406: const crankExtraM = d.provideCrank ? (0.42 * (d.thicknessMm / 1000) * (d.crankBarsPct / 100)) : 0;
+419: const chairHeightM = Math.max((d.thicknessMm - (2 * d.coverMm)) / 1000, 0.05);
+420: const chairLengthEachM = chairHeightM + 0.6;
+421: const chairSteelKg = chairNos * chairLengthEachM * kgPerM(d.chairDia);
+426: const res = calculateRccConcreteAndSteel(slabVolCft, beamVolCft, d.grade, totalSteelKg);
+492: <span style={styles.badge}>IS 456:2000 Compliant</span>
+495: <span style={{ fontSize: '11px', color: '#e0f2fe' }}>BuildMitra Structural Edition</span>
+500: <MarketRateTrend />
+522: <span>⚡ Quick Calculation (Plot Dimensions & Slab Thickness Rule)</span>
+526: 💡 <strong>IS 456 Structural Standard</strong>: Concrete Volume = Built-Up Area x Slab Thickness + Monolithic Beam Volume Allowance (~12%). Steel Rebar density = 1.0% volume ratio.
+537: <option value="Plot Dimensions (L x W x Floors)">Plot Dimensions (Length x Width x Floors)</option>
+545: <label style={styles.label}>Plot Length (Ft)</label>
+549: value={quickInputs.plotLength}
+550: onChange={e => setQuickInputs({ ...quickInputs, plotLength: parseFloat(e.target.value) || 0 })}
+555: <label style={styles.label}>Plot Width (Ft)</label>
+559: value={quickInputs.plotWidth}
+560: onChange={e => setQuickInputs({ ...quickInputs, plotWidth: parseFloat(e.target.value) || 0 })}
+589: <label style={styles.label}>Slab Thickness (mm)</label>
+592: value={quickInputs.slabThicknessMm}
+593: onChange={e => setQuickInputs({ ...quickInputs, slabThicknessMm: parseInt(e.target.value) || 150 })}
+603: <label style={styles.label}>Concrete Grade (IS 456)</label>
+606: value={quickInputs.concreteGrade}
+607: onChange={e => setQuickInputs({ ...quickInputs, concreteGrade: e.target.value })}
+649: <span>📊 RCC Slab & Beam Calculation Results & Materials BOQ</span>
+665: <span style={styles.metricTitle}>Total Concrete Volume</span>
+666: <span style={styles.metricVal}>{formatNumber(quickCalcResults.totalVolCft)} CFT</span>
+667: <span style={{ fontSize: '11px', opacity: 0.9 }}>({formatNumber(quickCalcResults.totalVolCum)} m³)</span>
+670: <span style={styles.metricTitle}>Cement & Steel</span>
+671: <span style={styles.metricVal}>{formatNumber(quickCalcResults.cemBags, 1)} Bags | {formatNumber(quickCalcResults.steelKg, 1)} kg</span>
+674: <span style={styles.metricTitle}>Sand & Aggregate</span>
+675: <span style={styles.metricVal}>{formatNumber(quickCalcResults.sandCft, 1)} CFT Sand | {formatNumber(quickCalcResults.agg20Cft, 1)} CFT 20mm</span>
+678: <span style={styles.metricTitle}>Grand Total</span>
+679: <span style={styles.metricVal}>{formatCurrency(quickCalcResults.grandTotal)}</span>
+680: <span style={{ fontSize: '11px', opacity: 0.9 }}>({formatCurrency(quickCalcResults.costPerCft)} / CFT)</span>
+704: <span style={{
+713: </span>
+721: <span style={styles.rateTag}>{formatCurrency(item.rate)}</span>
+723: <span style={styles.rateTagWarn}>Rate Unavailable</span>
+747: <span>📐 Detailed Structural RCC Calculation Inputs (IS 456 Bar Bending & Beam Schedule)</span>
+752: <label style={styles.label}>Slab Length (Ft)</label>
+756: value={detailedInputs.length}
+757: onChange={e => setDetailedInputs({ ...detailedInputs, length: parseFloat(e.target.value) || 0 })}
+762: <label style={styles.label}>Slab Width (Ft)</label>
+766: value={detailedInputs.width}
+767: onChange={e => setDetailedInputs({ ...detailedInputs, width: parseFloat(e.target.value) || 0 })}
+772: <label style={styles.label}>Slab Thickness (mm)</label>
+776: value={detailedInputs.thicknessMm}
+777: onChange={e => setDetailedInputs({ ...detailedInputs, thicknessMm: parseFloat(e.target.value) || 150 })}
+782: <label style={styles.label}>Concrete Grade</label>
+785: value={detailedInputs.grade}
+786: onChange={e => setDetailedInputs({ ...detailedInputs, grade: e.target.value })}
+863: <label style={styles.label}>Beam Length (Ft)</label>
+864: <input type="number" style={styles.input} value={detailedInputs.beamLengthFt} onChange={e => setDetailedInputs({ ...detailedInputs, beamLengthFt: parseFloat(e.target.value) || 0 })} />
+868: <label style={styles.label}>Beam Width (Inches)</label>
+869: <input type="number" style={styles.input} value={detailedInputs.beamWidthIn} onChange={e => setDetailedInputs({ ...detailedInputs, beamWidthIn: parseFloat(e.target.value) || 9 })} />
+873: <label style={styles.label}>Beam Depth (Inches)</label>
+874: <input type="number" style={styles.input} value={detailedInputs.beamDepthIn} onChange={e => setDetailedInputs({ ...detailedInputs, beamDepthIn: parseFloat(e.target.value) || 12 })} />
+922: <span>📊 Detailed Structural RCC Calculation Results & Materials BOQ</span>
+937: <span style={styles.metricTitle}>Total Concrete Volume</span>
+938: <span style={styles.metricVal}>{formatNumber(detailedCalcResults.totalVolCft)} CFT</span>
+939: <span style={{ fontSize: '11px', opacity: 0.9 }}>({formatNumber(detailedCalcResults.totalVolCum)} m³)</span>
+942: <span style={styles.metricTitle}>Cement & Steel</span>
+943: <span style={styles.metricVal}>{formatNumber(detailedCalcResults.cemBags, 1)} Bags | {formatNumber(detailedCalcResults.steelKg, 1)} kg</span>
+946: <span style={styles.metricTitle}>Sand & Aggregate</span>
+947: <span style={styles.metricVal}>{formatNumber(detailedCalcResults.sandCft, 1)} CFT Sand | {formatNumber(detailedCalcResults.agg20Cft, 1)} CFT 20mm</span>
+950: <span style={styles.metricTitle}>Grand Total</span>
+951: <span style={styles.metricVal}>{formatCurrency(detailedCalcResults.grandTotal)}</span>
+952: <span style={{ fontSize: '11px', opacity: 0.9 }}>({formatCurrency(detailedCalcResults.costPerCft)} / CFT)</span>
+975: <span style={{
+984: </span>
+992: <span style={styles.rateTag}>{formatCurrency(item.rate)}</span>
+994: <span style={styles.rateTagWarn}>Rate Unavailable</span>
+
+============================================================
+FILE: .\pages\rcc-steel-building-calculator.tsx
+============================================================
+1: import React, { useState, useEffect, useMemo } from 'react';
+5: import MarketRateTrend from '../components/ui/MarketRateTrend';
+9: container: { maxWidth: '1200px', margin: '0 auto', padding: '16px', backgroundColor: '#f8fafc', minHeight: '100vh', boxSizing: 'border-box', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' },
+17: modeSelect: { width: '100%', padding: '12px 14px', border: '2px solid #800020', borderRadius: '8px', fontSize: '15px', fontWeight: '700', color: '#800020', backgroundColor: '#fff5f7', outline: 'none', cursor: 'pointer' },
+27: input: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#fff', outline: 'none' },
+28: select: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', backgroundColor: '#fff', outline: 'none' },
+46: table: { width: '100%', borderCollapse: 'collapse', fontSize: '12px' },
+67: export default function FullBuildingCalculator() {
+76: const [calcMode, setCalcMode] = useState<'quick' | 'turnkey'>('quick');
+80: plotLength: 30, // ft
+81: plotWidth: 40,  // ft
+84: floorHeight: 10,// ft
+85: qualityGrade: 'Standard' // Basic, Standard, Premium
+87: const [inputs, setInputs] = useState(initialInputs);
+113: const handleReset = () => setInputs(initialInputs);
+117: const plotArea = inputs.plotLength * inputs.plotWidth;
+121: const gradeMultiplier = inputs.qualityGrade === 'Basic' ? 0.95 : inputs.qualityGrade === 'Premium' ? 1.15 : 1.0;
+124: const cementBags = bua * 0.40 * gradeMultiplier;
+128: const steelKgPerSqft = (3.0 + Math.max(inputs.floors - 1, 0) * 0.10) * gradeMultiplier;
+135: const perimeter = 2 * (inputs.plotLength + inputs.plotWidth);
+136: const externalWallArea = perimeter * inputs.floorHeight * inputs.floors;
+195: { code: cementRate.itemCode || "MAT-CEM-01", category: "Material", description: `Cement OPC 53 Grade (Structure + Masonry + Plaster)`, unit: "BAG", engQty: cementBags, procQty: Math.ceil(cementBags), rate: cementRate.rate, rateFound: cementRate.found, amount: cementCost },
+213: { code: compoundWallRate.itemCode || "MAT-CWD-01", category: "Material", description: `Perimeter Compound Wall Masonry & Plaster (6ft Height)`, unit: "SQFT", engQty: compoundWallSqft, procQty: Math.ceil(compoundWallSqft), rate: compoundWallRate.rate, rateFound: compoundWallRate.found, amount: compoundWallCost },
+306: <span style={styles.badge}>Civil Shell & Turnkey BOQ</span>
+309: <span style={{ fontSize: '11px', color: '#fecdd3' }}>BuildMitra Professional Edition</span>
+314: <MarketRateTrend />
+332: <span>📐 Building Plot & Floor Dimensions</span>
+341: <label style={styles.label}>Plot Length (Ft)</label>
+345: value={inputs.plotLength}
+346: onChange={e => setInputs({ ...inputs, plotLength: parseFloat(e.target.value) || 0 })}
+351: <label style={styles.label}>Plot Width (Ft)</label>
+355: value={inputs.plotWidth}
+356: onChange={e => setInputs({ ...inputs, plotWidth: parseFloat(e.target.value) || 0 })}
+366: onChange={e => setInputs({ ...inputs, floors: parseFloat(e.target.value) || 1 })}
+377: onChange={e => setInputs({ ...inputs, buaFactor: parseFloat(e.target.value) || 0.85 })}
+382: <label style={styles.label}>Floor Height (Ft)</label>
+386: value={inputs.floorHeight}
+387: onChange={e => setInputs({ ...inputs, floorHeight: parseFloat(e.target.value) || 10 })}
+392: <label style={styles.label}>Quality Specification Grade</label>
+395: value={inputs.qualityGrade}
+396: onChange={e => setInputs({ ...inputs, qualityGrade: e.target.value })}
+413: <span>📊 Full Building Consolidated Results & Cost Comparisons</span>
+436: <span style={styles.metricTitle}>Built-Up Area (BUA)</span>
+437: <span style={styles.metricVal}>{formatNumber(calcResults.bua)} Sqft</span>
+440: <span style={styles.metricTitle}>Cement & Steel</span>
+441: <span style={styles.metricVal}>{formatNumber(calcResults.cementBags, 0)} Bags | {formatNumber(calcResults.totalSteelKg, 0)} kg</span>
+444: <span style={styles.metricTitle}>Masonry Blocks</span>
+445: <span style={styles.metricVal}>{formatNumber(calcResults.block6Nos + calcResults.block4Nos, 0)} Nos</span>
+448: <span style={styles.metricTitle}>Active Mode Cost</span>
+449: <span style={styles.metricVal}>{formatCurrency(calcResults.activeGrandTotal)}</span>
+450: <span style={{ fontSize: '11px', opacity: 0.9 }}>({formatCurrency(calcResults.activeRatePerSqft)} / Sqft)</span>
+474: <span style={{
+483: </span>
+491: <span style={styles.rateTag}>{formatCurrency(item.rate)}</span>
+493: <span style={styles.rateTagWarn}>Rate Unavailable</span>
+
+============================================================
+FILE: .\pages\rcc-wall-calculator.tsx
+============================================================
+2: export default function RCCWallCalculatorPage() { return <RCCWallCalculator />; }
+
+============================================================
+FILE: .\pages\retaining-wall-calculator.tsx
+============================================================
+1: import React, { useState, useEffect, useMemo } from 'react';
+5: import MarketRateTrend from '../components/ui/MarketRateTrend';
+9: container: { maxWidth: '1200px', margin: '0 auto', padding: '16px', backgroundColor: '#f8fafc', minHeight: '100vh', boxSizing: 'border-box', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' },
+17: modeSelect: { width: '100%', padding: '12px 14px', border: '2px solid #800020', borderRadius: '8px', fontSize: '15px', fontWeight: '700', color: '#800020', backgroundColor: '#fff5f7', outline: 'none', cursor: 'pointer' },
+27: input: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#fff', outline: 'none' },
+28: select: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', backgroundColor: '#fff', outline: 'none' },
+45: table: { width: '100%', borderCollapse: 'collapse', fontSize: '12px' },
+66: export default function RetainingWallCalculator() {
+75: const [scopeOption, setScopeOption] = useState<'both' | 'concrete_only' | 'steel_only'>('both');
+79: lengthFt: 20,       // Wall length in feet
+80: heightFt: 3,        // Stem height in feet
+81: thicknessFt: 0.5,   // Stem thickness in feet (6 inches)
+82: grade: 'M20',       // Concrete grade: M20, M25, M30
+92: const [inputs, setInputs] = useState(initialInputs);
+107: const handleReset = () => setInputs(initialInputs);
+111: const hasConcrete = scopeOption === 'both' || scopeOption === 'concrete_only';
+112: const hasSteel = scopeOption === 'both' || scopeOption === 'steel_only';
+115: const stemHeightFt = inputs.heightFt;
+116: const stemThickFt = inputs.thicknessFt;
+117: const baseWidthFt = Math.max(inputs.heightFt * 0.60, 2.5);
+118: const baseThickFt = Math.max(inputs.thicknessFt, 0.75);
+121: const stemVolCft = inputs.lengthFt * stemHeightFt * stemThickFt;
+122: const baseVolCft = inputs.lengthFt * baseWidthFt * baseThickFt;
+133: if (inputs.grade === 'M25') {
+138: } else if (inputs.grade === 'M30') {
+151: const vertBarLenM = (stemHeightFt * 0.3048 - (inputs.coverMm / 1000)) + (50 * inputs.vertDia / 1000);
+152: const vertBarCount = Math.ceil((inputs.lengthFt * 304.8) / inputs.spacingMm) + 1;
+155: const horizBarLenM = (inputs.lengthFt * 0.3048);
+156: const horizBarCount = Math.ceil((stemHeightFt * 304.8) / inputs.spacingMm) + 1;
+159: const toeHeelBarLenM = (baseWidthFt * 0.3048) + (2 * 50 * inputs.toeHeelDia / 1000);
+160: const toeHeelBarCount = Math.ceil((inputs.lengthFt * 304.8) / inputs.spacingMm) + 1;
+165: const coverBlockNos = hasSteel ? (Math.ceil(inputs.lengthFt / 4) * 8) : 0;
+169: const shutteringAreaSqft = hasConcrete ? (2 * inputs.lengthFt * stemHeightFt) : 0;
+172: const weepholeNos = hasConcrete ? Math.ceil((inputs.lengthFt / 5.0) * Math.max(Math.floor(inputs.heightFt / 3.0), 1)) : 0;
+197: { code: cementRate.itemCode || "MAT-CEM-01", category: "Material", description: `Cement OPC 53 Grade (${inputs.grade} Mix)`, unit: "BAG", engQty: cementBags, procQty: Math.ceil(cementBags), rate: cementRate.rate, rateFound: cementRate.found, amount: cementCost },
+220: description: `Retaining Wall ${scopeOption === 'both' ? 'Concrete Casting & Mesh Tying' : scopeOption === 'concrete_only' ? 'Concrete Casting & Shuttering' : 'Mesh Bar Bending & Steel Tying'} Labour`,
+232: baseWidthFt,
+257: }, [inputs, scopeOption, cementRate, steelRate, sandRate, ca20Rate, ca12Rate, wireRate, coverRate, waterRate, shutteringRate, weepholeRate, rccLabourRate]);
+276: XLSX.writeFile(wb, `BuildMitra_Retaining_Wall_Estimate_${scopeOption}.xlsx`);
+284: `*Scope Option*: ${scopeOption === 'both' ? 'Both Concrete & Steel' : scopeOption === 'concrete_only' ? 'Only Concrete & Formwork' : 'Only Steel Rebar'}%0A` +
+286: `• *Retaining Wall*: ${inputs.lengthFt}' L x ${inputs.heightFt}' H x ${inputs.thicknessFt}' T (${inputs.grade})%0A` +
+287: `• *Base Slab*: ${formatNumber(calcResults.baseWidthFt)}' W x ${formatNumber(calcResults.baseThickFt)}' T%0A` +
+309: <span style={styles.badge}>IS 456 Cantilever Wall & Weepholes</span>
+312: <span style={{ fontSize: '11px', color: '#fecdd3' }}>BuildMitra Professional Edition</span>
+317: <MarketRateTrend />
+324: value={scopeOption}
+325: onChange={(e) => setScopeOption(e.target.value as 'both' | 'concrete_only' | 'steel_only')}
+336: <span>📐 Retaining Wall Geometry & Cantilever Specifications</span>
+345: <label style={styles.label}>Wall Length (Ft)</label>
+349: value={inputs.lengthFt}
+350: onChange={e => setInputs({ ...inputs, lengthFt: parseFloat(e.target.value) || 0 })}
+355: <label style={styles.label}>Stem Height (Ft)</label>
+359: value={inputs.heightFt}
+360: onChange={e => setInputs({ ...inputs, heightFt: parseFloat(e.target.value) || 0 })}
+365: <label style={styles.label}>Stem Thickness (Ft)</label>
+370: value={inputs.thicknessFt}
+371: onChange={e => setInputs({ ...inputs, thicknessFt: parseFloat(e.target.value) || 0.5 })}
+377: <label style={styles.label}>Concrete Mix Grade</label>
+380: value={inputs.grade}
+381: onChange={e => setInputs({ ...inputs, grade: e.target.value })}
+402: onChange={e => setInputs({ ...inputs, vertDia: parseFloat(e.target.value) || 12 })}
+412: onChange={e => setInputs({ ...inputs, horizDia: parseFloat(e.target.value) || 10 })}
+422: onChange={e => setInputs({ ...inputs, toeHeelDia: parseFloat(e.target.value) || 12 })}
+432: onChange={e => setInputs({ ...inputs, spacingMm: parseFloat(e.target.value) || 150 })}
+442: onChange={e => setInputs({ ...inputs, coverMm: parseFloat(e.target.value) || 40 })}
+457: <span>📊 Retaining Wall Results BOQ ({scopeOption === 'both' ? 'Concrete & Steel' : scopeOption === 'concrete_only' ? 'Concrete & Formwork' : 'Steel Rebar Only'})</span>
+463: <span style={styles.metricTitle}>RCC Volume (Stem + Base)</span>
+464: <span style={styles.metricVal}>{formatNumber(calcResults.totalVolCft)} CFT</span>
+465: <span style={{ fontSize: '11px', opacity: 0.9 }}>({formatNumber(calcResults.totalVolCum, 3)} CUM @ {inputs.grade})</span>
+470: <span style={styles.metricTitle}>Cement & Shuttering</span>
+471: <span style={styles.metricVal}>{formatNumber(calcResults.cementBags, 1)} Bags | {formatNumber(calcResults.shutteringAreaSqft)} Sqft</span>
+477: <span style={styles.metricTitle}>Steel Rebar</span>
+478: <span style={styles.metricVal}>{formatNumber(calcResults.totalSteelKg, 1)} kg</span>
+479: <span style={{ fontSize: '11px', opacity: 0.9 }}>({inputs.vertDia}mm / {inputs.horizDia}mm / {inputs.toeHeelDia}mm)</span>
+484: <span style={styles.metricTitle}>Total Cost</span>
+485: <span style={styles.metricVal}>{formatCurrency(calcResults.grandTotal)}</span>
+486: <span style={{ fontSize: '11px', opacity: 0.9 }}>({formatCurrency(calcResults.costPerCft)} / CFT)</span>
+510: <span style={{
+519: </span>
+527: <span style={styles.rateTag}>{formatCurrency(item.rate)}</span>
+529: <span style={styles.rateTagWarn}>Rate Unavailable</span>
+
+============================================================
+FILE: .\pages\roof-truss-calculator.tsx
+============================================================
+1: import React, { useState, useEffect, useMemo } from 'react';
+5: import MarketRateTrend from '../components/ui/MarketRateTrend';
+9: container: { maxWidth: '1200px', margin: '0 auto', padding: '16px', backgroundColor: '#f8fafc', minHeight: '100vh', boxSizing: 'border-box', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' },
+17: modeSelect: { width: '100%', padding: '12px 14px', border: '2px solid #800020', borderRadius: '8px', fontSize: '15px', fontWeight: '700', color: '#800020', backgroundColor: '#fff5f7', outline: 'none', cursor: 'pointer' },
+27: input: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#fff', outline: 'none' },
+28: select: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', backgroundColor: '#fff', outline: 'none' },
+45: table: { width: '100%', borderCollapse: 'collapse', fontSize: '12px' },
+66: export default function RoofTrussCalculator() {
+75: const [scopeOption, setScopeOption] = useState<'both' | 'sheeting_only' | 'framing_only'>('both');
+79: lengthFt: 30,         // Building length in feet
+80: widthFt: 40,          // Span width in feet
+81: riseFt: 10,           // Roof rise/height in feet
+88: const [inputs, setInputs] = useState(initialInputs);
+96: const handleReset = () => setInputs(initialInputs);
+100: const hasFraming = scopeOption === 'both' || scopeOption === 'framing_only';
+101: const hasSheeting = scopeOption === 'both' || scopeOption === 'sheeting_only';
+104: const halfSpanFt = inputs.widthFt / 2;
+105: const rafterLenFt = Math.sqrt(halfSpanFt * halfSpanFt + inputs.riseFt * inputs.riseFt);
+108: const totalRoofAreaSqft = 2 * totalRafterLenFt * (inputs.lengthFt + 2 * overhangFt);
+110: const trussNos = Math.ceil(inputs.lengthFt / inputs.spacingFt) + 1;
+112: const totalPurlinLenFt = purlinRows * (inputs.lengthFt + 2 * overhangFt);
+129: botChordKg = hasFraming ? (trussNos * inputs.widthFt * 0.3048 * 3.8) : 0;
+130: webBracingKg = hasFraming ? (trussNos * (inputs.widthFt * 0.6) * 0.3048 * 2.8) : 0;
+141: botChordKg = hasFraming ? (trussNos * inputs.widthFt * 0.3048 * 8.9) : 0;
+142: webBracingKg = hasFraming ? (trussNos * (inputs.widthFt * 0.8) * 0.3048 * 5.8) : 0;
+226: }, [inputs, scopeOption, steelRate, roofRate, paintRate, fabLabourRate]);
+245: XLSX.writeFile(wb, `BuildMitra_Roof_Truss_Estimate_${scopeOption}.xlsx`);
+253: `*Scope Option*: ${scopeOption === 'both' ? 'Both Framing & Sheeting' : scopeOption === 'sheeting_only' ? 'Only Sheeting & Purlins' : 'Only Structural Steel Framing'}%0A` +
+255: `• *Roof Structure*: ${inputs.lengthFt}' L x ${inputs.widthFt}' Span x ${inputs.riseFt}ft Rise (Terrace Hollow Tube & Round Pipe Columns - ${inputs.roofType})%0A` +
+276: <span style={styles.badge}>Hollow Tubes & MS Pipe Columns</span>
+279: <span style={{ fontSize: '11px', color: '#fecdd3' }}>BuildMitra Professional Edition</span>
+284: <MarketRateTrend />
+291: value={scopeOption}
+292: onChange={(e) => setScopeOption(e.target.value as 'both' | 'sheeting_only' | 'framing_only')}
+303: <span>📐 Terrace Roof Geometry & Structural Specifications</span>
+312: <label style={styles.label}>Building Length (Ft)</label>
+316: value={inputs.lengthFt}
+317: onChange={e => setInputs({ ...inputs, lengthFt: parseFloat(e.target.value) || 0 })}
+322: <label style={styles.label}>Span Width (Ft)</label>
+326: value={inputs.widthFt}
+327: onChange={e => setInputs({ ...inputs, widthFt: parseFloat(e.target.value) || 0 })}
+332: <label style={styles.label}>Roof Rise / Height (Ft)</label>
+336: value={inputs.riseFt}
+337: onChange={e => setInputs({ ...inputs, riseFt: parseFloat(e.target.value) || 0 })}
+347: onChange={e => setInputs({ ...inputs, spacingFt: parseFloat(e.target.value) || 8 })}
+356: onChange={e => setInputs({ ...inputs, structureType: e.target.value })}
+368: onChange={e => setInputs({ ...inputs, roofType: e.target.value })}
+381: onChange={e => setInputs({ ...inputs, paintCoats: parseInt(e.target.value) })}
+397: <span>📊 Terrace Roof Results BOQ ({scopeOption === 'both' ? 'Framing & Sheeting' : scopeOption === 'sheeting_only' ? 'Sheeting Only' : 'Structural Framing Only'})</span>
+403: <span style={styles.metricTitle}>Inclined Roof Area</span>
+404: <span style={styles.metricVal}>{formatNumber(calcResults.totalRoofAreaSqft)} Sqft</span>
+405: <span style={{ fontSize: '11px', opacity: 0.9 }}>({calcResults.trussNos} Trusses @ Hollow Tube Design)</span>
+410: <span style={styles.metricTitle}>Structural Steel Weight</span>
+411: <span style={styles.metricVal}>{formatNumber(calcResults.totalSteelKg, 1)} kg</span>
+412: <span style={{ fontSize: '11px', opacity: 0.9 }}>(SHS/RHS Tubes & Pipe Columns)</span>
+417: <span style={styles.metricTitle}>Coating & Paint</span>
+418: <span style={styles.metricVal}>{formatNumber(calcResults.paintAreaSqft, 0)} Sqft</span>
+419: <span style={{ fontSize: '11px', opacity: 0.9 }}>({inputs.paintCoats} Coats Anti-Corrosive)</span>
+423: <span style={styles.metricTitle}>Total Cost</span>
+424: <span style={styles.metricVal}>{formatCurrency(calcResults.grandTotal)}</span>
+425: <span style={{ fontSize: '11px', opacity: 0.9 }}>({formatCurrency(calcResults.costPerSqft)} / Sqft)</span>
+449: <span style={{
+458: </span>
+466: <span style={styles.rateTag}>{formatCurrency(item.rate)}</span>
+468: <span style={styles.rateTagWarn}>Rate Unavailable</span>
+
+============================================================
+FILE: .\pages\septic-tank-calculator.tsx
+============================================================
+1: import React, { useState, useEffect, useMemo } from 'react';
+5: import MarketRateTrend from '../components/ui/MarketRateTrend';
+9: container: { maxWidth: '1200px', margin: '0 auto', padding: '16px', backgroundColor: '#f8fafc', minHeight: '100vh', boxSizing: 'border-box', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' },
+23: input: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#fff', outline: 'none' },
+24: select: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', backgroundColor: '#fff', outline: 'none' },
+41: table: { width: '100%', borderCollapse: 'collapse', fontSize: '12px' },
+62: export default function SepticTankCalculator() {
+72: lengthFt: 8,            // Internal length in feet
+73: widthFt: 4,             // Internal width in feet
+74: depthFt: 5,             // Internal depth in feet
+76: coverThickMm: 200,      // RCC Cover slab thickness in mm (200mm = 8 inches)
+77: grade: 'M20',           // RCC Cover slab grade
+81: const [inputs, setInputs] = useState(initialInputs);
+98: const handleReset = () => setInputs(initialInputs);
+102: // 1. Storage Capacity
+103: const internalVolCft = inputs.lengthFt * inputs.widthFt * inputs.depthFt;
+104: const totalCapacityLiters = internalVolCft * 28.3168;
+105: const liquidDepthFt = Math.max(inputs.depthFt - 1.0, 3.5); // 1ft freeboard per IS 2470
+106: const effectiveCapacityLiters = inputs.lengthFt * inputs.widthFt * liquidDepthFt * 28.3168;
+107: const userCapacityNos = Math.floor(effectiveCapacityLiters / 180);
+110: const wallAreaSqft = 2 * (inputs.lengthFt + inputs.widthFt) * inputs.depthFt;
+130: // 3. RCC Cover Slab (200mm / 8 inches Thickness)
+132: const outerLengthFt = inputs.lengthFt + 2 * (1.0);
+133: const outerWidthFt = inputs.widthFt + 2 * (1.0);
+135: const coverSlabVolCft = (outerLengthFt * outerWidthFt * coverThickFt) - (1.5 * 1.5 * coverThickFt);
+144: if (inputs.grade === 'M25') {
+186: const costPerLitre = effectiveCapacityLiters > 0 ? grandTotal / effectiveCapacityLiters : 0;
+190: { code: cementRate.itemCode || "MAT-CEM-01", category: "Material", description: `Minimal Cement OPC 53 Grade (RCC 200mm Cover Slab + Lean Mortar)`, unit: "BAG", engQty: totalCementBags, procQty: Math.ceil(totalCementBags), rate: cementRate.rate, rateFound: cementRate.found, amount: cementCost },
+204: totalCapacityLiters,
+205: effectiveCapacityLiters,
+206: userCapacityNos,
+255: `• *Septic Tank*: ${inputs.lengthFt}'x${inputs.widthFt}' x ${inputs.depthFt}ft Internal (${inputs.wallMaterial} in 1:20 Lean Mortar)%0A` +
+256: `• *Effective Capacity*: ${formatNumber(calcResults.effectiveCapacityLiters)} Litres (~${calcResults.userCapacityNos} Users)%0A` +
+278: <span style={styles.badge}>IS 2470 Code Sizing & Lean Mortar</span>
+281: <span style={{ fontSize: '11px', color: '#fecdd3' }}>BuildMitra Professional Edition</span>
+286: <MarketRateTrend />
+291: <span>📐 Septic Tank Geometry, Masonry & Cover Slab Specifications</span>
+300: <label style={styles.label}>Internal Length (Ft)</label>
+304: value={inputs.lengthFt}
+305: onChange={e => setInputs({ ...inputs, lengthFt: parseFloat(e.target.value) || 0 })}
+310: <label style={styles.label}>Internal Width (Ft)</label>
+314: value={inputs.widthFt}
+315: onChange={e => setInputs({ ...inputs, widthFt: parseFloat(e.target.value) || 0 })}
+320: <label style={styles.label}>Internal Depth (Ft)</label>
+324: value={inputs.depthFt}
+325: onChange={e => setInputs({ ...inputs, depthFt: parseFloat(e.target.value) || 0 })}
+334: onChange={e => setInputs({ ...inputs, wallMaterial: e.target.value })}
+347: onChange={e => setInputs({ ...inputs, coverThickMm: parseFloat(e.target.value) || 200 })}
+352: <label style={styles.label}>Cover Slab Grade</label>
+355: value={inputs.grade}
+356: onChange={e => setInputs({ ...inputs, grade: e.target.value })}
+372: <span>📊 Septic Tank Results BOQ (Size Stones / Blocks + 200mm Cover Slab)</span>
+378: <span style={styles.metricTitle}>Effective Capacity</span>
+379: <span style={styles.metricVal}>{formatNumber(calcResults.effectiveCapacityLiters, 0)} Litres</span>
+380: <span style={{ fontSize: '11px', opacity: 0.9 }}>(~{calcResults.userCapacityNos} User Capacity)</span>
+384: <span style={styles.metricTitle}>Minimal Cement Usage</span>
+385: <span style={styles.metricVal}>{formatNumber(calcResults.totalCementBags, 1)} Bags</span>
+386: <span style={{ fontSize: '11px', opacity: 0.9 }}>(Wall Mortar: {formatNumber(calcResults.cementBagsWall, 1)} Bags)</span>
+390: <span style={styles.metricTitle}>Cover Slab Rebar</span>
+391: <span style={styles.metricVal}>{formatNumber(calcResults.coverSteelKg, 1)} kg</span>
+392: <span style={{ fontSize: '11px', opacity: 0.9 }}>(200mm RCC Slab Mesh)</span>
+396: <span style={styles.metricTitle}>Total Cost</span>
+397: <span style={styles.metricVal}>{formatCurrency(calcResults.grandTotal)}</span>
+398: <span style={{ fontSize: '11px', opacity: 0.9 }}>({formatCurrency(calcResults.costPerLitre)} / Litre)</span>
+422: <span style={{
+431: </span>
+439: <span style={styles.rateTag}>{formatCurrency(item.rate)}</span>
+441: <span style={styles.rateTagWarn}>Rate Unavailable</span>
+
+============================================================
+FILE: .\pages\staircase-calculator.tsx
+============================================================
+1: import React, { useState, useEffect, useMemo } from 'react';
+5: import MarketRateTrend from '../components/ui/MarketRateTrend';
+9: container: { maxWidth: '1200px', margin: '0 auto', padding: '16px', backgroundColor: '#f8fafc', minHeight: '100vh', boxSizing: 'border-box', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' },
+17: modeSelect: { width: '100%', padding: '12px 14px', border: '2px solid #800020', borderRadius: '8px', fontSize: '15px', fontWeight: '700', color: '#800020', backgroundColor: '#fff5f7', outline: 'none', cursor: 'pointer' },
+27: input: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#fff', outline: 'none' },
+28: select: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', backgroundColor: '#fff', outline: 'none' },
+45: table: { width: '100%', borderCollapse: 'collapse', fontSize: '12px' },
+66: export default function StaircaseCalculator() {
+75: const [scopeOption, setScopeOption] = useState<'both' | 'concrete_only' | 'steel_only'>('both');
+80: floorHeightFt: 10,    // Floor height in feet
+81: riserIn: 7,           // Riser height in inches
+82: treadIn: 10,          // Tread width in inches
+83: widthFt: 4,           // Stair width in feet
+84: waistThickMm: 150,    // Waist slab thickness in mm
+85: landingLFt: 4,        // Landing length in feet
+86: landingWFt: 4,        // Landing width in feet
+88: grade: 'M20',         // Concrete grade: M20, M25, M30
+103: const [inputs, setInputs] = useState(initialInputs);
+119: const handleReset = () => setInputs(initialInputs);
+123: const hasConcrete = scopeOption === 'both' || scopeOption === 'concrete_only';
+124: const hasSteel = scopeOption === 'both' || scopeOption === 'steel_only';
+127: const heightPerFloorIn = inputs.floorHeightFt * 12;
+128: const risersPerFloor = Math.round(heightPerFloorIn / inputs.riserIn);
+129: const totalRisers = risersPerFloor * inputs.floors;
+131: const stepsPerFlight = risersPerFloor / flightsPerFloor;
+133: const riserFt = inputs.riserIn / 12;
+134: const treadFt = inputs.treadIn / 12;
+136: const flightRunFt = (stepsPerFlight - 1) * treadFt;
+137: const flightRiseFt = inputs.floorHeightFt / flightsPerFloor;
+138: const inclinedLenFt = Math.sqrt(flightRunFt * flightRunFt + flightRiseFt * flightRiseFt);
+141: const waistSlabVolCftPerFlight = inclinedLenFt * inputs.widthFt * (inputs.waistThickMm / 304.8);
+144: const stepVolCftPerStep = 0.5 * riserFt * treadFt * inputs.widthFt;
+145: const totalStepsVolCft = stepVolCftPerStep * totalRisers;
+159: if (inputs.grade === 'M25') {
+164: } else if (inputs.grade === 'M30') {
+178: const mainBarCountPerFlight = Math.ceil((inputs.widthFt * 304.8 - 40) / inputs.mainSpacingMm) + 1;
+181: const distBarLenM = (inputs.widthFt * 0.3048);
+194: const shutteringAreaSqft = hasConcrete ? ((inclinedLenFt * inputs.widthFt * flightsPerFloor + inputs.landingsPerFloor * inputs.landingLFt * inputs.landingWFt) * inputs.floors) : 0;
+197: const stepFinishAreaSqft = totalRisers * (riserFt + treadFt) * inputs.widthFt;
+201: const railingLengthFt = (inclinedLenFt * flightsPerFloor + inputs.landingLFt * inputs.landingsPerFloor) * inputs.floors * inputs.railingSides;
+202: const railingLengthRmt = railingLengthFt * 0.3048;
+215: const railingCost = railingLengthRmt * (railingRate.found ? railingRate.rate : (inputs.railingType === 'SS' ? 1800 : 850));
+228: { code: cementRate.itemCode || "MAT-CEM-01", category: "Material", description: `Cement OPC 53 Grade (${inputs.grade} Mix)`, unit: "BAG", engQty: cementBags, procQty: Math.ceil(cementBags), rate: cementRate.rate, rateFound: cementRate.found, amount: cementCost },
+234: { code: finishRate.itemCode || "MAT-STR-FIN", category: "Finishes", description: `${inputs.finishType} Tread & Riser Step Finish`, unit: "SQFT", engQty: totalFinishAreaSqft, procQty: Math.ceil(totalFinishAreaSqft), rate: finishRate.rate, rateFound: finishRate.found, amount: finishCost },
+235: { code: railingRate.itemCode || "MAT-STR-RLG", category: "Fabrication", description: `${inputs.railingType} Staircase Handrail & Balustrades`, unit: "RMT", engQty: railingLengthRmt, procQty: Math.ceil(railingLengthRmt), rate: railingRate.rate, rateFound: railingRate.found, amount: railingCost }
+252: description: `Staircase ${scopeOption === 'both' ? 'Concrete Casting & Bar Bending' : scopeOption === 'concrete_only' ? 'Concrete Casting & Shuttering' : 'Bar Bending & Steel Tying'} Labour`,
+264: totalRisers,
+280: railingLengthRmt,
+287: }, [inputs, scopeOption, cementRate, steelRate, sandRate, ca20Rate, ca12Rate, wireRate, coverRate, waterRate, shutteringRate, finishRate, railingRate, rccLabourRate]);
+306: XLSX.writeFile(wb, `BuildMitra_Staircase_Estimate_${scopeOption}.xlsx`);
+314: `*Scope Option*: ${scopeOption === 'both' ? 'Both Concrete & Steel' : scopeOption === 'concrete_only' ? 'Only Concrete & Shuttering' : 'Only Steel Mesh'}` +
+316: `• *Floors*: ${inputs.floors} | *Risers*: ${calcResults.totalRisers} Nos (${inputs.riserIn}" Riser x ${inputs.treadIn}" Tread x ${inputs.widthFt}ft Width)%0A` +
+320: `• *Finishes & Railing*: ${inputs.finishType} Finish (${formatNumber(calcResults.totalFinishAreaSqft)} Sqft) | ${inputs.railingType} Railing (${formatNumber(calcResults.railingLengthRmt)} RMT)%0A` +
+338: <span style={styles.badge}>IS 456 Waist Slab & Railings</span>
+341: <span style={{ fontSize: '11px', color: '#fecdd3' }}>BuildMitra Professional Edition</span>
+346: <MarketRateTrend />
+353: value={scopeOption}
+354: onChange={(e) => setScopeOption(e.target.value as 'both' | 'concrete_only' | 'steel_only')}
+365: <span>📐 Staircase Geometry & Structural Specifications</span>
+379: onChange={e => setInputs({ ...inputs, floors: parseFloat(e.target.value) || 1 })}
+384: <label style={styles.label}>Floor Height (Ft)</label>
+388: value={inputs.floorHeightFt}
+389: onChange={e => setInputs({ ...inputs, floorHeightFt: parseFloat(e.target.value) || 0 })}
+394: <label style={styles.label}>Riser Height (Inches)</label>
+398: value={inputs.riserIn}
+399: onChange={e => setInputs({ ...inputs, riserIn: parseFloat(e.target.value) || 7 })}
+404: <label style={styles.label}>Tread Width (Inches)</label>
+408: value={inputs.treadIn}
+409: onChange={e => setInputs({ ...inputs, treadIn: parseFloat(e.target.value) || 10 })}
+414: <label style={styles.label}>Staircase Width (Ft)</label>
+418: value={inputs.widthFt}
+419: onChange={e => setInputs({ ...inputs, widthFt: parseFloat(e.target.value) || 4 })}
+429: onChange={e => setInputs({ ...inputs, waistThickMm: parseFloat(e.target.value) || 150 })}
+434: <label style={styles.label}>Landing Length (Ft)</label>
+439: onChange={e => setInputs({ ...inputs, landingLFt: parseFloat(e.target.value) || 4 })}
+444: <label style={styles.label}>Landing Width (Ft)</label>
+449: onChange={e => setInputs({ ...inputs, landingWFt: parseFloat(e.target.value) || 4 })}
+459: onChange={e => setInputs({ ...inputs, landingsPerFloor: parseFloat(e.target.value) || 2 })}
+465: <label style={styles.label}>Concrete Mix Grade</label>
+468: value={inputs.grade}
+469: onChange={e => setInputs({ ...inputs, grade: e.target.value })}
+490: onChange={e => setInputs({ ...inputs, mainDia: parseFloat(e.target.value) || 12 })}
+500: onChange={e => setInputs({ ...inputs, mainSpacingMm: parseFloat(e.target.value) || 150 })}
+510: onChange={e => setInputs({ ...inputs, distDia: parseFloat(e.target.value) || 10 })}
+520: onChange={e => setInputs({ ...inputs, distSpacingMm: parseFloat(e.target.value) || 200 })}
+530: onChange={e => setInputs({ ...inputs, coverMm: parseFloat(e.target.value) || 20 })}
+543: <select style={styles.select} value={inputs.finishType} onChange={e => setInputs({ ...inputs, finishType: e.target.value })}>
+551: <select style={styles.select} value={inputs.railingType} onChange={e => setInputs({ ...inputs, railingType: e.target.value })}>
+559: <select style={styles.select} value={inputs.railingSides} onChange={e => setInputs({ ...inputs, railingSides: parseInt(e.target.value) })}>
+575: <span>📊 Staircase Results BOQ ({scopeOption === 'both' ? 'Concrete & Steel' : scopeOption === 'concrete_only' ? 'Concrete & Formwork' : 'Steel Rebar Only'})</span>
+581: <span style={styles.metricTitle}>RCC Concrete Volume</span>
+582: <span style={styles.metricVal}>{formatNumber(calcResults.totalVolCft)} CFT</span>
+583: <span style={{ fontSize: '11px', opacity: 0.9 }}>({calcResults.totalRisers} Risers @ {inputs.grade})</span>
+588: <span style={styles.metricTitle}>Cement & Water</span>
+589: <span style={styles.metricVal}>{formatNumber(calcResults.cementBags, 1)} Bags | {formatNumber(calcResults.waterLtr, 0)} Ltr</span>
+595: <span style={styles.metricTitle}>Steel Rebar</span>
+596: <span style={styles.metricVal}>{formatNumber(calcResults.totalSteelKg, 1)} kg</span>
+597: <span style={{ fontSize: '11px', opacity: 0.9 }}>({inputs.mainDia}mm Main + {inputs.distDia}mm Dist)</span>
+602: <span style={styles.metricTitle}>Total Cost</span>
+603: <span style={styles.metricVal}>{formatCurrency(calcResults.grandTotal)}</span>
+604: <span style={{ fontSize: '11px', opacity: 0.9 }}>({formatCurrency(calcResults.costPerCft)} / CFT)</span>
+628: <span style={{
+637: </span>
+645: <span style={styles.rateTag}>{formatCurrency(item.rate)}</span>
+647: <span style={styles.rateTagWarn}>Rate Unavailable</span>
+
+============================================================
+FILE: .\pages\steel-calculator.tsx
+============================================================
+1: import React, { useState } from 'react';
+6: import MarketRateTrend from '../components/ui/MarketRateTrend';
+10: container: { maxWidth: '100%', margin: 0, padding: '12px', backgroundColor: '#f5f0e8', minHeight: '100vh', boxSizing: 'border-box' },
+17: input: { width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#fff' },
+18: select: { width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '6px', fontSize: '13px', backgroundColor: '#fff' },
+31: table: { width: '100%', borderCollapse: 'collapse', fontSize: '12px' },
+56: // IS 456:2000 Clause 26.2.1 Development Length (Ld) Calculator
+57: const calculateDevelopmentLength = (dia: number, concreteGrade: string, steelGrade: string) => {
+60: const baseTauBd = tauBdMap[concreteGrade] || 1.2;
+65: const fy = fyMap[steelGrade] || 500;
+74: export default function SteelCalculator() {
+80: const [item, setItem] = useState("Slab");
+83: const [concreteGrade, setConcreteGrade] = useState("M20");
+84: const [steelGrade, setSteelGrade] = useState("Fe500");
+85: const [exposureCondition, setExposureCondition] = useState("Moderate");
+86: const [unitSystem, setUnitSystem] = useState("feet"); // 'feet' or 'meters'
+87: const [stockBarLengthM, setStockBarLengthM] = useState(12); // Standard 12m stock commercial bar
+88: const [wastage, setWastage] = useState(3);
+89: const [bindingWirePercent, setBindingWirePercent] = useState(1);
+90: const [lapSetting, setLapSetting] = useState("Auto"); // Auto, Yes, No
+91: const [matType, setMatType] = useState("Single Mat"); // Single Mat / Double Mat
+94: const [memberNos, setMemberNos] = useState(1);
+95: const [length, setLength] = useState(30); // length (ft or m)
+96: const [width, setWidth] = useState(20);   // width (ft or m)
+97: const [depth, setDepth] = useState(150);  // thickness/depth (mm)
+98: const [coverMm, setCoverMm] = useState(20); // clear cover in mm
+101: const [slabType, setSlabType] = useState("One-way Slab"); // One-way, Two-way, Cantilever
+102: const [xDia, setXDia] = useState(10);
+103: const [yDia, setYDia] = useState(8);
+104: const [xSpacingMm, setXSpacingMm] = useState(150);
+105: const [ySpacingMm, setYSpacingMm] = useState(175);
+106: const [hasCranks, setHasCranks] = useState(true);
+107: const [crankAngle, setCrankAngle] = useState(45); // 30, 45, 60
+108: const [crankPct, setCrankPct] = useState(50); // 50% alternate bars cranked
+111: const [topDia, setTopDia] = useState(12);
+112: const [topBarsCount, setTopBarsCount] = useState(2);
+113: const [bottomDia, setBottomDia] = useState(16);
+114: const [bottomBarsCount, setBottomBarsCount] = useState(3);
+115: const [extraTopDia, setExtraTopDia] = useState(12);
+116: const [extraTopBarsCount, setExtraTopBarsCount] = useState(2);
+117: const [stirrupDia, setStirrupDia] = useState(8);
+118: const [stirrupSpacingEndMm, setStirrupSpacingEndMm] = useState(100);
+119: const [stirrupSpacingMidMm, setStirrupSpacingMidMm] = useState(150);
+120: const [stirrupLegs, setStirrupLegs] = useState(2);
+121: const [lintelBearingMm, setLintelBearingMm] = useState(230);
+124: const [cornerDia, setCornerDia] = useState(16);
+125: const [cornerBarsCount, setCornerBarsCount] = useState(4);
+126: const [middleDia, setMiddleDia] = useState(12);
+127: const [middleBarsCount, setMiddleBarsCount] = useState(4);
+128: const [tieDia, setTieDia] = useState(8);
+129: const [tieSpacingConfinedMm, setTieSpacingConfinedMm] = useState(100);
+130: const [tieSpacingMidMm, setTieSpacingMidMm] = useState(150);
+133: const [footingType, setFootingType] = useState("Isolated Footing");
+134: const [columnWidthMm, setColumnWidthMm] = useState(300);
+135: const [columnDepthMm, setColumnDepthMm] = useState(450);
+136: const [dowelDia, setDowelDia] = useState(16);
+137: const [dowelCount, setDowelCount] = useState(6);
+140: const [wallFace, setWallFace] = useState("Double Face");
+141: const [vertDia, setVertDia] = useState(10);
+142: const [vertSpacingMm, setVertSpacingMm] = useState(150);
+143: const [horizDia, setHorizDia] = useState(8);
+144: const [horizSpacingMm, setHorizSpacingMm] = useState(175);
+146: const [results, setResults] = useState<any>(null);
+147: const [generated, setGenerated] = useState(false);
+186: const lengthM = unitSystem === "feet" ? ftToM(length) : length;
+187: const widthM = unitSystem === "feet" ? ftToM(width) : width;
+188: const depthM = mmToM(depth);
+191: // Development Lengths
+192: const devX = calculateDevelopmentLength(xDia, concreteGrade, steelGrade);
+193: const devY = calculateDevelopmentLength(yDia, concreteGrade, steelGrade);
+194: const devTop = calculateDevelopmentLength(topDia, concreteGrade, steelGrade);
+195: const devBottom = calculateDevelopmentLength(bottomDia, concreteGrade, steelGrade);
+196: const devCorner = calculateDevelopmentLength(cornerDia, concreteGrade, steelGrade);
+197: const devDowel = calculateDevelopmentLength(dowelDia, concreteGrade, steelGrade);
+207: cuttingLengthM: number;
+208: totalLengthM: number;
+221: const clearLengthM = Math.max(0, lengthM - 2 * coverM);
+222: const clearWidthM = Math.max(0, widthM - 2 * coverM);
+224: const xBarsCount = Math.floor((widthM * 1000) / xSpacingMm) + 1;
+225: const yBarsCount = Math.floor((lengthM * 1000) / ySpacingMm) + 1;
+228: // D = Slab Thickness - 2*Cover - Main Bar Dia
+229: const crankEffectiveDM = Math.max(0, depthM - 2 * coverM - mmToM(xDia));
+237: // Check commercial laps for long spans (> 12m)
+238: const lapCountX = lapSetting !== "No" && clearLengthM > stockBarLengthM ? Math.floor(clearLengthM / stockBarLengthM) : 0;
+239: const lapLengthX = lapCountX * devX.ldM;
+240: const xCuttingLengthM = clearLengthM + (hasCranks ? crankExtraPerBarM * (crankPct / 100) * 2 : 0) + lapLengthX + (2 * devX.ldM * 0.25); // hook/bend
+242: const lapCountY = lapSetting !== "No" && clearWidthM > stockBarLengthM ? Math.floor(clearWidthM / stockBarLengthM) : 0;
+243: const lapLengthY = lapCountY * devY.ldM;
+244: const yCuttingLengthM = clearWidthM + lapLengthY + (2 * devY.ldM * 0.25);
+246: const totalXLengthM = xCuttingLengthM * xBarsCount * memberNos;
+247: const totalXWeightKg = totalXLengthM * kgPerM(xDia);
+249: const totalYLengthM = yCuttingLengthM * yBarsCount * memberNos;
+250: const totalYWeightKg = totalYLengthM * kgPerM(yDia);
+259: cuttingLengthM: xCuttingLengthM,
+260: totalLengthM: totalXLengthM,
+274: cuttingLengthM: yCuttingLengthM,
+275: totalLengthM: totalYLengthM,
+286: const totalTopXLengthM = xCuttingLengthM * topXBarsCount * memberNos;
+287: const totalTopXWeightKg = totalTopXLengthM * kgPerM(xDia);
+296: cuttingLengthM: xCuttingLengthM,
+297: totalLengthM: totalTopXLengthM * 2,
+305: chairsCount = Math.ceil(lengthM * widthM * memberNos);
+307: const chairHeightM = Math.max(0.08, depthM - 2 * coverM - 2 * mmToM(xDia) - 2 * mmToM(yDia));
+308: const chairCuttingLengthM = 2 * chairHeightM + 0.3; // height + feet
+309: const totalChairLengthM = chairCuttingLengthM * chairsCount;
+310: chairsWeightKg = totalChairLengthM * kgPerM(chairDia);
+317: barsPerMember: Math.ceil(lengthM * widthM),
+319: cuttingLengthM: chairCuttingLengthM,
+320: totalLengthM: totalChairLengthM,
+324: remarks: `Height = ${(chairHeightM * 1000).toFixed(0)}mm (1 per sq.m)`
+328: coverBlocksCount = Math.ceil(lengthM * widthM * memberNos * 2);
+331: const clearSpanM = Math.max(0, lengthM - 2 * coverM);
+332: const beamWidthM = mmToM(width);
+333: const beamDepthM = mmToM(depth);
+336: const lapCount = lapSetting !== "No" && clearSpanM > stockBarLengthM ? Math.floor(clearSpanM / stockBarLengthM) : 0;
+337: const bottomCuttingM = clearSpanM + 2 * devBottom.ldM + lapCount * devBottom.ldM;
+348: cuttingLengthM: bottomCuttingM,
+349: totalLengthM: totalBottomLenM,
+357: const topCuttingM = clearSpanM + 2 * devTop.ldM;
+368: cuttingLengthM: topCuttingM,
+369: totalLengthM: totalTopLenM,
+378: const extraTopLenM = (clearSpanM / 3) + devTop.ldM;
+389: cuttingLengthM: extraTopLenM,
+390: totalLengthM: totalExtraTopLenM,
+394: remarks: "Span/3 Extent over Support"
+399: const endZoneLenM = clearSpanM / 4;
+400: const midZoneLenM = clearSpanM - 2 * endZoneLenM;
+407: const stirrupPerimeterM = 2 * ((beamWidthM - 2 * coverM) + (beamDepthM - 2 * coverM));
+419: cuttingLengthM: stirrupCuttingM,
+420: totalLengthM: totalStirrupLenM,
+427: coverBlocksCount = Math.ceil(lengthM * memberNos * 3);
+430: const clearSpanM = lengthM;
+432: const totalLintelLenM = clearSpanM + 2 * bearingM;
+433: const lintelWidthM = mmToM(width);
+434: const lintelDepthM = mmToM(depth);
+448: cuttingLengthM: bottomCuttingM,
+449: totalLengthM: totalBottomLenM,
+468: cuttingLengthM: topCuttingM,
+469: totalLengthM: totalTopLenM,
+479: const stirrupCuttingM = 2 * ((lintelWidthM - 2 * coverM) + (lintelDepthM - 2 * coverM)) + stirrupHookM;
+490: cuttingLengthM: stirrupCuttingM,
+491: totalLengthM: totalStirrupLenM,
+501: const colHeightM = lengthM;
+502: const colWidthM = mmToM(width);
+503: const colDepthM = mmToM(depth);
+506: const lapCount = lapSetting !== "No" && colHeightM > stockBarLengthM ? Math.floor(colHeightM / stockBarLengthM) : 0;
+507: const mainBarCuttingM = colHeightM + devCorner.ldM + (lapCount + 1) * devCorner.ldM; // Height + Dowel Lap + Beam Anchorage
+519: cuttingLengthM: mainBarCuttingM,
+520: totalLengthM: totalCornerLenM,
+538: cuttingLengthM: mainBarCuttingM,
+539: totalLengthM: totalMiddleLenM,
+548: const confinedZoneLenM = Math.max(0.45, colHeightM / 6);
+549: const midZoneLenM = colHeightM - 2 * confinedZoneLenM;
+556: const tieCuttingM = 2 * ((colWidthM - 2 * coverM) + (colDepthM - 2 * coverM)) + tieHookM;
+567: cuttingLengthM: tieCuttingM,
+568: totalLengthM: totalTieLenM,
+575: coverBlocksCount = Math.ceil(colHeightM * memberNos * 4);
+578: const clearLengthM = Math.max(0, lengthM - 2 * coverM);
+579: const clearWidthM = Math.max(0, widthM - 2 * coverM);
+581: const xBarsCount = Math.floor((widthM * 1000) / xSpacingMm) + 1;
+582: const yBarsCount = Math.floor((lengthM * 1000) / ySpacingMm) + 1;
+585: const xCuttingLengthM = clearLengthM + (2 * 9 * xDia) / 1000;
+586: const yCuttingLengthM = clearWidthM + (2 * 9 * yDia) / 1000;
+588: const totalXLengthM = xCuttingLengthM * xBarsCount * memberNos;
+589: const totalXWeightKg = totalXLengthM * kgPerM(xDia);
+591: const totalYLengthM = yCuttingLengthM * yBarsCount * memberNos;
+592: const totalYWeightKg = totalYLengthM * kgPerM(yDia);
+601: cuttingLengthM: xCuttingLengthM,
+602: totalLengthM: totalXLengthM,
+616: cuttingLengthM: yCuttingLengthM,
+617: totalLengthM: totalYLengthM,
+637: cuttingLengthM: dowelCuttingM,
+638: totalLengthM: totalDowelLenM,
+648: chairsCount = Math.ceil(lengthM * widthM * memberNos);
+650: const chairHeightM = Math.max(0.1, depthM - 2 * coverM - 2 * mmToM(xDia) - 2 * mmToM(yDia));
+651: const chairCuttingM = 2 * chairHeightM + 0.4;
+660: barsPerMember: Math.ceil(lengthM * widthM),
+662: cuttingLengthM: chairCuttingM,
+663: totalLengthM: totalChairLenM,
+671: coverBlocksCount = Math.ceil(lengthM * widthM * memberNos * 2);
+675: const wallLenM = lengthM;
+676: const wallHeightM = widthM; // height passed in widthM field
+680: const horizBarsCount = (Math.floor((wallHeightM * 1000) / horizSpacingMm) + 1) * facesMultiplier;
+682: const vertCuttingM = wallHeightM + devX.ldM * 0.5;
+698: cuttingLengthM: vertCuttingM,
+699: totalLengthM: totalVertLenM,
+713: cuttingLengthM: horizCuttingM,
+714: totalLengthM: totalHorizLenM,
+721: coverBlocksCount = Math.ceil(wallLenM * wallHeightM * memberNos * 2);
+731: // Group Summary by Diameters (6, 8, 10, 12, 16, 20, 25, 32 mm)
+732: const diaSummaryMap: Record<number, { kg: number; mt: number; lengthM: number; stockBarsReq: number }> = {};
+733: dias.forEach(d => { diaSummaryMap[d] = { kg: 0, mt: 0, lengthM: 0, stockBarsReq: 0 }; });
+736: if (!diaSummaryMap[r.dia]) diaSummaryMap[r.dia] = { kg: 0, mt: 0, lengthM: 0, stockBarsReq: 0 };
+738: diaSummaryMap[r.dia].lengthM += r.totalLengthM;
+744: diaSummaryMap[d].stockBarsReq = Math.ceil(diaSummaryMap[d].lengthM / stockBarLengthM);
+770: concreteGrade,
+771: steelGrade,
+839: const message = `🔩 BUILDMITRA RCC STEEL BBS ESTIMATE\n\nMember: ${results.item}\nGrade: ${concreteGrade} / ${steelGrade}\nTotal TMT Steel: ${formatNumber(results.totalSteelKg)} kg (${formatNumber(results.totalSteelMT, 3)} MT)\nBinding Wire: ${formatNumber(results.bindingWireKg)} kg\nGrand Total: ${formatCurrency(results.costs.grandTotal)}`;
+853: React.createElement(MarketRateTrend, null),
+856: React.createElement('span', null, `💰 Admin Master Rates: TMT Steel ${steelRatePerKg ? `₹${formatNumber(steelRatePerKg)}/kg` : 'Rate Unavailable in Admin Master'} | Binding Wire ${bindingWireRatePerKg ? `₹${formatNumber(bindingWireRatePerKg)}/kg` : 'Rate Unavailable in Admin Master'}`),
+869: React.createElement('label', { style: styles.label }, 'Concrete Grade'),
+870: React.createElement('select', { value: concreteGrade, onChange: (e) => setConcreteGrade(e.target.value), style: styles.select },
+875: React.createElement('label', { style: styles.label }, 'Steel Grade'),
+876: React.createElement('select', { value: steelGrade, onChange: (e) => setSteelGrade(e.target.value), style: styles.select },
+886: React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Commercial Bar Length (m)'), React.createElement('input', { type: 'number', value: stockBarLengthM, onChange: (e) => setStockBarLengthM(parseFloat(e.target.value) || 12), style: styles.input })),
+912: React.createElement('div', null, React.createElement('label', { style: styles.label }, `Length (${unitSystem})`), React.createElement('input', { type: 'number', value: length, onChange: (e) => setLength(parseFloat(e.target.value) || 0), style: styles.input })),
+913: React.createElement('div', null, React.createElement('label', { style: styles.label }, `Width (${unitSystem})`), React.createElement('input', { type: 'number', value: width, onChange: (e) => setWidth(parseFloat(e.target.value) || 0), style: styles.input })),
+914: React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Thickness (mm)'), React.createElement('input', { type: 'number', value: depth, onChange: (e) => setDepth(parseFloat(e.target.value) || 0), style: styles.input })),
+936: React.createElement('div', null, React.createElement('label', { style: styles.label }, `Beam Length (${unitSystem})`), React.createElement('input', { type: 'number', value: length, onChange: (e) => setLength(parseFloat(e.target.value) || 0), style: styles.input })),
+937: React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Width (mm)'), React.createElement('input', { type: 'number', value: width, onChange: (e) => setWidth(parseFloat(e.target.value) || 0), style: styles.input })),
+938: React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Depth (mm)'), React.createElement('input', { type: 'number', value: depth, onChange: (e) => setDepth(parseFloat(e.target.value) || 0), style: styles.input })),
+953: React.createElement('div', null, React.createElement('label', { style: styles.label }, `Clear Span (${unitSystem})`), React.createElement('input', { type: 'number', value: length, onChange: (e) => setLength(parseFloat(e.target.value) || 0), style: styles.input })),
+955: React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Width (mm)'), React.createElement('input', { type: 'number', value: width, onChange: (e) => setWidth(parseFloat(e.target.value) || 0), style: styles.input })),
+956: React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Depth (mm)'), React.createElement('input', { type: 'number', value: depth, onChange: (e) => setDepth(parseFloat(e.target.value) || 0), style: styles.input })),
+968: React.createElement('div', null, React.createElement('label', { style: styles.label }, `Column Height (${unitSystem})`), React.createElement('input', { type: 'number', value: length, onChange: (e) => setLength(parseFloat(e.target.value) || 0), style: styles.input })),
+969: React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Width (mm)'), React.createElement('input', { type: 'number', value: width, onChange: (e) => setWidth(parseFloat(e.target.value) || 0), style: styles.input })),
+970: React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Depth (mm)'), React.createElement('input', { type: 'number', value: depth, onChange: (e) => setDepth(parseFloat(e.target.value) || 0), style: styles.input })),
+994: React.createElement('div', null, React.createElement('label', { style: styles.label }, `Length (${unitSystem})`), React.createElement('input', { type: 'number', value: length, onChange: (e) => setLength(parseFloat(e.target.value) || 0), style: styles.input })),
+995: React.createElement('div', null, React.createElement('label', { style: styles.label }, `Width (${unitSystem})`), React.createElement('input', { type: 'number', value: width, onChange: (e) => setWidth(parseFloat(e.target.value) || 0), style: styles.input })),
+996: React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Depth/Thickness (mm)'), React.createElement('input', { type: 'number', value: depth, onChange: (e) => setDepth(parseFloat(e.target.value) || 0), style: styles.input })),
+1013: React.createElement('div', null, React.createElement('label', { style: styles.label }, `Wall Length (${unitSystem})`), React.createElement('input', { type: 'number', value: length, onChange: (e) => setLength(parseFloat(e.target.value) || 0), style: styles.input })),
+1014: React.createElement('div', null, React.createElement('label', { style: styles.label }, `Wall Height (${unitSystem})`), React.createElement('input', { type: 'number', value: width, onChange: (e) => setWidth(parseFloat(e.target.value) || 0), style: styles.input })),
+1015: React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Thickness (mm)'), React.createElement('input', { type: 'number', value: depth, onChange: (e) => setDepth(parseFloat(e.target.value) || 0), style: styles.input })),
+1032: results.warnings.length > 0 && React.createElement('div', { style: styles.warningBox },
+1067: React.createElement('td', { style: styles.td }, formatNumber(r.cuttingLengthM)),
+1068: React.createElement('td', { style: styles.td }, formatNumber(r.totalLengthM)),
+1077: React.createElement('div', { style: styles.sectionTitle }, '📦 Rebar Diameter Summary & 12m Commercial Stock Requirement'),
+1081: React.createElement('th', { style: styles.th }, 'Diameter'),
+1083: React.createElement('th', { style: styles.th }, 'Total Length (m)'),
+1095: React.createElement('td', { style: styles.td }, formatNumber(info.lengthM)),
+1116: React.createElement('tr', null, React.createElement('td', { style: styles.td }, `Base TMT Rebar Steel (${steelGrade})`), React.createElement('td', { style: styles.td }, formatNumber(results.baseKg)), React.createElement('td', { style: styles.td }, 'KG'), React.createElement('td', { style: styles.td }, '-'), React.createElement('td', { style: styles.td }, '-')),
+1122: React.createElement('tr', { style: { backgroundColor: '#e8f4f8', fontWeight: 'bold' } }, React.createElement('td', { colSpan: 4, style: styles.td }, 'Material Subtotal'), React.createElement('td', { style: styles.td }, formatCurrency(results.costs.materialTotal))),
+1124: React.createElement('tr', { style: { backgroundColor: '#f0f7f5', fontWeight: 'bold' } }, React.createElement('td', { colSpan: 4, style: styles.td }, 'Labour Subtotal'), React.createElement('td', { style: styles.td }, formatCurrency(results.costs.labour))),
+1125: React.createElement('tr', { style: { backgroundColor: '#800020', color: 'white', fontWeight: 'bold' } }, React.createElement('td', { colSpan: 4, style: { padding: '8px' } }, 'GRAND TOTAL'), React.createElement('td', { style: { padding: '8px' } }, formatCurrency(results.costs.grandTotal)))
+1148: React.createElement('div', null, `• Dynamic Tension Development Length (Ld): Computed per Cl. 26.2.1. For ${steelGrade} in ${concreteGrade}, Ld = ${(calculateDevelopmentLength(16, concreteGrade, steelGrade).ldFactor)}d.`),
+1149: React.createElement('div', null, '• Geometrical Bent-up Bar Crank Extra: Calculated from angle theta (45° = 0.42D, 30° = 0.27D, 60° = 0.58D) where D = Depth - 2*Cover - BarDia.'),
+1150: React.createElement('div', null, '• Double Mat Chairs: Calculated as 1 per sq.m for double reinforcement mats only; height = Depth - 2*Cover - 4*BarDia.'),
+
+============================================================
+FILE: .\pages\tile-calculator.tsx
+============================================================
+3: export default function TilesPage() {
+
+============================================================
+FILE: .\pages\water-tank-calculator.tsx
+============================================================
+1: import React, { useState, useEffect, useMemo } from 'react';
+5: import MarketRateTrend from '../components/ui/MarketRateTrend';
+9: container: { maxWidth: '1200px', margin: '0 auto', padding: '16px', backgroundColor: '#f8fafc', minHeight: '100vh', boxSizing: 'border-box', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' },
+17: modeSelect: { width: '100%', padding: '12px 14px', border: '2px solid #800020', borderRadius: '8px', fontSize: '15px', fontWeight: '700', color: '#800020', backgroundColor: '#fff5f7', outline: 'none', cursor: 'pointer' },
+27: input: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#fff', outline: 'none' },
+28: select: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', backgroundColor: '#fff', outline: 'none' },
+45: table: { width: '100%', borderCollapse: 'collapse', fontSize: '12px' },
+66: export default function WaterTankCalculator() {
+75: const [scopeOption, setScopeOption] = useState<'both' | 'concrete_only' | 'steel_only'>('both');
+80: lengthFt: 10,         // Internal length in feet
+81: widthFt: 8,           // Internal width in feet
+82: heightFt: 6,          // Internal height in feet
+84: grade: 'M20',         // Concrete grade: M20, M25, M30
+86: // Component Thicknesses
+87: baseThickIn: 6,       // Base slab thickness in inches
+88: wallThickIn: 6,       // Side wall thickness in inches
+89: coverThickIn: 6,      // Cover slab thickness in inches
+97: const [inputs, setInputs] = useState(initialInputs);
+109: const foodPaintRate = getMasterRate(["MAT-FDP-01", "food grade paint", "epoxy paint"], 35);
+114: const handleReset = () => setInputs(initialInputs);
+118: const hasConcrete = scopeOption === 'both' || scopeOption === 'concrete_only';
+119: const hasSteel = scopeOption === 'both' || scopeOption === 'steel_only';
+121: // Internal Volume & Water Capacity
+122: const internalVolCft = inputs.lengthFt * inputs.widthFt * inputs.heightFt;
+123: const capacityLiters = internalVolCft * 28.3168 * inputs.tankNos;
+130: const outerLengthFt = inputs.lengthFt + 2 * wallThickFt;
+131: const outerWidthFt = inputs.widthFt + 2 * wallThickFt;
+134: const baseSlabVolCft = outerLengthFt * outerWidthFt * baseThickFt;
+135: const sideWallsVolCft = 2 * (inputs.lengthFt + inputs.widthFt) * inputs.heightFt * wallThickFt;
+136: const coverSlabVolCft = (outerLengthFt * outerWidthFt * coverThickFt) - (2 * 2 * coverThickFt);
+147: if (inputs.grade === 'M25') {
+152: } else if (inputs.grade === 'M30') {
+175: const internalFloorArea = inputs.lengthFt * inputs.widthFt;
+176: const internalWallArea = 2 * (inputs.lengthFt + inputs.widthFt) * inputs.heightFt;
+180: const shutteringAreaSqft = hasConcrete ? ((2 * (inputs.lengthFt + inputs.widthFt) * inputs.heightFt + outerLengthFt * outerWidthFt) * inputs.tankNos) : 0;
+201: const costPerLitre = capacityLiters > 0 ? grandTotal / capacityLiters : 0;
+207: { code: cementRate.itemCode || "MAT-CEM-01", category: "Material", description: `Cement OPC 53 Grade (${inputs.grade} Mix)`, unit: "BAG", engQty: cementBags, procQty: Math.ceil(cementBags), rate: cementRate.rate, rateFound: cementRate.found, amount: cementCost },
+231: resultItems.push({ code: foodPaintRate.itemCode || "MAT-FDP-01", category: "Coatings", description: `Food Grade Non-Toxic Tank Epoxy Paint Coating`, unit: "SQFT", engQty: wettedAreaSqft, procQty: Math.ceil(wettedAreaSqft), rate: foodPaintRate.rate, rateFound: foodPaintRate.found, amount: foodPaintCost });
+241: description: `Water Tank ${scopeOption === 'both' ? 'Concrete Casting & Mesh Tying' : scopeOption === 'concrete_only' ? 'Concrete Casting & Shuttering' : 'Mesh Bar Bending & Tying'} Labour`,
+253: capacityLiters,
+276: }, [inputs, scopeOption, cementRate, steelRate, sandRate, ca20Rate, ca12Rate, wireRate, coverRate, waterRate, wprRate, foodPaintRate, frpCoverRate, shutteringRate, rccLabourRate]);
+295: XLSX.writeFile(wb, `BuildMitra_Water_Tank_Estimate_${scopeOption}.xlsx`);
+303: `*Scope Option*: ${scopeOption === 'both' ? 'Both Concrete & Steel' : scopeOption === 'concrete_only' ? 'Only Concrete & Shuttering' : 'Only Steel Mesh'}%0A` +
+305: `• *Tank*: ${inputs.tankNos} Nos (${inputs.lengthFt}'x${inputs.widthFt}' x ${inputs.heightFt}ft Internal - ${inputs.grade})%0A` +
+306: `• *Water Capacity*: ${formatNumber(calcResults.capacityLiters)} Litres (${formatNumber(calcResults.internalVolCft)} CFT)%0A` +
+328: <span style={styles.badge}>IS Code Capacity & Waterproofing</span>
+331: <span style={{ fontSize: '11px', color: '#fecdd3' }}>BuildMitra Professional Edition</span>
+336: <MarketRateTrend />
+343: value={scopeOption}
+344: onChange={(e) => setScopeOption(e.target.value as 'both' | 'concrete_only' | 'steel_only')}
+355: <span>📐 Water Tank Geometry & Structural Specifications</span>
+359: 💡 <strong>IS Code Water Tank Standards</strong>: Computes net internal storage volume in Litres, RCC base/side wall/cover slab concrete, double mesh rebar schedule, internal liquid waterproofing, non-toxic food grade paint coating, and FRP manhole cover.
+369: onChange={e => setInputs({ ...inputs, tankNos: parseFloat(e.target.value) || 1 })}
+374: <label style={styles.label}>Internal Length (Ft)</label>
+378: value={inputs.lengthFt}
+379: onChange={e => setInputs({ ...inputs, lengthFt: parseFloat(e.target.value) || 0 })}
+384: <label style={styles.label}>Internal Width (Ft)</label>
+388: value={inputs.widthFt}
+389: onChange={e => setInputs({ ...inputs, widthFt: parseFloat(e.target.value) || 0 })}
+394: <label style={styles.label}>Internal Height (Ft)</label>
+398: value={inputs.heightFt}
+399: onChange={e => setInputs({ ...inputs, heightFt: parseFloat(e.target.value) || 0 })}
+409: onChange={e => setInputs({ ...inputs, baseThickIn: parseFloat(e.target.value) || 6 })}
+419: onChange={e => setInputs({ ...inputs, wallThickIn: parseFloat(e.target.value) || 6 })}
+429: onChange={e => setInputs({ ...inputs, coverThickIn: parseFloat(e.target.value) || 6 })}
+435: <label style={styles.label}>Concrete Mix Grade</label>
+438: value={inputs.grade}
+439: onChange={e => setInputs({ ...inputs, grade: e.target.value })}
+451: <div style={{ fontSize: '13px', fontWeight: '700', color: '#166534', marginBottom: '10px' }}>🛡️ Waterproofing, Food-Grade Paint & Accessories Controls</div>
+455: <select style={styles.select} value={inputs.includeWaterproofing ? "Yes" : "No"} onChange={e => setInputs({ ...inputs, includeWaterproofing: e.target.value === "Yes" })}>
+462: <label style={styles.label}>Food Grade Tank Paint</label>
+463: <select style={styles.select} value={inputs.includeFoodPaint ? "Yes" : "No"} onChange={e => setInputs({ ...inputs, includeFoodPaint: e.target.value === "Yes" })}>
+471: <select style={styles.select} value={inputs.includeFRPManhole ? "Yes" : "No"} onChange={e => setInputs({ ...inputs, includeFRPManhole: e.target.value === "Yes" })}>
+487: <span>📊 Water Tank Results BOQ ({scopeOption === 'both' ? 'Concrete & Steel' : scopeOption === 'concrete_only' ? 'Concrete & Formwork' : 'Steel Rebar Only'})</span>
+493: <span style={styles.metricTitle}>Water Storage Capacity</span>
+494: <span style={styles.metricVal}>{formatNumber(calcResults.capacityLiters, 0)} Litres</span>
+495: <span style={{ fontSize: '11px', opacity: 0.9 }}>({formatNumber(calcResults.internalVolCft, 1)} CFT Net Storage)</span>
+499: <span style={styles.metricTitle}>RCC Concrete Volume</span>
+500: <span style={styles.metricVal}>{formatNumber(calcResults.rccVolCft, 1)} CFT</span>
+501: <span style={{ fontSize: '11px', opacity: 0.9 }}>({formatNumber(calcResults.rccVolCum, 3)} CUM @ {inputs.grade})</span>
+506: <span style={styles.metricTitle}>Steel Rebar</span>
+507: <span style={styles.metricVal}>{formatNumber(calcResults.totalSteelKg, 1)} kg</span>
+508: <span style={{ fontSize: '11px', opacity: 0.9 }}>(Base, Walls & Cover Slab)</span>
+513: <span style={styles.metricTitle}>Total Cost</span>
+514: <span style={styles.metricVal}>{formatCurrency(calcResults.grandTotal)}</span>
+515: <span style={{ fontSize: '11px', opacity: 0.9 }}>({formatCurrency(calcResults.costPerLitre)} / Litre)</span>
+539: <span style={{
+548: </span>
+556: <span style={styles.rateTag}>{formatCurrency(item.rate)}</span>
+558: <span style={styles.rateTagWarn}>Rate Unavailable</span>
+

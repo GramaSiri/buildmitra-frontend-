@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
+import { BuildMitraLetterhead, BUILDMITRA_COMPANY_DETAILS } from "../components/BuildMitraLetterhead";
+import { downloadBuildMitraPDF } from "../utils/pdfExport";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
 
@@ -10,11 +12,12 @@ export default function QuickQuotePage() {
   const [enquiry, setEnquiry] = useState<any>(null);
   const [rate, setRate] = useState("");
   const [deliveryTime, setDeliveryTime] = useState("Immediate / As per availability");
-  const [paymentTerms, setPaymentTerms] = useState("Immediate payment before dispatch / delivery. Payment can be made through Bank Transfer / UPI / Google Pay / PhonePe or any mutually agreed mode. Supplier will share Bank A/c, IFSC, UPI ID or QR Code at payment confirmation.");
+  const [paymentTerms, setPaymentTerms] = useState("Immediate payment before dispatch / delivery via Bank Transfer, UPI, GPay, or Paytm.");
   const [remarks, setRemarks] = useState("Rate subject to stock availability and final confirmation.");
-  const [attachFile, setAttachFile] = useState(null);
+  const [attachFile, setAttachFile] = useState<any>(null);
   const [attachFileName, setAttachFileName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showLivePreview, setShowLivePreview] = useState(false);
 
   const cleanPhone = (phone: string) => String(phone || "").replace(/\D/g, "").replace(/^91/, "");
 
@@ -44,6 +47,46 @@ export default function QuickQuotePage() {
     if (action === "reject" && enquiryCode) rejectEnquiry();
   }, [action, enquiryCode]);
 
+  const handleDownloadPDF = () => {
+    if (!enquiry) return;
+    const qtyNum = Number(enquiry.quantity) || 1;
+    const rateNum = Number(rate) || Number(enquiry.uploadedRate) || 0;
+    const subtotal = qtyNum * rateNum;
+    const gst = Math.round(subtotal * 0.18);
+    const grandTotal = subtotal + gst;
+
+    downloadBuildMitraPDF({
+      documentTitle: "OFFICIAL MARKETPLACE QUOTATION",
+      documentNo: enquiry.enquiryCode || `BM-QT-${Date.now().toString().slice(-6)}`,
+      date: new Date().toISOString().split("T")[0],
+      buyerName: enquiry.buyerName,
+      buyerCode: enquiry.buyerPhone,
+      contractorName: enquiry.providerName || BUILDMITRA_COMPANY_DETAILS.name,
+      contractorCode: enquiry.providerPhone || BUILDMITRA_COMPANY_DETAILS.mobile,
+      items: [
+        {
+          sno: 1,
+          description: enquiry.itemName || "Marketplace Product",
+          quantity: qtyNum,
+          unit: enquiry.unit || enquiry.uploadedUnit || "Unit",
+          rate: rateNum,
+          amount: subtotal,
+          notes: remarks || enquiry.specification || enquiry.message
+        }
+      ],
+      subtotal,
+      gstAmount: gst,
+      grandTotal,
+      notes: `${remarks} | Delivery: ${deliveryTime} | Terms: ${paymentTerms}`,
+      terms: [
+        "Prices quoted are inclusive of standard loading & unloading.",
+        "Quotation validity is 15 days from date of issuance.",
+        "Standard payment terms: 30% Advance, 60% on site delivery, 10% on inspection.",
+        "Subject to Bengaluru Jurisdiction."
+      ]
+    });
+  };
+
   const sendQuote = async () => {
     if (!enquiry || !rate) {
       alert("Please enter quoted rate.");
@@ -53,27 +96,21 @@ export default function QuickQuotePage() {
     setLoading(true);
 
     const quoteRes = await fetch(`${API_BASE}/api/enquiry/${enquiry._id}/quote`, {
-  method: "PUT",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    quotedAmount: Number(rate),
-    quoteMessage: remarks || "Please contact us for quotation details",
-    quoteValidityDate: deliveryTime || "",
-    paymentTerms: paymentTerms || "",
-    gstIncluded: false,
-    transportCharges: 0,
-  }),
-});
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        quotedAmount: Number(rate),
+        quoteMessage: remarks || "Please contact us for quotation details",
+        quoteValidityDate: deliveryTime || "",
+        paymentTerms: paymentTerms || "",
+        gstIncluded: false,
+        transportCharges: 0,
+      }),
+    });
 
     const quoteData = await quoteRes.json().catch(() => ({}));
     setLoading(false);
 
-    if (!quoteRes.ok || !quoteData.success) {
-      alert(quoteData.message || "Quote save failed.");
-      return;
-    }
-
-    // Save to localStorage for dashboard
     if (quoteData.success && quoteData.enquiry) {
       const savedQuotes = JSON.parse(localStorage.getItem("buildmitra_quotes") || "[]");
       const newQuote = {
@@ -91,60 +128,39 @@ export default function QuickQuotePage() {
       };
       savedQuotes.push(newQuote);
       localStorage.setItem("buildmitra_quotes", JSON.stringify(savedQuotes));
-
-      // Save to supplier quotes
-      const supplierQuotes = JSON.parse(localStorage.getItem("supplier_quotes") || "[]");
-      supplierQuotes.push(newQuote);
-      localStorage.setItem("supplier_quotes", JSON.stringify(supplierQuotes));
-
-      // Save to buyer quotes
-      const buyerQuotes = JSON.parse(localStorage.getItem("buyer_quotes") || "[]");
-      buyerQuotes.push(newQuote);
-      localStorage.setItem("buyer_quotes", JSON.stringify(buyerQuotes));
     }
 
     const quoteUnit = enquiry.unit || enquiry.uploadedUnit || "";
     const attachmentInfo = attachFileName ? `\n\n📎 Attachment: ${attachFileName}` : "";
 
     const msg =
-`🏗️ BUILDMITRA OFFICIAL QUOTATION
+`🏗️ BUILDMITRA INFRA — OFFICIAL QUOTATION
+No:378, JP Nagar 9th Phase, Bengaluru- 560062 | 📱 +91 76769 42386
 
-Quote No: ${enquiry.enquiryCode || "-"}
-Enquiry No: ${enquiry.enquiryCode}
+Quote Ref: ${enquiry.enquiryCode || "-"}
+Date: ${new Date().toISOString().split("T")[0]}
 
-Supplier:
-${enquiry.providerName || "-"}
-Phone: ${enquiry.providerPhone || "-"}
+Supplier: ${enquiry.providerName || "BuildMitra Verified Supplier"}
+Kind Attn: ${String(enquiry.buyerName || "Buyer").replace(/^Buyer\s+/i, "")} (${enquiry.buyerPhone})
 
-Kind Attn: Mr/Mrs ${String(enquiry.buyerName || "").replace(/^Buyer\s+/i, "").replace(/^Owner\s+/i, "")}
-Buyer Phone: ${enquiry.buyerPhone}
+-----------------------------------------
+📦 Item: ${enquiry.itemName}
+📊 Qty: ${enquiry.quantity || "-"} ${quoteUnit}
+📍 Location: ${enquiry.location || "-"}
 
-Requirement Details:
-Item: ${enquiry.itemName}
-Quantity: ${enquiry.quantity || "-"} ${enquiry.unit || ""}
-Location: ${enquiry.location || "-"}
-Pincode: ${enquiry.pincode || "-"}
-Requirement: ${enquiry.message || enquiry.specification || "-"}
+💰 Quoted Rate: ₹${rate} / ${quoteUnit || "Unit"}
+🚚 Delivery: ${deliveryTime}
+💳 Payment Terms: ${paymentTerms}
+-----------------------------------------
 
-Rate:
-₹${rate} / ${quoteUnit || "Unit"}
-Delivery Time: ${deliveryTime}
-
-Payment Terms & Conditions:
-${paymentTerms}
-
-Standard Terms:
+📜 Standard Terms:
 1. Rate is subject to stock availability and final confirmation.
-2. Buyer should verify material quantity and quality before unloading.
-3. Any shortage, defect, damage, opened package or quality issue must be reported before unloading/acceptance.
-4. Transport, loading, unloading, GST and extra charges are as mutually agreed.
-5. Payment and delivery commitment will be valid only after supplier confirmation.
+2. Buyer must verify material quantity and quality before unloading.
+3. Payment via Bank Transfer / UPI / GPay / PhonePe.
 
-Remarks:
-${remarks}${attachmentInfo}
+Remarks: ${remarks}${attachmentInfo}
 
-Thank you,
-BuildMitra Marketplace`;
+🌐 BuildMitra Infra & Construction Suite`;
 
     const buyerPhone = cleanPhone(enquiry.buyerPhone);
     if (!buyerPhone) {
@@ -153,100 +169,124 @@ BuildMitra Marketplace`;
     }
 
     window.open(`https://wa.me/91${buyerPhone}?text=${encodeURIComponent(msg)}`, "_blank");
-    alert("Quote saved. WhatsApp opened to buyer.");
+    alert("Quote saved cleanly! WhatsApp opened to buyer with official BuildMitra quotation.");
   };
 
   if (!enquiry) return <div style={styles.page}>Loading enquiry...</div>;
 
+  const qtyNum = Number(enquiry.quantity) || 1;
+  const rateNum = Number(rate) || Number(enquiry.uploadedRate) || 0;
+  const subtotal = qtyNum * rateNum;
+  const gst = Math.round(subtotal * 0.18);
+  const grandTotal = subtotal + gst;
+
   return (
     <div style={styles.page}>
       <div style={styles.card}>
-        <h1>Reply Quote</h1>
-
-        <div style={styles.headerBox}>
-          <h2>{enquiry.providerName || "Supplier"}</h2>
-          <p>Phone: {enquiry.providerPhone || "-"}</p>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+          <h1 style={{ margin: 0, fontSize: "22px", color: "#0f172a" }}>📝 Reply Official Quotation</h1>
+          <button
+            onClick={() => setShowLivePreview(!showLivePreview)}
+            style={{ backgroundColor: "#0284c7", color: "#fff", border: "none", borderRadius: "6px", padding: "8px 14px", fontWeight: "600", fontSize: "12px", cursor: "pointer" }}
+          >
+            {showLivePreview ? "✏️ Edit Quotation Form" : "👁️ View Letterhead Preview"}
+          </button>
         </div>
 
-        <div style={styles.box}>
-          <p><b>Kind Attn:</b> Mr/Mrs {String(enquiry.buyerName || "").replace(/^Buyer\s+/i, "").replace(/^Owner\s+/i, "")}</p>
-          <p><b>Buyer Phone:</b> {enquiry.buyerPhone}</p>
-        </div>
-
-        <div style={styles.box}>
-          <h3>Requirement Details</h3>
-          <p><b>Enquiry:</b> {enquiry.enquiryCode}</p>
-          <p><b>Item:</b> {enquiry.itemName}</p>
-          <p><b>Qty:</b> {enquiry.quantity || "-"} {enquiry.unit || ""}</p>
-          <p><b>Location:</b> {enquiry.location || "-"} - {enquiry.pincode || ""}</p>
-          <p><b>Message:</b> {enquiry.message || enquiry.specification || "-"}</p>
-        </div>
-
-        <label style={styles.label}>Rate ₹ / {enquiry.uploadedUnit || enquiry.unit || "Unit"}</label>
-        <input style={styles.input} value={rate} onChange={(e) => setRate(e.target.value)} />
-        <p style={styles.note}>Uploaded supplier rate auto-filled. You can edit only if required.</p>
-
-        <input style={styles.input} placeholder="Delivery Time" value={deliveryTime} onChange={(e) => setDeliveryTime(e.target.value)} />
-        <textarea style={styles.textarea} placeholder="Payment Terms & Conditions" value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)} />
-        <textarea style={styles.textarea} placeholder="Remarks" value={remarks} onChange={(e) => setRemarks(e.target.value)} />
-
-        {/* Attachment Section */}
-        <div style={{ border: '2px dashed #ccc', borderRadius: '8px', padding: '16px', textAlign: 'center', margin: '12px 0', backgroundColor: '#fafafa' }}>
-          <label style={{ fontWeight: '600', display: 'block', marginBottom: '8px' }}>📎 Attach Quote / Catalog / Document</label>
-          <input 
-            type="file" 
-            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx" 
-            onChange={(e) => {
-              const file = e.target.files[0];
-              if (file) {
-                if (file.size > 10 * 1024 * 1024) {
-                  alert('❌ File size exceeds 10MB limit.');
-                  return;
+        {showLivePreview ? (
+          <div>
+            <BuildMitraLetterhead
+              documentTitle="OFFICIAL MARKETPLACE QUOTATION"
+              documentNo={enquiry.enquiryCode}
+              date={new Date().toISOString().split("T")[0]}
+              buyerName={enquiry.buyerName}
+              buyerCode={enquiry.buyerPhone}
+              contractorName={enquiry.providerName}
+              contractorCode={enquiry.providerPhone}
+              items={[
+                {
+                  sno: 1,
+                  description: enquiry.itemName,
+                  quantity: qtyNum,
+                  unit: enquiry.unit || "Unit",
+                  rate: rateNum,
+                  amount: subtotal,
+                  notes: remarks || enquiry.specification
                 }
-                setAttachFile(file);
-                setAttachFileName(file.name);
-              }
-            }} 
-            style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px', backgroundColor: 'white' }} 
-          />
-          {attachFileName && <p style={{ color: '#047857', marginTop: '8px', fontWeight: 'bold' }}>✅ {attachFileName}</p>}
-          <p style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>Supported: PDF, DOC, JPG, PNG, XLS (Max 10MB)</p>
-        </div>
+              ]}
+              subtotal={subtotal}
+              gstAmount={gst}
+              grandTotal={grandTotal}
+              notes={`Delivery: ${deliveryTime} | Terms: ${paymentTerms}`}
+              onPrint={handleDownloadPDF}
+              onShareWhatsApp={sendQuote}
+            />
+            <button style={{ ...styles.button, marginTop: "20px" }} onClick={() => setShowLivePreview(false)}>
+              ✏️ Back to Edit Form
+            </button>
+          </div>
+        ) : (
+          <div>
+            <div style={styles.headerBox}>
+              <h2 style={{ margin: 0, fontSize: "16px", color: "#065f46" }}>{enquiry.providerName || "Verified Supplier"}</h2>
+              <p style={{ margin: "4px 0 0", fontSize: "12px", color: "#047857" }}>Phone: {enquiry.providerPhone || "-"}</p>
+            </div>
 
-        <div style={styles.terms}>
-          <b>Standard Terms Included:</b>
-          <ol>
-            <li>Rate subject to stock availability and final confirmation.</li>
-            <li>Buyer must verify material before unloading.</li>
-            <li>Shortage/defect/damage/opened package issue must be reported before unloading.</li>
-            <li>Payment can be made through Bank Transfer / UPI / Google Pay / PhonePe or any mutually agreed mode.</li>
-            <li>Supplier will share Bank A/c, IFSC, UPI ID or QR Code at payment confirmation.</li>
-            <li>GST, transport, loading/unloading as mutually agreed.</li>
-            <li>Payment and delivery valid after supplier confirmation.</li>
-          </ol>
-        </div>
+            <div style={styles.box}>
+              <p style={{ margin: "4px 0" }}><b>Buyer Name:</b> {String(enquiry.buyerName || "").replace(/^Buyer\s+/i, "")}</p>
+              <p style={{ margin: "4px 0" }}><b>Buyer Phone:</b> {enquiry.buyerPhone}</p>
+            </div>
 
-        <button style={styles.button} onClick={sendQuote} disabled={loading}>
-          {loading ? "Saving..." : "Send Official Quote on WhatsApp"}
-        </button>
+            <div style={styles.box}>
+              <h3 style={{ margin: "0 0 8px", fontSize: "14px", color: "#1e293b" }}>Requirement Details</h3>
+              <p style={{ margin: "4px 0" }}><b>Enquiry Code:</b> {enquiry.enquiryCode}</p>
+              <p style={{ margin: "4px 0" }}><b>Item:</b> {enquiry.itemName}</p>
+              <p style={{ margin: "4px 0" }}><b>Qty:</b> {enquiry.quantity || "-"} {enquiry.unit || ""}</p>
+              <p style={{ margin: "4px 0" }}><b>Location:</b> {enquiry.location || "-"} {enquiry.pincode ? `- ${enquiry.pincode}` : ""}</p>
+              <p style={{ margin: "4px 0" }}><b>Specification / Notes:</b> {enquiry.specification || enquiry.message || "-"}</p>
+            </div>
 
-        <button style={styles.reject} onClick={rejectEnquiry}>Reject Enquiry</button>
+            <label style={styles.label}>Quoted Rate (₹ / {enquiry.uploadedUnit || enquiry.unit || "Unit"})</label>
+            <input style={styles.input} type="number" placeholder="Enter rate per unit" value={rate} onChange={(e) => setRate(e.target.value)} />
+            <p style={styles.note}>Uploaded rate auto-filled. Edit rate if required.</p>
+
+            <label style={styles.label}>Delivery Timeline</label>
+            <input style={styles.input} placeholder="Delivery Time" value={deliveryTime} onChange={(e) => setDeliveryTime(e.target.value)} />
+
+            <label style={styles.label}>Payment Terms & Conditions</label>
+            <textarea style={styles.textarea} placeholder="Payment Terms" value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)} />
+
+            <label style={styles.label}>Remarks / Specifications</label>
+            <textarea style={styles.textarea} placeholder="Remarks" value={remarks} onChange={(e) => setRemarks(e.target.value)} />
+
+            <div style={{ display: "flex", gap: "10px", marginTop: "16px" }}>
+              <button style={{ ...styles.button, flex: 1 }} onClick={sendQuote} disabled={loading}>
+                {loading ? "Saving..." : "📲 Submit Quote on WhatsApp"}
+              </button>
+              <button style={{ ...styles.buttonInfo, flex: 1 }} onClick={handleDownloadPDF}>
+                🖨️ Download PDF Quotation
+              </button>
+            </div>
+
+            <button style={styles.reject} onClick={rejectEnquiry}>Reject Enquiry</button>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
 const styles: Record<string, any> = {
-  page: { minHeight: "100vh", background: "#f5f7fb", padding: 24, fontFamily: "Arial" },
-  card: { maxWidth: 720, margin: "30px auto", background: "#fff", padding: 24, borderRadius: 14, boxShadow: "0 10px 30px rgba(0,0,0,0.08)" },
+  page: { minHeight: "100vh", background: "#f8fafc", padding: 24, fontFamily: "Inter, system-ui, sans-serif" },
+  card: { maxWidth: 760, margin: "20px auto", background: "#fff", padding: 24, borderRadius: 14, boxShadow: "0 10px 30px rgba(0,0,0,0.08)", border: "1px solid #e2e8f0" },
   headerBox: { background: "#ecfdf5", padding: 14, borderRadius: 10, border: "1px solid #bbf7d0", marginBottom: 12 },
-  box: { background: "#f9fafb", padding: 14, borderRadius: 10, border: "1px solid #e5e7eb", marginBottom: 12 },
-  label: { fontWeight: 900, display: "block", marginBottom: 6 },
-  note: { color: "#047857", fontWeight: 800, marginTop: -4 },
-  input: { width: "100%", padding: 12, margin: "8px 0", border: "1px solid #d1d5db", borderRadius: 8 },
-  textarea: { width: "100%", padding: 12, margin: "8px 0", border: "1px solid #d1d5db", borderRadius: 8, minHeight: 76 },
-  terms: { background: "#fff7ed", padding: 14, borderRadius: 10, border: "1px solid #fed7aa", marginTop: 10, fontSize: 14 },
-  button: { width: "100%", padding: 14, background: "#16a34a", color: "#fff", border: 0, borderRadius: 8, fontWeight: 900, marginTop: 10 },
-  reject: { width: "100%", padding: 12, background: "#ef4444", color: "#fff", border: 0, borderRadius: 8, fontWeight: 800, marginTop: 10 },
+  box: { background: "#f8fafc", padding: 14, borderRadius: 10, border: "1px solid #e2e8f0", marginBottom: 12, fontSize: 13 },
+  label: { fontWeight: 700, display: "block", marginTop: 12, marginBottom: 4, fontSize: 13, color: "#334155" },
+  note: { color: "#047857", fontWeight: 600, fontSize: 11, marginTop: 2 },
+  input: { width: "100%", padding: 10, border: "1px solid #cbd5e1", borderRadius: 8, fontSize: 13 },
+  textarea: { width: "100%", padding: 10, border: "1px solid #cbd5e1", borderRadius: 8, minHeight: 70, fontSize: 13 },
+  button: { width: "100%", padding: 12, background: "#16a34a", color: "#fff", border: 0, borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: 14 },
+  buttonInfo: { width: "100%", padding: 12, background: "#0284c7", color: "#fff", border: 0, borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: 14 },
+  reject: { width: "100%", padding: 10, background: "#ef4444", color: "#fff", border: 0, borderRadius: 8, fontWeight: 700, marginTop: 12, cursor: "pointer", fontSize: 13 },
 };
 

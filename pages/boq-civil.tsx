@@ -1,7 +1,10 @@
+import { getCachedBuildMitraMasterRates, fetchBuildMitraMasterRates } from "../utils/buildmitraMasterRates";
+import { getBuildMitraReportHeaderHtml, BUILDMITRA_OFFICIAL_LOGO } from "../utils/buildmitraReportBranding";
 import React, { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import * as XLSX from 'xlsx';
 import { usePaymentBarrier } from '../hooks/usePaymentBarrier';
+import { downloadBuildMitraPDF } from '../utils/pdfExport';
 import { getMasterRate, syncApprovedRatesFromBackend, MasterRateResult } from '../utils/masterRates';
 import MarketRateTrend from '../components/ui/MarketRateTrend';
 
@@ -103,7 +106,7 @@ export default function CivilBOQPage() {
   const block4Rate = getMasterRate(["MAT-BLK-04", "concrete block 4"], 32);
   const tileRate = getMasterRate(["MAT-FLR-VIT", "vitrified tile"], 58);
   const tileLabourRate = getMasterRate(["SRV-FLR-LAY", "tile labour"], 24);
-  const graniteRate = getMasterRate(["MAT-GRN-01", "granite"], 145);
+  const graniteRate = getMasterRate(["MAT-GRN-01", "granite"], 115);
 
   // IS Engineering Structural Rule Engine
   const structure = useMemo(() => {
@@ -221,30 +224,48 @@ export default function CivilBOQPage() {
     const cementBags = (cementBagsRcc + cementBagsPcc + cementBagsPlaster + cementBagsMasonry) * 1.05;
     const pehQuantity = pccTotalCum * 35.3147;
 
-    const items = [
-      { sr: 1, code: 'SRV-SLT-01', desc: `Soil investigation based on plot area (${plotArea} sft). Engine: ${boreholes} borehole(s).`, uom: 'Nos', qty: boreholes, matRate: 12000, labRate: 0, amount: boreholes * 12000 },
-      { sr: 2, code: 'SRV-EXC-01', desc: `Earthwork excavation for foundation pits & plinth trenches. SBC considered: ${sbc} kN/sqm.`, uom: 'Cum', qty: excavationCum, matRate: 80, labRate: 40, amount: excavationCum * 120 },
-      { sr: 3, code: 'SRV-PCC-01', desc: `PCC M10 (1:3:6) levelling bed under footings & plinth protection combined.`, uom: 'Cum', qty: pccTotalCum, matRate: 3800, labRate: 800, amount: pccTotalCum * 4600 },
-      { sr: 4, code: 'MAT-SSM-01', desc: `Size stone masonry (SSM) substructure foundation below plinth level. Recommended footing: ${structure.footing}.`, uom: 'Cum', qty: foundationMasonryCum, matRate: 1342, labRate: 400, amount: foundationMasonryCum * 1742 },
-      { sr: 5, code: 'SRV-EXC-01', desc: `Backfilling in foundation pits & plinth using excavated soil with watering & ramming.`, uom: 'Cum', qty: backfillCum, matRate: 40, labRate: 20, amount: backfillCum * 60 },
-      { sr: 6, code: 'SRV-ATT-01', desc: `Anti-termite chemical soil treatment below floor slab & foundation zone.`, uom: 'Ltr', qty: antiTermiteLtr, matRate: 15, labRate: 10, amount: antiTermiteLtr * 25 },
-      { sr: 7, code: 'SRV-SHT-01', desc: `Centering & formwork shuttering rental for footings, columns, beams & slab RCC works.`, uom: 'Sft', qty: shutteringSft, matRate: 35, labRate: 20, amount: shutteringSft * 55 },
-      { sr: 8, code: 'MAT-STL-01', desc: `TMT Steel Rebar Fe 500D (${structure.steelKgPerSft} kg/sft BUA). Column: ${structure.column}, Beam: ${structure.beam}, Slab: ${structure.slab}.`, uom: 'Kgs', qty: steelKg, matRate: steelRate.rate || 68, labRate: 12, amount: steelKg * ((steelRate.rate || 68) + 12) },
-      { sr: 9, code: 'MAT-CEM-01', desc: `RCC M20/M25 structural concrete for footings, columns, beams, slabs, lintels, staircase & chajjas.`, uom: 'Cum', qty: rccTotalCum + lintelCum + staircaseCum + sunshadeCum, matRate: 4800, labRate: 1000, amount: (rccTotalCum + lintelCum + staircaseCum + sunshadeCum) * 5800 },
-      { sr: 10, code: 'MAT-BLK-06', desc: `Concrete block masonry. 6" external blocks (${sixInBlockNos} nos) + 4" internal blocks (${fourInBlockNos} nos). Openings deducted.`, uom: 'Nos', qty: totalBlockNos, matRate: 42, labRate: 12, amount: totalBlockNos * 54 },
-      { sr: 11, code: 'MAT-DOR-MN', desc: `Teakwood main door (${counts.mainDoors} nos) + Flush/WPC internal doors (${counts.internalDoors + counts.toiletDoors + counts.poojaDoors} nos).`, uom: 'Nos', qty: counts.totalDoors, matRate: 5500, labRate: 800, amount: counts.totalDoors * 6300 },
-      { sr: 12, code: 'MAT-WIN-UPVC', desc: `UPVC 3-Track sliding windows (${counts.windows} nos) + Toilet louvered ventilators (${counts.ventilators} nos).`, uom: 'Nos', qty: counts.windows + counts.ventilators, matRate: 2850, labRate: 350, amount: (counts.windows + counts.ventilators) * 3200 },
-      { sr: 13, code: 'SRV-PLAS-INT', desc: `Internal 12mm 1:4 + External 18mm 1:5 waterproofing plastering.`, uom: 'Sqmtr', qty: plasterSqm, matRate: 35, labRate: 25, amount: plasterSqm * 60 },
-      { sr: 14, code: 'MAT-FLR-VIT', desc: `Vitrified tiles 2'x2' flooring with skirting + kitchen & toilet dado tiles.`, uom: 'Sft', qty: flooringTotalSft, matRate: tileRate.rate || 58, labRate: tileLabourRate.rate || 24, amount: flooringTotalSft * ((tileRate.rate || 58) + (tileLabourRate.rate || 24)) },
-      { sr: 15, code: 'MAT-GRN-01', desc: `Jet Black Granite 18mm kitchen countertop platform per kitchen.`, uom: 'Rmt', qty: kitchenRmt, matRate: graniteRate.rate || 145, labRate: 250, amount: kitchenRmt * ((graniteRate.rate || 145) + 250) },
-      { sr: 16, code: 'SRV-ELE-PNT', desc: `FRLS copper wiring, modular switches, DB/MCB distribution points.`, uom: 'Points', qty: counts.electricalPoints, matRate: 620, labRate: 450, amount: counts.electricalPoints * 1070 },
-      { sr: 17, code: 'SRV-PLM-PNT', desc: `CPVC/UPVC plumbing & sanitary fixtures consolidated points.`, uom: 'Points', qty: counts.plumbingPoints, matRate: 360, labRate: 850, amount: counts.plumbingPoints * 1210 },
-      { sr: 18, code: 'MAT-PVR-01', desc: `Parking area heavy duty chequered / paver tile flooring allowance.`, uom: 'Sft', qty: parkingSft, matRate: 45, labRate: 20, amount: parkingSft * 65 },
-      { sr: 19, code: 'MAT-MNG-TLE', desc: hasTerraceTruss ? `Terrace structural steel truss with Clay Mangalore Tile roofing.` : `Standard terrace weather-proof finish allowance.`, uom: 'Sft', qty: terraceSft, matRate: hasTerraceTruss ? 48 : 35, labRate: 15, amount: terraceSft * ((hasTerraceTruss ? 48 : 35) + 15) },
-      { sr: 20, code: 'MAT-WTR-TNK', desc: `UG Sump (6000L) + OHT (2000L) + inspection chambers + MS Gate + Stainless Steel Railings (${formatNumber(railingKg)} kg).`, uom: 'LS', qty: 1, matRate: 120000, labRate: 35000, amount: 155000 },
-      { sr: 21, code: 'MAT-SSM-01', desc: `Compound wall 5ft high with RCC columns, block masonry & plaster finish.`, uom: 'Sft', qty: compoundWallSft, matRate: 180, labRate: 60, amount: compoundWallSft * 240 },
-      { sr: 22, code: 'MAT-PNT-INT', desc: `Wall putty, primer & 2 coats premium emulsion paint coating.`, uom: 'Sft', qty: paintingSft, matRate: 18, labRate: 14, amount: paintingSft * 32 }
+    const finishMultiplier = finishProfile === 'Premium' ? 1.20 : finishProfile === 'Ultra Premium' ? 1.40 : 1.0;
+
+    const baseItems = [
+      { sr: 1, code: 'SRV-SLT-01', desc: `Soil investigation based on plot area (${plotArea} sft). Engine: ${boreholes} borehole(s).`, uom: 'Nos', qty: boreholes, baseMatRate: 12000, labRate: 0 },
+      { sr: 2, code: 'SRV-EXC-01', desc: `Earthwork excavation for foundation pits & plinth trenches. SBC considered: ${sbc} kN/sqm.`, uom: 'Cum', qty: excavationCum, baseMatRate: 80, labRate: 40 },
+      { sr: 3, code: 'SRV-PCC-01', desc: `PCC M10 (1:3:6) levelling bed under footings & plinth protection combined.`, uom: 'Cum', qty: pccTotalCum, baseMatRate: 3800, labRate: 800 },
+      { sr: 4, code: 'MAT-SSM-01', desc: `Size stone masonry (SSM) substructure foundation below plinth level. Recommended footing: ${structure.footing}.`, uom: 'Cum', qty: foundationMasonryCum, baseMatRate: 1342, labRate: 400 },
+      { sr: 5, code: 'SRV-EXC-01', desc: `Backfilling in foundation pits & plinth using excavated soil with watering & ramming.`, uom: 'Cum', qty: backfillCum, baseMatRate: 40, labRate: 20 },
+      { sr: 6, code: 'SRV-ATT-01', desc: `Anti-termite chemical soil treatment below floor slab & foundation zone.`, uom: 'Ltr', qty: antiTermiteLtr, baseMatRate: 15, labRate: 10 },
+      { sr: 7, code: 'SRV-SHT-01', desc: `Centering & formwork shuttering rental for footings, columns, beams & slab RCC works.`, uom: 'Sft', qty: shutteringSft, baseMatRate: 35, labRate: 20 },
+      { sr: 8, code: 'MAT-STL-01', desc: `TMT Steel Rebar Fe 500D (${structure.steelKgPerSft} kg/sft BUA). Column: ${structure.column}, Beam: ${structure.beam}, Slab: ${structure.slab}.`, uom: 'Kgs', qty: steelKg, baseMatRate: steelRate.rate || 68, labRate: 12 },
+      { sr: 9, code: 'MAT-CEM-01', desc: `RCC M20/M25 structural concrete for footings, columns, beams, slabs, lintels, staircase & chajjas.`, uom: 'Cum', qty: rccTotalCum + lintelCum + staircaseCum + sunshadeCum, baseMatRate: 4800, labRate: 1000 },
+      { sr: 10, code: 'MAT-BLK-06', desc: `Concrete block masonry. 6" external blocks (${sixInBlockNos} nos) + 4" internal blocks (${fourInBlockNos} nos). Openings deducted.`, uom: 'Nos', qty: totalBlockNos, baseMatRate: 42, labRate: 12 },
+      { sr: 11, code: 'MAT-DOR-MN', desc: `Teakwood main door (${counts.mainDoors} nos) + Flush/WPC internal doors (${counts.internalDoors + counts.toiletDoors + counts.poojaDoors} nos).`, uom: 'Nos', qty: counts.totalDoors, baseMatRate: 5500, labRate: 800 },
+      { sr: 12, code: 'MAT-WIN-UPVC', desc: `UPVC 3-Track sliding windows (${counts.windows} nos) + Toilet louvered ventilators (${counts.ventilators} nos).`, uom: 'Nos', qty: counts.windows + counts.ventilators, baseMatRate: 2850, labRate: 350 },
+      { sr: 13, code: 'SRV-PLAS-INT', desc: `Internal 12mm 1:4 + External 18mm 1:5 waterproofing plastering.`, uom: 'Sqmtr', qty: plasterSqm, baseMatRate: 35, labRate: 25 },
+      { sr: 14, code: 'MAT-FLR-VIT', desc: `Vitrified tiles 2'x2' flooring with skirting + kitchen & toilet dado tiles.`, uom: 'Sft', qty: flooringTotalSft, baseMatRate: tileRate.rate || 58, labRate: tileLabourRate.rate || 24 },
+      { sr: 15, code: 'MAT-GRN-01', desc: `Jet Black Granite 18mm kitchen countertop platform per kitchen.`, uom: 'Rmt', qty: kitchenRmt, baseMatRate: graniteRate.rate || 115, labRate: 250 },
+      { sr: 16, code: 'SRV-ELE-PNT', desc: `FRLS copper wiring, modular switches, DB/MCB distribution points.`, uom: 'Points', qty: counts.electricalPoints, baseMatRate: 620, labRate: 450 },
+      { sr: 17, code: 'SRV-PLM-PNT', desc: `CPVC/UPVC plumbing & sanitary fixtures consolidated points.`, uom: 'Points', qty: counts.plumbingPoints, baseMatRate: 360, labRate: 850 },
+      { sr: 18, code: 'MAT-PVR-01', desc: `Parking area heavy duty chequered / paver tile flooring allowance.`, uom: 'Sft', qty: parkingSft, baseMatRate: 45, labRate: 20 },
+      { sr: 19, code: 'MAT-MNG-TLE', desc: hasTerraceTruss ? `Terrace structural steel truss with Clay Mangalore Tile roofing.` : `Standard terrace weather-proof finish allowance.`, uom: 'Sft', qty: terraceSft, baseMatRate: hasTerraceTruss ? 48 : 35, labRate: 15 },
+      { sr: 20, code: 'MAT-WTR-TNK', desc: `UG Sump (6000L) + OHT (2000L) + inspection chambers + MS Gate + Stainless Steel Railings (${formatNumber(railingKg)} kg).`, uom: 'LS', qty: 1, baseMatRate: 120000, labRate: 35000 },
+      { sr: 21, code: 'MAT-SSM-01', desc: `Compound wall 5ft high with RCC columns, block masonry & plaster finish.`, uom: 'Sft', qty: compoundWallSft, baseMatRate: 180, labRate: 60 },
+      { sr: 22, code: 'MAT-PNT-INT', desc: `Wall putty, primer & 2 coats premium emulsion paint coating.`, uom: 'Sft', qty: paintingSft, baseMatRate: 18, labRate: 14 }
     ];
+
+    const items = baseItems.map(item => {
+      // Sr. 1 to 6 do NOT change. Sr. 7 to 22 multiply material rate by finishMultiplier
+      const matRate = item.sr <= 6 ? item.baseMatRate : (item.baseMatRate * finishMultiplier);
+      const amount = item.qty * (matRate + item.labRate);
+      return {
+        sr: item.sr,
+        code: item.code,
+        desc: item.desc,
+        uom: item.uom,
+        qty: item.qty,
+        matRate,
+        labRate: item.labRate,
+        amount
+      };
+    });
 
     const materialTotal = items.reduce((sum, i) => sum + (i.qty * i.matRate), 0);
     const labourTotal = items.reduce((sum, i) => sum + (i.qty * i.labRate), 0);
@@ -261,7 +282,25 @@ export default function CivilBOQPage() {
       steelQuantity: steelKg,
       pehQuantity
     };
-  }, [plotLength, plotWidth, floors, sbc, wallType, hasLift, hasTerraceTruss, totalBUA, footprintArea, plotArea, counts, structure, cementRate, steelRate, tileRate, tileLabourRate, graniteRate]);
+  }, [plotLength, plotWidth, floors, sbc, wallType, finishProfile, hasLift, hasTerraceTruss, totalBUA, footprintArea, plotArea, counts, structure, cementRate, steelRate, tileRate, tileLabourRate, graniteRate]);
+
+  // Download PDF
+  const handleDownloadPDF = () => {
+    checkAndRun('boq_export', 'boq-civil', () => {
+      downloadBuildMitraPDF({
+        documentTitle: 'BuildMitra Civil BOQ Estimate',
+        items: boqResults.items.map((i: any) => ({
+          sno: i.sr,
+          description: `[${i.code}] ${i.desc}`,
+          quantity: i.qty,
+          unit: i.uom,
+          rate: i.matRate + i.labRate,
+          amount: i.amount
+        })),
+        grandTotal: boqResults.grandTotal
+      });
+    });
+  };
 
   // Export Excel
   const handleExportExcel = () => {
@@ -510,8 +549,9 @@ export default function CivilBOQPage() {
 
           {/* BOQ Action Buttons */}
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}>
-            <button style={styles.btnSecondary} onClick={handleExportExcel}>📊 Export Excel</button>
-            <button style={styles.btnSuccess} onClick={handleShareWhatsApp}>💬 WhatsApp Share</button>
+            <button style={{ backgroundColor: '#0284c7', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' }} onClick={handleDownloadPDF}>📄 Download in PDF</button>
+            <button style={styles.btnSecondary} onClick={handleExportExcel}>📊 Export in Excel</button>
+            <button style={styles.btnSuccess} onClick={handleShareWhatsApp}>📲 Share on WhatsApp</button>
             <button style={{ backgroundColor: '#0284c7', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' }} onClick={() => alert('🛒 BOQ Package sent to Marketplace RFQ! Vendors will submit quotes directly to your dashboard.')}>🛒 Request Marketplace RFQ</button>
             <button style={{ backgroundColor: '#0f766e', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' }} onClick={() => alert('📈 Applied Bengaluru Live Mandi Wholesale Rates to BOQ!')}>📈 Sync Live Market Rates</button>
             <button style={{ backgroundColor: '#475569', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' }} onClick={() => alert('💾 Saved BOQ Revision 1.0 to Active Project!')}>💾 Save BOQ Revision</button>

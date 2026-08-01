@@ -90,6 +90,8 @@ export default function AdminMasterImageLibrary() {
         params.set("search", search.trim());
       }
 
+      let loadedList: MasterImageItem[] = [];
+
       const response = await fetch(
         `${API_BASE}/api/master-images${
           params.toString() ? `?${params.toString()}` : ""
@@ -104,13 +106,23 @@ export default function AdminMasterImageLibrary() {
 
       const data = await response.json();
 
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || "Could not load master images.");
+      if (response.ok && data.success && Array.isArray(data.items) && data.items.length > 0) {
+        loadedList = data.items;
+      } else {
+        const response2 = await fetch(
+          `${API_BASE}/api/provider/master-items?limit=3000${
+            search.trim() ? `&search=${encodeURIComponent(search.trim())}` : ""
+          }`
+        );
+        const data2 = await response2.json();
+        if (data2 && Array.isArray(data2.items)) {
+          loadedList = data2.items;
+        }
       }
 
-      setItems(Array.isArray(data.items) ? data.items : []);
+      setItems(loadedList);
     } catch (error: any) {
-      setMessage(error.message || "Could not load master images.");
+      setMessage(error.message || "Could not load master items.");
     } finally {
       setLoading(false);
     }

@@ -1,6 +1,9 @@
+import { getCachedBuildMitraMasterRates, fetchBuildMitraMasterRates } from "../utils/buildmitraMasterRates";
+import { getBuildMitraReportHeaderHtml, BUILDMITRA_OFFICIAL_LOGO } from "../utils/buildmitraReportBranding";
 import React, { useState } from 'react';
 import * as XLSX from 'xlsx';
 import { usePaymentBarrier } from '../hooks/usePaymentBarrier';
+import { downloadBuildMitraPDF } from '../utils/pdfExport';
 import { useRouter } from 'next/router';
 import { useRates } from '../contexts/RateContext';
 
@@ -205,6 +208,27 @@ const router = useRouter();
     router.push('/calculators');
   };
 
+  const handleDownloadPDF = () => {
+    if (!results) return;
+    downloadBuildMitraPDF({
+      documentTitle: 'BuildMitra Arch Design Estimate',
+      items: [
+        { sno: 1, description: `Arch Design (${results.arch.type})`, quantity: archNos, unit: 'NOS', rate: '', amount: '' },
+        { sno: 2, description: 'Concrete Volume', quantity: results.concrete.volumeCft, unit: 'CFT', rate: '', amount: '' },
+        { sno: 3, description: 'Cement (OPC 53)', quantity: results.concrete.cement, unit: 'BAG', rate: results.rates.cement, amount: results.costs.cement },
+        { sno: 4, description: 'M-Sand', quantity: results.concrete.sandCft, unit: 'CFT', rate: results.rates.sand, amount: results.costs.sand },
+        { sno: 5, description: '20mm Aggregate', quantity: results.concrete.aggregate20Cft, unit: 'CFT', rate: results.rates.agg20, amount: results.costs.agg20 },
+        { sno: 6, description: '12mm Aggregate', quantity: results.concrete.aggregate12Cft, unit: 'CFT', rate: results.rates.agg12, amount: results.costs.agg12 },
+        { sno: 7, description: 'TMT Steel Rebar', quantity: results.steel.total, unit: 'KG', rate: results.rates.steel, amount: Math.round(results.steel.total * results.rates.steel) },
+        { sno: 8, description: 'Binding Wire', quantity: results.accessories.bindingWire, unit: 'KG', rate: results.rates.bindingWire, amount: results.costs.bindingWire },
+        { sno: 9, description: 'Cover Blocks', quantity: results.accessories.coverBlocks, unit: 'NOS', rate: results.rates.coverBlock, amount: results.costs.coverBlock },
+        { sno: 10, description: 'Construction Water', quantity: results.concrete.water, unit: 'LTR', rate: results.rates.water, amount: results.costs.water },
+        { sno: 11, description: 'Arch Concreting & Shuttering Labour', quantity: results.concrete.volumeCum, unit: 'CUM', rate: results.rates.labour, amount: results.costs.labour }
+      ],
+      grandTotal: results.costs.grandTotal
+    });
+  };
+
   const handleExportExcel = () => {
     if (!results) return;
     const data = [
@@ -289,8 +313,9 @@ const router = useRouter();
     React.createElement('div', { style: styles.buttonRow },
       React.createElement('button', { onClick: handleGenerate, style: styles.buttonGenerate }, '🔨 Generate'),
       generated && results && React.createElement(React.Fragment, null,
-        React.createElement('button', { onClick: () => checkAndRun('calculator_export', 'arch-calculator', handleExportExcel), style: styles.buttonExport }, '📊 Excel'),
-        React.createElement('button', { onClick: () => checkAndRun('calculator_export', 'arch-calculator', handleWhatsApp), style: styles.buttonWhatsapp }, '💬 Share')
+        React.createElement('button', { onClick: () => checkAndRun('calculator_export', 'arch-calculator', handleDownloadPDF), style: { ...styles.buttonExport, backgroundColor: '#0284c7', color: 'white' } }, '📄 Download in PDF'),
+        React.createElement('button', { onClick: () => checkAndRun('calculator_export', 'arch-calculator', handleExportExcel), style: styles.buttonExport }, '📊 Export in Excel'),
+        React.createElement('button', { onClick: () => checkAndRun('calculator_export', 'arch-calculator', handleWhatsApp), style: styles.buttonWhatsapp }, '📲 Share on WhatsApp')
       )
     ),
     
