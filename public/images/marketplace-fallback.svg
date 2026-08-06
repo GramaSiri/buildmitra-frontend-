@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="220" viewBox="0 0 320 220">
+  <rect width="320" height="220" rx="16" fill="#f4f7fb"/>
+  <rect x="88" y="55" width="144" height="105" rx="12" fill="#dfe8f3"/>
+  <path d="M105 143l37-38 27 27 18-18 30 29H105z" fill="#9eb2c9"/>
+  <circle cx="193" cy="87" r="12" fill="#9eb2c9"/>
+  <text x="160" y="190" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#52677f">
+    BuildMitra
+  </text>
+</svg>

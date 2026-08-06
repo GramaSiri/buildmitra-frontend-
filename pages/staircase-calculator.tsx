@@ -1,5 +1,3 @@
-import { getCachedBuildMitraMasterRates, fetchBuildMitraMasterRates } from "../utils/buildmitraMasterRates";
-import { getBuildMitraReportHeaderHtml, BUILDMITRA_OFFICIAL_LOGO } from "../utils/buildmitraReportBranding";
 import React, { useState, useEffect, useMemo } from 'react';
 import * as XLSX from 'xlsx';
 import { useRouter } from 'next/router';
@@ -704,9 +702,9 @@ export default function StaircaseCalculator() {
         </div>
 
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-          <button style={{ backgroundColor: '#0284c7', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' }} onClick={handleExportPDF}>📄 Download in PDF</button>
-          <button style={styles.btnSecondary} onClick={handleExportExcel}>📊 Export in Excel</button>
-          <button style={styles.btnSuccess} onClick={handleShareWhatsApp}>📲 Share on WhatsApp</button>
+          <button style={styles.btnPrimary} onClick={handleExportPDF}>🖨️ Download PDF (BuildMitra Letterhead)</button>
+          <button style={styles.btnSecondary} onClick={handleExportExcel}>📥 Export BOQ to Excel</button>
+          <button style={styles.btnSuccess} onClick={handleShareWhatsApp}>📲 Share Estimate on WhatsApp</button>
         </div>
       </div>
     </div>

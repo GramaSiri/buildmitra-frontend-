@@ -1,5 +1,3 @@
-import { getCachedBuildMitraMasterRates, fetchBuildMitraMasterRates } from "../utils/buildmitraMasterRates";
-import { getBuildMitraReportHeaderHtml, BUILDMITRA_OFFICIAL_LOGO } from "../utils/buildmitraReportBranding";
 import React, { useState } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";

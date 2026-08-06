@@ -1,9 +1,6 @@
-import { getCachedBuildMitraMasterRates, fetchBuildMitraMasterRates } from "../utils/buildmitraMasterRates";
-import { getBuildMitraReportHeaderHtml, BUILDMITRA_OFFICIAL_LOGO } from "../utils/buildmitraReportBranding";
 import React, { useState } from 'react';
 import * as XLSX from 'xlsx';
 import { usePaymentBarrier } from '../hooks/usePaymentBarrier';
-import { downloadBuildMitraPDF } from '../utils/pdfExport';
 import { useRouter } from 'next/router';
 import { useRates } from '../contexts/RateContext';
 
@@ -154,24 +151,6 @@ const router = useRouter();
     router.push('/calculators');
   };
 
-  const handleDownloadPDF = () => {
-    if (!results) return;
-    downloadBuildMitraPDF({
-      documentTitle: 'BuildMitra Pile Foundation Estimate',
-      items: [
-        { sno: 1, description: `Bored Cast-in-Situ Piles (${results.pile.nos} Nos)`, quantity: results.pile.nos, unit: 'NOS', rate: '', amount: '' },
-        { sno: 2, description: 'Pile Concrete Volume', quantity: results.concrete.volumeCft, unit: 'CFT', rate: '', amount: '' },
-        { sno: 3, description: 'Cement (OPC 53)', quantity: results.concrete.cement, unit: 'BAG', rate: results.rates.cement, amount: results.costs.cement },
-        { sno: 4, description: 'M-Sand', quantity: results.concrete.sandCft, unit: 'CFT', rate: results.rates.sand, amount: results.costs.sand },
-        { sno: 5, description: '20mm Aggregate', quantity: results.concrete.aggregate20Cft, unit: 'CFT', rate: '', amount: results.costs.agg20 },
-        { sno: 6, description: '12mm Aggregate', quantity: results.concrete.aggregate12Cft, unit: 'CFT', rate: '', amount: results.costs.agg12 },
-        { sno: 7, description: 'TMT Steel Rebar Cage', quantity: results.steel.total, unit: 'KG', rate: results.rates.steel, amount: results.costs.steel },
-        { sno: 8, description: 'Hydraulic Rig Boring & Soil Drilling', quantity: results.boring.length, unit: 'M', rate: '', amount: results.costs.boring }
-      ],
-      grandTotal: results.costs.grandTotal
-    });
-  };
-
   const handleExportExcel = () => {
     if (!results) return;
     const data = [
@@ -241,9 +220,8 @@ const router = useRouter();
     React.createElement('div', { style: styles.buttonRow },
       React.createElement('button', { onClick: handleGenerate, style: styles.buttonGenerate }, '🔨 Generate'),
       generated && results && React.createElement(React.Fragment, null,
-        React.createElement('button', { onClick: () => checkAndRun('calculator_export', 'pile-calculator', handleDownloadPDF), style: { ...styles.buttonExport, backgroundColor: '#0284c7', color: 'white' } }, '📄 Download in PDF'),
-        React.createElement('button', { onClick: () => checkAndRun('calculator_export', 'pile-calculator', handleExportExcel), style: styles.buttonExport }, '📊 Export in Excel'),
-        React.createElement('button', { onClick: () => checkAndRun('calculator_export', 'pile-calculator', handleWhatsApp), style: styles.buttonWhatsapp }, '📲 Share on WhatsApp')
+        React.createElement('button', { onClick: () => checkAndRun('calculator_export', 'pile-calculator', handleExportExcel), style: styles.buttonExport }, '📊 Excel'),
+        React.createElement('button', { onClick: () => checkAndRun('calculator_export', 'pile-calculator', handleWhatsApp), style: styles.buttonWhatsapp }, '💬 Share')
       )
     ),
     

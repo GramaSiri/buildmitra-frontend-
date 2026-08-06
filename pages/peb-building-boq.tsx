@@ -304,21 +304,19 @@ export default function PEBBuildingBOQPage() {
   const [foundationType, setFoundationType] = useState<string>("Isolated Concrete Footings with Plinth Beam");
 
   // 4. Custom Unit Rates (Auto-populated from Master Rates with fallback)
-  const masterSteelRate = getMasterRate(["MAT-STL-PEB", "peb steel", "structural steel"], 68);
+  const masterSteelRate = getMasterRate(["MAT-STL-PEB", "peb steel", "structural steel"], 88);
   const masterSheetRate = getMasterRate(["MAT-SHT-ROOF", "roof sheet", "galvalume"], 52);
-  const masterPurlinRate = getMasterRate(["MAT-PRL-Z", "z purlin", "c purlin"], 72);
+  const masterPurlinRate = getMasterRate(["MAT-PRL-Z", "z purlin", "c purlin"], 92);
   const masterConcRate = getMasterRate(["MAT-CON-M25", "m25 concrete"], 5200);
-  const masterAnchorBoltRate = getMasterRate(["CIV-FND-ANC", "anchor bolt", "anchor bolts"], 85);
 
-  const [ratePrimarySteel, setRatePrimarySteel] = useState<number>(masterSteelRate.rate || 68);
-  const [rateSecondarySteel, setRateSecondarySteel] = useState<number>(masterPurlinRate.rate || 72);
+  const [ratePrimarySteel, setRatePrimarySteel] = useState<number>(masterSteelRate.rate || 88);
+  const [rateSecondarySteel, setRateSecondarySteel] = useState<number>(masterPurlinRate.rate || 92);
   const [rateRoofSheet, setRateRoofSheet] = useState<number>(masterSheetRate.rate || 52);
   const [rateWallSheet, setRateWallSheet] = useState<number>(48);
   const [rateInsulation, setRateInsulation] = useState<number>(22);
   const [rateErectionCrane, setRateErectionCrane] = useState<number>(18);
   const [rateConcreteM25, setRateConcreteM25] = useState<number>(masterConcRate.rate || 5200);
   const [rateFoundationRebar, setRateFoundationRebar] = useState<number>(68);
-  const [rateAnchorBolts, setRateAnchorBolts] = useState<number>(masterAnchorBoltRate.rate || 85);
 
   const [activeReportTab, setActiveReportTab] = useState<string>("material");
 
@@ -459,7 +457,7 @@ export default function PEBBuildingBOQPage() {
     const concreteCost = foundationBreakdown.totalConcreteCum * rateConcreteM25;
     const rebarCost = foundationBreakdown.rebarKg * rateFoundationRebar;
     const excavationCost = foundationBreakdown.excavationCum * 160;
-    const anchorBoltsCost = foundationBreakdown.anchorBoltsKg * rateAnchorBolts;
+    const anchorBoltsCost = foundationBreakdown.anchorBoltsKg * 145;
     const foundationTotalCost = concreteCost + rebarCost + excavationCost + anchorBoltsCost;
 
     // 10. Erection, Crane Hire, Freight & Overheads
@@ -538,7 +536,7 @@ export default function PEBBuildingBOQPage() {
         ["MAT-PNT-SYS", "Synthetic Enamel / Epoxy Protective Paint System", Math.round(steelTonnageBreakdown.totalTonnes * 28), "SQM", 180, boqCalculations.paintCost],
         ["CIV-FND-CON", "M25 Grade Concrete for Isolated Footings & Plinth Beam", foundationBreakdown.totalConcreteCum, "CUM", rateConcreteM25, boqCalculations.concreteCost],
         ["CIV-FND-STL", "Fe500D TMT Reinforcement Steel for Footings", foundationBreakdown.rebarKg, "KG", rateFoundationRebar, boqCalculations.rebarCost],
-        ["CIV-FND-ANC", `Anchor Bolts Set (${anchorBoltsType})`, foundationBreakdown.anchorBoltsKg, "KG", rateAnchorBolts, boqCalculations.anchorBoltsCost],
+        ["CIV-FND-ANC", `Anchor Bolts Set (${anchorBoltsType})`, foundationBreakdown.anchorBoltsKg, "KG", 145, boqCalculations.anchorBoltsCost],
         ["LAB-PEB-ERC", "Erection, Assembly & Mobile Crane Hire Charges", steelTonnageBreakdown.totalKg, "KG", rateErectionCrane, boqCalculations.erectionCost],
         ["LAB-PEB-TRN", "Logistics, Freight & Heavy Machinery Transportation", steelTonnageBreakdown.totalTonnes, "TON", 2200, boqCalculations.transportCost]
       ];
@@ -630,20 +628,6 @@ export default function PEBBuildingBOQPage() {
         console.error("PDF generation failed:", err);
         alert("Could not generate PDF. Please try again.");
       }
-    });
-  };
-
-  const handleShareWhatsApp = () => {
-    checkAndRun('boq_export', 'peb-building-boq', () => {
-      const msg = `*BuildMitra PEB Building BOQ Estimate*%0A` +
-        `----------------------------------------%0A` +
-        `• *Dimensions*: ${lengthFt}' L x ${widthFt}' W x ${heightFt}' H (${footprintSqft.toLocaleString()} Sqft)%0A` +
-        `• *Steel Tonnage*: ${steelTonnageBreakdown.totalTonnes} Tonnes (${steelTonnageBreakdown.intensityKgPerSqft} kg/sqft)%0A` +
-        `• *Roof Sheeting*: ${Math.round(netRoofSheetSqft).toLocaleString()} Sqft%0A` +
-        `• *Rate per Sqft*: ${formatCurrency(boqCalculations.costPerSqft)}%0A` +
-        `• *GRAND TOTAL COST*: ${formatCurrency(boqCalculations.grandTotalCost)}%0A%0A` +
-        `*Generated via BuildMitra PEB BOQ Engine*`;
-      window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
     });
   };
 
@@ -922,9 +906,8 @@ export default function PEBBuildingBOQPage() {
 
           {/* Action Bar */}
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '18px' }}>
-            <button style={{ backgroundColor: '#0284c7', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '700' }} onClick={handleExportPDF}>📄 Download in PDF</button>
-            <button style={styles.btnSecondary} onClick={handleExportExcel}>📊 Export in Excel</button>
-            <button style={styles.btnSuccess} onClick={handleShareWhatsApp}>📲 Share on WhatsApp</button>
+            <button style={styles.btnSecondary} onClick={handleExportExcel}>📊 Export Excel</button>
+            <button style={styles.btnSuccess} onClick={handleExportPDF}>📄 Export PDF Report</button>
             <button style={{ backgroundColor: '#475569', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '700' }} onClick={handlePrint}>🖨️ Print BOQ</button>
             <button style={{ backgroundColor: '#0284c7', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '700' }} onClick={() => alert('🛒 PEB BOQ package sent to BuildMitra Supplier Network for wholesale steel & sheeting quotations!')}>🛒 Request Supplier RFQ</button>
           </div>

@@ -1,0 +1,105 @@
+import React, { useEffect } from "react";
+import { useRouter } from "next/router";
+
+export default function MarketplaceMobileGridFix() {
+  const router = useRouter();
+
+  useEffect(() => {
+    if (router.pathname !== "/marketplace") {
+      document.body.classList.remove("bm-marketplace-route");
+      return;
+    }
+
+    document.body.classList.add("bm-marketplace-route");
+
+    const applyGridClasses = () => {
+      const allElements = Array.from(
+        document.querySelectorAll<HTMLElement>(
+          "main div, #__next div"
+        )
+      );
+
+      let bestContainer: HTMLElement | null = null;
+      let bestScore = 0;
+
+      for (const element of allElements) {
+        const children = Array.from(
+          element.children
+        ) as HTMLElement[];
+
+        if (children.length < 2) continue;
+
+        const matchingChildren = children.filter((child) => {
+          const hasImage = Boolean(child.querySelector("img"));
+          const text = String(child.textContent || "").toLowerCase();
+
+          const looksLikeProduct =
+            text.includes("send enquiry") ||
+            text.includes("add to cart") ||
+            text.includes("whatsapp") ||
+            text.includes("view details") ||
+            text.includes("₹") ||
+            text.includes("price");
+
+          return hasImage && looksLikeProduct;
+        });
+
+        const score = matchingChildren.length;
+
+        if (score >= 2 && score > bestScore) {
+          bestScore = score;
+          bestContainer = element;
+        }
+      }
+
+      document
+        .querySelectorAll(".bm-marketplace-product-grid")
+        .forEach((element) => {
+          if (element !== bestContainer) {
+            element.classList.remove(
+              "bm-marketplace-product-grid"
+            );
+
+            Array.from(element.children).forEach((child) => {
+              child.classList.remove(
+                "bm-marketplace-product-card"
+              );
+            });
+          }
+        });
+
+      if (bestContainer) {
+        bestContainer.classList.add(
+          "bm-marketplace-product-grid"
+        );
+
+        Array.from(bestContainer.children).forEach((child) => {
+          child.classList.add(
+            "bm-marketplace-product-card"
+          );
+        });
+      }
+    };
+
+    applyGridClasses();
+
+    const observer = new MutationObserver(() => {
+      window.requestAnimationFrame(applyGridClasses);
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+
+    window.addEventListener("resize", applyGridClasses);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", applyGridClasses);
+      document.body.classList.remove("bm-marketplace-route");
+    };
+  }, [router.pathname]);
+
+  return null;
+}

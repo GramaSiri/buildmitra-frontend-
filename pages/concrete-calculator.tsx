@@ -561,9 +561,9 @@ export default function ConcretePage() {
         <button onClick={handleGenerate} style={styles.buttonGenerate}>🔨 Calculate Concrete & Materials</button>
         {generated && results && (
           <>
-            <button onClick={handleExportPDF} style={{ backgroundColor: '#0284c7', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' }}>📄 Download in PDF</button>
-            <button onClick={handleExportExcel} style={styles.buttonExport}>📊 Export in Excel</button>
-            <button onClick={handleWhatsApp} style={styles.buttonWhatsapp}>📲 Share on WhatsApp</button>
+            <button onClick={handleExportPDF} style={{ ...styles.buttonExport, backgroundColor: '#800020', color: 'white' }}>🖨️ PDF Letterhead</button>
+            <button onClick={handleExportExcel} style={styles.buttonExport}>📊 Excel</button>
+            <button onClick={handleWhatsApp} style={styles.buttonWhatsapp}>💬 Share</button>
           </>
         )}
       </div>

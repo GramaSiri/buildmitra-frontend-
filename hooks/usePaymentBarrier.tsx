@@ -164,3 +164,4 @@ export function usePaymentBarrier() {
   }
   return context;
 }
+

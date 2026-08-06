@@ -81,11 +81,8 @@ export async function fetchBuildMitraMasterRates(
   }
 
   const endpoints = [
-    `${API_BASE}/api/master/materials`,
-    `${API_BASE}/api/materials`,
-    `${API_BASE}/api/admin/master-materials`,
-    `${API_BASE}/api/master-rates`
-  ];
+    `${API_BASE}/api/master/materials`
+];
 
   let items: any[] = [];
 
@@ -175,3 +172,4 @@ export function clearBuildMitraRateCache() {
     localStorage.removeItem(CACHE_KEY);
   }
 }
+

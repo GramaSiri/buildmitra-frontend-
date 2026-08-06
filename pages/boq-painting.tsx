@@ -2,7 +2,6 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import * as XLSX from 'xlsx';
 import { usePaymentBarrier } from '../hooks/usePaymentBarrier';
-import { downloadBuildMitraPDF } from '../utils/pdfExport';
 import { getMasterRate, syncApprovedRatesFromBackend } from '../utils/masterRates';
 import MarketRateTrend from '../components/ui/MarketRateTrend';
 
@@ -155,24 +154,6 @@ export default function PaintingBOQPage() {
       exteriorArea
     };
   }, [paintType, puttyKg, primerLtr, interiorPaintLtr, exteriorPaintLtr, ceilingPaintLtr, enamelLtr, netWallArea, totalBUA, interiorArea, exteriorArea, rates]);
-
-  // Download PDF
-  const handleDownloadPDF = () => {
-    checkAndRun('boq_export', 'boq-painting', () => {
-      downloadBuildMitraPDF({
-        documentTitle: 'BuildMitra Painting BOQ Estimate',
-        items: boqResults.items.map((i: any) => ({
-          sno: i.sr,
-          description: `[${i.code}] ${i.desc}`,
-          quantity: i.qty,
-          unit: i.uom,
-          rate: i.matRate + i.labRate,
-          amount: i.amount
-        })),
-        grandTotal: boqResults.grandTotal
-      });
-    });
-  };
 
   // Export Excel
   const handleExportExcel = () => {
@@ -393,9 +374,8 @@ export default function PaintingBOQPage() {
 
           {/* BOQ Action Buttons */}
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}>
-            <button style={{ backgroundColor: '#0284c7', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' }} onClick={handleDownloadPDF}>📄 Download in PDF</button>
-            <button style={styles.btnSecondary} onClick={handleExportExcel}>📊 Export in Excel</button>
-            <button style={styles.btnSuccess} onClick={handleShareWhatsApp}>📲 Share on WhatsApp</button>
+            <button style={styles.btnSecondary} onClick={handleExportExcel}>📊 Export Excel</button>
+            <button style={styles.btnSuccess} onClick={handleShareWhatsApp}>💬 WhatsApp Share</button>
             <button style={{ backgroundColor: '#0284c7', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' }} onClick={() => alert('🛒 Painting BOQ Package sent to Vendor Marketplace RFQ!')}>🛒 Request Marketplace RFQ</button>
             <button style={{ backgroundColor: '#0f766e', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' }} onClick={() => alert('📈 Applied Bengaluru Live Mandi Wholesale Rates to Painting BOQ!')}>📈 Sync Live Market Rates</button>
             <button style={{ backgroundColor: '#475569', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' }} onClick={() => alert('💾 Saved Painting BOQ Revision 1.0 to Active Project!')}>💾 Save BOQ Revision</button>

@@ -1,12 +1,10 @@
-import { getCachedBuildMitraMasterRates, fetchBuildMitraMasterRates } from "../utils/buildmitraMasterRates";
-import { getBuildMitraReportHeaderHtml, BUILDMITRA_OFFICIAL_LOGO } from "../utils/buildmitraReportBranding";
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import * as XLSX from 'xlsx';
 import { useRouter } from 'next/router';
 import { useRates } from '../contexts/RateContext';
 import { usePaymentBarrier } from '../hooks/usePaymentBarrier';
 import MarketRateTrend from '../components/ui/MarketRateTrend';
-import { getMasterRate, syncApprovedRatesFromBackend } from "../utils/masterRates";
+import { getMasterRate } from "../utils/masterRates";
 import { downloadBuildMitraPDF } from "../utils/pdfExport";
 
 type RCCMemberType = 'Slab' | 'Beam' | 'Lintel' | 'Column' | 'Footing' | 'RCC Wall';
@@ -157,25 +155,21 @@ export default function SteelCalculator() {
   const [results, setResults] = useState<any>(null);
   const [generated, setGenerated] = useState(false);
 
-  useEffect(() => {
-    syncApprovedRatesFromBackend();
-  }, []);
-
-  // Admin Master Rates with Standard Market Fallbacks (TMT Steel ~ ₹65/kg, Binding Wire ~ ₹85/kg, Labour ~ ₹8/kg)
-  const steelRateRes = getMasterRate(["tmt steel", "tmt bar", "steel", "rebar", "reinforcement steel", "tmt"], 65, ["bm_material_rates"]);
-  const bindingWireRateRes = getMasterRate(["binding wire", "gi binding wire", "wire"], 85, ["bm_material_rates"]);
+  // Admin Master Rates with Standard Market Fallbacks
+  const steelRateRes = getMasterRate(["tmt steel", "tmt bar", "steel", "rebar", "reinforcement steel", "tmt"], 145, ["bm_material_rates"]);
+  const bindingWireRateRes = getMasterRate(["binding wire", "gi binding wire", "wire"], 180, ["bm_material_rates"]);
   const coverBlockRateRes = getMasterRate(["cover block", "concrete cover block", "cover blocks"], 5.0, ["bm_material_rates"]);
-  const barBendingLabourRes = getMasterRate(["bar bending", "steel binding", "rebar labour", "bar bending labour", "steel fixing"], 8.0, ["bm_labour_rates", "bm_service_rates"]);
+  const barBendingLabourRes = getMasterRate(["bar bending", "steel binding", "rebar labour", "bar bending labour", "steel fixing"], 16.0, ["bm_labour_rates", "bm_service_rates"]);
 
   const getNormalizedRatePerKg = (res: any, fallback: number) => {
     if (!res.found || res.rate <= 0) return fallback;
-    return res.rate > 500 ? Math.round((res.rate / 1000) * 100) / 100 : res.rate;
+    return res.rate > 500 ? res.rate / 1000 : res.rate;
   };
 
-  const steelRatePerKg = getNormalizedRatePerKg(steelRateRes, 65);
-  const bindingWireRatePerKg = getNormalizedRatePerKg(bindingWireRateRes, 85);
+  const steelRatePerKg = getNormalizedRatePerKg(steelRateRes, 145);
+  const bindingWireRatePerKg = getNormalizedRatePerKg(bindingWireRateRes, 180);
   const coverBlockRatePerPc = coverBlockRateRes.found && coverBlockRateRes.rate > 0 ? coverBlockRateRes.rate : 5.0;
-  const barBendingLabourRatePerKg = getNormalizedRatePerKg(barBendingLabourRes, 8.0);
+  const barBendingLabourRatePerKg = getNormalizedRatePerKg(barBendingLabourRes, 16.0);
 
   const getValidationWarnings = () => {
     const warnings: string[] = [];
@@ -764,58 +758,6 @@ export default function SteelCalculator() {
   const handleExportPDF = () => {
     if (!results) return;
     checkAndRun('calculator_export', 'steel-calculator', () => {
-      const itemsList = results.bbsRows.map((row: any, idx: number) => ({
-        sno: idx + 1,
-        itemCode: `BAR-${row.barMark}`,
-        category: "Steel Rebar",
-        description: `${row.description} (${row.dia}mm Dia, ${row.shape})`,
-        quantity: Math.round(row.weightKg * 100) / 100,
-        unit: "KG",
-        rate: results.rates.steel,
-        amount: Math.round(row.weightKg * results.rates.steel)
-      }));
-
-      let count = itemsList.length + 1;
-
-      if (results.bindingWireKg > 0) {
-        itemsList.push({
-          sno: count++,
-          itemCode: "MAT-BWR-01",
-          category: "Material",
-          description: "Annealed Steel Binding Wire (18 Gauge)",
-          quantity: Math.round(results.bindingWireKg * 100) / 100,
-          unit: "KG",
-          rate: results.rates.bindingWire,
-          amount: Math.round(results.costs.bindingWire)
-        });
-      }
-
-      if (results.coverBlocksCount > 0) {
-        itemsList.push({
-          sno: count++,
-          itemCode: "MAT-CVR-01",
-          category: "Material",
-          description: "High-Density Concrete Cover Blocks",
-          quantity: results.coverBlocksCount,
-          unit: "NOS",
-          rate: results.rates.coverBlock,
-          amount: Math.round(results.costs.coverBlock)
-        });
-      }
-
-      if (results.totalSteelKg > 0) {
-        itemsList.push({
-          sno: count++,
-          itemCode: "LAB-BBS-01",
-          category: "Labour",
-          description: "Rebar Cutting, Bar Bending & Steel Cage Placement Labour",
-          quantity: Math.round(results.totalSteelKg * 100) / 100,
-          unit: "KG",
-          rate: results.rates.barBendingLabour,
-          amount: Math.round(results.costs.labour)
-        });
-      }
-
       downloadBuildMitraPDF({
         documentTitle: `STEEL REBAR BAR BENDING SCHEDULE (BBS) — ${item.toUpperCase()}`,
         documentNo: `BM-BBS-${Date.now().toString().slice(-6)}`,
@@ -823,8 +765,16 @@ export default function SteelCalculator() {
         projectName: `RCC Steel Rebar Work — ${item}`,
         buyerName: "Client / Buyer",
         contractorName: "BuildMitra Bar Bending Division",
-        items: itemsList,
-        grandTotal: Math.round(results.costs.grandTotal),
+        items: results.bbsRows.map((row: any, idx: number) => ({
+          sno: idx + 1,
+          itemCode: `BAR-${row.barMark}`,
+          category: "Steel Rebar",
+          description: `${row.description} (${row.dia}mm Dia, ${row.shape})`,
+          quantity: row.weightKg,
+          unit: "KG",
+          rate: results.rates.steel,
+          amount: row.weightKg * results.rates.steel
+        })),
         notes: `Total Steel: ${formatNumber(results.totalSteelKg)} kg (${formatNumber(results.totalSteelMT, 3)} MT) | Steel Grade: ${steelGrade} | Wastage: ${wastage}%`
       });
     });
@@ -1286,9 +1236,9 @@ export default function SteelCalculator() {
         <button onClick={handleGenerate} style={styles.buttonGenerate}>🔨 Calculate Rebar BBS & Quantities</button>
         {generated && results && (
           <>
-            <button onClick={handleExportPDF} style={{ backgroundColor: '#0284c7', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' }}>📄 Download in PDF</button>
-            <button onClick={handleExportExcel} style={styles.buttonExport}>📊 Export in Excel</button>
-            <button onClick={handleWhatsApp} style={styles.buttonWhatsapp}>📲 Share on WhatsApp</button>
+            <button onClick={handleExportPDF} style={{ ...styles.buttonExport, backgroundColor: '#800020', color: 'white' }}>🖨️ PDF Letterhead</button>
+            <button onClick={handleExportExcel} style={styles.buttonExport}>📊 Excel BBS</button>
+            <button onClick={handleWhatsApp} style={styles.buttonWhatsapp}>💬 Share</button>
           </>
         )}
       </div>
@@ -1498,4 +1448,3 @@ export default function SteelCalculator() {
     </div>
   );
 }
-

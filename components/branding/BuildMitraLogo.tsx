@@ -3,7 +3,7 @@ import React from "react";
 export const BUILDMITRA_LOGO_URL =
   "/images/buildmitra-official-logo.jpg";
 
-type BuildMitraLogoProps = {
+type Props = {
   width?: number | string;
   height?: number | string;
   className?: string;
@@ -17,21 +17,21 @@ export default function BuildMitraLogo({
   className = "",
   style = {},
   variant = "header"
-}: BuildMitraLogoProps) {
+}: Props) {
   const defaultWidth =
     variant === "sidebar"
       ? 145
       : variant === "compact"
-      ? 100
+      ? 95
       : variant === "report"
-      ? 170
-      : 155;
+      ? 155
+      : 150;
 
   return (
     <img
       src={BUILDMITRA_LOGO_URL}
       alt="BuildMitra"
-      className={`buildmitra-official-logo ${className}`}
+      className={className}
       style={{
         display: "block",
         width: width ?? defaultWidth,
@@ -44,3 +44,5 @@ export default function BuildMitraLogo({
     />
   );
 }
+
+

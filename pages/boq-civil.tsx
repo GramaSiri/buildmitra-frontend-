@@ -1,5 +1,3 @@
-import { getCachedBuildMitraMasterRates, fetchBuildMitraMasterRates } from "../utils/buildmitraMasterRates";
-import { getBuildMitraReportHeaderHtml, BUILDMITRA_OFFICIAL_LOGO } from "../utils/buildmitraReportBranding";
 import React, { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import * as XLSX from 'xlsx';
@@ -106,7 +104,7 @@ export default function CivilBOQPage() {
   const block4Rate = getMasterRate(["MAT-BLK-04", "concrete block 4"], 32);
   const tileRate = getMasterRate(["MAT-FLR-VIT", "vitrified tile"], 58);
   const tileLabourRate = getMasterRate(["SRV-FLR-LAY", "tile labour"], 24);
-  const graniteRate = getMasterRate(["MAT-GRN-01", "granite"], 115);
+  const graniteRate = getMasterRate(["MAT-GRN-01", "granite"], 145);
 
   // IS Engineering Structural Rule Engine
   const structure = useMemo(() => {
@@ -241,7 +239,7 @@ export default function CivilBOQPage() {
       { sr: 12, code: 'MAT-WIN-UPVC', desc: `UPVC 3-Track sliding windows (${counts.windows} nos) + Toilet louvered ventilators (${counts.ventilators} nos).`, uom: 'Nos', qty: counts.windows + counts.ventilators, baseMatRate: 2850, labRate: 350 },
       { sr: 13, code: 'SRV-PLAS-INT', desc: `Internal 12mm 1:4 + External 18mm 1:5 waterproofing plastering.`, uom: 'Sqmtr', qty: plasterSqm, baseMatRate: 35, labRate: 25 },
       { sr: 14, code: 'MAT-FLR-VIT', desc: `Vitrified tiles 2'x2' flooring with skirting + kitchen & toilet dado tiles.`, uom: 'Sft', qty: flooringTotalSft, baseMatRate: tileRate.rate || 58, labRate: tileLabourRate.rate || 24 },
-      { sr: 15, code: 'MAT-GRN-01', desc: `Jet Black Granite 18mm kitchen countertop platform per kitchen.`, uom: 'Rmt', qty: kitchenRmt, baseMatRate: graniteRate.rate || 115, labRate: 250 },
+      { sr: 15, code: 'MAT-GRN-01', desc: `Jet Black Granite 18mm kitchen countertop platform per kitchen.`, uom: 'Rmt', qty: kitchenRmt, baseMatRate: graniteRate.rate || 145, labRate: 250 },
       { sr: 16, code: 'SRV-ELE-PNT', desc: `FRLS copper wiring, modular switches, DB/MCB distribution points.`, uom: 'Points', qty: counts.electricalPoints, baseMatRate: 620, labRate: 450 },
       { sr: 17, code: 'SRV-PLM-PNT', desc: `CPVC/UPVC plumbing & sanitary fixtures consolidated points.`, uom: 'Points', qty: counts.plumbingPoints, baseMatRate: 360, labRate: 850 },
       { sr: 18, code: 'MAT-PVR-01', desc: `Parking area heavy duty chequered / paver tile flooring allowance.`, uom: 'Sft', qty: parkingSft, baseMatRate: 45, labRate: 20 },

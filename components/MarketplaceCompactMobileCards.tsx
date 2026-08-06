@@ -1,0 +1,333 @@
+import React, { useEffect } from "react";
+import { useRouter } from "next/router";
+
+function cleanText(value: unknown): string {
+  return String(value || "")
+    .replace(/verified\s+buildmitra\s+provider/gi, "")
+    .replace(/buildmitra\s+verified\s+provider/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function removeRepeatedText(value: string): string {
+  const text = cleanText(value);
+
+  const words = text.split(" ");
+
+  if (
+    words.length >= 2 &&
+    words.length % 2 === 0
+  ) {
+    const half = words.length / 2;
+    const first = words.slice(0, half).join(" ");
+    const second = words.slice(half).join(" ");
+
+    if (first.toLowerCase() === second.toLowerCase()) {
+      return first;
+    }
+  }
+
+  return text;
+}
+
+function extractMobile(text: string): string {
+  const matches = String(text || "").match(
+    /(?:\+91[\s-]?)?[6-9]\d{9}/g
+  );
+
+  if (!matches?.length) return "Mobile not provided";
+
+  const number = matches[0]
+    .replace(/[^\d+]/g, "")
+    .replace(/^91(?=\d{10}$)/, "");
+
+  return number.startsWith("+91")
+    ? number
+    : `+91 ${number}`;
+}
+
+function extractPrice(text: string): string {
+  const source = cleanText(text);
+
+  const rupeeMatch = source.match(
+    /₹\s*[\d,]+(?:\.\d{1,2})?(?:\s*\/\s*[A-Za-z0-9.]+)?/i
+  );
+
+  if (rupeeMatch?.[0]) {
+    return rupeeMatch[0].replace(/\s+/g, " ").trim();
+  }
+
+  const labelledMatch = source.match(
+    /(?:price|rate)\s*:?\s*(?:₹|rs\.?)?\s*[\d,]+(?:\.\d{1,2})?(?:\s*\/\s*[A-Za-z0-9.]+)?/i
+  );
+
+  if (labelledMatch?.[0]) {
+    return labelledMatch[0]
+      .replace(/^(?:price|rate)\s*:?\s*/i, "")
+      .replace(/^rs\.?\s*/i, "₹")
+      .trim();
+  }
+
+  return "Contact for rate";
+}
+
+function extractItemName(
+  card: HTMLElement,
+  image: HTMLImageElement
+): string {
+  const candidates = Array.from(
+    card.querySelectorAll<HTMLElement>(
+      "h1, h2, h3, h4, [class*='title'], [class*='itemName'], [class*='productName']"
+    )
+  );
+
+  for (const candidate of candidates) {
+    const value = removeRepeatedText(
+      candidate.innerText || candidate.textContent || ""
+    );
+
+    if (
+      value &&
+      !/marketplace|supplier|provider|vendor|verified|bengaluru|bangalore/i.test(value)
+    ) {
+      return value;
+    }
+  }
+
+  const alt = removeRepeatedText(image.alt || "");
+
+  if (
+    alt &&
+    !/marketplace item|product image|buildmitra/i.test(alt)
+  ) {
+    return alt;
+  }
+
+  return "Marketplace Item";
+}
+
+function extractSupplier(cardText: string): string {
+  const lines = String(cardText || "")
+    .split(/\r?\n/)
+    .map(cleanText)
+    .filter(Boolean);
+
+  const labels = [
+    "supplier",
+    "provider",
+    "vendor",
+    "seller",
+    "uploaded by"
+  ];
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+
+    for (const label of labels) {
+      if (!line.toLowerCase().includes(label)) continue;
+
+      const sameLine = cleanText(
+        line.replace(
+          new RegExp(`^.*?${label}\\s*:?\\s*`, "i"),
+          ""
+        )
+      );
+
+      if (
+        sameLine &&
+        !/verified|buildmitra|mobile|phone|contact|bengaluru|bangalore|^\d+$/i.test(
+          sameLine
+        )
+      ) {
+        return sameLine;
+      }
+
+      const nextLine = cleanText(lines[index + 1] || "");
+
+      if (
+        nextLine &&
+        !/verified|buildmitra|mobile|phone|contact|₹|bengaluru|bangalore|^\d+$/i.test(
+          nextLine
+        )
+      ) {
+        return nextLine;
+      }
+    }
+  }
+
+  return "Supplier";
+}
+
+export default function MarketplaceCompactMobileCards() {
+  const router = useRouter();
+
+  useEffect(() => {
+    if (router.pathname !== "/marketplace") return;
+
+    const applyCards = () => {
+      const cards = Array.from(
+        document.querySelectorAll<HTMLElement>(
+          ".bm-marketplace-product-card"
+        )
+      );
+
+      cards.forEach((card) => {
+        const originalImage = card.querySelector(
+          "img"
+        ) as HTMLImageElement | null;
+
+        if (!originalImage) return;
+
+        const fullText = String(
+          card.innerText || card.textContent || ""
+        );
+
+        const itemName = extractItemName(
+          card,
+          originalImage
+        );
+
+        const price = extractPrice(fullText);
+        const supplierName = extractSupplier(fullText);
+        const mobile = extractMobile(fullText);
+
+        const source =
+          originalImage.currentSrc ||
+          originalImage.src ||
+          originalImage.getAttribute("src") ||
+          "";
+
+        card.classList.add(
+          "bm-marketplace-ultra-compact"
+        );
+
+        let summary = card.querySelector(
+          ":scope > .bm-marketplace-compact-summary"
+        ) as HTMLElement | null;
+
+        if (!summary) {
+          summary = document.createElement("button");
+          summary.type = "button";
+          summary.className =
+            "bm-marketplace-compact-summary";
+          summary.setAttribute(
+            "aria-label",
+            "View supplier details"
+          );
+          summary.setAttribute(
+            "data-payment-bypass",
+            "true"
+          );
+
+          summary.innerHTML = `
+            <div class="bm-marketplace-compact-image-wrapper">
+              <img
+                class="bm-marketplace-compact-image bm-marketplace-zoom-image"
+                data-marketplace-zoom-image="true"
+                role="button"
+                tabindex="0"
+                title="Tap to enlarge"
+              />
+              <span
+                class="bm-marketplace-compact-magnifier"
+                data-marketplace-magnifier="true"
+                title="Enlarge image"
+              >🔍</span>
+            </div>
+
+            <div class="bm-compact-item-name"></div>
+            <div class="bm-compact-price"></div>
+            <div class="bm-compact-supplier"></div>
+            <div class="bm-compact-mobile"></div>
+            <div class="bm-compact-view-hint">Tap for details</div>
+          `;
+
+          summary.addEventListener("click", (event) => {
+            const target = event.target as HTMLElement;
+
+            if (
+              target.closest(
+                "[data-marketplace-magnifier='true'], [data-marketplace-zoom-image='true']"
+              )
+            ) {
+              return;
+            }
+
+            card.classList.toggle(
+              "bm-marketplace-details-open"
+            );
+
+            const open = card.classList.contains(
+              "bm-marketplace-details-open"
+            );
+
+            summary?.setAttribute(
+              "aria-expanded",
+              String(open)
+            );
+          });
+
+          card.appendChild(summary);
+        }
+
+        const image = summary.querySelector(
+          ".bm-marketplace-compact-image"
+        ) as HTMLImageElement | null;
+
+        if (image && source) {
+          image.src = source;
+          image.alt = itemName;
+        }
+
+        const itemElement = summary.querySelector(
+          ".bm-compact-item-name"
+        );
+
+        const priceElement = summary.querySelector(
+          ".bm-compact-price"
+        );
+
+        const supplierElement = summary.querySelector(
+          ".bm-compact-supplier"
+        );
+
+        const mobileElement = summary.querySelector(
+          ".bm-compact-mobile"
+        );
+
+        if (itemElement) {
+          itemElement.textContent = itemName;
+        }
+
+        if (priceElement) {
+          priceElement.textContent = price;
+        }
+
+        if (supplierElement) {
+          supplierElement.textContent = supplierName;
+        }
+
+        if (mobileElement) {
+          mobileElement.textContent = mobile;
+        }
+      });
+    };
+
+    applyCards();
+
+    const observer = new MutationObserver(() => {
+      window.requestAnimationFrame(applyCards);
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [router.pathname]);
+
+  return null;
+}

@@ -1,3 +1,4 @@
+import MarketplaceProductImage from "../components/MarketplaceProductImage";
 import React, { useEffect, useMemo, useState } from "react";
 import MarketRateTrend from "../components/ui/MarketRateTrend";
 import { normalizeImageUrl, resolveListingImage } from "../utils/imageUrl";
@@ -1592,6 +1593,7 @@ cartAddButton: {
     boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
   },
 };
+
 
 
 

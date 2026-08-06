@@ -1,0 +1,1784 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  background-color: #f0f2f5;
+}
+
+/* BUILDMITRA MOBILE COMPACT START */
+
+html,
+body,
+#__next {
+  width: 100%;
+  max-width: 100%;
+  min-height: 100%;
+  margin: 0;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+}
+
+/* Do not alter the working payment popup */
+.bm-payment-overlay,
+.bm-payment-modal,
+.bm-payment-modal *,
+.bm-payment-qr {
+  box-sizing: border-box;
+}
+
+@media screen and (max-width: 767px) {
+
+  html {
+    font-size: 14px;
+  }
+
+  body {
+    width: 100%;
+    max-width: 100vw;
+    min-width: 0;
+    overflow-x: hidden !important;
+    font-size: 14px;
+    line-height: 1.4;
+  }
+
+  #__next,
+  main,
+  .main,
+  .main-content,
+  .page,
+  .page-content,
+  .page-container,
+  .content,
+  .content-wrapper,
+  .dashboard,
+  .dashboard-content,
+  .container,
+  .MuiContainer-root {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+    overflow-x: hidden !important;
+  }
+
+  h1,
+  .MuiTypography-h1 {
+    font-size: 1.45rem !important;
+    line-height: 1.2 !important;
+    margin-top: 8px !important;
+    margin-bottom: 8px !important;
+  }
+
+  h2,
+  .MuiTypography-h2 {
+    font-size: 1.25rem !important;
+    line-height: 1.25 !important;
+    margin-top: 8px !important;
+    margin-bottom: 8px !important;
+  }
+
+  h3,
+  .MuiTypography-h3 {
+    font-size: 1.08rem !important;
+    line-height: 1.3 !important;
+    margin-top: 6px !important;
+    margin-bottom: 6px !important;
+  }
+
+  h4,
+  h5,
+  h6 {
+    font-size: 1rem !important;
+    line-height: 1.3 !important;
+  }
+
+  p,
+  span,
+  label,
+  .MuiTypography-root,
+  .MuiFormLabel-root,
+  .MuiInputLabel-root {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  form,
+  fieldset,
+  .form,
+  .form-container,
+  .form-section,
+  .filter-section,
+  .filters,
+  .search-section {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  input,
+  select,
+  textarea,
+  .MuiInputBase-root,
+  .MuiOutlinedInput-root,
+  .MuiTextField-root,
+  .MuiFormControl-root,
+  .MuiSelect-root {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    font-size: 14px !important;
+  }
+
+  input,
+  select,
+  .MuiInputBase-root,
+  .MuiOutlinedInput-root {
+    min-height: 38px !important;
+    height: 40px !important;
+  }
+
+  textarea {
+    min-height: 76px !important;
+    height: auto !important;
+  }
+
+  input,
+  select,
+  textarea {
+    padding: 8px 10px !important;
+    border-radius: 7px !important;
+  }
+
+  .MuiInputBase-input,
+  .MuiOutlinedInput-input,
+  .MuiSelect-select {
+    min-height: 20px !important;
+    padding: 9px 10px !important;
+    font-size: 14px !important;
+  }
+
+  .MuiInputLabel-root {
+    font-size: 13px !important;
+  }
+
+  button,
+  .button,
+  .btn,
+  .MuiButton-root,
+  input[type="button"],
+  input[type="submit"] {
+    min-height: 38px !important;
+    max-width: 100%;
+    padding: 8px 12px !important;
+    border-radius: 7px !important;
+    font-size: 13px !important;
+    line-height: 1.2 !important;
+    white-space: normal !important;
+  }
+
+  .card,
+  .result-card,
+  .result-box,
+  .summary-card,
+  .calculator-card,
+  .boq-card,
+  .marketplace-card,
+  .property-card,
+  .labour-card,
+  .MuiCard-root,
+  .MuiPaper-root:not(.bm-payment-modal) {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 6px 0 !important;
+    padding: 10px !important;
+    border-radius: 10px !important;
+    overflow-wrap: anywhere;
+  }
+
+  .result,
+  .results,
+  .calculation-result,
+  .calculation-results,
+  .output,
+  .output-box,
+  .estimate-box,
+  .total-box,
+  .summary-box {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    padding: 10px !important;
+    margin: 6px 0 !important;
+    font-size: 13px !important;
+    overflow-x: auto;
+    overflow-wrap: anywhere;
+  }
+
+  .grid,
+  .form-grid,
+  .filter-grid,
+  .input-grid,
+  .result-grid,
+  .card-grid,
+  .marketplace-grid,
+  .property-grid,
+  .dashboard-grid,
+  .MuiGrid-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    gap: 8px !important;
+  }
+
+  .form-grid,
+  .input-grid,
+  .result-grid,
+  .filter-grid {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .card-grid,
+  .marketplace-grid,
+  .property-grid,
+  .dashboard-grid {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .MuiGrid-item {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex-basis: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .actions,
+  .button-group,
+  .action-buttons,
+  .card-actions,
+  .MuiCardActions-root,
+  .MuiDialogActions-root {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 7px !important;
+    width: 100% !important;
+    padding: 8px 0 !important;
+  }
+
+  .actions > *,
+  .button-group > *,
+  .action-buttons > *,
+  .card-actions > * {
+    flex: 1 1 120px;
+    min-width: 0;
+  }
+
+  table {
+    width: 100% !important;
+    min-width: 600px;
+    border-collapse: collapse;
+    font-size: 12px !important;
+  }
+
+  .table-responsive,
+  .bm-table-responsive,
+  .MuiTableContainer-root,
+  .table-container {
+    display: block;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  th,
+  td {
+    padding: 6px !important;
+    font-size: 12px !important;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .MuiDialog-root .MuiDialog-paper,
+  .modal,
+  .modal-content,
+  .dialog,
+  .popup,
+  .drawer-content {
+    width: calc(100vw - 16px) !important;
+    max-width: calc(100vw - 16px) !important;
+    max-height: 92vh !important;
+    margin: 8px !important;
+    padding: 12px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+
+  .MuiDrawer-paper {
+    max-width: 86vw !important;
+  }
+
+  .marketplace-card img,
+  .product-card img,
+  .property-card img,
+  .labour-card img,
+  .card img:not(.bm-payment-qr),
+  .MuiCardMedia-root {
+    display: block;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 150px !important;
+    object-fit: contain !important;
+    margin: 0 auto 8px !important;
+  }
+
+  .sidebar,
+  aside {
+    max-width: 86vw;
+  }
+
+  pre,
+  code {
+    max-width: 100%;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .desktop-only {
+    display: none !important;
+  }
+}
+
+@media screen and (min-width: 480px) and (max-width: 767px) {
+
+  .card-grid,
+  .marketplace-grid,
+  .property-grid,
+  .dashboard-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media screen and (max-width: 359px) {
+
+  html,
+  body {
+    font-size: 13px;
+  }
+
+  #__next,
+  main,
+  .main-content,
+  .page-content,
+  .container {
+    padding-left: 6px !important;
+    padding-right: 6px !important;
+  }
+
+  button,
+  .btn,
+  .MuiButton-root {
+    padding: 7px 9px !important;
+    font-size: 12px !important;
+  }
+
+  .card,
+  .result-card,
+  .result-box,
+  .MuiCard-root,
+  .MuiPaper-root:not(.bm-payment-modal) {
+    padding: 8px !important;
+  }
+}
+
+/* BUILDMITRA MOBILE COMPACT END */
+
+/* BUILDMITRA COMPACT GRID V2 START */
+
+/*
+  UI-only responsive refinement.
+  Payment barrier, authentication, calculations and APIs are untouched.
+*/
+
+@media screen and (max-width: 767px) {
+
+  /* -------------------------------------------------------
+     General mobile spacing
+  ------------------------------------------------------- */
+
+  main,
+  .main-content,
+  .page-content,
+  .dashboard-content,
+  .content-wrapper,
+  .container,
+  .MuiContainer-root {
+    padding-left: 6px !important;
+    padding-right: 6px !important;
+  }
+
+  .card,
+  .calculator-card,
+  .boq-card,
+  .result-card,
+  .summary-card,
+  .marketplace-card,
+  .product-card,
+  .MuiCard-root,
+  .MuiPaper-root:not(.bm-payment-modal) {
+    padding: 8px !important;
+    margin: 4px 0 !important;
+    border-radius: 8px !important;
+  }
+
+  /* -------------------------------------------------------
+     Calculator / BOQ input fields: two per row
+  ------------------------------------------------------- */
+
+  .form-grid,
+  .input-grid,
+  .calculator-input-grid,
+  .calculator-grid,
+  .boq-input-grid,
+  .parameter-grid,
+  .fields-grid,
+  .filters-grid,
+  .filter-grid,
+  form > .grid,
+  form .MuiGrid-container {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    align-items: start !important;
+  }
+
+  .form-grid > *,
+  .input-grid > *,
+  .calculator-input-grid > *,
+  .calculator-grid > *,
+  .boq-input-grid > *,
+  .parameter-grid > *,
+  .fields-grid > *,
+  .filters-grid > *,
+  .filter-grid > *,
+  form > .grid > *,
+  form .MuiGrid-container > .MuiGrid-item {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    flex-basis: auto !important;
+  }
+
+  /* Keep genuinely long fields full width */
+  .full-width,
+  .field-full,
+  .span-2,
+  .MuiGrid-grid-xs-12,
+  textarea,
+  [data-full-width="true"] {
+    grid-column: 1 / -1 !important;
+  }
+
+  input,
+  select,
+  .MuiInputBase-root,
+  .MuiOutlinedInput-root,
+  .MuiSelect-root {
+    min-height: 34px !important;
+    height: 36px !important;
+    font-size: 12.5px !important;
+  }
+
+  .MuiInputBase-input,
+  .MuiOutlinedInput-input,
+  .MuiSelect-select {
+    padding: 7px 8px !important;
+    font-size: 12.5px !important;
+  }
+
+  label,
+  .MuiInputLabel-root,
+  .MuiFormLabel-root {
+    font-size: 11.5px !important;
+    line-height: 1.15 !important;
+  }
+
+  /* -------------------------------------------------------
+     Result boxes: two per row
+  ------------------------------------------------------- */
+
+  .result-grid,
+  .results-grid,
+  .calculator-results,
+  .calculation-results,
+  .summary-grid,
+  .output-grid,
+  .metrics-grid,
+  .totals-grid,
+  .stats-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .result-grid > *,
+  .results-grid > *,
+  .calculator-results > *,
+  .calculation-results > *,
+  .summary-grid > *,
+  .output-grid > *,
+  .metrics-grid > *,
+  .totals-grid > *,
+  .stats-grid > *,
+  .result-box,
+  .output-box,
+  .summary-box,
+  .metric-box,
+  .total-box {
+    min-width: 0 !important;
+    width: 100% !important;
+    padding: 7px !important;
+    margin: 0 !important;
+    border-radius: 7px !important;
+    font-size: 11.5px !important;
+    line-height: 1.25 !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  .result-box strong,
+  .output-box strong,
+  .summary-box strong,
+  .metric-box strong,
+  .total-box strong {
+    display: block;
+    font-size: 12px !important;
+    line-height: 1.2 !important;
+  }
+
+  /* -------------------------------------------------------
+     Marketplace: two compact items per row
+  ------------------------------------------------------- */
+
+  .marketplace-grid,
+  .products-grid,
+  .product-grid,
+  .listing-grid,
+  .marketplace-list,
+  .items-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    align-items: stretch !important;
+  }
+
+  .marketplace-card,
+  .product-card,
+  .listing-card {
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 7px !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .marketplace-card img,
+  .product-card img,
+  .listing-card img,
+  .marketplace-grid .MuiCardMedia-root,
+  .products-grid .MuiCardMedia-root {
+    display: block !important;
+    width: 100% !important;
+    height: 82px !important;
+    max-height: 82px !important;
+    margin: 0 auto 5px !important;
+    padding: 2px !important;
+    object-fit: contain !important;
+    object-position: center !important;
+    background: #ffffff !important;
+  }
+
+  .marketplace-card h2,
+  .marketplace-card h3,
+  .marketplace-card h4,
+  .product-card h2,
+  .product-card h3,
+  .product-card h4,
+  .listing-card h3 {
+    margin: 3px 0 !important;
+    font-size: 12px !important;
+    line-height: 1.2 !important;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .marketplace-card p,
+  .marketplace-card span,
+  .product-card p,
+  .product-card span,
+  .listing-card p,
+  .listing-card span {
+    font-size: 10.5px !important;
+    line-height: 1.2 !important;
+    margin-top: 2px !important;
+    margin-bottom: 2px !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  .marketplace-card button,
+  .product-card button,
+  .listing-card button,
+  .marketplace-card .MuiButton-root,
+  .product-card .MuiButton-root {
+    min-height: 30px !important;
+    padding: 5px 6px !important;
+    font-size: 10.5px !important;
+    line-height: 1.1 !important;
+    border-radius: 6px !important;
+  }
+
+  .marketplace-card .actions,
+  .marketplace-card .card-actions,
+  .product-card .actions,
+  .product-card .card-actions,
+  .listing-card .actions {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 4px !important;
+    padding: 4px 0 0 !important;
+  }
+
+  /* Compact Marketplace search and filters */
+  .marketplace-search,
+  .marketplace-filters,
+  .marketplace-filter-grid,
+  .search-filter-section {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 5px !important;
+    width: 100% !important;
+  }
+
+  .marketplace-search > :first-child,
+  .search-full-width {
+    grid-column: 1 / -1 !important;
+  }
+
+  /* -------------------------------------------------------
+     Buttons and headings
+  ------------------------------------------------------- */
+
+  button,
+  .btn,
+  .button,
+  .MuiButton-root {
+    min-height: 34px !important;
+    padding: 6px 9px !important;
+    font-size: 11.5px !important;
+  }
+
+  h1,
+  .MuiTypography-h1 {
+    font-size: 1.25rem !important;
+  }
+
+  h2,
+  .MuiTypography-h2 {
+    font-size: 1.1rem !important;
+  }
+
+  h3,
+  .MuiTypography-h3 {
+    font-size: 0.98rem !important;
+  }
+
+  /*
+    Never compact or alter the working payment barrier.
+  */
+  .bm-payment-overlay .bm-payment-modal,
+  .bm-payment-overlay .bm-payment-modal *,
+  .bm-payment-overlay .bm-payment-qr {
+    box-sizing: border-box;
+  }
+}
+
+/* Very small phones: retain two columns but tighten further */
+@media screen and (max-width: 340px) {
+
+  .form-grid,
+  .input-grid,
+  .calculator-input-grid,
+  .calculator-grid,
+  .boq-input-grid,
+  .parameter-grid,
+  .fields-grid {
+    gap: 4px !important;
+  }
+
+  input,
+  select,
+  .MuiInputBase-root,
+  .MuiOutlinedInput-root {
+    font-size: 11.5px !important;
+  }
+
+  .marketplace-card img,
+  .product-card img,
+  .listing-card img {
+    height: 72px !important;
+    max-height: 72px !important;
+  }
+}
+
+/* Larger phones and tablets: three inputs/results/cards per row */
+@media screen and (min-width: 600px) and (max-width: 1023px) {
+
+  .form-grid,
+  .input-grid,
+  .calculator-input-grid,
+  .calculator-grid,
+  .boq-input-grid,
+  .parameter-grid,
+  .fields-grid,
+  .result-grid,
+  .results-grid,
+  .calculator-results,
+  .summary-grid,
+  .output-grid,
+  .marketplace-grid,
+  .products-grid,
+  .product-grid,
+  .listing-grid,
+  .items-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .marketplace-card img,
+  .product-card img,
+  .listing-card img {
+    height: 105px !important;
+    max-height: 105px !important;
+  }
+}
+
+/* BUILDMITRA COMPACT GRID V2 END */
+
+/* BUILDMITRA MARKETPLACE COMPACT START */
+
+/*
+  Marketplace-only responsive refinement.
+  Payment barrier and business logic are untouched.
+*/
+
+@media screen and (max-width: 599px) {
+
+  /* Marketplace page containers */
+  .marketplace-page,
+  .marketplace-container,
+  .marketplace-content,
+  .marketplace-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    padding: 6px !important;
+    margin: 0 !important;
+    overflow-x: hidden !important;
+  }
+
+  /* Two Marketplace cards per row */
+  .marketplace-grid,
+  .products-grid,
+  .product-grid,
+  .marketplace-list,
+  .listing-grid,
+  .items-grid,
+  [class*="marketplaceGrid"],
+  [class*="productGrid"],
+  [class*="listingGrid"] {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    align-items: stretch !important;
+  }
+
+  /* Compact cards */
+  .marketplace-card,
+  .product-card,
+  .listing-card,
+  .marketplace-item,
+  [class*="marketplaceCard"],
+  [class*="productCard"],
+  [class*="listingCard"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 6px !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Small horizontal and vertical image size */
+  .marketplace-card img,
+  .product-card img,
+  .listing-card img,
+  .marketplace-item img,
+  [class*="marketplaceCard"] img,
+  [class*="productCard"] img,
+  [class*="listingCard"] img,
+  .marketplace-grid .MuiCardMedia-root,
+  .products-grid .MuiCardMedia-root {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 68px !important;
+    min-height: 68px !important;
+    max-height: 68px !important;
+    margin: 0 auto 5px !important;
+    padding: 2px !important;
+    border-radius: 5px !important;
+    object-fit: contain !important;
+    object-position: center !important;
+    background: #ffffff !important;
+  }
+
+  /* Compact titles */
+  .marketplace-card h1,
+  .marketplace-card h2,
+  .marketplace-card h3,
+  .marketplace-card h4,
+  .product-card h2,
+  .product-card h3,
+  .product-card h4,
+  .listing-card h2,
+  .listing-card h3,
+  [class*="marketplaceCard"] h3,
+  [class*="productCard"] h3 {
+    margin: 2px 0 !important;
+    min-height: 26px !important;
+    font-size: 11px !important;
+    line-height: 1.15 !important;
+    font-weight: 700 !important;
+    overflow: hidden !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+  }
+
+  /* Compact details */
+  .marketplace-card p,
+  .marketplace-card span,
+  .marketplace-card small,
+  .product-card p,
+  .product-card span,
+  .product-card small,
+  .listing-card p,
+  .listing-card span,
+  .marketplace-item p,
+  .marketplace-item span,
+  [class*="marketplaceCard"] p,
+  [class*="marketplaceCard"] span,
+  [class*="productCard"] p,
+  [class*="productCard"] span {
+    margin: 1px 0 !important;
+    font-size: 9.5px !important;
+    line-height: 1.15 !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  /* Price */
+  .marketplace-card .price,
+  .product-card .price,
+  .listing-card .price,
+  [class*="marketplaceCard"] [class*="price"],
+  [class*="productCard"] [class*="price"] {
+    font-size: 11px !important;
+    line-height: 1.15 !important;
+    font-weight: 700 !important;
+  }
+
+  /* Compact action area */
+  .marketplace-card .actions,
+  .marketplace-card .card-actions,
+  .product-card .actions,
+  .product-card .card-actions,
+  .listing-card .actions,
+  [class*="marketplaceCard"] [class*="action"],
+  [class*="productCard"] [class*="action"] {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 3px !important;
+    width: 100% !important;
+    margin-top: 4px !important;
+    padding: 0 !important;
+  }
+
+  /* Compact buttons */
+  .marketplace-card button,
+  .product-card button,
+  .listing-card button,
+  .marketplace-item button,
+  [class*="marketplaceCard"] button,
+  [class*="productCard"] button,
+  .marketplace-card .MuiButton-root,
+  .product-card .MuiButton-root {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 27px !important;
+    height: auto !important;
+    padding: 4px 3px !important;
+    border-radius: 5px !important;
+    font-size: 9px !important;
+    line-height: 1.05 !important;
+    white-space: normal !important;
+  }
+
+  /* Compact search and filters */
+  .marketplace-search,
+  .marketplace-filters,
+  .marketplace-filter-grid,
+  .marketplace-search-filters,
+  [class*="marketplaceFilter"],
+  [class*="marketplaceSearch"] {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 5px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    padding: 4px !important;
+  }
+
+  .marketplace-search input,
+  .marketplace-filters input,
+  .marketplace-filters select,
+  .marketplace-filter-grid input,
+  .marketplace-filter-grid select,
+  [class*="marketplaceFilter"] input,
+  [class*="marketplaceFilter"] select,
+  [class*="marketplaceSearch"] input,
+  [class*="marketplaceSearch"] select {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: 34px !important;
+    min-height: 34px !important;
+    padding: 6px 7px !important;
+    font-size: 11.5px !important;
+    border-radius: 6px !important;
+  }
+
+  /* Main search field may occupy the full row */
+  .marketplace-search > :first-child,
+  .marketplace-search-full,
+  [class*="marketplaceSearch"] > :first-child {
+    grid-column: 1 / -1 !important;
+  }
+}
+
+/* Very small phones */
+@media screen and (max-width: 340px) {
+
+  .marketplace-grid,
+  .products-grid,
+  .product-grid,
+  .marketplace-list,
+  .listing-grid,
+  .items-grid,
+  [class*="marketplaceGrid"],
+  [class*="productGrid"] {
+    gap: 4px !important;
+  }
+
+  .marketplace-card,
+  .product-card,
+  .listing-card,
+  [class*="marketplaceCard"],
+  [class*="productCard"] {
+    padding: 5px !important;
+  }
+
+  .marketplace-card img,
+  .product-card img,
+  .listing-card img,
+  [class*="marketplaceCard"] img,
+  [class*="productCard"] img {
+    height: 60px !important;
+    min-height: 60px !important;
+    max-height: 60px !important;
+  }
+}
+
+/* Tablets: three cards per row */
+@media screen and (min-width: 600px) and (max-width: 1023px) {
+
+  .marketplace-grid,
+  .products-grid,
+  .product-grid,
+  .marketplace-list,
+  .listing-grid,
+  .items-grid,
+  [class*="marketplaceGrid"],
+  [class*="productGrid"],
+  [class*="listingGrid"] {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  .marketplace-card img,
+  .product-card img,
+  .listing-card img,
+  [class*="marketplaceCard"] img,
+  [class*="productCard"] img {
+    width: 100% !important;
+    height: 86px !important;
+    min-height: 86px !important;
+    max-height: 86px !important;
+    object-fit: contain !important;
+  }
+}
+
+/* BUILDMITRA MARKETPLACE COMPACT END */
+
+
+/* BUILDMITRA MARKETPLACE IMAGE FIX START */
+
+.bm-marketplace-product-image {
+  display: block;
+  width: 100%;
+  height: 130px;
+  object-fit: contain;
+  object-position: center;
+  background: #ffffff;
+  border-radius: 6px;
+}
+
+@media screen and (max-width: 599px) {
+  .bm-marketplace-product-image {
+    width: 100% !important;
+    height: 68px !important;
+    min-height: 68px !important;
+    max-height: 68px !important;
+    margin: 0 auto 4px !important;
+    padding: 2px !important;
+    object-fit: contain !important;
+  }
+}
+
+@media screen and (max-width: 340px) {
+  .bm-marketplace-product-image {
+    height: 58px !important;
+    min-height: 58px !important;
+    max-height: 58px !important;
+  }
+}
+
+@media screen and (min-width: 600px) and (max-width: 1023px) {
+  .bm-marketplace-product-image {
+    height: 88px !important;
+  }
+}
+
+/* BUILDMITRA MARKETPLACE IMAGE FIX END */
+
+/* BUILDMITRA MARKETPLACE MOBILE 3-COLUMN START */
+
+@media screen and (max-width: 599px) {
+
+  .marketplace-page,
+  .marketplace-container,
+  .marketplace-content,
+  .marketplace-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 4px !important;
+    margin: 0 !important;
+    overflow-x: hidden !important;
+  }
+
+  .marketplace-grid,
+  .products-grid,
+  .product-grid,
+  .marketplace-list,
+  .listing-grid,
+  .items-grid,
+  [class*="marketplaceGrid"],
+  [class*="productGrid"],
+  [class*="listingGrid"] {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 4px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    align-items: stretch !important;
+  }
+
+  .marketplace-card,
+  .product-card,
+  .listing-card,
+  .marketplace-item,
+  [class*="marketplaceCard"],
+  [class*="productCard"],
+  [class*="listingCard"] {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    min-height: 0 !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 4px !important;
+    border-radius: 6px !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  .marketplace-card img,
+  .product-card img,
+  .listing-card img,
+  .marketplace-item img,
+  [class*="marketplaceCard"] img,
+  [class*="productCard"] img,
+  [class*="listingCard"] img,
+  .marketplace-grid .MuiCardMedia-root,
+  .products-grid .MuiCardMedia-root,
+  .bm-marketplace-product-image {
+    display: block !important;
+    width: 100% !important;
+    height: 48px !important;
+    min-height: 48px !important;
+    max-height: 48px !important;
+    margin: 0 auto 2px !important;
+    padding: 1px !important;
+    border-radius: 4px !important;
+    object-fit: contain !important;
+    object-position: center !important;
+    background: #ffffff !important;
+  }
+
+  .marketplace-card h1,
+  .marketplace-card h2,
+  .marketplace-card h3,
+  .marketplace-card h4,
+  .product-card h2,
+  .product-card h3,
+  .product-card h4,
+  .listing-card h2,
+  .listing-card h3,
+  [class*="marketplaceCard"] h3,
+  [class*="productCard"] h3 {
+    margin: 1px 0 !important;
+    min-height: 18px !important;
+    font-size: 8.5px !important;
+    line-height: 1.05 !important;
+    font-weight: 700 !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+  }
+
+  .marketplace-card p,
+  .marketplace-card span,
+  .marketplace-card small,
+  .product-card p,
+  .product-card span,
+  .product-card small,
+  .listing-card p,
+  .listing-card span,
+  [class*="marketplaceCard"] p,
+  [class*="marketplaceCard"] span,
+  [class*="productCard"] p,
+  [class*="productCard"] span {
+    margin: 0 !important;
+    font-size: 7.5px !important;
+    line-height: 1.05 !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  .marketplace-card .price,
+  .product-card .price,
+  .listing-card .price,
+  [class*="marketplaceCard"] [class*="price"],
+  [class*="productCard"] [class*="price"] {
+    font-size: 8.5px !important;
+    font-weight: 700 !important;
+  }
+
+  .marketplace-card .actions,
+  .marketplace-card .card-actions,
+  .product-card .actions,
+  .product-card .card-actions,
+  .listing-card .actions,
+  [class*="marketplaceCard"] [class*="action"],
+  [class*="productCard"] [class*="action"] {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 2px !important;
+    width: 100% !important;
+    margin-top: 2px !important;
+    padding: 0 !important;
+  }
+
+  .marketplace-card button,
+  .product-card button,
+  .listing-card button,
+  .marketplace-item button,
+  [class*="marketplaceCard"] button,
+  [class*="productCard"] button,
+  .marketplace-card .MuiButton-root,
+  .product-card .MuiButton-root {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 21px !important;
+    height: auto !important;
+    padding: 2px !important;
+    border-radius: 4px !important;
+    font-size: 7.5px !important;
+    line-height: 1 !important;
+    white-space: normal !important;
+  }
+
+  .marketplace-search,
+  .marketplace-filters,
+  .marketplace-filter-grid,
+  .marketplace-search-filters,
+  [class*="marketplaceFilter"],
+  [class*="marketplaceSearch"] {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 3px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 3px !important;
+  }
+
+  .marketplace-search input,
+  .marketplace-filters input,
+  .marketplace-filters select,
+  .marketplace-filter-grid input,
+  .marketplace-filter-grid select,
+  [class*="marketplaceFilter"] input,
+  [class*="marketplaceFilter"] select,
+  [class*="marketplaceSearch"] input,
+  [class*="marketplaceSearch"] select {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 29px !important;
+    min-height: 29px !important;
+    padding: 4px !important;
+    font-size: 9px !important;
+    border-radius: 4px !important;
+  }
+
+  .marketplace-search > :first-child,
+  .marketplace-search-full,
+  [class*="marketplaceSearch"] > :first-child {
+    grid-column: 1 / -1 !important;
+  }
+}
+
+@media screen and (max-width: 340px) {
+
+  .marketplace-grid,
+  .products-grid,
+  .product-grid,
+  .marketplace-list,
+  .listing-grid,
+  .items-grid,
+  [class*="marketplaceGrid"],
+  [class*="productGrid"] {
+    gap: 3px !important;
+  }
+
+  .marketplace-card,
+  .product-card,
+  .listing-card,
+  [class*="marketplaceCard"],
+  [class*="productCard"] {
+    padding: 3px !important;
+  }
+
+  .marketplace-card img,
+  .product-card img,
+  .listing-card img,
+  [class*="marketplaceCard"] img,
+  [class*="productCard"] img,
+  .bm-marketplace-product-image {
+    height: 42px !important;
+    min-height: 42px !important;
+    max-height: 42px !important;
+  }
+}
+
+@media screen and (min-width: 600px) and (max-width: 1023px) {
+
+  .marketplace-grid,
+  .products-grid,
+  .product-grid,
+  .marketplace-list,
+  .listing-grid,
+  .items-grid,
+  [class*="marketplaceGrid"],
+  [class*="productGrid"],
+  [class*="listingGrid"] {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+  }
+
+  .marketplace-card img,
+  .product-card img,
+  .listing-card img,
+  [class*="marketplaceCard"] img,
+  [class*="productCard"] img,
+  .bm-marketplace-product-image {
+    height: 65px !important;
+    min-height: 65px !important;
+    max-height: 65px !important;
+    object-fit: contain !important;
+  }
+}
+
+/* BUILDMITRA MARKETPLACE MOBILE 3-COLUMN END */
+
+
+/* BUILDMITRA MARKETPLACE FORCED GRID START */
+
+@media screen and (max-width: 599px) {
+
+  body.bm-marketplace-route {
+    overflow-x: hidden !important;
+  }
+
+  body.bm-marketplace-route .bm-marketplace-product-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 4px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    align-items: stretch !important;
+  }
+
+  body.bm-marketplace-route .bm-marketplace-product-card {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    flex: none !important;
+    flex-basis: auto !important;
+    margin: 0 !important;
+    padding: 4px !important;
+    border-radius: 6px !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  body.bm-marketplace-route
+  .bm-marketplace-product-card img {
+    display: block !important;
+    width: 100% !important;
+    height: 52px !important;
+    min-height: 52px !important;
+    max-height: 52px !important;
+    margin: 0 auto 3px !important;
+    padding: 1px !important;
+    object-fit: contain !important;
+    object-position: center !important;
+    background: #ffffff !important;
+  }
+
+  body.bm-marketplace-route
+  .bm-marketplace-product-card h1,
+  body.bm-marketplace-route
+  .bm-marketplace-product-card h2,
+  body.bm-marketplace-route
+  .bm-marketplace-product-card h3,
+  body.bm-marketplace-route
+  .bm-marketplace-product-card h4 {
+    margin: 2px 0 !important;
+    font-size: 9px !important;
+    line-height: 1.1 !important;
+    min-height: 20px !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+  }
+
+  body.bm-marketplace-route
+  .bm-marketplace-product-card p,
+  body.bm-marketplace-route
+  .bm-marketplace-product-card span,
+  body.bm-marketplace-route
+  .bm-marketplace-product-card small {
+    margin: 1px 0 !important;
+    font-size: 7.5px !important;
+    line-height: 1.08 !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  body.bm-marketplace-route
+  .bm-marketplace-product-card button,
+  body.bm-marketplace-route
+  .bm-marketplace-product-card .MuiButton-root {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 22px !important;
+    padding: 3px 2px !important;
+    margin: 1px 0 !important;
+    font-size: 7.5px !important;
+    line-height: 1 !important;
+    white-space: normal !important;
+  }
+}
+
+@media screen and (max-width: 340px) {
+
+  body.bm-marketplace-route
+  .bm-marketplace-product-grid {
+    gap: 3px !important;
+  }
+
+  body.bm-marketplace-route
+  .bm-marketplace-product-card {
+    padding: 3px !important;
+  }
+
+  body.bm-marketplace-route
+  .bm-marketplace-product-card img {
+    height: 44px !important;
+    min-height: 44px !important;
+    max-height: 44px !important;
+  }
+}
+
+/* BUILDMITRA MARKETPLACE FORCED GRID END */
+
+/* BUILDMITRA MARKETPLACE ZOOM START */
+
+body.bm-marketplace-route
+.bm-marketplace-image-wrapper {
+  position: relative !important;
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  border-radius: 5px !important;
+  background: #ffffff !important;
+}
+
+body.bm-marketplace-route
+.bm-marketplace-zoom-image {
+  cursor: zoom-in !important;
+  user-select: none !important;
+  -webkit-user-drag: none !important;
+}
+
+body.bm-marketplace-route
+.bm-marketplace-magnifier {
+  position: absolute !important;
+  z-index: 4 !important;
+  top: 2px !important;
+  right: 2px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px !important;
+  min-height: 20px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.24) !important;
+  font-size: 11px !important;
+  line-height: 1 !important;
+  cursor: zoom-in !important;
+}
+
+.bm-marketplace-viewer-overlay {
+  position: fixed !important;
+  z-index: 2147483646 !important;
+  inset: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 10px !important;
+  background: rgba(4, 10, 20, 0.92) !important;
+  touch-action: none !important;
+}
+
+.bm-marketplace-viewer-panel {
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
+  width: min(920px, 100%) !important;
+  height: min(92vh, 760px) !important;
+  padding: 12px !important;
+  border-radius: 12px !important;
+  background: #111b28 !important;
+  color: #ffffff !important;
+  overflow: hidden !important;
+}
+
+.bm-marketplace-viewer-close {
+  position: absolute !important;
+  z-index: 5 !important;
+  top: 8px !important;
+  right: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  min-height: 36px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+  color: #17263a !important;
+  font-size: 26px !important;
+  cursor: pointer !important;
+}
+
+.bm-marketplace-viewer-stage {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 1 1 auto !important;
+  width: 100% !important;
+  min-height: 0 !important;
+  overflow: auto !important;
+  border-radius: 8px !important;
+  background: #ffffff !important;
+  touch-action: none !important;
+}
+
+.bm-marketplace-viewer-image {
+  display: block !important;
+  max-width: 88% !important;
+  max-height: 78vh !important;
+  object-fit: contain !important;
+  transform-origin: center center !important;
+  transition: transform 120ms ease !important;
+  user-select: none !important;
+  -webkit-user-drag: none !important;
+  touch-action: none !important;
+}
+
+.bm-marketplace-viewer-controls {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  flex: 0 0 auto !important;
+  padding: 10px 0 4px !important;
+}
+
+.bm-marketplace-viewer-controls button {
+  min-width: 42px !important;
+  min-height: 34px !important;
+  padding: 6px 10px !important;
+  border: 0 !important;
+  border-radius: 7px !important;
+  background: #ffffff !important;
+  color: #17365d !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+}
+
+.bm-marketplace-viewer-controls span {
+  min-width: 52px !important;
+  color: #ffffff !important;
+  text-align: center !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+}
+
+.bm-marketplace-viewer-panel > small {
+  color: #cbd5e1 !important;
+  text-align: center !important;
+}
+
+/* Three compact images per row on mobile */
+@media screen and (max-width: 599px) {
+
+  body.bm-marketplace-route
+  .bm-marketplace-product-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 4px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  body.bm-marketplace-route
+  .bm-marketplace-product-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 4px !important;
+    overflow: hidden !important;
+  }
+
+  body.bm-marketplace-route
+  .bm-marketplace-image-wrapper {
+    height: 38px !important;
+    min-height: 38px !important;
+    max-height: 38px !important;
+  }
+
+  body.bm-marketplace-route
+  .bm-marketplace-product-card
+  .bm-marketplace-zoom-image {
+    display: block !important;
+    width: 100% !important;
+    height: 38px !important;
+    min-height: 38px !important;
+    max-height: 38px !important;
+    margin: 0 !important;
+    padding: 1px !important;
+    object-fit: contain !important;
+    object-position: center !important;
+    background: #ffffff !important;
+  }
+
+  body.bm-marketplace-route
+  .bm-marketplace-magnifier {
+    top: 1px !important;
+    right: 1px !important;
+    width: 17px !important;
+    height: 17px !important;
+    min-width: 17px !important;
+    min-height: 17px !important;
+    font-size: 9px !important;
+  }
+
+  .bm-marketplace-viewer-overlay {
+    padding: 6px !important;
+  }
+
+  .bm-marketplace-viewer-panel {
+    width: 100% !important;
+    height: 94vh !important;
+    padding: 8px !important;
+  }
+
+  .bm-marketplace-viewer-image {
+    max-width: 94% !important;
+    max-height: 74vh !important;
+  }
+}
+
+@media screen and (max-width: 340px) {
+
+  body.bm-marketplace-route
+  .bm-marketplace-image-wrapper,
+  body.bm-marketplace-route
+  .bm-marketplace-product-card
+  .bm-marketplace-zoom-image {
+    height: 34px !important;
+    min-height: 34px !important;
+    max-height: 34px !important;
+  }
+}
+
+/* BUILDMITRA MARKETPLACE ZOOM END */
+
+/* BUILDMITRA MARKETPLACE PRICE HIGHLIGHT START */
+
+@media screen and (max-width: 599px) {
+
+  body.bm-marketplace-route
+  .bm-compact-price {
+    display: block !important;
+    width: 100% !important;
+    margin: 2px 0 !important;
+    padding: 2px 1px !important;
+    overflow: hidden !important;
+    color: #0f7a42 !important;
+    background: #eefaf3 !important;
+    border-radius: 4px !important;
+    font-size: 9.5px !important;
+    font-weight: 800 !important;
+    line-height: 1.1 !important;
+    text-align: center !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  body.bm-marketplace-route
+  .bm-compact-item-name {
+    font-size: 7.5px !important;
+    font-weight: 700 !important;
+  }
+
+  body.bm-marketplace-route
+  .bm-compact-supplier {
+    font-size: 6.8px !important;
+    font-weight: 600 !important;
+  }
+
+  body.bm-marketplace-route
+  .bm-compact-mobile {
+    font-size: 6.8px !important;
+    font-weight: 700 !important;
+  }
+}
+
+@media screen and (max-width: 340px) {
+
+  body.bm-marketplace-route
+  .bm-compact-price {
+    font-size: 8.5px !important;
+    padding: 1px !important;
+  }
+}
+
+/* BUILDMITRA MARKETPLACE PRICE HIGHLIGHT END */

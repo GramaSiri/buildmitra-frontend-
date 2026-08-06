@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import BuildMitraLogo from "../components/branding/BuildMitraLogo";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE ||
@@ -215,11 +214,10 @@ export default function LoginPage() {
 
   return (
     <main style={styles.page}>
-        <section style={styles.card}>
-          <div style={{ display: "flex", justifyContent: "center", marginBottom: "12px" }}>
-            <BuildMitraLogo width={64} height={64} showText />
-          </div>
-          <p style={styles.subtitle}>Build Smarter. Save Bigger.</p>
+      <section style={styles.card}>
+        <div style={styles.logoIcon}>🏗️</div>
+        <h1 style={styles.logo}>BuildMitra</h1>
+        <p style={styles.subtitle}>Build Smarter. Save Bigger.</p>
 
         <div style={styles.tabs}>
           <button

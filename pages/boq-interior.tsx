@@ -2,7 +2,6 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import * as XLSX from 'xlsx';
 import { usePaymentBarrier } from '../hooks/usePaymentBarrier';
-import { downloadBuildMitraPDF } from '../utils/pdfExport';
 import { getMasterRate, syncApprovedRatesFromBackend } from '../utils/masterRates';
 import MarketRateTrend from '../components/ui/MarketRateTrend';
 
@@ -272,24 +271,6 @@ export default function InteriorBOQPage() {
     };
   }, [items, finishProfile, baseRates, profileMultiplier]);
 
-  // Download PDF
-  const handleDownloadPDF = () => {
-    checkAndRun('boq_export', 'boq-interior', () => {
-      downloadBuildMitraPDF({
-        documentTitle: `BuildMitra Interior BOQ Estimate (${finishProfile} Profile)`,
-        items: boqResults.rows.map((row: any, idx: number) => ({
-          sno: idx + 1,
-          description: row.desc,
-          quantity: row.qty,
-          unit: row.uom,
-          rate: row.rate,
-          amount: row.amount
-        })),
-        grandTotal: boqResults.grandTotal
-      });
-    });
-  };
-
   // Export Excel
   const handleExportExcel = () => {
     checkAndRun('boq_export', 'boq-interior', () => {
@@ -521,9 +502,8 @@ export default function InteriorBOQPage() {
 
           {/* Action Buttons */}
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}>
-            <button style={{ backgroundColor: '#0284c7', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' }} onClick={handleDownloadPDF}>📄 Download in PDF</button>
-            <button style={styles.btnSecondary} onClick={handleExportExcel}>📊 Export in Excel</button>
-            <button style={styles.btnSuccess} onClick={handleShareWhatsApp}>📲 Share on WhatsApp</button>
+            <button style={styles.btnSecondary} onClick={handleExportExcel}>📊 Export Excel</button>
+            <button style={styles.btnSuccess} onClick={handleShareWhatsApp}>💬 WhatsApp Share</button>
             <button style={{ backgroundColor: '#0284c7', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' }} onClick={() => alert('🛒 Interior BOQ Package sent to Vendor Marketplace RFQ!')}>🛒 Request Marketplace RFQ</button>
             <button style={{ backgroundColor: '#0f766e', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' }} onClick={() => alert('📈 Applied Bengaluru Live Mandi Wholesale Rates to Interior BOQ!')}>📈 Sync Live Market Rates</button>
             <button style={{ backgroundColor: '#475569', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' }} onClick={() => alert('💾 Saved Interior BOQ Revision 1.0 to Active Project!')}>💾 Save BOQ Revision</button>

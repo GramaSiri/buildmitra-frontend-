@@ -1,0 +1,253 @@
+import React, { useEffect, useMemo, useState } from "react";
+import Head from "next/head";
+import Sidebar from "../components/Sidebar";
+
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL ||
+  process.env.NEXT_PUBLIC_API_BASE ||
+  "http://localhost:5000";
+
+export default function LabourNet() {
+  const [labours, setLabours] = useState<any[]>([]);
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    loadLabours();
+  }, []);
+
+  async function loadLabours() {
+    try {
+      setLoading(true);
+      setError("");
+
+      const response = await fetch(`${API_BASE}/api/labour-net`);
+
+      if (!response.ok) {
+        throw new Error(`Labour API failed: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      const rows = Array.isArray(result)
+        ? result
+        : result.labours || result.data || result.items || [];
+
+      setLabours(rows);
+    } catch (err: any) {
+      setError(
+        err?.message ||
+          "Unable to load labour records from the existing Labour database."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const filteredLabours = useMemo(() => {
+    const value = search.trim().toLowerCase();
+
+    if (!value) return labours;
+
+    return labours.filter((labour) =>
+      [
+        labour.name,
+        labour.labourName,
+        labour.workerName,
+        labour.skill,
+        labour.category,
+        labour.trade,
+        labour.city,
+        labour.location,
+        labour.area,
+        labour.pincode,
+        labour.phone,
+        labour.mobile,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(value)
+    );
+  }, [labours, search]);
+
+  return (
+    <>
+      <Head>
+        <title>Labour Net | BuildMitra</title>
+      </Head>
+
+      <div style={{ display: "flex", minHeight: "100vh", background: "#f5f7fb" }}>
+        <Sidebar />
+
+        <main style={{ flex: 1, padding: "24px", minWidth: 0 }}>
+          <div
+            style={{
+              background: "#ffffff",
+              borderRadius: "16px",
+              padding: "24px",
+              boxShadow: "0 4px 18px rgba(0,0,0,0.07)",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: "16px",
+                flexWrap: "wrap",
+                marginBottom: "22px",
+              }}
+            >
+              <div>
+                <h1 style={{ margin: 0, fontSize: "28px" }}>👷 Labour Net</h1>
+                <p style={{ margin: "6px 0 0", color: "#666" }}>
+                  Approved labour records from the existing BuildMitra Labour database
+                </p>
+              </div>
+
+              <button
+                onClick={loadLabours}
+                style={{
+                  padding: "10px 18px",
+                  border: 0,
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  background: "#1565c0",
+                  color: "#fff",
+                  fontWeight: 600,
+                }}
+              >
+                Refresh
+              </button>
+            </div>
+
+            <input
+              type="text"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search labour, skill, trade, location or PIN code"
+              style={{
+                width: "100%",
+                maxWidth: "620px",
+                padding: "12px 14px",
+                marginBottom: "22px",
+                border: "1px solid #d7dce5",
+                borderRadius: "9px",
+                fontSize: "15px",
+              }}
+            />
+
+            {loading && <p>Loading labour records...</p>}
+
+            {!loading && error && (
+              <div
+                style={{
+                  padding: "16px",
+                  borderRadius: "10px",
+                  background: "#fff3f3",
+                  color: "#b42318",
+                }}
+              >
+                {error}
+              </div>
+            )}
+
+            {!loading && !error && filteredLabours.length === 0 && (
+              <p>No approved labour records found.</p>
+            )}
+
+            {!loading && !error && filteredLabours.length > 0 && (
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(270px, 1fr))",
+                  gap: "16px",
+                }}
+              >
+                {filteredLabours.map((labour, index) => {
+                  const name =
+                    labour.name ||
+                    labour.labourName ||
+                    labour.workerName ||
+                    "Labour";
+
+                  const phone =
+                    labour.phone ||
+                    labour.mobile ||
+                    labour.mobileNumber ||
+                    "";
+
+                  const skill =
+                    labour.skill ||
+                    labour.category ||
+                    labour.trade ||
+                    labour.labourType ||
+                    "General Labour";
+
+                  const location =
+                    labour.location ||
+                    labour.city ||
+                    labour.area ||
+                    labour.pincode ||
+                    "Location not provided";
+
+                  const rate =
+                    labour.rate ||
+                    labour.dailyRate ||
+                    labour.wage ||
+                    labour.expectedRate;
+
+                  return (
+                    <article
+                      key={labour._id || labour.labourCode || index}
+                      style={{
+                        padding: "18px",
+                        background: "#fff",
+                        border: "1px solid #e3e7ee",
+                        borderRadius: "12px",
+                      }}
+                    >
+                      <h3 style={{ margin: "0 0 8px" }}>{name}</h3>
+                      <p style={{ margin: "5px 0" }}>
+                        <strong>Skill:</strong> {skill}
+                      </p>
+                      <p style={{ margin: "5px 0" }}>
+                        <strong>Location:</strong> {location}
+                      </p>
+
+                      {rate && (
+                        <p style={{ margin: "5px 0" }}>
+                          <strong>Rate:</strong> ₹{rate}
+                        </p>
+                      )}
+
+                      {phone && (
+                        <a
+                          href={`tel:${phone}`}
+                          style={{
+                            display: "inline-block",
+                            marginTop: "12px",
+                            padding: "9px 14px",
+                            borderRadius: "8px",
+                            background: "#188038",
+                            color: "#fff",
+                            textDecoration: "none",
+                            fontWeight: 600,
+                          }}
+                        >
+                          Contact
+                        </a>
+                      )}
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </main>
+      </div>
+    </>
+  );
+}
