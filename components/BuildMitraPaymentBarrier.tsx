@@ -360,17 +360,32 @@ export default function BuildMitraPaymentBarrier({
               ×
             </button>
 
-            <h2>💳 BuildMitra Subscription Required</h2>
+            <div className="bm-payment-header">
+              {/* TOP HEADER / LOGO POSITION HAS FIX QR CODE */}
+              <div className="bm-header-qr-box">
+                <img
+                  src="/images/buildmitra-payment-qr.jpg"
+                  onError={(e) => { (e.target as HTMLImageElement).src = "/qr-code.jpg"; }}
+                  alt="BuildMitra PhonePe UPI payment QR"
+                  className="bm-header-qr"
+                />
+              </div>
+              <h2>💳 BuildMitra Subscription Required</h2>
+            </div>
 
             <h3>🔥 Subscribe BuildMitra & Save Lakhs!</h3>
 
             <p>Scan PhonePe UPI QR Code to Pay</p>
 
-            <img
-              src="/images/buildmitra-payment-qr.jpg"
-              alt="BuildMitra PhonePe UPI payment QR"
-              className="bm-payment-qr"
-            />
+            {/* MAIN SCAN BOX HAS FIX BUILDMITRA LOGO */}
+            <div className="bm-scan-logo-box">
+              <img
+                src="/logo.png"
+                onError={(e) => { (e.target as HTMLImageElement).src = "/images/buildmitra-official-logo.jpg"; }}
+                alt="BuildMitra Logo"
+                className="bm-scan-logo"
+              />
+            </div>
 
             <div className="bm-upi-details">
               <strong>UPI ID: 9731888377@ybl</strong>
@@ -422,6 +437,7 @@ export default function BuildMitraPaymentBarrier({
               justify-content: center;
               padding: 16px;
               background: rgba(8, 20, 38, 0.78);
+              backdrop-filter: blur(4px);
             }
 
             .bm-payment-modal {
@@ -434,6 +450,7 @@ export default function BuildMitraPaymentBarrier({
               background: #ffffff;
               box-shadow: 0 24px 70px rgba(0, 0, 0, 0.32);
               text-align: center;
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             }
 
             .bm-payment-close {
@@ -443,54 +460,101 @@ export default function BuildMitraPaymentBarrier({
               border: 0;
               background: transparent;
               font-size: 29px;
+              color: white;
               cursor: pointer;
+              z-index: 10;
+            }
+
+            .bm-payment-header {
+              background: #800020;
+              border-radius: 12px 12px 0 0;
+              margin: -24px -24px 16px -24px;
+              padding: 16px 12px;
+              color: white;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              gap: 8px;
+            }
+
+            .bm-header-qr-box {
+              background: white;
+              padding: 4px;
+              border-radius: 8px;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            }
+
+            .bm-header-qr {
+              display: block;
+              height: 65px;
+              width: auto;
+              object-fit: contain;
             }
 
             h2 {
-              margin: 3px 25px 8px;
-              color: #17365d;
-              font-size: 23px;
+              margin: 0;
+              color: #ffffff;
+              font-size: 17px;
+              font-weight: 800;
             }
 
             h3 {
               margin: 0 0 9px;
-              color: #d45814;
+              color: #800020;
               font-size: 17px;
+              font-weight: 800;
             }
 
             p {
               margin: 6px 0;
               color: #56677d;
+              font-weight: 600;
             }
 
-            .bm-payment-qr {
+            .bm-scan-logo-box {
+              border: 2px dashed #800020;
+              border-radius: 12px;
+              padding: 12px;
+              background: #fffef9;
+              margin: 10px 0;
+              display: flex;
+              justify-content: center;
+            }
+
+            .bm-scan-logo {
               display: block;
-              width: 190px;
-              height: 190px;
-              margin: 10px auto;
-              padding: 5px;
-              border: 1px solid #d8e0e9;
-              border-radius: 10px;
-              background: white;
+              width: 150px;
+              height: auto;
               object-fit: contain;
+              background: white;
+              padding: 6px 10px;
+              border-radius: 8px;
+              border: 1px solid #e2e8f0;
             }
 
             .bm-upi-details {
               display: flex;
               flex-direction: column;
               gap: 3px;
-              color: #17365d;
+              color: #800020;
+              font-weight: 700;
             }
 
             .bm-message {
               margin: 12px 0;
               font-weight: 600;
+              font-size: 11px;
+              color: #166534;
+              background: #f0fdf4;
+              border: 1px solid #bbf7d0;
+              padding: 8px;
+              border-radius: 8px;
             }
 
             .bm-plan-grid {
               display: grid;
-              grid-template-columns: 1fr 1fr;
-              gap: 8px;
+              grid-template-columns: repeat(4, 1fr);
+              gap: 6px;
               margin: 14px 0;
             }
 
@@ -498,19 +562,22 @@ export default function BuildMitraPaymentBarrier({
               display: flex;
               flex-direction: column;
               gap: 3px;
-              padding: 10px;
+              padding: 8px 2px;
               border: 1px solid #dce4ed;
               border-radius: 9px;
               background: #f7f9fc;
+              font-size: 11px;
             }
 
             .bm-plan-grid strong {
               color: #17365d;
+              font-size: 11px;
             }
 
             .bm-plan-grid span {
-              color: #e66a18;
-              font-weight: 700;
+              color: #800020;
+              font-weight: 800;
+              font-size: 11px;
             }
 
             .bm-continue,
@@ -532,11 +599,12 @@ export default function BuildMitraPaymentBarrier({
 
             .bm-plans-button {
               margin-bottom: 9px;
-              background: #17365d;
+              background: #800020;
             }
 
             small {
               color: #718096;
+              font-size: 10px;
             }
           `}</style>
         </div>

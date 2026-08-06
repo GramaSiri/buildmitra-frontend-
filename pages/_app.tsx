@@ -1,12 +1,14 @@
-import MarketplaceMobileGridFix from "../components/MarketplaceMobileGridFix";
+import React from "react";
 import BuildMitraPaymentBarrier from "../components/BuildMitraPaymentBarrier";
+import WaterproofingSidebarLink from "../components/WaterproofingSidebarLink";
+import MarketplaceMobileGridFix from "../components/MarketplaceMobileGridFix";
+import { PaymentBarrierProvider } from "../hooks/usePaymentBarrier";
 import "../styles/globals.css";
 import Sidebar from "../components/Sidebar";
 import { useRouter } from "next/router";
 import ClientErrorBoundary from "../components/ClientErrorBoundary";
-import { PaymentBarrierProvider } from "../hooks/usePaymentBarrier";
 
-export default function App({ Component, pageProps }) {
+export default function App({ Component, pageProps }: any) {
   const router = useRouter();
 
   const noSidebarPages = ["/login", "/", "/register", "/forgot-password"];
@@ -15,23 +17,21 @@ export default function App({ Component, pageProps }) {
 
   return (
     <ClientErrorBoundary>
-      {isQuickQuote ? (
-        <BuildMitraPaymentBarrier><MarketplaceMobileGridFix /><Component {...pageProps} /></BuildMitraPaymentBarrier>
-      ) : (
       <PaymentBarrierProvider>
-        {showSidebar ? (
-          <Sidebar currentPath={router.pathname}>
-            <BuildMitraPaymentBarrier><MarketplaceMobileGridFix /><Component {...pageProps} /></BuildMitraPaymentBarrier>
-          </Sidebar>
-        ) : (
-          <BuildMitraPaymentBarrier><MarketplaceMobileGridFix /><Component {...pageProps} /></BuildMitraPaymentBarrier>
-        )}
+        <MarketplaceMobileGridFix />
+        <WaterproofingSidebarLink />
+        <BuildMitraPaymentBarrier>
+          {isQuickQuote ? (
+            <Component {...pageProps} />
+          ) : showSidebar ? (
+            <Sidebar currentPath={router.pathname}>
+              <Component {...pageProps} />
+            </Sidebar>
+          ) : (
+            <Component {...pageProps} />
+          )}
+        </BuildMitraPaymentBarrier>
       </PaymentBarrierProvider>
-      )}
     </ClientErrorBoundary>
   );
 }
-
-
-
-

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
-import { clearBuildMitraSession, getBuildMitraUser } from "../utils/session";
-import BuildMitraLogo from "./branding/BuildMitraLogo";
+import { clearBuildMitraSession } from "../utils/session";
 
 const styles = {
   sidebar: {
@@ -196,7 +195,7 @@ const styles = {
   }
 };
 
-export default function Sidebar({ children, currentPath }: { children?: any; currentPath?: any }) {
+export default function Sidebar({ children, currentPath }) {
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const [hoveredItem, setHoveredItem] = useState(null);
@@ -231,7 +230,6 @@ export default function Sidebar({ children, currentPath }: { children?: any; cur
   if (role === "buyer") { dashboardName = "Buyer Dashboard"; dashboardIcon = "👤"; }
   else if (role === "supplier") { dashboardName = "Supplier Dashboard"; dashboardIcon = "📦"; }
   else if (role === "contractor") { dashboardName = "Contractor Dashboard"; dashboardIcon = "👷"; }
-  else if (role === "realestate") { dashboardName = "Real Estate Dashboard";dashboardIcon = "🏢"; }
   else if (role === "admin") { dashboardName = "Admin Dashboard"; dashboardIcon = "👑"; }
 
   // ---------------- CALCULATORS ----------------
@@ -258,9 +256,7 @@ export default function Sidebar({ children, currentPath }: { children?: any; cur
 
   // ---------------- BOQ ----------------
   const boqTabs = [
-    { name: "Waterproofing BOQ", path: "/boq-waterproofing", icon: "💧" },
     { name: "Civil BOQ", path: "/boq-civil", icon: "📄" },
-    { name: "PEB Building BOQ", path: "/peb-building-boq", icon: "🏗️" },
     { name: "Interior BOQ", path: "/boq-interior", icon: "🪑" },
     { name: "Plumbing BOQ", path: "/boq-plumbing", icon: "🔧" },
     { name: "Electrical BOQ", path: "/boq-electrical", icon: "⚡" },
@@ -272,13 +268,10 @@ export default function Sidebar({ children, currentPath }: { children?: any; cur
   const otherTabs = [
     { name: "Marketplace", icon: "🛒", path: "/marketplace" },    
     { name: "DRG", icon: "📐", path: "/drg" },
-    { name: "Pre Floor Plan DRG", icon: "🏠", path: "/pre-floor-plan-drg" },
     { name: "Layout Plans", icon: "🗺️", path: "/layout-plans" },
     { name: "Learn & Earn", icon: "📚", path: "/learn-earn" },
     { name: "Real Estate Hub", icon: "🏘️", path: "/realestate-hub" },
-    { name: "Pricing", icon: "💰", path: "/pricing" },
-    { name: "Live Rates", icon: "📈", path: "/live-rates" },
-    { name: "Reports Hub", icon: "📑", path: "/reports" }
+    { name: "Pricing", icon: "💰", path: "/pricing" }
   ];
 
   useEffect(() => {
@@ -307,17 +300,17 @@ const [uniqueCode, setUniqueCode] = useState("");
 useEffect(() => {
   setMounted(true);
 
-  const storedName = sessionStorage.getItem("userName");
-  const storedRole = sessionStorage.getItem("userRole");
-  const storedCode = sessionStorage.getItem("uniqueCode");
+  const storedName = localStorage.getItem("userName");
+  const storedRole = localStorage.getItem("userRole");
+  const storedCode = localStorage.getItem("uniqueCode");
   let sessionUser: any = null;
   try {
-    sessionUser = getBuildMitraUser();
+    sessionUser = JSON.parse(localStorage.getItem("loggedInUser") || "null");
   } catch {}
 
   if (storedName || sessionUser?.name) setUserName(storedName || sessionUser.name);
-  if (storedRole || sessionUser?.businessRole || sessionUser?.role) setUserRole(storedRole || sessionUser.businessRole || sessionUser.role);
-  if (storedCode || sessionUser?.userCode || sessionUser?.uniqueCode) setUniqueCode(storedCode || sessionUser.userCode || sessionUser.uniqueCode);
+  if (storedRole || sessionUser?.role) setUserRole(storedRole || sessionUser.role);
+  if (storedCode || sessionUser?.uniqueCode) setUniqueCode(storedCode || sessionUser.uniqueCode);
 }, []);
 
 if (!mounted) {
@@ -329,16 +322,11 @@ const mobileDashboardPath =
   userRole?.toLowerCase() === "supplier" ? "/supplier-dashboard" :
   userRole?.toLowerCase() === "admin" ? "/admin-dashboard" :
   userRole?.toLowerCase() === "realestate" ? "/realestate-dashboard" :
-  ["machinehire", "machinery", "equipment"].includes(userRole?.toLowerCase()) ? "/machinehire-dashboard" :
-  ["laboursupply", "labour"].includes(userRole?.toLowerCase()) ? "/laboursupply-dashboard" :
+  userRole?.toLowerCase() === "machinery" ? "/machinehire-dashboard" :
+  userRole?.toLowerCase() === "labour" ? "/laboursupply-dashboard" :
   "/contractor-dashboard";
 
 const mobileTabs = [
-  {
-    name: "Floor Plan",
-    icon: "🏠",
-    path: "/pre-floor-plan-drg",
-  },
   {
     name: dashboardName,
     icon: dashboardIcon,
@@ -377,7 +365,7 @@ if (isMobile) {
         boxShadow: "0 2px 10px rgba(0,0,0,0.18)"
       }}>
         <div>
-          <div data-buildmitra-brand><BuildMitraLogo variant="sidebar" /></div>
+          <div style={{ fontSize: 20, fontWeight: 900 }}>🏗️ BuildMitra</div>
           <div style={{ fontSize: 11, opacity: 0.8 }}>
             Build Smarter. Save Bigger.
           </div>
@@ -491,8 +479,9 @@ if (isMobile) {
 
         {/* LOGO */}
         {!collapsed && (
-          <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", borderBottom: "1px solid #2a2a4a" }}>
-            <BuildMitraLogo width={36} height={36} showText />
+          <div style={styles.logo}>
+            <span style={styles.logoIcon}>🏗️</span>
+            <span>BuildMitra</span>
           </div>
         )}
 
@@ -544,9 +533,9 @@ if (isMobile) {
         go("/admin-dashboard");
       } else if (userRole?.toLowerCase() === "realestate") {
         go("/realestate-dashboard");
-      } else if (["machinehire", "machinery", "equipment"].includes(userRole?.toLowerCase())) {
+      } else if (userRole?.toLowerCase() === "machinery") {
         go("/machinehire-dashboard");
-      } else if (["laboursupply", "labour"].includes(userRole?.toLowerCase())) {
+      } else if (userRole?.toLowerCase() === "labour") {
         go("/laboursupply-dashboard");
       } else {
         go("/contractor-dashboard");
@@ -601,7 +590,7 @@ if (isMobile) {
           onMouseLeave={() => setHoveredMain(null)}
           onClick={() => toggle("boq")}
         >
-          <span>📋 BOQ MODULES (7)</span>
+          <span>📋 BOQ MODULES (6)</span>
           <span>{open.boq ? "▼" : "▶"}</span>
         </div>
 
@@ -649,13 +638,6 @@ if (isMobile) {
     </div>
   );
 }
-
-
-
-
-
-
-
 
 
 

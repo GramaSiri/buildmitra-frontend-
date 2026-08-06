@@ -235,6 +235,11 @@ export default function Sidebar({ children, currentPath }) {
   // ---------------- CALCULATORS ----------------
   const calculatorTabs = [
     { name: "Concrete Calculator", path: "/concrete-calculator", icon: "🧱" },
+    {
+      name: "Waterproofing Calculator",
+      path: "/waterproofing-calculator",
+      icon: "💧"
+    },
     { name: "Steel Calculator", path: "/steel-calculator", icon: "🔩" },
     { name: "Tile Calculator", path: "/tile-calculator", icon: "📐" },
     { name: "Paint Calculator", path: "/paint-calculator", icon: "🎨" },
