@@ -1,25 +1,39 @@
 import React, { useEffect } from "react";
 import { useRouter } from "next/router";
 
-const PUBLIC_BACKEND =
-  process.env.NEXT_PUBLIC_API_URL &&
-  !process.env.NEXT_PUBLIC_API_URL.includes("localhost")
-    ? process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, "")
-    : "https://buildmitra-backend-beta.onrender.com";
+const BETA_BACKEND =
+  "https://buildmitra-backend-beta.onrender.com";
 
-function getImageBackend(): string {
+function getRuntimeBackend(): string {
   if (typeof window === "undefined") {
-    return PUBLIC_BACKEND;
+    return (
+      process.env.NEXT_PUBLIC_API_URL ||
+      process.env.NEXT_PUBLIC_API_BASE ||
+      BETA_BACKEND
+    );
   }
 
-  const host = window.location.hostname;
-  const local =
-    host === "localhost" ||
-    host === "127.0.0.1";
+  const configured =
+    process.env.NEXT_PUBLIC_API_URL ||
+    process.env.NEXT_PUBLIC_API_BASE ||
+    "";
 
-  return local
+  const runningLocally =
+    window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1" ||
+    /^192\.168\./.test(window.location.hostname);
+
+  if (
+    configured &&
+    !configured.includes("localhost") &&
+    !configured.includes("127.0.0.1")
+  ) {
+    return configured.replace(/\/+$/, "");
+  }
+
+  return runningLocally
     ? "http://localhost:5000"
-    : PUBLIC_BACKEND;
+    : BETA_BACKEND;
 }
 
 function resolveCompactImageSrc(value: unknown): string {
@@ -30,10 +44,6 @@ function resolveCompactImageSrc(value: unknown): string {
     .replace(/\\/g, "/");
 
   if (!raw) return fallback;
-
-  // Laptop filesystem paths can never work on mobile/Vercel.
-  raw = raw.replace(/^file:\/\/\/?/i, "");
-  raw = raw.replace(/^[A-Za-z]:\/.*?\/uploads\//i, "uploads/");
 
   if (
     raw.startsWith("data:") ||
@@ -46,21 +56,23 @@ function resolveCompactImageSrc(value: unknown): string {
     return `https:${raw}`;
   }
 
-  const backend = getImageBackend();
-
-  // Convert all localhost image URLs to the public backend on deployment.
-  if (/^https?:\/\/(?:localhost|127\.0\.0\.1):5000/i.test(raw)) {
-    return raw.replace(
-      /^https?:\/\/(?:localhost|127\.0\.0\.1):5000/i,
-      backend
-    );
-  }
-
   if (/^https?:\/\//i.test(raw)) {
+    if (
+      typeof window !== "undefined" &&
+      !["localhost", "127.0.0.1"].includes(
+        window.location.hostname
+      ) &&
+      /https?:\/\/(?:localhost|127\.0\.0\.1):5000/i.test(raw)
+    ) {
+      return raw.replace(
+        /https?:\/\/(?:localhost|127\.0\.0\.1):5000/i,
+        getRuntimeBackend()
+      );
+    }
+
     return raw;
   }
 
-  // Frontend public assets.
   if (
     raw.startsWith("/images/") ||
     raw.startsWith("images/")
@@ -68,7 +80,14 @@ function resolveCompactImageSrc(value: unknown): string {
     return raw.startsWith("/") ? raw : `/${raw}`;
   }
 
-  raw = raw.replace(/^\.?\//, "");
+  const backend = getRuntimeBackend();
+
+  if (
+    raw.startsWith("/uploads/") ||
+    raw.startsWith("/api/")
+  ) {
+    return `${backend}${raw}`;
+  }
 
   if (
     raw.startsWith("uploads/") ||
@@ -77,9 +96,9 @@ function resolveCompactImageSrc(value: unknown): string {
     return `${backend}/${raw}`;
   }
 
-  return `${backend}/uploads/material-images/${encodeURIComponent(
-    raw.split("/").pop() || raw
-  )}`;
+  raw = raw.replace(/^\.?\//, "");
+
+  return `${backend}/uploads/material-images/${raw}`;
 }
 
 function cleanText(value: unknown): string {
@@ -427,6 +446,5 @@ export default function MarketplaceCompactMobileCards() {
 
   return null;
 }
-
 
 
