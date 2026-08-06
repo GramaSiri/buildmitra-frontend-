@@ -334,7 +334,7 @@ export default function MarketplaceCompactMobileCards() {
                 class="bm-marketplace-compact-magnifier"
                 data-marketplace-magnifier="true"
                 title="Enlarge image"
-              ></span>
+              >⌕</span>
             </div>
 
             <div class="bm-compact-item-name"></div>
@@ -446,5 +446,4 @@ export default function MarketplaceCompactMobileCards() {
 
   return null;
 }
-
 

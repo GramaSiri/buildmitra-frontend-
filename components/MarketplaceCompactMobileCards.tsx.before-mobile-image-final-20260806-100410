@@ -1,106 +1,6 @@
 import React, { useEffect } from "react";
 import { useRouter } from "next/router";
 
-const BETA_BACKEND =
-  "https://buildmitra-backend-beta.onrender.com";
-
-function getRuntimeBackend(): string {
-  if (typeof window === "undefined") {
-    return (
-      process.env.NEXT_PUBLIC_API_URL ||
-      process.env.NEXT_PUBLIC_API_BASE ||
-      BETA_BACKEND
-    );
-  }
-
-  const configured =
-    process.env.NEXT_PUBLIC_API_URL ||
-    process.env.NEXT_PUBLIC_API_BASE ||
-    "";
-
-  const runningLocally =
-    window.location.hostname === "localhost" ||
-    window.location.hostname === "127.0.0.1" ||
-    /^192\.168\./.test(window.location.hostname);
-
-  if (
-    configured &&
-    !configured.includes("localhost") &&
-    !configured.includes("127.0.0.1")
-  ) {
-    return configured.replace(/\/+$/, "");
-  }
-
-  return runningLocally
-    ? "http://localhost:5000"
-    : BETA_BACKEND;
-}
-
-function resolveCompactImageSrc(value: unknown): string {
-  const fallback = "/images/marketplace-fallback.svg";
-
-  let raw = String(value || "")
-    .trim()
-    .replace(/\\/g, "/");
-
-  if (!raw) return fallback;
-
-  if (
-    raw.startsWith("data:") ||
-    raw.startsWith("blob:")
-  ) {
-    return raw;
-  }
-
-  if (raw.startsWith("//")) {
-    return `https:${raw}`;
-  }
-
-  if (/^https?:\/\//i.test(raw)) {
-    if (
-      typeof window !== "undefined" &&
-      !["localhost", "127.0.0.1"].includes(
-        window.location.hostname
-      ) &&
-      /https?:\/\/(?:localhost|127\.0\.0\.1):5000/i.test(raw)
-    ) {
-      return raw.replace(
-        /https?:\/\/(?:localhost|127\.0\.0\.1):5000/i,
-        getRuntimeBackend()
-      );
-    }
-
-    return raw;
-  }
-
-  if (
-    raw.startsWith("/images/") ||
-    raw.startsWith("images/")
-  ) {
-    return raw.startsWith("/") ? raw : `/${raw}`;
-  }
-
-  const backend = getRuntimeBackend();
-
-  if (
-    raw.startsWith("/uploads/") ||
-    raw.startsWith("/api/")
-  ) {
-    return `${backend}${raw}`;
-  }
-
-  if (
-    raw.startsWith("uploads/") ||
-    raw.startsWith("api/")
-  ) {
-    return `${backend}/${raw}`;
-  }
-
-  raw = raw.replace(/^\.?\//, "");
-
-  return `${backend}/uploads/material-images/${raw}`;
-}
-
 function cleanText(value: unknown): string {
   return String(value || "")
     .replace(/verified\s+buildmitra\s+provider/gi, "")
@@ -291,13 +191,11 @@ export default function MarketplaceCompactMobileCards() {
         const supplierName = extractSupplier(fullText);
         const mobile = extractMobile(fullText);
 
-        const rawSource =
-          originalImage.getAttribute("src") ||
+        const source =
           originalImage.currentSrc ||
           originalImage.src ||
+          originalImage.getAttribute("src") ||
           "";
-
-        const source = resolveCompactImageSrc(rawSource);
 
         card.classList.add(
           "bm-marketplace-ultra-compact"
@@ -334,7 +232,7 @@ export default function MarketplaceCompactMobileCards() {
                 class="bm-marketplace-compact-magnifier"
                 data-marketplace-magnifier="true"
                 title="Enlarge image"
-              ></span>
+              >🔍</span>
             </div>
 
             <div class="bm-compact-item-name"></div>
@@ -379,19 +277,6 @@ export default function MarketplaceCompactMobileCards() {
         if (image && source) {
           image.src = source;
           image.alt = itemName;
-          image.loading = "eager";
-          image.decoding = "async";
-
-          image.onerror = () => {
-            if (
-              !image.src.includes(
-                "/images/marketplace-fallback.svg"
-              )
-            ) {
-              image.src =
-                "/images/marketplace-fallback.svg";
-            }
-          };
         }
 
         const itemElement = summary.querySelector(
@@ -446,5 +331,3 @@ export default function MarketplaceCompactMobileCards() {
 
   return null;
 }
-
-
