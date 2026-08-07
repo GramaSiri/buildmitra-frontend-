@@ -57,157 +57,6 @@ export default function MarketplaceMobileGridFix() {
 
     document.body.classList.add("bm-marketplace-route");
 
-    const applyMarketplaceEnhancement = () => {
-      const allElements = Array.from(
-        document.querySelectorAll<HTMLElement>(
-          "main div, #__next div"
-        )
-      );
-
-      let bestContainer: HTMLElement | null = null;
-      let bestScore = 0;
-
-      for (const element of allElements) {
-        const children = Array.from(
-          element.children
-        ) as HTMLElement[];
-
-        if (children.length < 2) continue;
-
-        const matchingChildren = children.filter((child) => {
-          const image = child.querySelector("img");
-          const text = String(
-            child.textContent || ""
-          ).toLowerCase();
-
-          const looksLikeProduct =
-            text.includes("send enquiry") ||
-            text.includes("add to cart") ||
-            text.includes("whatsapp") ||
-            text.includes("view details") ||
-            text.includes("price") ||
-            text.includes("₹");
-
-          return Boolean(image) && looksLikeProduct;
-        });
-
-        if (
-          matchingChildren.length >= 2 &&
-          matchingChildren.length > bestScore
-        ) {
-          bestContainer = element;
-          bestScore = matchingChildren.length;
-        }
-      }
-
-      document
-        .querySelectorAll<HTMLElement>(
-          ".bm-marketplace-product-grid"
-        )
-        .forEach((element) => {
-          if (element !== bestContainer) {
-            element.classList.remove(
-              "bm-marketplace-product-grid"
-            );
-
-            Array.from(element.children).forEach((child) => {
-              child.classList.remove(
-                "bm-marketplace-product-card"
-              );
-            });
-          }
-        });
-
-      if (!bestContainer) return;
-
-      bestContainer.classList.add(
-        "bm-marketplace-product-grid"
-      );
-
-      Array.from(bestContainer.children).forEach((child) => {
-        const card = child as HTMLElement;
-
-        card.classList.add(
-          "bm-marketplace-product-card"
-        );
-
-        const image = card.querySelector(
-          "img"
-        ) as HTMLImageElement | null;
-
-        if (!image) return;
-
-        image.classList.add(
-          "bm-marketplace-zoom-image"
-        );
-
-        image.setAttribute(
-          "data-marketplace-zoom-image",
-          "true"
-        );
-
-        image.setAttribute(
-          "role",
-          "button"
-        );
-
-        image.setAttribute(
-          "tabindex",
-          "0"
-        );
-
-        image.setAttribute(
-          "title",
-          "Tap to enlarge"
-        );
-
-        let wrapper = image.closest(
-          ".bm-marketplace-image-wrapper"
-        ) as HTMLElement | null;
-
-        if (!wrapper) {
-          wrapper = document.createElement("div");
-          wrapper.className =
-            "bm-marketplace-image-wrapper";
-
-          image.parentNode?.insertBefore(
-            wrapper,
-            image
-          );
-
-          wrapper.appendChild(image);
-        }
-
-        if (
-          !wrapper.querySelector(
-            ".bm-marketplace-magnifier"
-          )
-        ) {
-          const magnifier =
-            document.createElement("button");
-
-          magnifier.type = "button";
-          magnifier.className =
-            "bm-marketplace-magnifier";
-          magnifier.setAttribute(
-            "aria-label",
-            "Enlarge product image"
-          );
-          magnifier.setAttribute(
-            "title",
-            "Enlarge image"
-          );
-          magnifier.setAttribute(
-            "data-marketplace-magnifier",
-            "true"
-          );
-          magnifier.textContent = "🔍";
-
-          wrapper.appendChild(magnifier);
-        }
-      });
-    };
-
     const clickHandler = (event: MouseEvent) => {
       const target = event.target as HTMLElement | null;
 
@@ -222,32 +71,18 @@ export default function MarketplaceMobileGridFix() {
         return;
       }
 
-      const magnifier = target.closest(
-        "[data-marketplace-magnifier='true']"
-      );
-
-      if (magnifier) {
-        event.preventDefault();
-        event.stopPropagation();
-
-        const image = magnifier
-          .closest(".bm-marketplace-image-wrapper")
-          ?.querySelector(
-            "img"
-          ) as HTMLImageElement | null;
-
-        if (image) openViewer(image);
-        return;
-      }
-
+      // Any clicked image inside marketplace page opens zoom viewer
       const image = target.closest(
-        "[data-marketplace-zoom-image='true']"
+        "img"
       ) as HTMLImageElement | null;
 
-      if (image) {
-        event.preventDefault();
-        event.stopPropagation();
-        openViewer(image);
+      if (image && (image.closest(".bm-marketplace-product-card") || image.closest("[class*='card']") || document.body.classList.contains("bm-marketplace-route"))) {
+        const src = image.currentSrc || image.src || image.getAttribute("src");
+        if (src && !src.includes("logo") && !src.includes("icon")) {
+          event.preventDefault();
+          event.stopPropagation();
+          openViewer(image);
+        }
       }
     };
 
@@ -275,19 +110,6 @@ export default function MarketplaceMobileGridFix() {
       }
     };
 
-    applyMarketplaceEnhancement();
-
-    const observer = new MutationObserver(() => {
-      window.requestAnimationFrame(
-        applyMarketplaceEnhancement
-      );
-    });
-
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true
-    });
-
     document.addEventListener(
       "click",
       clickHandler,
@@ -300,14 +122,7 @@ export default function MarketplaceMobileGridFix() {
       true
     );
 
-    window.addEventListener(
-      "resize",
-      applyMarketplaceEnhancement
-    );
-
     return () => {
-      observer.disconnect();
-
       document.removeEventListener(
         "click",
         clickHandler,
@@ -318,11 +133,6 @@ export default function MarketplaceMobileGridFix() {
         "keydown",
         keyHandler,
         true
-      );
-
-      window.removeEventListener(
-        "resize",
-        applyMarketplaceEnhancement
       );
 
       document.body.classList.remove(

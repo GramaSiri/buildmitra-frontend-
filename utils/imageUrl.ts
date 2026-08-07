@@ -1,15 +1,20 @@
-const API_BASE = (
-  process.env.NEXT_PUBLIC_API_URL ||
-  process.env.NEXT_PUBLIC_API_BASE ||
-  "http://localhost:5000"
-).replace(/\/+$/, "");
+function getApiBase(): string {
+  const envUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE;
+  if (typeof window !== "undefined") {
+    const host = window.location.hostname;
+    if (host !== "localhost" && host !== "127.0.0.1") {
+      return (envUrl && !envUrl.includes("localhost") ? envUrl : "https://buildmitra-backend-beta.onrender.com").replace(/\/+$/, "");
+    }
+  }
+  return (envUrl || "http://localhost:5000").replace(/\/+$/, "");
+}
 
 export function normalizeImageUrl(
   url: string | null | undefined
 ): string | null {
   if (!url || typeof url !== "string") return null;
 
-  const trimmed = url.trim();
+  let trimmed = url.trim();
 
   if (
     !trimmed ||
@@ -18,6 +23,16 @@ export function normalizeImageUrl(
     trimmed === "undefined"
   ) {
     return null;
+  }
+
+  const apiBase = getApiBase();
+
+  // Convert localhost/127.0.0.1 references to actual API base when accessed externally
+  if (typeof window !== "undefined") {
+    const host = window.location.hostname;
+    if (host !== "localhost" && host !== "127.0.0.1") {
+      trimmed = trimmed.replace(/^https?:\/\/(?:localhost|127\.0\.0\.1):5000/i, apiBase);
+    }
   }
 
   if (
@@ -39,14 +54,14 @@ export function normalizeImageUrl(
       ? trimmed
       : `/${trimmed}`;
 
-    return `${API_BASE}${cleanPath}`;
+    return `${apiBase}${cleanPath}`;
   }
 
   if (trimmed.startsWith("/")) {
     return trimmed;
   }
 
-  return `${API_BASE}/${trimmed}`;
+  return `${apiBase}/${trimmed}`;
 }
 
 export function resolveListingImage(item: any): string | null {
@@ -102,3 +117,4 @@ export function resolveListingImage(item: any): string | null {
 
   return null;
 }
+

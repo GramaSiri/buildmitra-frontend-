@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import * as XLSX from 'xlsx';
 import { usePaymentBarrier } from '../hooks/usePaymentBarrier';
-import { getMasterRate, syncApprovedRatesFromBackend } from '../utils/masterRates';
+import { getMasterRate, getCombinedBOQRate, syncApprovedRatesFromBackend } from '../utils/masterRates';
 import MarketRateTrend from '../components/ui/MarketRateTrend';
 
 const styles: Record<string, React.CSSProperties> = {
@@ -219,9 +219,12 @@ export default function ElectricalBOQPage() {
     ];
 
     const processedItems = items.map(i => {
+      const combined = getCombinedBOQRate(i.code, i.matRate, i.labRate);
+      const matRate = combined.materialRate;
+      const labRate = combined.labourRate;
       const qtyVal = i.uom === "m" ? Number(i.qty || 0) : ceil(i.qty);
-      const amount = qtyVal * (i.matRate + i.labRate);
-      return { ...i, qty: qtyVal, amount };
+      const amount = qtyVal * (matRate + labRate);
+      return { ...i, matRate, labRate, qty: qtyVal, amount };
     });
 
     const materialTotal = processedItems.reduce((sum, i) => sum + (i.qty * i.matRate), 0);

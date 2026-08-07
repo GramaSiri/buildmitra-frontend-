@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import * as XLSX from 'xlsx';
 import { usePaymentBarrier } from '../hooks/usePaymentBarrier';
-import { getMasterRate, syncApprovedRatesFromBackend } from '../utils/masterRates';
+import { getMasterRate, getCombinedBOQRate, syncApprovedRatesFromBackend } from '../utils/masterRates';
 import MarketRateTrend from '../components/ui/MarketRateTrend';
 
 const styles: Record<string, React.CSSProperties> = {
@@ -130,8 +130,11 @@ export default function FalseCeilingBOQPage() {
     ];
 
     const processedItems = items.map(i => {
-      const amount = i.qty * (i.matRate + i.labRate);
-      return { ...i, amount };
+      const combined = getCombinedBOQRate(i.code, i.matRate, i.labRate);
+      const matRate = i.sr === 2 ? combined.materialRate * materialFactor : combined.materialRate;
+      const labRate = combined.labourRate;
+      const amount = i.qty * (matRate + labRate);
+      return { ...i, matRate, labRate, amount };
     });
 
     const materialTotal = processedItems.reduce((sum, i) => sum + (i.qty * i.matRate), 0);

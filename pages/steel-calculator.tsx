@@ -4,7 +4,7 @@ import { useRouter } from 'next/router';
 import { useRates } from '../contexts/RateContext';
 import { usePaymentBarrier } from '../hooks/usePaymentBarrier';
 import MarketRateTrend from '../components/ui/MarketRateTrend';
-import { getMasterRate } from "../utils/masterRates";
+import { getMasterRate, syncApprovedRatesFromBackend } from "../utils/masterRates";
 import { downloadBuildMitraPDF } from "../utils/pdfExport";
 
 type RCCMemberType = 'Slab' | 'Beam' | 'Lintel' | 'Column' | 'Footing' | 'RCC Wall';

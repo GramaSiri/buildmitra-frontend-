@@ -1,3 +1,4 @@
+import { syncApprovedRatesFromBackend } from "../utils/masterRates";
 import React, { useState } from 'react';
 import * as XLSX from 'xlsx';
 import { usePaymentBarrier } from '../hooks/usePaymentBarrier';
@@ -70,6 +71,7 @@ const archImages = {
 };
 
 export default function ArchPage() {
+  React.useEffect(() => { syncApprovedRatesFromBackend(); }, []);
   
   const { checkAndRun } = usePaymentBarrier();
 const router = useRouter();

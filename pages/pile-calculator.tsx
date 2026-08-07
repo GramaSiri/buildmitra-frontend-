@@ -1,3 +1,4 @@
+import { syncApprovedRatesFromBackend } from "../utils/masterRates";
 import React, { useState } from 'react';
 import * as XLSX from 'xlsx';
 import { usePaymentBarrier } from '../hooks/usePaymentBarrier';
@@ -46,6 +47,7 @@ const getWeightPerMeter = (dia) => {
 };
 
 export default function PileCalculator() {
+  React.useEffect(() => { syncApprovedRatesFromBackend(); }, []);
   
   const { checkAndRun } = usePaymentBarrier();
 const router = useRouter();

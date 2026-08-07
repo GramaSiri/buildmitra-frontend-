@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { syncApprovedRatesFromBackend } from "../utils/masterRates";
 
 let MobileNav: any = null;
 try {
@@ -160,6 +161,7 @@ export default function WaterproofingCalculator() {
   const [rateStatus, setRateStatus] = useState("Loading Admin Master rates...");
 
   useEffect(() => {
+    syncApprovedRatesFromBackend();
     const loadRates = async () => {
       try {
         const response = await fetch(`${API_BASE}/api/master/materials`);

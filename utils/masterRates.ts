@@ -6,6 +6,7 @@ export type MasterRateResult = {
   itemCode?: string;
   unit?: string;
   city?: string;
+  status?: string;
 };
 
 export function normalizeUnit(unit: string): string {
@@ -15,11 +16,12 @@ export function normalizeUnit(unit: string): string {
   if (['BAG', 'BAGS', 'BAG (50KG)'].includes(u)) return 'BAG';
   if (['CFT', 'CU.FT', 'CUFT', 'CUBIC FEET', 'CUBIC FOOT'].includes(u)) return 'CFT';
   if (['SQFT', 'SQ.FT', 'SFT', 'SQUARE FEET', 'SQ FT'].includes(u)) return 'SQFT';
+  if (['SQM', 'SQ.M', 'SQUARE METER', 'SQUARE METRE', 'M2', 'M²'].includes(u)) return 'SQM';
   if (['RFT', 'RUNNING FEET', 'RUNNING FOOT'].includes(u)) return 'RFT';
-  if (['NOS', 'NO', 'NUMBERS', 'NUMBER', 'PIECE', 'PIECES', 'NOS.', 'PKT', 'PACKET'].includes(u)) return 'NOS';
-  if (['LTR', 'LITRE', 'LITER', 'LITRES', 'LITERS'].includes(u)) return 'LTR';
+  if (['NOS', 'NO', 'NUMBERS', 'NUMBER', 'PIECE', 'PIECES', 'NOS.', 'PKT', 'PACKET', 'SET', 'SETS'].includes(u)) return 'NOS';
+  if (['LTR', 'LITRE', 'LITER', 'LITRES', 'LITERS', 'L'].includes(u)) return 'LTR';
   if (['M', 'METER', 'METRE', 'METERS'].includes(u)) return 'M';
-  if (['CUM', 'CU.M', 'CUBIC METER'].includes(u)) return 'CUM';
+  if (['CUM', 'CU.M', 'CUBIC METER', 'CUBIC METRE', 'M3', 'M³'].includes(u)) return 'CUM';
   if (['MT', 'TON', 'TONNE', 'METRIC TON'].includes(u)) return 'MT';
   return u;
 }
@@ -48,7 +50,7 @@ export const getMasterRate = (
   // Priority 1: Exact Master Item Code match
   let found = rows.find((row) => {
     const rowCode = String(row.code || row.masterItemCode || row.itemCode || "").trim().toLowerCase();
-    return rowCode && cleanKeywords.includes(rowCode) && Number(row.rate || row.currentRate || row.price || 0) > 0 && row.isActive !== false;
+    return rowCode && cleanKeywords.includes(rowCode) && Number(row.rate || row.currentRate || row.referenceRate || row.price || 0) > 0 && row.isActive !== false;
   });
 
   // Priority 2: Canonical Name or Alias search match
@@ -72,40 +74,78 @@ export const getMasterRate = (
         row.name
       ].filter(Boolean).join(" ").toLowerCase();
 
-      return cleanKeywords.some((k) => searchable.includes(k)) && Number(row.rate || row.currentRate || row.price || 0) > 0;
+      return cleanKeywords.some((k) => searchable.includes(k)) && Number(row.rate || row.currentRate || row.referenceRate || row.price || 0) > 0;
     });
   }
 
   if (!found) {
     return {
       rate: fallback,
-      found: false,
-      source: "fallback",
-      matchedName: "Rate Unavailable in Admin Master"
+      found: fallback > 0,
+      source: fallback > 0 ? "Benchmark Rate" : "Rate Pending Admin Update",
+      matchedName: "Rate Unavailable in Admin Master",
+      status: fallback > 0 ? "approved" : "Rate Pending Admin Update"
     };
   }
 
-  const rateValue = Number(found.rate || found.currentRate || found.price || fallback);
+  const rateValue = Number(found.rate || found.currentRate || found.referenceRate || found.price || fallback);
 
   return {
     rate: rateValue > 0 ? rateValue : fallback,
     found: rateValue > 0,
-    source: found.__store || "BuildMitra Admin Master Rate",
+    source: found.source || found.__store || "BuildMitra Admin Master Rate",
     matchedName: String(found.item || found.itemName || found.material || found.service || found.trade || found.name || ""),
     itemCode: String(found.code || found.masterItemCode || found.itemCode || ""),
     unit: normalizeUnit(found.unit),
-    city: found.city || "Bengaluru"
+    city: found.city || "Bengaluru",
+    status: rateValue > 0 ? "approved" : "Rate Pending Admin Update"
   };
 };
 
 export const rateStatusMessage = (rates: Record<string, MasterRateResult>) => {
   const missing = Object.entries(rates).filter(([, value]) => !value.found).map(([key]) => key);
   if (!missing.length) return "";
-  return `Rate Unavailable in Admin Master for: ${missing.join(", ")}.`;
+  return `Rate Pending Admin Update for: ${missing.join(", ")}.`;
+};
+
+export type CombinedRateResult = {
+  primaryCode: string;
+  linkedLabourCode: string;
+  materialRate: number;
+  labourRate: number;
+  totalUnitRate: number;
+  matFound: boolean;
+  labFound: boolean;
+};
+
+export const getCombinedBOQRate = (
+  primaryCode: string,
+  fallbackMat: number = 0,
+  fallbackLab: number = 0,
+  linkedLabourCode?: string
+): CombinedRateResult => {
+  const code = String(primaryCode || "").toUpperCase();
+  const labCode = (linkedLabourCode || `LAB-${code.replace(/^(MAT|SRV|SER|PLB|ELEC|FCL)-?/, "")}`).toUpperCase();
+
+  const matResult = getMasterRate([code], fallbackMat);
+  const labResult = getMasterRate([labCode], fallbackLab);
+
+  const materialRate = matResult.rate;
+  const labourRate = labResult.rate;
+
+  return {
+    primaryCode: code,
+    linkedLabourCode: labCode,
+    materialRate,
+    labourRate,
+    totalUnitRate: materialRate + labourRate,
+    matFound: matResult.found,
+    labFound: labResult.found
+  };
 };
 
 export const syncApprovedRatesFromBackend = async (
-  apiBase: string = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000"
+  apiBase: string = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000"
 ): Promise<{ success: boolean; count: number; error?: string }> => {
   if (typeof window === "undefined") return { success: false, count: 0, error: "Browser only" };
 
@@ -127,7 +167,7 @@ export const syncApprovedRatesFromBackend = async (
       const category = String(r.category || "").toLowerCase();
       const code = r.masterItemCode || r.itemCode || r.code || "";
       const itemName = r.itemName || r.item_name || r.item || r.name || "";
-      const currentRate = Number(r.currentRate || r.rate || r.price || 0);
+      const currentRate = Number(r.currentRate || r.referenceRate || r.rate || r.price || 0);
 
       if (!currentRate || currentRate <= 0) return;
 
@@ -173,3 +213,34 @@ export const syncApprovedRatesFromBackend = async (
     return { success: false, count: 0, error: err.message };
   }
 };
+
+export async function resolveModuleBulkRates(
+  items: Array<{ masterItemCode?: string; itemName: string; itemType: string; unit: string; category?: string }>,
+  city = "Bengaluru",
+  apiBase = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000"
+) {
+  try {
+    const res = await fetch(`${apiBase}/api/rates/resolve-bulk`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ city, items })
+    });
+    const data = await res.json();
+    if (data && data.success && Array.isArray(data.resolvedItems)) {
+      return data.resolvedItems;
+    }
+  } catch (err) {
+    console.warn("Bulk rate resolution failed, using fallback:", err);
+  }
+  return items.map(item => ({
+    masterItemCode: item.masterItemCode || "PENDING",
+    itemName: item.itemName,
+    itemType: item.itemType,
+    unit: item.unit,
+    resolvedRate: 0,
+    rateSource: "pending_admin_update",
+    city,
+    effectiveDate: new Date().toISOString().split("T")[0],
+    status: "Rate Pending Admin Update"
+  }));
+}

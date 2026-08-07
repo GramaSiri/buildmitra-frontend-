@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 import * as XLSX from 'xlsx';
 import { usePaymentBarrier } from '../hooks/usePaymentBarrier';
 import { downloadBuildMitraPDF } from '../utils/pdfExport';
-import { getMasterRate, syncApprovedRatesFromBackend, MasterRateResult } from '../utils/masterRates';
+import { getMasterRate, getCombinedBOQRate, syncApprovedRatesFromBackend, MasterRateResult } from '../utils/masterRates';
 import MarketRateTrend from '../components/ui/MarketRateTrend';
 
 const styles: Record<string, React.CSSProperties> = {
@@ -250,9 +250,13 @@ export default function CivilBOQPage() {
     ];
 
     const items = baseItems.map(item => {
-      // Sr. 1 to 6 do NOT change. Sr. 7 to 22 multiply material rate by finishMultiplier
-      const matRate = item.sr <= 6 ? item.baseMatRate : (item.baseMatRate * finishMultiplier);
-      const amount = item.qty * (matRate + item.labRate);
+      const combined = getCombinedBOQRate(item.code, item.baseMatRate, item.labRate);
+      const baseMat = combined.materialRate;
+      const baseLab = combined.labourRate;
+
+      const matRate = item.sr <= 6 ? baseMat : (baseMat * finishMultiplier);
+      const labRate = baseLab;
+      const amount = item.qty * (matRate + labRate);
       return {
         sr: item.sr,
         code: item.code,
@@ -260,7 +264,7 @@ export default function CivilBOQPage() {
         uom: item.uom,
         qty: item.qty,
         matRate,
-        labRate: item.labRate,
+        labRate,
         amount
       };
     });

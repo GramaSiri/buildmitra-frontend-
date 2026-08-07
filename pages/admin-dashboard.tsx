@@ -31,6 +31,20 @@ export default function AdminDashboard() {
   };
 
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [showBOQModal, setShowBOQModal] = useState(false);
+  const [editingBOQItem, setEditingBOQItem] = useState<any>({
+    masterItemCode: "",
+    linkedLabourItemCode: "",
+    itemName: "",
+    category: "",
+    unit: "NOS",
+    materialRate: 0,
+    labourRate: 0,
+    totalUnitRate: 0,
+    city: "Bengaluru",
+    effectiveDate: new Date().toISOString().split("T")[0],
+    remarks: ""
+  });
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [showExtendModal, setShowExtendModal] = useState(false);
   const [showUserModal, setShowUserModal] = useState(false);
@@ -240,26 +254,31 @@ export default function AdminDashboard() {
   const [projects, setProjects] = useState(() => loadLocalData("bm_admin_projects", []));
 
   const [masterSupplierItems, setMasterSupplierItems] = useState<any[]>([]);
+  const [liveCounts, setLiveCounts] = useState<any>({ totalMasterItems: 2884, masterMaterials: 2880, masterLabour: 2, masterServices: 0, masterMachines: 2, approvedMarketRates: 2995, missingRateItems: 0 });
   const [masterSearch, setMasterSearch] = useState("");
   const [masterCategoryFilter, setMasterCategoryFilter] = useState("all");
   const [loadingMasterItems, setLoadingMasterItems] = useState(false);
 
   const loadMasterSupplierDatabase = async () => {
-    setLoadingMasterItems(true);
     try {
-      const res = await fetch(`${API_BASE}/api/provider/master-items?limit=3000`);
-      const data = await res.json();
-      if (data && Array.isArray(data.items) && data.items.length > 0) {
-        setMasterSupplierItems(data.items);
-      } else {
-        const res2 = await fetch(`${API_BASE}/api/master-images`);
-        const data2 = await res2.json();
-        if (data2 && Array.isArray(data2.items) && data2.items.length > 0) {
-          setMasterSupplierItems(data2.items);
-        }
+      setLoadingMasterItems(true);
+      const [itemsRes, countsRes] = await Promise.all([
+        fetch(`${API_BASE}/api/admin/master-items?limit=10000`, { headers: { "x-user-role": "admin" } }),
+        fetch(`${API_BASE}/api/admin/master-counts`, { headers: { "x-user-role": "admin" } })
+      ]);
+
+      const itemsData = await itemsRes.json();
+      const countsData = await countsRes.json();
+
+      if (itemsData && Array.isArray(itemsData.items) && itemsData.items.length > 0) {
+        setMasterSupplierItems(itemsData.items);
+      }
+
+      if (countsData && countsData.success && countsData.counts) {
+        setLiveCounts(countsData.counts);
       }
     } catch (err) {
-      console.warn("Could not load supplier master items from backend API:", err);
+      console.warn("Could not load master items or live counts from backend API:", err);
     } finally {
       setLoadingMasterItems(false);
     }
@@ -270,15 +289,13 @@ export default function AdminDashboard() {
   }, []);
 
   const displayMasterRates = React.useMemo(() => {
-    const combined = [...materialRates];
-    const existingCodes = new Set(
-      combined.map((r: any) => String(r.code || r.masterItemCode || "").toUpperCase())
-    );
+    const map = new Map<string, any>();
 
     (masterSupplierItems || []).forEach((m: any) => {
       const code = String(m.masterItemCode || m.code || m.itemCode || "").toUpperCase();
-      if (code && !existingCodes.has(code)) {
-        combined.push({
+      if (code) {
+        const rateVal = Number(m.referenceRate ?? m.currentRate ?? m.rate ?? m.price ?? 0);
+        map.set(code, {
           id: m._id || code,
           code: code,
           masterItemCode: code,
@@ -288,11 +305,43 @@ export default function AdminDashboard() {
           brand: m.brand || "",
           specification: m.specification || "",
           unit: m.unit || "NOS",
-          rate: m.currentRate || m.rate || m.price || 0,
-          status: m.status || "Active"
+          rate: rateVal,
+          currentRate: rateVal,
+          referenceRate: rateVal,
+          status: m.status === "inactive" ? "Inactive" : "Active",
+          primaryMasterItemCode: m.primaryMasterItemCode,
+          linkedLabourItemCode: m.linkedLabourItemCode,
+          rateComponent: m.rateComponent
         });
       }
     });
+
+    (materialRates || []).forEach((r: any) => {
+      const code = String(r.code || r.masterItemCode || "").toUpperCase();
+      if (code && !map.has(code)) {
+        const rateVal = Number(r.rate ?? r.currentRate ?? r.referenceRate ?? 0);
+        map.set(code, {
+          id: r.id || code,
+          code: code,
+          masterItemCode: code,
+          category: r.category || "Material",
+          item: r.item || r.itemName || "Master Item",
+          itemName: r.item || r.itemName || "Master Item",
+          brand: r.brand || "",
+          specification: r.specification || "",
+          unit: r.unit || "NOS",
+          rate: rateVal,
+          currentRate: rateVal,
+          referenceRate: rateVal,
+          status: r.status || "Active",
+          primaryMasterItemCode: r.primaryMasterItemCode,
+          linkedLabourItemCode: r.linkedLabourItemCode,
+          rateComponent: r.rateComponent
+        });
+      }
+    });
+
+    const combined = Array.from(map.values());
 
     return combined.filter((r: any) => {
       const searchMatch = !masterSearch.trim() || [
@@ -304,25 +353,6 @@ export default function AdminDashboard() {
       return searchMatch && categoryMatch;
     });
   }, [materialRates, masterSupplierItems, masterSearch, masterCategoryFilter]);
-
-  useEffect(() => { localStorage.setItem("users", JSON.stringify(users)); localStorage.setItem("bm_admin_users", JSON.stringify(users)); }, [users]);
-  useEffect(() => { localStorage.setItem("bm_admin_transactions", JSON.stringify(transactions)); }, [transactions]);
-  useEffect(() => { localStorage.setItem("bm_admin_pending_payments", JSON.stringify(pendingPayments)); }, [pendingPayments]);
-  useEffect(() => { localStorage.setItem("bm_admin_tickets", JSON.stringify(tickets)); }, [tickets]);
-  useEffect(() => { localStorage.setItem("bm_material_rates", JSON.stringify(materialRates)); }, [materialRates]);
-  useEffect(() => { localStorage.setItem("bm_labour_rates", JSON.stringify(labourRates)); }, [labourRates]);
-  useEffect(() => { localStorage.setItem("bm_equipment_rates", JSON.stringify(equipmentRates)); }, [equipmentRates]);
-useEffect(() => { localStorage.setItem("bm_service_rates", JSON.stringify(serviceRates)); }, [serviceRates]);
-  useEffect(() => {
-    const hasCode = (r) => r && r.code && String(r.code).trim() !== "";
-
-      localStorage.setItem("bm_material_rates", JSON.stringify((JSON.parse(localStorage.getItem("bm_material_rates") || "[]")).filter(hasCode)));
-    localStorage.setItem("bm_labour_rates", JSON.stringify((JSON.parse(localStorage.getItem("bm_labour_rates") || "[]")).filter(hasCode)));
-    localStorage.setItem("bm_service_rates", JSON.stringify((JSON.parse(localStorage.getItem("bm_service_rates") || "[]")).filter(hasCode)));
-    localStorage.setItem("bm_equipment_rates", JSON.stringify((JSON.parse(localStorage.getItem("bm_equipment_rates") || "[]")).filter(hasCode)));
-  }, []);
-  useEffect(() => { localStorage.setItem("bm_supplier_approvals", JSON.stringify(supplierApprovals)); }, [supplierApprovals]);
-  useEffect(() => { localStorage.setItem("bm_admin_projects", JSON.stringify(projects)); }, [projects]);
 
   const loadMarketplaceApprovals = async () => {
     try {
@@ -501,6 +531,104 @@ const rejectRealEstate = async (propertyCode) => {
     const data = await res.json();
     alert(data.success ? `Master item ${data.item.masterItemCode} created.` : data.message || "Request approval failed.");
     loadMarketplaceApprovals();
+  };
+
+  
+      const openBOQRateModal = async (item: any) => {
+    let code = (item.code || item.masterItemCode || item.itemCode || "").toUpperCase();
+    
+    // Mapped primary code if clicked on linked labour row
+    if (item.primaryMasterItemCode && item.primaryMasterItemCode !== code) {
+      code = item.primaryMasterItemCode.toUpperCase();
+    } else if (item.rateComponent === "labour" || code.startsWith("LAB-")) {
+      const candidateCode = code.replace(/^LAB-?/, "");
+      const matched = (masterSupplierItems || []).find((m: any) => 
+        m.linkedLabourItemCode === code || m.masterItemCode === `MAT-${candidateCode}` || m.masterItemCode === `SRV-${candidateCode}`
+      );
+      if (matched && matched.masterItemCode) {
+        code = matched.masterItemCode.toUpperCase();
+      } else if (["WTR-TNK", "PLB-18", "ELEC-15", "FCL-12"].includes(candidateCode)) {
+        code = `MAT-${candidateCode}`;
+      } else if (candidateCode === "PCC-01") {
+        code = `SRV-${candidateCode}`;
+      }
+    }
+
+    let matRate = Number(item.materialRate ?? item.referenceRate ?? item.rate ?? item.currentRate ?? 0);
+    let labRate = Number(item.labourRate ?? 0);
+    let linkedLabourCode = item.linkedLabourItemCode || `LAB-${code.replace(/^(MAT|SRV|SER|PLB|ELEC|FCL)-?/, "")}`;
+    let unit = item.unit || "NOS";
+    let itemName = item.item || item.itemName || "";
+
+    try {
+      const res = await fetch(`${API_BASE}/api/rates/resolve`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ item: { masterItemCode: code, itemName } })
+      });
+      const data = await res.json();
+      if (data && data.success && data.resolvedItem) {
+        const r = data.resolvedItem;
+        code = r.masterItemCode || code;
+        matRate = Number(r.materialRate ?? matRate);
+        labRate = Number(r.labourRate ?? labRate);
+        linkedLabourCode = r.linkedLabourItemCode || linkedLabourCode;
+        unit = r.unit || unit;
+        itemName = r.itemName || itemName;
+      }
+    } catch (err) {
+      console.warn("Could not fetch resolved BOQ rates for editor modal:", err);
+    }
+
+    setEditingBOQItem({
+      masterItemCode: code,
+      linkedLabourItemCode: linkedLabourCode,
+      itemName: itemName,
+      category: item.category || "General",
+      unit: unit,
+      materialRate: matRate,
+      labourRate: labRate,
+      totalUnitRate: matRate + labRate,
+      city: item.city || "Bengaluru",
+      effectiveDate: item.effectiveDate || new Date().toISOString().split("T")[0],
+      remarks: item.specification || item.remarks || ""
+    });
+    setShowBOQModal(true);
+  };
+
+  const saveBOQCombinedRates = async () => {
+    try {
+      const code = editingBOQItem.masterItemCode;
+      if (!code) return alert("Invalid Master Item Code");
+
+      const res = await fetch(`${API_BASE}/api/admin/boq-rates/${code}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "x-user-role": "admin" },
+        body: JSON.stringify({
+          masterItemCode: code,
+          linkedLabourItemCode: editingBOQItem.linkedLabourItemCode,
+          itemName: editingBOQItem.itemName,
+          category: editingBOQItem.category,
+          unit: editingBOQItem.unit,
+          materialRate: Number(editingBOQItem.materialRate || 0),
+          labourRate: Number(editingBOQItem.labourRate || 0),
+          city: editingBOQItem.city,
+          effectiveDate: editingBOQItem.effectiveDate,
+          remarks: editingBOQItem.remarks
+        })
+      });
+
+      const data = await res.json();
+      if (data && data.success) {
+        await syncApprovedRatesFromBackend();
+        setShowBOQModal(false);
+        await loadMasterSupplierDatabase();
+      } else {
+        alert("Save failed: " + (data.message || "Unknown error"));
+      }
+    } catch (err: any) {
+      alert("Save failed: " + err.message);
+    }
   };
 
   const handleLogout = () => {
@@ -1090,9 +1218,12 @@ const rejectRealEstate = async (propertyCode) => {
         })
           .then(res => res.json())
           .then(data => {
-            alert(data.success
-              ? "Bulk upload completed for " + type + ". Imported " + imported + " rows and synced " + data.count + " master items."
-              : "Local upload completed, but backend master sync failed: " + (data.message || "Unknown error"));
+            if (data.success && (data.inserted > 0 || data.updated > 0)) {
+              alert(`Bulk Upload Successful!\n• Total rows: ${data.totalRows || imported}\n• Inserted: ${data.inserted || 0}\n• Updated: ${data.updated || 0}\n• Skipped: ${data.skipped || 0}\n• Failed: ${data.failed || 0}`);
+              loadMasterSupplierDatabase();
+            } else {
+              alert(`Upload Failed! \n${data.message || "No records were inserted or updated in the canonical Master database."}`);
+            }
           })
           .catch(() => alert("Local upload completed, but backend master sync failed."));
       } else {
@@ -1646,12 +1777,12 @@ const rejectRealEstate = async (propertyCode) => {
           }, "📥 Download 16-Column Template"),
 
           React.createElement("button", { onClick: cleanLegacyRates, style: styles.buttonDanger }, "🧹 Clean Legacy No-Code Rates"),
-          React.createElement("button", { onClick: loadMasterSupplierDatabase, style: styles.buttonInfo }, loadingMasterItems ? "⏳ Loading Supplier DB..." : "🔄 Sync 2,880 Supplier DB Items")
+          React.createElement("button", { onClick: loadMasterSupplierDatabase, style: styles.buttonInfo }, loadingMasterItems ? "⏳ Loading Supplier DB..." : "🔄 Sync Master Items")
         ),
 
         React.createElement("div", { style: { display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center", margin: "16px 0 12px 0" } },
           React.createElement("input", {
-            placeholder: "🔍 Search 2,880 master items by code, name, category, brand, spec",
+            placeholder: "🔍 Search master items by code, name, category, brand, spec",
             value: masterSearch,
             onChange: (e) => setMasterSearch(e.target.value),
             style: { padding: "10px 14px", border: "1px solid #cbd5e1", borderRadius: "8px", width: "340px", maxWidth: "100%", fontSize: "13px" }
@@ -1706,12 +1837,12 @@ const rejectRealEstate = async (propertyCode) => {
                 React.createElement("td", { style: styles.td }, r.item || r.itemName || "-"),
                 React.createElement("td", { style: styles.td }, `${r.brand || ''} ${r.specification || ''}`.trim() || "-"),
                 React.createElement("td", { style: styles.td }, r.unit || "-"),
-                React.createElement("td", { style: { ...styles.td, fontWeight: "bold", color: "#0f766e" } }, "₹", (r.rate || r.currentRate || 0).toLocaleString()),
+                React.createElement("td", { style: { ...styles.td, fontWeight: "bold", color: "#0f766e" } }, "₹", (r.rate || r.currentRate || r.referenceRate || 0).toLocaleString()),
                 React.createElement("td", { style: styles.td },
                   React.createElement("span", { style: { backgroundColor: r.status === "Inactive" ? "#f8d7da" : "#d4edda", padding: "3px 8px", borderRadius: "4px" } }, r.status || "Active")
                 ),
                 React.createElement("td", { style: { ...styles.td, display: "flex", gap: "4px" } },
-                  React.createElement("button", { onClick: () => updateRate("material", r.id, r.rate), style: styles.buttonInfo }, "Edit"),
+                  React.createElement("button", { onClick: () => openBOQRateModal(r), title: "Edit BOQ Rates", style: { backgroundColor: "#0f766e", border: "none", color: "#ffffff", borderRadius: "6px", padding: "6px 12px", cursor: "pointer", fontSize: "14px" } }, "✏️"),
                   React.createElement("button", {
                     onClick: async () => {
                       if (!confirm(`Deactivate rate for ${r.code || r.item}?`)) return;
@@ -2129,6 +2260,77 @@ const rejectRealEstate = async (propertyCode) => {
         React.createElement("p", { style: { fontSize: "12px", color: "#666", marginBottom: "16px" } }, "Upload GPay, PhonePe, or Paytm QR code for subscription payments"),
         React.createElement("input", { type: "file", accept: "image/*", onChange: handleQRUpload, style: styles.input }),
         React.createElement("button", { onClick: () => setShowQRModal(false), style: { ...styles.button, backgroundColor: "#6c757d", marginTop: "16px" } }, "Cancel")
+      )
+    ),
+
+    showBOQModal && editingBOQItem && React.createElement("div", { style: styles.modal, onClick: () => setShowBOQModal(false) },
+      React.createElement("div", { style: { ...styles.modalContent, maxWidth: "520px", borderRadius: "14px", padding: "24px" }, onClick: (e) => e.stopPropagation() },
+        React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "18px", borderBottom: "1px solid #e2e8f0", paddingBottom: "12px" } },
+          React.createElement("h3", { style: { margin: 0, color: "#800020", fontSize: "18px", fontWeight: "800" } }, "Combined BOQ Rate Editor"),
+          React.createElement("button", { onClick: () => setShowBOQModal(false), style: { background: "none", border: "none", fontSize: "18px", cursor: "pointer", color: "#64748b" } }, "✕")
+        ),
+        React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: "12px" } },
+          React.createElement("div", null,
+            React.createElement("label", { style: styles.label }, "Master Code"),
+            React.createElement("input", { value: editingBOQItem.masterItemCode || "", readOnly: true, style: { ...styles.input, backgroundColor: "#f1f5f9", fontWeight: "bold" } })
+          ),
+          React.createElement("div", null,
+            React.createElement("label", { style: styles.label }, "Item Name"),
+            React.createElement("input", { value: editingBOQItem.itemName || "", onChange: (e) => setEditingBOQItem({ ...editingBOQItem, itemName: e.target.value }), style: styles.input })
+          ),
+          React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" } },
+            React.createElement("div", null,
+              React.createElement("label", { style: styles.label }, "Unit"),
+              React.createElement("input", { value: editingBOQItem.unit || "NOS", onChange: (e) => setEditingBOQItem({ ...editingBOQItem, unit: e.target.value }), style: styles.input })
+            ),
+            React.createElement("div", null,
+              React.createElement("label", { style: styles.label }, "Linked Labour Code"),
+              React.createElement("input", { value: editingBOQItem.linkedLabourItemCode || "", readOnly: true, style: { ...styles.input, backgroundColor: "#f1f5f9" } })
+            )
+          ),
+          React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" } },
+            React.createElement("div", null,
+              React.createElement("label", { style: styles.label }, "Material / Service Rate (₹)"),
+              React.createElement("input", {
+                type: "number",
+                value: editingBOQItem.materialRate ?? "",
+                onChange: (e) => {
+                  const mRate = parseFloat(e.target.value) || 0;
+                  setEditingBOQItem({
+                    ...editingBOQItem,
+                    materialRate: mRate,
+                    totalUnitRate: mRate + (editingBOQItem.labourRate || 0)
+                  });
+                },
+                style: styles.input
+              })
+            ),
+            React.createElement("div", null,
+              React.createElement("label", { style: styles.label }, "Labour Rate (₹)"),
+              React.createElement("input", {
+                type: "number",
+                value: editingBOQItem.labourRate ?? "",
+                onChange: (e) => {
+                  const lRate = parseFloat(e.target.value) || 0;
+                  setEditingBOQItem({
+                    ...editingBOQItem,
+                    labourRate: lRate,
+                    totalUnitRate: (editingBOQItem.materialRate || 0) + lRate
+                  });
+                },
+                style: styles.input
+              })
+            )
+          ),
+          React.createElement("div", { style: { backgroundColor: "#f0fdf4", border: "1px solid #bbf7d0", padding: "12px", borderRadius: "8px", marginTop: "4px" } },
+            React.createElement("span", { style: { fontSize: "12px", color: "#166534", fontWeight: "700" } }, "Total Unit Rate (Material + Labour): "),
+            React.createElement("strong", { style: { fontSize: "16px", color: "#15803d" } }, `₹${((editingBOQItem.materialRate || 0) + (editingBOQItem.labourRate || 0)).toLocaleString()}`)
+          )
+        ),
+        React.createElement("div", { style: { display: "flex", gap: "12px", marginTop: "20px", justifyContent: "flex-end" } },
+          React.createElement("button", { onClick: () => setShowBOQModal(false), style: { ...styles.button, backgroundColor: "#64748b" } }, "Cancel"),
+          React.createElement("button", { onClick: saveBOQCombinedRates, style: styles.buttonSuccess }, "Save")
+        )
       )
     )
   );
