@@ -15,12 +15,14 @@ body {
 
 html,
 body,
-#__next {
+#__next,
+main,
+.app-layout-wrapper {
   width: 100%;
-  max-width: 100%;
+  max-width: 100vw !important;
   min-height: 100%;
   margin: 0;
-  overflow-x: hidden;
+  overflow-x: hidden !important;
   box-sizing: border-box;
 }
 
@@ -61,6 +63,19 @@ svg {
     overflow-x: hidden !important;
     font-size: 14px;
     line-height: 1.4;
+  }
+
+  /* Touch Target Sizing (Min 40px for comfortable finger tapping) */
+  button,
+  a,
+  select,
+  input[type="text"],
+  input[type="number"],
+  input[type="email"],
+  input[type="password"],
+  .MuiButton-root {
+    min-height: 40px;
+    touch-action: manipulation;
   }
 
   /* Main Container Wrappers - 100% available width, overflow-x hidden at page level */
@@ -505,7 +520,7 @@ svg {
   }
 
   /* -------------------------------------------------------------------------
-     TABLES & BOQ CONTAINERS: Internal Horizontal Scroll
+     TABLES & BOQ CONTAINERS: Internal Horizontal Scroll & Mobile Cards (< 640px)
      ------------------------------------------------------------------------- */
   .table-responsive,
   .bm-table-responsive,
@@ -517,6 +532,17 @@ svg {
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch !important;
     margin: 8px 0 !important;
+  }
+
+  @media (max-width: 639px) {
+    .boq-mobile-cards {
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 6px !important;
+    }
+    .boq-table-view {
+      display: none !important;
+    }
   }
 
   table {

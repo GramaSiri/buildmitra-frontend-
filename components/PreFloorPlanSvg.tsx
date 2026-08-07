@@ -1307,7 +1307,8 @@ export default function PreFloorPlanSvg({
       style={{
         display: "block",
         background: "#ffffff",
-        minWidth: compact ? 650 : 790,
+        maxWidth: "100%",
+        height: "auto",
       }}
       role="img"
       aria-label={`${requirement.plotWidth} by ${requirement.plotLength} ${requirement.facing} facing floor plan`}

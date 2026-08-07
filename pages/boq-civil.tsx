@@ -560,7 +560,7 @@ export default function CivilBOQPage() {
           </div>
 
           {/* Itemized BOQ Table */}
-          <div style={styles.tableContainer}>
+          <div style={styles.tableContainer} className="table-responsive table-container boq-table-view">
             <table style={styles.table}>
               <thead>
                 <tr>
@@ -593,6 +593,40 @@ export default function CivilBOQPage() {
                 </tr>
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile BOQ Item Cards (< 640px) */}
+          <div className="boq-mobile-cards" style={{ display: 'none' }}>
+            {boqResults.items.map((i: any) => (
+              <div key={i.sr} style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px', marginBottom: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '800', color: '#800020' }}>
+                  <span>#{i.sr} - {i.desc}</span>
+                  <code style={{ fontSize: '10px', color: '#475569' }}>{i.code}</code>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', margin: '8px 0', fontSize: '11px' }}>
+                  <div>
+                    <span style={{ color: '#64748b', display: 'block' }}>Qty</span>
+                    <strong>{formatNumber(i.qty)} {i.uom}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748b', display: 'block' }}>Mat Rate</span>
+                    <strong>{formatCurrency(i.matRate)}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748b', display: 'block' }}>Lab Rate</span>
+                    <strong>{formatCurrency(i.labRate)}</strong>
+                  </div>
+                </div>
+                <div style={{ borderTop: '1px dashed #cbd5e1', paddingTop: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '11px', fontWeight: '700', color: '#475569' }}>Total Amount:</span>
+                  <strong style={{ fontSize: '13px', color: '#16a34a' }}>{formatCurrency(i.amount)}</strong>
+                </div>
+              </div>
+            ))}
+            <div style={{ background: '#800020', color: '#ffffff', padding: '10px 14px', borderRadius: '8px', fontWeight: '800', display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+              <span>GRAND TOTAL CIVIL BOQ</span>
+              <span>{formatCurrency(boqResults.grandTotal)}</span>
+            </div>
           </div>
         </div>
       )}

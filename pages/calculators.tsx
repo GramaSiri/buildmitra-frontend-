@@ -7,12 +7,13 @@ interface CalcItem {
   id: string;
   name: string;
   icon: string;
-  category: "Concrete & RCC" | "Masonry & Steel" | "Finishing & Plumbing" | "Structural Elements";
-  unitBadge: "Cum" | "Cft" | "Sft" | "Nos" | "Points" | "Kg" | "Liters";
+  category: "Concrete & RCC" | "Masonry & Steel" | "Finishing & Plumbing" | "Structural Elements" | "Land & Survey";
+  unitBadge: "Cum" | "Cft" | "Sft" | "Nos" | "Points" | "Kg" | "Liters" | "Acres";
   description: string;
 }
 
-const ALL_19_CALCULATORS: CalcItem[] = [
+const ALL_20_CALCULATORS: CalcItem[] = [
+  { id: 'land-survey-calculator', name: 'Land Survey & Area Converter', icon: '🗺️', category: 'Land & Survey', unitBadge: 'Acres', description: 'Small 30x40 plots to 100+ Acres, SFT, Acres, Guntas, Hectares, Cents, Sq Yds.' },
   { id: 'concrete-calculator', name: 'Concrete Estimator', icon: '🧱', category: 'Concrete & RCC', unitBadge: 'Cum', description: 'Mix ratios M7.5-M30, cement bags, sand, aggregate.' },
   { id: 'steel-calculator', name: 'Steel Rebar Weight & Cost', icon: '🔩', category: 'Masonry & Steel', unitBadge: 'Kg', description: 'Bar diameters 8mm-32mm, cutting length, bend deductions.' },
   { id: 'tile-calculator', name: 'Tile & Flooring Estimator', icon: '📐', category: 'Finishing & Plumbing', unitBadge: 'Sft', description: 'Floor/wall tile count, wastage %, adhesive & grout.' },
@@ -39,9 +40,9 @@ export default function CalculatorsPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
-  const categories = ["All", "Concrete & RCC", "Masonry & Steel", "Finishing & Plumbing", "Structural Elements"];
+  const categories = ["All", "Land & Survey", "Concrete & RCC", "Masonry & Steel", "Finishing & Plumbing", "Structural Elements"];
 
-  const filteredCalcs = ALL_19_CALCULATORS.filter(c => {
+  const filteredCalcs = ALL_20_CALCULATORS.filter(c => {
     const matchesCat = selectedCategory === "All" || c.category === selectedCategory;
     const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase()) || c.description.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCat && matchesSearch;
@@ -50,8 +51,8 @@ export default function CalculatorsPage() {
   return (
     <>
       <Head>
-        <title>19 Civil Construction Calculators | BuildMitra</title>
-        <meta name="description" content="19 Industry-standard technical calculators for Concrete, Steel rebar, Brickwork, Plaster, Tile, RCC Slab, Columns, Beams, Footings, and Tanks." />
+        <title>20 Civil Construction &amp; Land Survey Calculators | BuildMitra</title>
+        <meta name="description" content="20 Industry-standard technical calculators for Land Survey, Concrete, Steel rebar, Brickwork, Plaster, Tile, RCC Slab, Columns, Beams, Footings, and Tanks." />
       </Head>
 
       <div style={{ padding: "24px", minHeight: "100vh", background: "#f8fafc", color: "#0f172a", fontFamily: "Inter, sans-serif" }}>
@@ -61,10 +62,10 @@ export default function CalculatorsPage() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
             <div>
               <span style={{ background: "rgba(34, 197, 94, 0.2)", border: "1px solid rgba(34, 197, 94, 0.4)", color: "#4ade80", padding: "4px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "800" }}>
-                19 VERIFIED IS-CODE ENGINE TOOLS
+                20 VERIFIED IS-CODE &amp; LAND SURVEY TOOLS
               </span>
               <h1 style={{ margin: "10px 0 0 0", fontSize: "28px", fontWeight: "900" }}>
-                📐 Technical Construction Calculators (19)
+                🗺️ Technical Construction &amp; Land Survey Calculators (20)
               </h1>
               <p style={{ margin: "6px 0 0 0", color: "#94a3b8", fontSize: "14px" }}>
                 Accurate material, rebar, and volume estimation engines grouped by units (Cum, Cft, Sft, Nos, Points).

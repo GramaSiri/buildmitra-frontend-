@@ -564,9 +564,9 @@ ${enquiry.buyerPhone}`;
       ) : listings.length === 0 ? (
         <div style={styles.empty}>No approved listings found.</div>
       ) : (
-        <div style={styles.grid}>
+        <div style={styles.grid} className="marketplace-grid">
           {listings.map((item) => (
-            <div key={item._id || item.listingCode} style={styles.card}>
+            <div key={item._id || item.listingCode} style={styles.card} className="marketplace-card product-card">
               <div style={styles.providerRow}>
                 <div>
                   <div style={styles.providerName}>{item.providerName || "Verified Provider"}</div>
@@ -602,9 +602,9 @@ ${enquiry.buyerPhone}`;
               )}
 
               <div style={styles.body}>
-                <h2 style={styles.item}>{item.itemName}</h2>
+                <h2 style={styles.item} className="product-title">{item.itemName}</h2>
                 <div style={styles.meta}>{item.brand || item.category || "BuildMitra item"} {item.category ? `- ${item.category}` : ""}</div>
-                <div style={styles.price}>Rs {Number(item.rate || 0).toLocaleString()} <span style={styles.unit}>/ {item.unit || "unit"}</span></div>
+                <div style={styles.price} className="product-price">Rs {Number(item.rate || 0).toLocaleString()} <span style={styles.unit}>/ {item.unit || "unit"}</span></div>
                 <div style={styles.location}>{item.providerCity || item.location || "-"} {item.providerArea ? `, ${item.providerArea}` : ""} {item.providerPincode ? `- ${item.providerPincode}` : ""}</div>
               </div>
 

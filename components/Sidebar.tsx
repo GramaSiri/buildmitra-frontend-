@@ -236,6 +236,7 @@ export default function Sidebar({ children, currentPath }: { children?: any; cur
 
   // ---------------- CALCULATORS ----------------
   const calculatorTabs = [
+    { name: "Land Survey Calculator", path: "/land-survey-calculator", icon: "🗺️" },
     { name: "Concrete Calculator", path: "/concrete-calculator", icon: "🧱" },
     { name: "Steel Calculator", path: "/steel-calculator", icon: "🔩" },
     { name: "Tile Calculator", path: "/tile-calculator", icon: "📐" },
@@ -577,7 +578,7 @@ if (isMobile) {
           onMouseLeave={() => setHoveredMain(null)}
           onClick={() => toggle("calculators")}
         >
-          <span>📐 CALCULATORS (19)</span>
+          <span>📐 CALCULATORS (20)</span>
           <span>{open.calculators ? "▼" : "▶"}</span>
         </div>
 
