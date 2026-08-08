@@ -13,6 +13,7 @@ interface CalcItem {
 }
 
 const ALL_20_CALCULATORS: CalcItem[] = [
+  { id: 'housing-loan-finance', name: 'Housing Loan Finance Hub', icon: '🏦', category: 'Land & Survey', unitBadge: 'Acres', description: 'FOIR & LTV Eligibility, EMI Amortization, 6 Major Banks Matrix, RBI Repo Simulator & Prepayment Saver.' },
   { id: 'land-survey-calculator', name: 'Land Survey & Area Converter', icon: '🗺️', category: 'Land & Survey', unitBadge: 'Acres', description: 'Small 30x40 plots to 100+ Acres, SFT, Acres, Guntas, Hectares, Cents, Sq Yds.' },
   { id: 'concrete-calculator', name: 'Concrete Estimator', icon: '🧱', category: 'Concrete & RCC', unitBadge: 'Cum', description: 'Mix ratios M7.5-M30, cement bags, sand, aggregate.' },
   { id: 'steel-calculator', name: 'Steel Rebar Weight & Cost', icon: '🔩', category: 'Masonry & Steel', unitBadge: 'Kg', description: 'Bar diameters 8mm-32mm, cutting length, bend deductions.' },

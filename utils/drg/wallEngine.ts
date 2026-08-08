@@ -33,8 +33,8 @@ export function generateCleanWallSegments(
   // Generate internal room partition walls (4.5" = 0.375 ft)
   let intCount = 1;
   rooms.forEach((r) => {
-    const rx1 = buildable.x + r.x;
-    const ry1 = buildable.y + r.y;
+    const rx1 = r.x;
+    const ry1 = r.y;
     const rx2 = rx1 + r.w;
     const ry2 = ry1 + r.h;
 

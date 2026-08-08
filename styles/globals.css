@@ -306,8 +306,9 @@ svg {
 
   /* -------------------------------------------------------------------------
      MARKETPLACE GRID & PRODUCT CARDS
-     - 3 cards per row on standard mobile (381px - 767px)
-     - 2 cards per row on narrow mobile (<= 380px)
+     - 3 cards per row on standard mobile (<768px)
+     - Thumbnail aspect ratio 1:1 with overlaid 🔍 Zoom magnifier badge (pointer-events: none)
+     - Completely hides .verified-badge and .location-text on mobile
      ------------------------------------------------------------------------- */
   .marketplace-grid,
   .products-grid,
@@ -343,6 +344,90 @@ svg {
     border: 1px solid #e2e8f0 !important;
     box-sizing: border-box !important;
     overflow: hidden !important;
+  }
+
+  /* Thumbnail wrapper & pointer-events: none magnifier badge */
+  .thumbnail-wrapper,
+  .product-image-container {
+    position: relative !important;
+    width: 100% !important;
+    aspect-ratio: 1 / 1 !important;
+    height: 75px !important;
+    border-radius: 5px !important;
+    overflow: hidden !important;
+    background-color: #f8fafc !important;
+    margin-bottom: 4px !important;
+  }
+
+  .magnifier-badge {
+    position: absolute !important;
+    top: 3px !important;
+    right: 3px !important;
+    background: rgba(15, 23, 42, 0.72) !important;
+    color: #ffffff !important;
+    font-size: 8.5px !important;
+    font-weight: 800 !important;
+    padding: 1px 4px !important;
+    border-radius: 3px !important;
+    pointer-events: none !important; /* Allows click-through to product detail */
+    backdrop-filter: blur(2px) !important;
+    z-index: 2 !important;
+  }
+
+  /* Hide verified badges and location text on mobile to save vertical space */
+  .verified-badge,
+  .location-text,
+  .provider-verified,
+  .marketplace-card .verified,
+  .product-card .verified,
+  .marketplace-card .location,
+  .product-card .location {
+    display: none !important;
+  }
+
+  /* Single Product Title Line (max 2 lines) */
+  .product-title,
+  .marketplace-card h2,
+  .marketplace-card h3,
+  .product-card h2,
+  .product-card h3 {
+    margin: 2px 0 1px !important;
+    font-size: 11px !important;
+    line-height: 1.2 !important;
+    font-weight: 800 !important;
+    color: #0f172a !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  /* Truncated Supplier Name (font 10px gray) */
+  .supplier-name,
+  .marketplace-card .supplier,
+  .product-card .supplier {
+    font-size: 10px !important;
+    color: #64748b !important;
+    font-weight: 600 !important;
+    margin: 1px 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  /* Rate / Unit (bold green 11px) */
+  .product-price,
+  .marketplace-card .price,
+  .product-card .price {
+    display: inline-block !important;
+    font-size: 11px !important;
+    font-weight: 900 !important;
+    color: #166534 !important;
+    background: #f0fdf4 !important;
+    padding: 2px 4px !important;
+    border-radius: 3px !important;
+    margin: 2px 0 !important;
   }
 
   /* Real <img> element styling in Marketplace - clear & visible */

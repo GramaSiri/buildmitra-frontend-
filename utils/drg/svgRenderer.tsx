@@ -282,7 +282,7 @@ export const ArchitecturalSvgRenderer: React.FC<SvgRendererProps> = ({
             PLOT BOUNDARY ({plotW} FT × {plotL} FT)
           </text>
 
-          {/* RED DOTTED SETBACK LINES (Front, Rear, Left, Right) */}
+          {/* RED DOTTED SETBACK LINES ONLY (Clean Setback Boundary) */}
           <rect
             x={toPxX(inputs.setbacks.left)}
             y={toPxY(plotL - inputs.setbacks.rear)}
@@ -315,17 +315,6 @@ export const ArchitecturalSvgRenderer: React.FC<SvgRendererProps> = ({
               RIGHT SETBACK = {inputs.setbacks.right} FT
             </text>
           )}
-
-          {/* Proposed Building Line (Solid Architectural Wall Outline) */}
-          <rect
-            x={toPxX(buildable.x)}
-            y={toPxY(buildable.y + buildable.h)}
-            width={buildable.w * scale}
-            height={buildable.h * scale}
-            fill="none"
-            stroke="#0284c7"
-            strokeWidth="2"
-          />
 
           {/* Road Visualized on Actual Facing Side */}
           {roadFacing === "South" && (
@@ -422,41 +411,106 @@ export const ArchitecturalSvgRenderer: React.FC<SvgRendererProps> = ({
             );
           })}
 
-          {/* CAD Doors with 90-Degree Radial Arc Leaf Swings */}
+          {/* CAD Doors with Orientation-Aware Cutout Masks & 90-Degree Radial Arc Swings (100% INSIDE ROOM) */}
           {groundFloorReport?.doors.map((door) => {
             const dx = toPxX(door.x);
             const dy = toPxY(door.y);
             const dw = door.widthFt * scale;
+            const isVertical = door.x <= inputs.setbacks.left + 1 || door.x >= plotW - inputs.setbacks.right - 1;
+            const doorTag = (door as any).label || (door.isMainDoor ? `MAIN D1 (${door.widthFt}′)` : `D (${door.widthFt}′)`);
+
+            if (isVertical) {
+              return (
+                <g key={door.id} transform={`translate(${dx}, ${dy})`}>
+                  {/* Solid White Cutout Mask over Wall */}
+                  <rect x="-12" y={-dw / 2 - 2} width="24" height={dw + 4} fill="#ffffff" />
+                  {/* Door Posts at Jambs */}
+                  <rect x="-10" y={-dw / 2 - 2} width="20" height="3" fill="#0f172a" />
+                  <rect x="-10" y={dw / 2 - 1} width="20" height="3" fill="#0f172a" />
+                  {/* 90-Degree Inward Radial Swing Arc */}
+                  <path d={`M 0 ${-dw / 2} A ${dw} ${dw} 0 0 1 ${dw * 0.8} ${dw / 2}`} fill="none" stroke="#0284c7" strokeWidth="1.2" strokeDasharray="3 2" />
+                  {/* Door Leaf Line */}
+                  <line x1="0" y1={-dw / 2} x2={dw * 0.8} y2={-dw / 2} stroke="#0f172a" strokeWidth="2.2" />
+                  <text x={dw * 0.5} y="-6" textAnchor="middle" fontSize="7.5" fontWeight="bold" fill="#0284c7">
+                    {doorTag}
+                  </text>
+                </g>
+              );
+            }
 
             return (
               <g key={door.id} transform={`translate(${dx}, ${dy})`}>
-                <rect x="-2" y="-4" width={dw + 4} height="8" fill="#ffffff" />
-                <rect x="0" y="-4" width="3" height="8" fill="#0f172a" />
-                <rect x={dw - 3} y="-4" width="3" height="8" fill="#0f172a" />
-                <path d={`M 0 0 A ${dw} ${dw} 0 0 1 ${dw} ${dw}`} fill="none" stroke="#0284c7" strokeWidth="1.2" strokeDasharray="3 2" />
-                <line x1="0" y1="0" x2="0" y2={dw} stroke="#0f172a" strokeWidth="2.5" />
-                <text x={dw / 2} y="-6" textAnchor="middle" fontSize="7" fontWeight="bold" fill="#0284c7">
-                  {door.isMainDoor ? `MAIN DOOR (${door.widthFt}′)` : `DOOR (${door.widthFt}′)`}
+                {/* Solid White Cutout Mask over Wall */}
+                <rect x={-dw / 2 - 2} y="-12" width={dw + 4} height="24" fill="#ffffff" />
+                {/* Door Posts at Jambs */}
+                <rect x={-dw / 2 - 2} y="-10" width="3" height="20" fill="#0f172a" />
+                <rect x={dw / 2 - 1} y="-10" width="3" height="20" fill="#0f172a" />
+                {/* 90-Degree Inward Radial Swing Arc */}
+                <path d={`M ${-dw / 2} 0 A ${dw} ${dw} 0 0 1 ${dw / 2} ${dw * 0.8}`} fill="none" stroke="#0284c7" strokeWidth="1.2" strokeDasharray="3 2" />
+                {/* Door Leaf Line */}
+                <line x1={-dw / 2} y1="0" x2={-dw / 2} y2={dw * 0.8} stroke="#0f172a" strokeWidth="2.2" />
+                <text x="0" y="-12" textAnchor="middle" fontSize="7.5" fontWeight="bold" fill="#0284c7">
+                  {doorTag}
                 </text>
               </g>
             );
           })}
 
-          {/* CAD Windows with Triple-Line Frame Detailing */}
+          {/* CAD Windows & Toilet Ventilators with Orientation-Aware Frame Detailing */}
           {groundFloorReport?.windows.map((win) => {
             const wx = toPxX(win.x);
             const wy = toPxY(win.y);
             const ww = win.widthFt * scale;
+            const isVertical = win.orientation === "v";
+            const isVent = Boolean((win as any).isVentilator || win.widthFt <= 2.5);
+            const winTag = (win as any).label || (isVent ? `V1 (${win.widthFt}′)` : `W (${win.widthFt}′)`);
+
+            if (isVertical) {
+              return (
+                <g key={win.id} transform={`translate(${wx}, ${wy})`}>
+                  {/* Solid White Cutout Mask */}
+                  <rect x="-10" y={-ww / 2 - 2} width="20" height={ww + 4} fill="#ffffff" />
+                  <rect x="-5" y={-ww / 2} width="10" height={ww} fill="#f8fafc" stroke="#0f172a" strokeWidth="1.2" />
+                  {isVent ? (
+                    /* Toilet Ventilator Louvered Glass Blades */
+                    <g>
+                      <line x1="-3" y1={-ww / 3} x2="3" y2={-ww / 3} stroke="#0284c7" strokeWidth="1.5" />
+                      <line x1="-3" y1="0" x2="3" y2="0" stroke="#0284c7" strokeWidth="1.5" />
+                      <line x1="-3" y1={ww / 3} x2="3" y2={ww / 3} stroke="#0284c7" strokeWidth="1.5" />
+                    </g>
+                  ) : (
+                    /* Standard Window Center Glass Line */
+                    <line x1="0" y1={-ww / 2} x2="0" y2={ww / 2} stroke="#0284c7" strokeWidth="2" />
+                  )}
+                  <text x="14" y="3" textAnchor="start" fontSize="7.5" fontWeight="bold" fill={isVent ? "#dc2626" : "#0284c7"}>
+                    {winTag}
+                  </text>
+                </g>
+              );
+            }
 
             return (
               <g key={win.id} transform={`translate(${wx}, ${wy})`}>
-                <rect x={-ww / 2 - 2} y="-5" width={ww + 4} height="10" fill="#ffffff" />
-                <rect x={-ww / 2} y="-4" width={ww} height="8" fill="#f8fafc" stroke="#0f172a" strokeWidth="1.2" />
-                <line x1={-ww / 2} y1="0" x2={ww / 2} y2="0" stroke="#0284c7" strokeWidth="1.8" />
-                <line x1={-ww / 2} y1="-2" x2={ww / 2} y2="-2" stroke="#64748b" strokeWidth="0.8" />
-                <line x1={-ww / 2} y1="2" x2={ww / 2} y2="2" stroke="#64748b" strokeWidth="0.8" />
-                <text x="0" y="-7" textAnchor="middle" fontSize="7" fontWeight="bold" fill="#0284c7">
-                  WIN ({win.widthFt}′)
+                {/* Solid White Cutout Mask */}
+                <rect x={-ww / 2 - 2} y="-10" width={ww + 4} height="20" fill="#ffffff" />
+                <rect x={-ww / 2} y="-5" width={ww} height="10" fill="#f8fafc" stroke="#0f172a" strokeWidth="1.2" />
+                {isVent ? (
+                  /* Toilet Ventilator Louvered Glass Blades */
+                  <g>
+                    <line x1={-ww / 3} y1="-3" x2={-ww / 3} y2="3" stroke="#0284c7" strokeWidth="1.5" />
+                    <line x1="0" y1="-3" x2="0" y2="3" stroke="#0284c7" strokeWidth="1.5" />
+                    <line x1={ww / 3} y1="-3" x2={ww / 3} y2="3" stroke="#0284c7" strokeWidth="1.5" />
+                  </g>
+                ) : (
+                  /* Standard Window Glass Pane Frames */
+                  <g>
+                    <line x1={-ww / 2} y1="0" x2={ww / 2} y2="0" stroke="#0284c7" strokeWidth="2" />
+                    <line x1={-ww / 2} y1="-2.5" x2={ww / 2} y2="-2.5" stroke="#64748b" strokeWidth="0.8" />
+                    <line x1={-ww / 2} y1="2.5" x2={ww / 2} y2="2.5" stroke="#64748b" strokeWidth="0.8" />
+                  </g>
+                )}
+                <text x="0" y="-12" textAnchor="middle" fontSize="7.5" fontWeight="bold" fill={isVent ? "#dc2626" : "#0284c7"}>
+                  {winTag}
                 </text>
               </g>
             );
@@ -537,7 +591,7 @@ export const ArchitecturalSvgRenderer: React.FC<SvgRendererProps> = ({
             </g>
           )}
 
-          {/* Ground Floor Rooms with Clear Internal Dimensions & Carpet Area */}
+          {/* Ground Floor Rooms with Clear Internal Dimensions & Carpet Area (No Label Box!) */}
           {groundFloorReport?.rooms.map((r) => {
             const rx = toPxX(r.x);
             const ry = toPxY(r.y + r.h);
@@ -548,10 +602,9 @@ export const ArchitecturalSvgRenderer: React.FC<SvgRendererProps> = ({
               <g key={r.id}>
                 <rect x={rx} y={ry} width={rw} height={rh} fill="#ffffff" stroke="#94a3b8" strokeWidth="1.2" />
                 <g>
-                  <rect x={rx + rw / 2 - 60} y={ry + rh / 2 - 18} width="120" height="36" fill="#ffffff" opacity="0.95" rx="3" stroke="#cbd5e1" strokeWidth="0.8" />
                   <text x={rx + rw / 2} y={ry + rh / 2 - 6} textAnchor="middle" fontSize="9" fontWeight="bold" fill="#0f172a">{r.name}</text>
-                  <text x={rx + rw / 2} y={ry + rh / 2 + 4} textAnchor="middle" fontSize="8" fill="#334155">{r.w.toFixed(0)}′-0″ × {r.h.toFixed(0)}′-0″</text>
-                  <text x={rx + rw / 2} y={ry + rh / 2 + 14} textAnchor="middle" fontSize="8" fontWeight="bold" fill="#0284c7">{r.areaSqFt} SQ.FT</text>
+                  <text x={rx + rw / 2} y={ry + rh / 2 + 5} textAnchor="middle" fontSize="8" fill="#334155">{r.w.toFixed(0)}′-0″ × {r.h.toFixed(0)}′-0″</text>
+                  <text x={rx + rw / 2} y={ry + rh / 2 + 15} textAnchor="middle" fontSize="8" fontWeight="bold" fill="#0284c7">{r.areaSqFt} SQ.FT</text>
                 </g>
               </g>
             );
@@ -634,7 +687,7 @@ export const ArchitecturalSvgRenderer: React.FC<SvgRendererProps> = ({
             strokeWidth="1.5"
             strokeDasharray="8 4"
           />
-          <text x={toPxX(plotW / 2)} y={toPxY(plotL) - 8} textAnchor="middle" fontSize="9" fontWeight="bold" fill="#0f172a">
+          <text x={toPxX(plotW / 2)} y={toPxY(plotL) - 35} textAnchor="middle" fontSize="10" fontWeight="bold" fill="#0f172a">
             PLOT BOUNDARY ({plotW} FT × {plotL} FT) — FIRST FLOOR WORKING DRAWING
           </text>
 
@@ -827,40 +880,75 @@ export const ArchitecturalSvgRenderer: React.FC<SvgRendererProps> = ({
           {/* ========================================================================= */}
           {/* LAYER 4: DOORS & WINDOWS (WALL CUTOUTS & SWING ARCS) */}
           {/* ========================================================================= */}
-          {/* CAD Doors with Wall Cutouts & 90-Degree Radial Arc Swings */}
+          {/* ========================================================================= */}
+          {/* LAYER 4: DOORS & WINDOWS (WALL CUTOUTS & SWING ARCS) */}
+          {/* ========================================================================= */}
+          {/* CAD Doors with Orientation-Aware Wall Cutouts & 90-Degree Radial Arc Swings */}
           {firstFloorReport?.doors.map((door) => {
             const dx = toPxX(door.x);
             const dy = toPxY(door.y);
             const dw = door.widthFt * scale;
+            const isVertical = door.x <= inputs.setbacks.left + 1 || door.x >= plotW - inputs.setbacks.right - 1;
+
+            if (isVertical) {
+              return (
+                <g key={door.id} transform={`translate(${dx}, ${dy})`}>
+                  {/* Solid White Wall Cutout Mask (9" depth) */}
+                  <rect x="-8" y={-dw / 2 - 2} width="16" height={dw + 4} fill="#ffffff" />
+                  <rect x="-8" y={-dw / 2} width="16" height="3" fill="#0f172a" />
+                  <rect x="-8" y={dw / 2 - 3} width="16" height="3" fill="#0f172a" />
+                  <path d={`M 0 ${-dw / 2} A ${dw} ${dw} 0 0 1 ${dw} ${dw / 2}`} fill="none" stroke="#0284c7" strokeWidth="1.2" strokeDasharray="3 2" />
+                  <line x1="0" y1={-dw / 2} x2={dw} y2={-dw / 2} stroke="#0f172a" strokeWidth="2.5" />
+                  <text x={dw / 2 + 6} y="3" textAnchor="start" fontSize="8" fontWeight="bold" fill="#0284c7">
+                    {door.label || "D1"} ({door.widthFt}′)
+                  </text>
+                </g>
+              );
+            }
 
             return (
               <g key={door.id} transform={`translate(${dx}, ${dy})`}>
-                <rect x="-2" y="-4" width={dw + 4} height="8" fill="#ffffff" />
-                <rect x="0" y="-4" width="3" height="8" fill="#0f172a" />
-                <rect x={dw - 3} y="-4" width="3" height="8" fill="#0f172a" />
-                <path d={`M 0 0 A ${dw} ${dw} 0 0 1 ${dw} ${dw}`} fill="none" stroke="#0284c7" strokeWidth="1.2" strokeDasharray="3 2" />
-                <line x1="0" y1="0" x2="0" y2={dw} stroke="#0f172a" strokeWidth="2.5" />
-                <text x={dw / 2} y="-6" textAnchor="middle" fontSize="8" fontWeight="bold" fill="#0284c7">
+                {/* Solid White Wall Cutout Mask */}
+                <rect x={-dw / 2 - 2} y="-8" width={dw + 4} height="16" fill="#ffffff" />
+                <rect x={-dw / 2} y="-8" width="3" height="16" fill="#0f172a" />
+                <rect x={dw / 2 - 3} y="-8" width="3" height="16" fill="#0f172a" />
+                <path d={`M ${-dw / 2} 0 A ${dw} ${dw} 0 0 1 ${dw / 2} ${dw}`} fill="none" stroke="#0284c7" strokeWidth="1.2" strokeDasharray="3 2" />
+                <line x1={-dw / 2} y1="0" x2={-dw / 2} y2={dw} stroke="#0f172a" strokeWidth="2.5" />
+                <text x="0" y="-10" textAnchor="middle" fontSize="8" fontWeight="bold" fill="#0284c7">
                   {door.label || (door.isMainDoor ? "D1" : "D2")} ({door.widthFt}′)
                 </text>
               </g>
             );
           })}
 
-          {/* CAD Windows & Ventilators with Triple-Line Frame Detailing */}
+          {/* CAD Windows & Ventilators with Orientation-Aware Triple-Line Frame Detailing */}
           {firstFloorReport?.windows.map((win) => {
             const wx = toPxX(win.x);
             const wy = toPxY(win.y);
             const ww = win.widthFt * scale;
+            const isVertical = win.orientation === "v";
+
+            if (isVertical) {
+              return (
+                <g key={win.id} transform={`translate(${wx}, ${wy})`}>
+                  <rect x="-8" y={-ww / 2 - 2} width="16" height={ww + 4} fill="#ffffff" />
+                  <rect x="-4" y={-ww / 2} width="8" height={ww} fill="#f8fafc" stroke="#0f172a" strokeWidth="1.2" />
+                  <line x1="0" y1={-ww / 2} x2="0" y2={ww / 2} stroke="#0284c7" strokeWidth="1.8" />
+                  <text x="12" y="3" textAnchor="start" fontSize="8" fontWeight="bold" fill="#0284c7">
+                    {win.label || "W1"} ({win.widthFt}′)
+                  </text>
+                </g>
+              );
+            }
 
             return (
               <g key={win.id} transform={`translate(${wx}, ${wy})`}>
-                <rect x={-ww / 2 - 2} y="-5" width={ww + 4} height="10" fill="#ffffff" />
+                <rect x={-ww / 2 - 2} y="-8" width={ww + 4} height="16" fill="#ffffff" />
                 <rect x={-ww / 2} y="-4" width={ww} height="8" fill="#f8fafc" stroke="#0f172a" strokeWidth="1.2" />
                 <line x1={-ww / 2} y1="0" x2={ww / 2} y2="0" stroke="#0284c7" strokeWidth="1.8" />
                 <line x1={-ww / 2} y1="-2" x2={ww / 2} y2="-2" stroke="#64748b" strokeWidth="0.8" />
                 <line x1={-ww / 2} y1="2" x2={ww / 2} y2="2" stroke="#64748b" strokeWidth="0.8" />
-                <text x="0" y="-7" textAnchor="middle" fontSize="8" fontWeight="bold" fill="#0284c7">
+                <text x="0" y="-10" textAnchor="middle" fontSize="8" fontWeight="bold" fill="#0284c7">
                   {win.label || "W1"} ({win.widthFt}′)
                 </text>
               </g>
@@ -893,8 +981,8 @@ export const ArchitecturalSvgRenderer: React.FC<SvgRendererProps> = ({
             </g>
           )}
 
-          {/* FFL Floor Level Tag on Central Foyer Landing */}
-          <g transform={`translate(${toPxX(firstFloorReport?.staircase.x || 4) + 10}, ${toPxY(firstFloorReport?.staircase.y || 4) - 20})`}>
+          {/* FFL Floor Level Tag Positioned Cleanly in Header Margin */}
+          <g transform={`translate(${toPxX(plotW) - 220}, 55)`}>
             <circle cx="0" cy="0" r="8" fill="#ffffff" stroke="#0f172a" strokeWidth="1.5" />
             <line x1="-8" y1="0" x2="8" y2="0" stroke="#0f172a" strokeWidth="1.5" />
             <line x1="0" y1="-8" x2="0" y2="8" stroke="#0f172a" strokeWidth="1.5" />
@@ -952,36 +1040,34 @@ export const ArchitecturalSvgRenderer: React.FC<SvgRendererProps> = ({
             </text>
           </g>
 
-          {/* Clean 2-Line Centered Room Labels (NO SQUARE FOOTAGE BOXES / NO BLUE CARDS) */}
+          {/* Clean 2-Line Centered Room Label Badges (No Overlaps) */}
           {firstFloorReport?.rooms.map((r) => {
             const rx = toPxX(r.x);
             const ry = toPxY(r.y + r.h);
             const rw = r.w * scale;
             const rh = r.h * scale;
 
-            // Collision Prevention: Offset text Y-axis if colliding with bed or table
-            const textCenterY = (r.isMaster || r.name === "BEDROOM 2" || r.isLiving || r.isDining) ? ry + rh - 16 : ry + rh / 2;
+            const textCenterY = ry + rh / 2;
 
             return (
               <g key={`ff_room_label_${r.id}`}>
-                {/* Line 1: ROOM NAME (12px, Bold, #0f172a) */}
+                <rect x={rx + rw / 2 - 55} y={textCenterY - 18} width="110" height="34" fill="#ffffff" opacity="0.95" rx="4" stroke="#cbd5e1" strokeWidth="0.8" />
                 <text
                   x={rx + rw / 2}
                   y={textCenterY - 4}
                   textAnchor="middle"
-                  fontSize="12"
+                  fontSize="11"
                   fontWeight="bold"
                   fill={r.isMaster ? "#0284c7" : "#0f172a"}
                   letterSpacing="0.5"
                 >
                   {r.name}
                 </text>
-                {/* Line 2: DIMENSIONS (10px, Regular, #475569) */}
                 <text
                   x={rx + rw / 2}
                   y={textCenterY + 8}
                   textAnchor="middle"
-                  fontSize="10"
+                  fontSize="9"
                   fill="#475569"
                 >
                   {r.dimText}
@@ -989,6 +1075,75 @@ export const ArchitecturalSvgRenderer: React.FC<SvgRendererProps> = ({
               </g>
             );
           })}
+
+          {/* BOTTOM TITLE & SCALE BADGE (MATCHING IMAGE 2 ARCHITECTURAL SHEET STYLE) */}
+          <g transform={`translate(${toPxX(plotW / 2)}, ${toPxY(-2)})`}>
+            <text textAnchor="middle" fontSize="14" fontWeight="bold" fill="#0f172a" letterSpacing="1">
+              FIRST FLOOR PLAN
+            </text>
+            <text textAnchor="middle" fontSize="9" fontWeight="bold" fill="#64748b" y="16">
+              SCALE 1/4″ = 1′-0″
+            </text>
+          </g>
+        </g>
+      )}
+
+      {/* ========================================================================= */}
+      {/* FRONT (MODERN) ELEVATION VIEW (MATCHING IMAGE 2 ELEVATION SHEET) */}
+      {/* ========================================================================= */}
+      {primaryTab === "elevation" && (
+        <g transform="translate(180, 100)">
+          {/* Ground Baseline NGL Line */}
+          <line x1="-40" y1="420" x2={plotW * scale + 60} y2="420" stroke="#0f172a" strokeWidth="3" />
+          <text x="-45" y="424" textAnchor="end" fontSize="10" fontWeight="bold" fill="#0f172a">GL ±0′-0″</text>
+
+          {/* Ground Floor Gate & Compound Wall (Height: 4'-8" = 75px) */}
+          <rect x="0" y="345" width={plotW * scale} height="75" fill="#f8fafc" stroke="#0f172a" strokeWidth="2" />
+          {/* 18' Main Sliding Gate */}
+          <rect x="20" y="355" width={Math.min(280, plotW * scale - 40)} height="65" fill="#e2e8f0" stroke="#0f172a" strokeWidth="1.5" />
+          {Array.from({ length: 12 }).map((_, gi) => (
+            <line key={`gate_slat_${gi}`} x1={30 + gi * 20} y1="355" x2={30 + gi * 20} y2="420" stroke="#475569" strokeWidth="1" />
+          ))}
+          <text x={Math.min(160, (plotW * scale) / 2)} y="390" textAnchor="middle" fontSize="9" fontWeight="bold" fill="#0f172a">18′ MAIN SLIDING GATE</text>
+
+          {/* First Floor Facade Block (Height 10'-0" = 160px) */}
+          <rect x="0" y="185" width={plotW * scale} height="160" fill="#ffffff" stroke="#0f172a" strokeWidth="2" />
+          {/* First Floor Glass Balcony Deck (4' projection = 64px) */}
+          <rect x="15" y="290" width={plotW * scale - 30} height="55" fill="#e0f2fe" opacity="0.6" stroke="#0284c7" strokeWidth="1.5" />
+          <text x={(plotW * scale) / 2} y="325" textAnchor="middle" fontSize="9" fontWeight="bold" fill="#0369a1">BALCONY 4′ WIDE (GLASS RAILING)</text>
+
+          {/* Second / Upper Floor Facade Block (Height 10'-0" = 160px) */}
+          {inputs.floors > 2 && (
+            <g>
+              <rect x="0" y="25" width={plotW * scale} height="160" fill="#ffffff" stroke="#0f172a" strokeWidth="2" />
+              <rect x="15" y="130" width={plotW * scale - 30} height="55" fill="#e0f2fe" opacity="0.6" stroke="#0284c7" strokeWidth="1.5" />
+              <text x={(plotW * scale) / 2} y="165" textAnchor="middle" fontSize="9" fontWeight="bold" fill="#0369a1">UPPER BALCONY (4′ WIDE)</text>
+            </g>
+          )}
+
+          {/* Overhead Staircase Shaft & Parapet (Top) */}
+          <rect x={plotW * scale - 120} y="-35" width="100" height="60" fill="#f1f5f9" stroke="#0f172a" strokeWidth="2" />
+          <text x={plotW * scale - 70} y="-5" textAnchor="middle" fontSize="8" fontWeight="bold" fill="#0f172a">O.H. TANK / LIFT</text>
+
+          {/* Right-Side Vertical Height Dimension Chain (Matching Image 2 Elevation) */}
+          <g transform={`translate(${plotW * scale + 25}, 0)`}>
+            <line x1="0" y1="-35" x2="0" y2="420" stroke="#0f172a" strokeWidth="1.2" />
+            <line x1="-5" y1="420" x2="5" y2="420" stroke="#0f172a" strokeWidth="1.5" />
+            <line x1="-5" y1="345" x2="5" y2="345" stroke="#0f172a" strokeWidth="1.5" />
+            <line x1="-5" y1="185" x2="5" y2="185" stroke="#0f172a" strokeWidth="1.5" />
+            <line x1="-5" y1="25" x2="5" y2="25" stroke="#0f172a" strokeWidth="1.5" />
+            <line x1="-5" y1="-35" x2="5" y2="-35" stroke="#0f172a" strokeWidth="1.5" />
+
+            <text x="12" y="385" fontSize="8" fontWeight="bold" fill="#0f172a">4′-8″ GATE</text>
+            <text x="12" y="265" fontSize="8" fontWeight="bold" fill="#0f172a">10′-0″ FF HEIGHT</text>
+            <text x="12" y="105" fontSize="8" fontWeight="bold" fill="#0f172a">10′-0″ SF HEIGHT</text>
+            <text x="12" y="-10" fontSize="8" fontWeight="bold" fill="#0f172a">TOTAL: {(inputs.floors * 10 + 4.6).toFixed(1)}′</text>
+          </g>
+
+          {/* Title Badge at Bottom Center */}
+          <text x={(plotW * scale) / 2} y="465" textAnchor="middle" fontSize="14" fontWeight="bold" fill="#0f172a" letterSpacing="1">
+            FRONT (MODERN) ELEVATION
+          </text>
         </g>
       )}
 
@@ -1080,8 +1235,8 @@ export const ArchitecturalSvgRenderer: React.FC<SvgRendererProps> = ({
                 );
               })}
 
-              {/* 3. CENTER-TO-CENTER & CUMULATIVE DIMENSION CHAINS */}
-              {/* Individual Top X Spans */}
+              {/* 3. CENTER-TO-CENTER & CUMULATIVE DIMENSION CHAINS ON BOTH X & Y AXES */}
+              {/* Individual TOP X Spans */}
               {gridXCoords.slice(0, -1).map((gx, idx) => {
                 const nextGx = gridXCoords[idx + 1];
                 const spanFt = (nextGx - gx).toFixed(1);
@@ -1090,12 +1245,33 @@ export const ArchitecturalSvgRenderer: React.FC<SvgRendererProps> = ({
                 const dimY = toPxY(plotL + 1.8);
 
                 return (
-                  <g key={`span_x_${idx}`}>
+                  <g key={`span_x_top_${idx}`}>
                     <line x1={pxX1} y1={dimY} x2={pxX2} y2={dimY} stroke="#0284c7" strokeWidth="1" />
                     <line x1={pxX1} y1={dimY - 4} x2={pxX1} y2={dimY + 4} stroke="#0284c7" strokeWidth="1" />
                     <line x1={pxX2} y1={dimY - 4} x2={pxX2} y2={dimY + 4} stroke="#0284c7" strokeWidth="1" />
-                    <rect x={(pxX1 + pxX2) / 2 - 40} y={dimY - 14} width="80" height="14" fill="#ffffff" rx="2" stroke="#cbd5e1" strokeWidth="0.5" />
+                    <rect x={(pxX1 + pxX2) / 2 - 45} y={dimY - 14} width="90" height="14" fill="#ffffff" rx="2" stroke="#cbd5e1" strokeWidth="0.5" />
                     <text x={(pxX1 + pxX2) / 2} y={dimY - 4} textAnchor="middle" fontSize="8" fontWeight="bold" fill="#0284c7">
+                      Grid {String.fromCharCode(65 + idx)}-{String.fromCharCode(66 + idx)}: {spanFt}′ c/c
+                    </text>
+                  </g>
+                );
+              })}
+
+              {/* Individual BOTTOM X Spans */}
+              {gridXCoords.slice(0, -1).map((gx, idx) => {
+                const nextGx = gridXCoords[idx + 1];
+                const spanFt = (nextGx - gx).toFixed(1);
+                const pxX1 = toPxX(gx);
+                const pxX2 = toPxX(nextGx);
+                const dimYBot = toPxY(-1.8);
+
+                return (
+                  <g key={`span_x_bot_${idx}`}>
+                    <line x1={pxX1} y1={dimYBot} x2={pxX2} y2={dimYBot} stroke="#0284c7" strokeWidth="1" />
+                    <line x1={pxX1} y1={dimYBot - 4} x2={pxX1} y2={dimYBot + 4} stroke="#0284c7" strokeWidth="1" />
+                    <line x1={pxX2} y1={dimYBot - 4} x2={pxX2} y2={dimYBot + 4} stroke="#0284c7" strokeWidth="1" />
+                    <rect x={(pxX1 + pxX2) / 2 - 45} y={dimYBot + 2} width="90" height="14" fill="#ffffff" rx="2" stroke="#cbd5e1" strokeWidth="0.5" />
+                    <text x={(pxX1 + pxX2) / 2} y={dimYBot + 12} textAnchor="middle" fontSize="8" fontWeight="bold" fill="#0284c7">
                       Grid {String.fromCharCode(65 + idx)}-{String.fromCharCode(66 + idx)}: {spanFt}′ c/c
                     </text>
                   </g>
@@ -1109,11 +1285,11 @@ export const ArchitecturalSvgRenderer: React.FC<SvgRendererProps> = ({
                 <line x1={toPxX(plotW)} y1={toPxY(plotL + 4.1)} x2={toPxX(plotW)} y2={toPxY(plotL + 4.9)} stroke="#0f172a" strokeWidth="1.2" />
                 <rect x={toPxX(plotW / 2) - 130} y={toPxY(plotL + 5.2)} width="260" height="16" fill="#0f172a" rx="3" />
                 <text x={toPxX(plotW / 2)} y={toPxY(plotL + 5.2) + 11} textAnchor="middle" fontSize="9" fontWeight="bold" fill="#ffffff">
-                  OVERALL LENGTH: {plotW}′-0″ ({ (plotW * 0.3048).toFixed(2) } m) | BUILDABLE: {buildable.w}′-0″
+                  OVERALL LENGTH: {plotW}′-0″ ({(plotW * 0.3048).toFixed(2)} m) | BUILDABLE: {buildable.w}′-0″
                 </text>
               </g>
 
-              {/* Individual Right Y Spans */}
+              {/* Individual RIGHT Y Spans */}
               {gridYCoords.slice(0, -1).map((gy, idx) => {
                 const nextGy = gridYCoords[idx + 1];
                 const spanFt = (nextGy - gy).toFixed(1);
@@ -1122,12 +1298,33 @@ export const ArchitecturalSvgRenderer: React.FC<SvgRendererProps> = ({
                 const dimX = toPxX(plotW + 1.8);
 
                 return (
-                  <g key={`span_y_${idx}`}>
+                  <g key={`span_y_right_${idx}`}>
                     <line x1={dimX} y1={pxY1} x2={dimX} y2={pxY2} stroke="#0284c7" strokeWidth="1" />
                     <line x1={dimX - 4} y1={pxY1} x2={dimX + 4} y2={pxY1} stroke="#0284c7" strokeWidth="1" />
                     <line x1={dimX - 4} y1={pxY2} x2={dimX + 4} y2={pxY2} stroke="#0284c7" strokeWidth="1" />
                     <rect x={dimX + 6} y={(pxY1 + pxY2) / 2 - 6} width="85" height="12" fill="#ffffff" rx="2" stroke="#cbd5e1" strokeWidth="0.5" />
                     <text x={dimX + 48} y={(pxY1 + pxY2) / 2 + 3} textAnchor="middle" fontSize="8" fontWeight="bold" fill="#0284c7">
+                      Grid {idx + 1}-{idx + 2}: {spanFt}′ c/c
+                    </text>
+                  </g>
+                );
+              })}
+
+              {/* Individual LEFT Y Spans */}
+              {gridYCoords.slice(0, -1).map((gy, idx) => {
+                const nextGy = gridYCoords[idx + 1];
+                const spanFt = (nextGy - gy).toFixed(1);
+                const pxY1 = toPxY(gy);
+                const pxY2 = toPxY(nextGy);
+                const dimXLeft = toPxX(-1.8);
+
+                return (
+                  <g key={`span_y_left_${idx}`}>
+                    <line x1={dimXLeft} y1={pxY1} x2={dimXLeft} y2={pxY2} stroke="#0284c7" strokeWidth="1" />
+                    <line x1={dimXLeft - 4} y1={pxY1} x2={dimXLeft + 4} y2={pxY1} stroke="#0284c7" strokeWidth="1" />
+                    <line x1={dimXLeft - 4} y1={pxY2} x2={dimXLeft + 4} y2={pxY2} stroke="#0284c7" strokeWidth="1" />
+                    <rect x={dimXLeft - 91} y={(pxY1 + pxY2) / 2 - 6} width="85" height="12" fill="#ffffff" rx="2" stroke="#cbd5e1" strokeWidth="0.5" />
+                    <text x={dimXLeft - 48} y={(pxY1 + pxY2) / 2 + 3} textAnchor="middle" fontSize="8" fontWeight="bold" fill="#0284c7">
                       Grid {idx + 1}-{idx + 2}: {spanFt}′ c/c
                     </text>
                   </g>
@@ -1148,7 +1345,7 @@ export const ArchitecturalSvgRenderer: React.FC<SvgRendererProps> = ({
                   fill="#0f172a"
                   transform={`rotate(90 ${toPxX(plotW + 6.6)} ${toPxY(plotL / 2)})`}
                 >
-                  OVERALL WIDTH: {plotL}′-0″ ({ (plotL * 0.3048).toFixed(2) } m) | BUILDABLE: {buildable.h}′-0″
+                  OVERALL WIDTH: {plotL}′-0″ ({(plotL * 0.3048).toFixed(2)} m) | BUILDABLE: {buildable.h}′-0″
                 </text>
               </g>
 
@@ -1390,6 +1587,93 @@ export const ArchitecturalSvgRenderer: React.FC<SvgRendererProps> = ({
               <text x="465" y="390" fontSize="9" fontWeight="bold" fill="#0f172a" textAnchor="middle">
                 FOOTING BASE WIDTH (B) = {ftDimM.toFixed(2)} m ({(ftDimM * 3.28084).toFixed(1)} FT)
               </text>
+
+              {/* ========================================================================= */}
+              {/* C. 2D COLUMN REINFORCEMENT & DOUBLE STIRRUP CROSS-SECTION DETAIL VIEW */}
+              {/* ========================================================================= */}
+              <g transform="translate(790, 45)">
+                {/* Outer Detail Box Frame */}
+                <rect width="240" height="395" fill="#f8fafc" stroke="#0f172a" strokeWidth="1.5" rx="4" />
+                <path d="M 0 0 L 240 0 L 240 26 L 0 26 Z" fill="#0284c7" />
+                <text x="120" y="17" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#ffffff">
+                  COLUMN C1 CROSS-SECTION (9″×15″)
+                </text>
+
+                {/* Column Concrete Cross-Section Box (230mm x 380mm -> 100px x 165px) */}
+                <rect x="70" y="45" width="100" height="165" fill="#ffffff" stroke="#0f172a" strokeWidth="2" rx="2" />
+                
+                {/* Clear Cover Dimension Label (40mm) */}
+                <line x1="70" y1="45" x2="78" y2="53" stroke="#64748b" strokeWidth="1" />
+                <text x="50" y="45" fontSize="7" fontWeight="bold" fill="#64748b">40mm Cover</text>
+
+                {/* 1. OUTER PERIMETER STIRRUP RING (#8mm @ 150mm c/c) */}
+                <rect x="78" y="53" width="84" height="149" fill="none" stroke="#16a34a" strokeWidth="2.5" rx="3" />
+
+                {/* 2. INNER DIAMOND TIE RING (#8mm @ 150mm c/c FOR CENTER BARS - DOUBLE STIRRUP RULE) */}
+                <polygon points="120,53 162,127 120,202 78,127" fill="none" stroke="#0369a1" strokeWidth="2" strokeDasharray="5 2" />
+
+                {/* 8 MAIN LONGITUDINAL REBAR RODS */}
+                {/* 4 Corner Main Bars (#16mm Fe500D) */}
+                <circle cx="83" cy="58" r="5" fill="#dc2626" stroke="#0f172a" strokeWidth="0.8" />
+                <circle cx="157" cy="58" r="5" fill="#dc2626" stroke="#0f172a" strokeWidth="0.8" />
+                <circle cx="83" cy="197" r="5" fill="#dc2626" stroke="#0f172a" strokeWidth="0.8" />
+                <circle cx="157" cy="197" r="5" fill="#dc2626" stroke="#0f172a" strokeWidth="0.8" />
+
+                {/* 2 Mid-Height Side Bars (#16mm Fe500D) */}
+                <circle cx="83" cy="127" r="5" fill="#dc2626" stroke="#0f172a" strokeWidth="0.8" />
+                <circle cx="157" cy="127" r="5" fill="#dc2626" stroke="#0f172a" strokeWidth="0.8" />
+
+                {/* 2 Center Face Bars (#12mm Fe500D) */}
+                <circle cx="120" cy="58" r="4" fill="#0284c7" stroke="#0f172a" strokeWidth="0.8" />
+                <circle cx="120" cy="197" r="4" fill="#0284c7" stroke="#0f172a" strokeWidth="0.8" />
+
+                {/* Section Dimensions (230mm x 380mm) */}
+                <text x="120" y="40" textAnchor="middle" fontSize="8" fontWeight="bold" fill="#0f172a">230 mm (9″)</text>
+                <text x="178" y="130" fontSize="8" fontWeight="bold" fill="#0f172a" transform="rotate(90 178 130)">380 mm (15″)</text>
+
+                {/* DOUBLE STIRRUP DETAILED CALLOUT BOX */}
+                <g transform="translate(10, 222)">
+                  <rect width="220" height="162" fill="#ffffff" stroke="#16a34a" strokeWidth="1.2" rx="4" />
+                  <text x="10" y="16" fontSize="8.5" fontWeight="bold" fill="#166534">
+                    DOUBLE STIRRUP DETAILED (IS 13920 / IS 456):
+                  </text>
+                  <line x1="8" y1="22" x2="212" y2="22" stroke="#bbf7d0" strokeWidth="1" />
+
+                  <text x="10" y="36" fontSize="8" fontWeight="bold" fill="#16a34a">
+                    • Stirrups Bar: Always #8mm Fe500D TMT
+                  </text>
+                  <text x="10" y="49" fontSize="8" fontWeight="bold" fill="#16a34a">
+                    • Stirrup Spacing: Always 150mm c/c
+                  </text>
+                  <text x="10" y="62" fontSize="7.5" fill="#475569">
+                    (100mm c/c in column joint confinement zone)
+                  </text>
+
+                  <text x="10" y="78" fontSize="8" fontWeight="bold" fill="#0f172a">
+                    • Double Stirrup Rule (&gt; 4 Main Bars):
+                  </text>
+                  <text x="18" y="92" fontSize="7.5" fill="#1e293b">
+                    1. Outer Perimeter Ring: #8mm @ 150mm c/c
+                  </text>
+                  <text x="18" y="105" fontSize="7.5" fill="#0369a1">
+                    2. Inner Diamond Tie: #8mm @ 150mm c/c
+                  </text>
+                  <text x="24" y="117" fontSize="7" fill="#64748b">
+                    (Restrains intermediate &amp; center bars)
+                  </text>
+
+                  <text x="10" y="132" fontSize="8" fontWeight="bold" fill="#dc2626">
+                    • Main Longitudinal Rebar (8 Bars Total):
+                  </text>
+                  <text x="18" y="145" fontSize="7.5" fill="#dc2626">
+                    6-#16mm + 2-#12mm Fe500D TMT
+                  </text>
+                  <text x="10" y="156" fontSize="7.5" fill="#16a34a">
+                    • Clear Cover to Outer Stirrup: 40mm
+                  </text>
+                </g>
+
+              </g>
             </g>
           )}
         </g>

@@ -93,24 +93,28 @@ export default function MarketplaceProductImage({
   }, [resolved]);
 
   return (
-    <img
-      src={src}
-      alt={
-        alt ||
-        item?.itemName ||
-        item?.product_name ||
-        item?.productName ||
-        item?.name ||
-        "Marketplace item"
-      }
-      loading="lazy"
-      decoding="async"
-      onError={() => {
-        if (src !== FALLBACK_IMAGE) {
-          setSrc(FALLBACK_IMAGE);
+    <div className="thumbnail-wrapper" style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden" }}>
+      <img
+        src={src}
+        alt={
+          alt ||
+          item?.itemName ||
+          item?.product_name ||
+          item?.productName ||
+          item?.name ||
+          "Marketplace item"
         }
-      }}
-      className="bm-marketplace-product-image"
-    />
+        loading="lazy"
+        decoding="async"
+        onError={() => {
+          if (src !== FALLBACK_IMAGE) {
+            setSrc(FALLBACK_IMAGE);
+          }
+        }}
+        className="bm-marketplace-product-image"
+        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+      />
+      <span className="magnifier-badge">🔍 Zoom</span>
+    </div>
   );
 }

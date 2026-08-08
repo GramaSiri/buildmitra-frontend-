@@ -30,7 +30,7 @@ export function generateStructuralGrid(
     new Set([
       bX,
       bX + bW,
-      ...rooms.flatMap((r) => [bX + r.x, bX + r.x + r.w]),
+      ...rooms.flatMap((r) => [r.x, r.x + r.w]),
     ])
   ).sort((a, b) => a - b);
 
@@ -38,7 +38,7 @@ export function generateStructuralGrid(
     new Set([
       bY,
       bY + bH,
-      ...rooms.flatMap((r) => [bY + r.y, bY + r.y + r.h]),
+      ...rooms.flatMap((r) => [r.y, r.y + r.h]),
     ])
   ).sort((a, b) => a - b);
 

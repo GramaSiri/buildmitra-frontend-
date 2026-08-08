@@ -7,161 +7,163 @@ import {
 } from "./types";
 
 /**
- * BuildMitra DRG — Plot Analysis Engine (Phase 0 Final Refinement)
- * Pure Analysis Module: Analyzes project parameters, statutory regulations, solar/wind climate vectors,
- * and site constraints to generate the mandatory Project Design Brief, Dynamic Design Objectives,
- * and Recommendations for Structural Planning.
- * Does NOT generate floor layouts, rooms, structural grid, columns, beams, or floor room distributions.
+ * BuildMitra DRG — Dynamic Plot Analysis Engine (Phase 0)
+ * Evaluates GBA statutory rules, setbacks (Front ~5%, Sides ~2%, Rear ~1%),
+ * Storey Capability (Road Width + SBC Assessment), Parking & Rental Allocation,
+ * and 10 Statutory Report Headers.
  */
 export function analyzePlotPhase0(inputs: DRGInputs): Phase0AnalysisReport {
   const plotW = Math.max(10, inputs.plotWidth || 30);
   const plotL = Math.max(10, inputs.plotLength || 40);
   const plotAreaSqFt = plotW * plotL;
 
-  const sFront = inputs.setbacks?.front || 0;
-  const sRear = inputs.setbacks?.rear || 0;
-  const sLeft = inputs.setbacks?.left || 0;
-  const sRight = inputs.setbacks?.right || 0;
+  // GBA SETBACK RULES (~10% Total: Front ~5%, Sides ~2%, Rear ~1%)
+  const gbaFrontFt = Math.max(3, Math.round(plotL * 0.08)); // ~5% area / ~8% length
+  const gbaSideFt = Math.max(2, Math.round(plotW * 0.07));  // ~2% area / ~7% width
+  const gbaRearFt = Math.max(2, Math.round(plotL * 0.05));  // ~1% area / ~5% length
 
-  const buildW = Math.max(0, plotW - sLeft - sRight);
-  const buildL = Math.max(0, plotL - sFront - sRear);
+  const frontSetbackFt = inputs.setbacks?.front || gbaFrontFt;
+  const rearSetbackFt = inputs.setbacks?.rear || gbaRearFt;
+  const leftSetbackFt = inputs.setbacks?.left || gbaSideFt;
+  const rightSetbackFt = inputs.setbacks?.right || gbaSideFt;
+
+  const buildW = Math.max(0, plotW - leftSetbackFt - rightSetbackFt);
+  const buildL = Math.max(0, plotL - frontSetbackFt - rearSetbackFt);
   const buildableFootprintSqFt = buildW * buildL;
 
+  const frontAreaSqFt = frontSetbackFt * plotW;
+  const rearAreaSqFt = rearSetbackFt * plotW;
+  const sidesAreaSqFt = (leftSetbackFt + rightSetbackFt) * (plotL - frontSetbackFt - rearSetbackFt);
+  const totalSetbackAreaSqFt = frontAreaSqFt + rearAreaSqFt + sidesAreaSqFt;
+  const totalSetbackPct = Math.round((totalSetbackAreaSqFt / plotAreaSqFt) * 100);
+
+  // FAR & STATUTORY COVERAGE
   const coverageCapPercent = inputs.maxCoveragePercent || 75;
   const maxCoverageAreaSqFt = Math.round(plotAreaSqFt * (coverageCapPercent / 100));
   const maxPermittedFootprintSqFt = Math.min(buildableFootprintSqFt, maxCoverageAreaSqFt);
 
   const farLimit = inputs.farLimit || 1.75;
   const permittedTotalBUASqFt = Math.round(plotAreaSqFt * farLimit);
-  const setbackAreaSqFt = plotAreaSqFt - buildableFootprintSqFt;
+  const heightRestrictionFt = inputs.heightRestriction || 45;
+  const setbackAreaSqFt = totalSetbackAreaSqFt;
 
-  const facing = inputs.facing || "East";
+  const facing = inputs.facing || "South";
   const roadW = inputs.roadWidth || 30;
+  const sbc = inputs.sbcKpa || 250;
 
-  // 1. Project Design Brief
+  // STOREY CAPABILITY & HEIGHT RECOMMENDATION
+  let maxFloorsAllowedByRoad = 4; // Default G+3 for 30ft road
+  if (roadW < 25) maxFloorsAllowedByRoad = 3; // G+2
+  else if (roadW >= 40 && roadW < 60) maxFloorsAllowedByRoad = 5; // G+4
+  else if (roadW >= 60) maxFloorsAllowedByRoad = 7; // G+6+
+
+  let maxFloorsRecommendedBySbc = 4;
+  if (sbc < 120) maxFloorsRecommendedBySbc = 2;
+  else if (sbc >= 120 && sbc < 180) maxFloorsRecommendedBySbc = 3;
+  else if (sbc >= 180 && sbc < 300) maxFloorsRecommendedBySbc = 5;
+  else if (sbc >= 300) maxFloorsRecommendedBySbc = 8;
+
+  const finalRecommendedFloors = Math.min(maxFloorsAllowedByRoad, maxFloorsRecommendedBySbc, inputs.floors || 4);
+  const recommendationReason = `Road width of ${roadW} ft allows up to ${maxFloorsAllowedByRoad} storeys under GBA byelaws. Soil SBC of ${sbc} kN/m² supports up to ${maxFloorsRecommendedBySbc} storeys. Recommended maximum height: ${finalRecommendedFloors} storeys (${finalRecommendedFloors > 1 ? `G+${finalRecommendedFloors - 1}` : "Ground Floor"}).`;
+
+  // PARKING & RENTAL STRATEGY RECOMMENDATION
+  const isRentalOrMixed = inputs.buildingUsage === "Rental Use" || inputs.buildingUsage === "Own and Rental Use";
+  let recommendedParkingType: "Stilt Parking" | "Cellar / Basement Parking" | "Ground Half Parking" | "Open Surface Parking" = "Ground Half Parking";
+
+  if (isRentalOrMixed && plotAreaSqFt >= 2000) {
+    recommendedParkingType = "Cellar / Basement Parking";
+  } else if (isRentalOrMixed || inputs.parkingPreference === "Full Parking") {
+    recommendedParkingType = "Stilt Parking";
+  }
+
+  const calculatedCars = isRentalOrMixed ? Math.max(2, Math.ceil(inputs.floors * 0.75)) : 2;
+  const calculatedBikes = isRentalOrMixed ? Math.max(4, inputs.floors * 2) : 4;
+  const allocatedParkingAreaSqFt = inputs.parkingPreference === "Full Parking" ? maxPermittedFootprintSqFt : Math.round(maxPermittedFootprintSqFt * 0.5);
+
+  const parkingRentalStrategy = {
+    parkingMode: inputs.parkingPreference || "Half Parking",
+    recommendedParkingType,
+    carBaysCount: calculatedCars,
+    bikeBaysCount: calculatedBikes,
+    allocatedParkingAreaSqFt,
+    rentalUnitsPossible: isRentalOrMixed ? (inputs.floors - 1) * 2 : 0,
+    strategyNotes: `${isRentalOrMixed ? `Rental project requires ${calculatedCars} Car Bays & ${calculatedBikes} Bike Bays.` : "Single family use requires minimum 2 Car Bays."} ${recommendedParkingType} is strongly recommended to preserve structural driveway access.`,
+  };
+
+  // 1. PROJECT DESIGN BRIEF
   const projectDesignBrief: ProjectDesignBrief = {
-    projectType: `${inputs.buildingUse} Residence`,
+    projectType: `${inputs.buildingType} (${inputs.buildingUsage})`,
     plotSize: `${plotW} ft × ${plotL} ft (${plotAreaSqFt.toLocaleString("en-IN")} sq.ft)`,
     plotFacing: `${facing} Facing`,
     plotShape: inputs.plotShape || "Rectangle",
-    floorsRequested: `G+${Math.max(1, inputs.floors - 1)} (${inputs.floors} Floors)`,
-    buildingUsage: inputs.buildingUse,
-    parkingRequirement: inputs.parking,
-    liftRequirement: inputs.lift ? `Yes (${inputs.liftCapacity})` : "No Elevator Required",
-    vaastuStatus: inputs.vaastuStrictness !== "Ignore" ? `Enabled (${inputs.vaastuStrictness})` : "Disabled",
-    userDesignGoal: `Create an architect-designed ${inputs.bedrooms}BHK ${inputs.buildingUse.toLowerCase()} project with optimum daylight, ventilation, and structural efficiency.`,
+    floorsRequested: `G+${Math.max(1, inputs.floors - 1)} (${inputs.floors} Storeys)`,
+    buildingUsage: inputs.buildingUsage || "Own and Rental Use",
+    parkingRequirement: `${inputs.parkingPreference} (${recommendedParkingType})`,
+    liftRequirement: inputs.liftRequired ? `Yes (Passenger Lift)` : inputs.futureLiftProvision ? "Future Lift Shaft" : "No Lift",
+    vaastuStatus: inputs.vaastuStrictness !== "Ignore" ? `Enabled (${inputs.vaastuStrictness || "Strict"})` : "Disabled",
+    userDesignGoal: `Build a highly functional ${inputs.bedroomsCount || 4}BHK ${inputs.buildingType.toLowerCase()} on a ${plotW}x${plotL} plot with optimal daylighting, ventilation, and structural economy.`,
   };
 
-  // 2. Dynamic Design Objectives (Generated dynamically from inputs without hard-coded span ranges)
+  // 2. DYNAMIC DESIGN OBJECTIVES
   const designObjectives: DynamicDesignObjective[] = [
     {
       id: "obj_area",
       category: "Space Optimization",
-      objective: "Maximise Usable Living Area & Footprint Efficiency",
-      rationale: `Utilize up to ${maxPermittedFootprintSqFt.toLocaleString("en-IN")} sq.ft max permitted footprint per floor while respecting ${sFront}′ front setback.`,
+      objective: "Maximise Usable Built-Up Area & Coverage Efficiency",
+      rationale: `Utilize up to ${maxPermittedFootprintSqFt.toLocaleString("en-IN")} sq.ft footprint per floor respecting ${frontSetbackFt}′ front setback.`,
+    },
+    {
+      id: "obj_gba_setbacks",
+      category: "Statutory Bylaws",
+      objective: "GBA Setback Allocation & Open Space Ratio",
+      rationale: `Maintain Front ${frontSetbackFt}ft (~5%), Sides ${leftSetbackFt}ft (~2%), and Rear ${rearSetbackFt}ft (~1%), keeping ${totalSetbackPct}% open plot area.`,
     },
     {
       id: "obj_daylight",
       category: "Environmental",
-      objective: "Improve Natural Daylight Harvesting",
-      rationale: `Harvest morning solar light along ${facing} road facade and open North elevation.`,
-    },
-    {
-      id: "obj_ventilation",
-      category: "Environmental",
-      objective: "Improve Cross Ventilation Flow",
-      rationale: "Align fenestrations along South-West to North-East wind flow vector.",
+      objective: "Natural Daylight & Climate Harvesting",
+      rationale: `Harvest morning solar light along ${facing} road facade and open North-East elevation.`,
     },
     {
       id: "obj_circulation",
       category: "Efficiency",
-      objective: "Reduce Circulation Loss & Corridor Wastage",
-      rationale: "Locate vertical circulation core efficiently to minimize linear corridor passages.",
+      objective: "Vertical Core Efficiency & Corridor Minimization",
+      rationale: `Locate ${inputs.staircaseRequirement} and Lift Core to minimize internal corridor wastage.`,
+    },
+    {
+      id: "obj_parking",
+      category: "Mobility",
+      objective: "Vehicle Turning Radius & Bay Allocation",
+      rationale: `Accommodate ${calculatedCars} Cars and ${calculatedBikes} Two-Wheelers in ${recommendedParkingType}.`,
     },
   ];
 
-  if (inputs.parking !== "No Parking") {
-    designObjectives.push({
-      id: "obj_parking",
-      category: "Mobility",
-      objective: "Optimise Vehicle Parking & Driveway Access",
-      rationale: `Accommodate ${inputs.carCount} cars and ${inputs.twoWheelerCount} bikes with unhindered turning radius.`,
-    });
-  }
-
-  if (inputs.futureExpansion) {
-    designObjectives.push({
-      id: "obj_expansion",
-      category: "Flexibility",
-      objective: "Allow Future Floor Expansion",
-      rationale: "Ensure structural design considers future additional floor loading.",
-    });
-  }
-
-  designObjectives.push({
-    id: "obj_structure",
-    category: "Engineering",
-    objective: "Engineering Objective",
-    rationale: "Develop a safe, economical and vertically aligned structural system in the Structural Planning module, considering floor count, parking movement, soil information, seismic requirements, load paths and architectural needs.",
-  });
-
-  // 3. Orientation & Climate Opportunities (Pure Analysis)
-  let bestBuildingOrientation = "East-Facing Longitudinally Extended Facade";
-  let entryExitLocation = "North-East (Eesanya) Gate & Entrance Threshold";
-  let vehicleAccessPoint = "North-West (Vayu) Driveway Entry";
-  let pedestrianGateLocation = "North-East Gate";
-
-  if (facing === "North") {
-    bestBuildingOrientation = "North-Facing Open Facade with Shaded Verandah";
-    entryExitLocation = "North-East Gate";
-    vehicleAccessPoint = "North-West Driveway Entry";
-  } else if (facing === "South") {
-    bestBuildingOrientation = "South Road Entry with Deep Verandah Protection";
-    entryExitLocation = "South-East Gate";
-    vehicleAccessPoint = "South-West Driveway Entry";
-  } else if (facing === "West") {
-    bestBuildingOrientation = "West Facade with Louvered Solar Screening";
-    entryExitLocation = "North-West Gate";
-    vehicleAccessPoint = "South-West Driveway Entry";
-  }
-
-  const naturalLightOpportunities = `Optimal morning solar daylight gain along East & North building edges (${facing} facing road frontage). Lower solar heat gain along South-West.`;
-  const crossVentilationOpportunities = "Predominant South-West to North-East wind vector. Deep window openings on SW and NE facades encourage natural cross ventilation.";
-  const openSpaceAllocationSqFt = setbackAreaSqFt + Math.max(0, buildableFootprintSqFt - maxPermittedFootprintSqFt);
-
-  // 4. Service Zones (Dynamic Vaastu / Functional Zoning Recommendations)
-  const kitchenUtilityZone = "South-East (Agni) Zone recommended for Kitchen & Wet Utility.";
-  const toiletsStaircaseZone = "North-West (Vayu) or West Zone recommended for Toilets & Vertical Core.";
-  const masterBedroomZone = "South-West (Nairuthi) Zone recommended for Primary Master Suite.";
-  const poojaMandirZone = inputs.vaastuStrictness !== "Ignore" ? "North-East (Eesanya) Zone recommended for Spiritual Core." : "Flexible central or living area placement.";
-
-  // 5. Constraints & Opportunities
+  // 3. SITE CONSTRAINTS & OPPORTUNITIES
   const siteConstraints: string[] = [
-    `Front Setback Requirement (${sFront} ft) limits maximum roadward projection.`,
-    `Side Setbacks (Left: ${sLeft} ft, Right: ${sRight} ft) define buildable envelope width of ${buildW} ft.`,
+    `Front Setback (${frontSetbackFt} ft) limits roadward structural cantilever projections.`,
+    `Side Setbacks (${leftSetbackFt} ft Left, ${rightSetbackFt} ft Right) define maximum buildable width of ${buildW} ft.`,
     `FAR Limit (${farLimit}) caps total permitted BUA at ${permittedTotalBUASqFt.toLocaleString("en-IN")} sq.ft.`,
-    `Height restriction cap (${inputs.heightRestriction || 45} ft) accommodates up to G+3 floors cleanly.`,
+    `Road width of ${roadW} ft caps permissible storey height at ${maxFloorsAllowedByRoad} floors.`,
   ];
 
   const designOpportunities: string[] = [
-    `Plot dimension (${plotW} ft × ${plotL} ft) allows efficient ${inputs.parking === "Full Parking" ? "Full Stilt Parking Ground Floor" : "Ground Floor Covered Parking Bay"}.`,
+    `Plot geometry (${plotW} ft × ${plotL} ft) allows efficient ${recommendedParkingType} configuration.`,
     `Orientation (${facing} facing) permits maximum East/North daylight harvesting.`,
-    `Corner-to-corner rectangular geometry enables 100% structural grid column alignment across floors.`,
-    `Dedicated ${sFront} ft front setback creates premium road-side balcony decks on upper floors.`,
+    `Rectangular geometry enables 100% structural grid column alignment across floors.`,
+    `Dedicated ${frontSetbackFt} ft front setback creates premium road-side balcony decks on upper floors.`,
   ];
 
-  // 6. Recommendations for Structural Planning (Exact User Prompt Text & Structure)
+  // 4. RECOMMENDATIONS FOR STRUCTURAL PLANNING
   const recommendationsForStructuralPlanning: StructuralPlanningRecommendations = {
-    structuralRequirement: "Evaluate the suitable structural system dynamically based on project usage, building height, number of floors, soil information, seismic zone, loading and buildable envelope.",
-    verticalCirculationRequirement: "Structural Planning must evaluate the most suitable staircase and lift-core location without assuming that the core must be central.",
-    parkingRequirement: "Avoid structural elements that obstruct required vehicle movement, turning radius, parking bays and pedestrian access.",
-    alignmentRequirement: "Maintain practical vertical load-path continuity across floors wherever possible.",
+    structuralRequirement: `Adopt RCC Framed Structure with M25 Concrete and Fe500D Steel. SBC of ${sbc} kN/m² supports isolated trapezoidal footings.`,
+    verticalCirculationRequirement: `Locate ${inputs.staircaseRequirement} and Lift core to avoid load transfers across upper rental units.`,
+    parkingRequirement: `Maintain clear column grid span of 12-16 ft in parking zone to allow unhindered vehicle turning radius.`,
+    alignmentRequirement: "Maintain vertical column grid continuity across Ground and upper floors.",
     siteConstraints: [
-      `Respect the approved buildable envelope (${buildW} ft × ${buildL} ft).`,
-      `Respect statutory setbacks (Front ${sFront} ft, Rear ${sRear} ft, Left ${sLeft} ft, Right ${sRight} ft).`,
-      `Respect access road frontage (${roadW} ft wide ${facing} Road).`,
-      `Respect open-space requirements (${openSpaceAllocationSqFt.toLocaleString("en-IN")} sq.ft open ground).`,
-      `Fulfill user priorities (${inputs.bedrooms} Bedrooms, ${inputs.attachedToilets + inputs.commonToilets} Toilets, ${inputs.parking}).`,
+      `Respect buildable envelope (${buildW} ft × ${buildL} ft).`,
+      `Respect GBA setbacks (Front ${frontSetbackFt} ft, Rear ${rearSetbackFt} ft, Left ${leftSetbackFt} ft, Right ${rightSetbackFt} ft).`,
+      `Respect road frontage (${roadW} ft wide ${facing} Road).`,
+      `Accommodate ${inputs.bedroomsCount || 4} Bedrooms, ${inputs.kitchensCount || 2} Kitchens, ${inputs.attachedToiletsCount + inputs.commonToiletsCount || 4} Toilets.`,
     ],
   };
 
@@ -172,13 +174,13 @@ export function analyzePlotPhase0(inputs: DRGInputs): Phase0AnalysisReport {
       plotAreaSqFt,
       plotShape: inputs.plotShape || "Rectangle",
       facing,
-      roadInfo: `${roadW} ft wide ${inputs.roadDirection || facing} Road`,
-      cornerPlot: inputs.plotShape === "Irregular",
+      roadInfo: `${roadW} ft wide ${facing} Road`,
+      cornerPlot: inputs.isCornerPlot || false,
     },
     regulatorySummary: {
       permittedFAR: farLimit,
       maxCoveragePercent: coverageCapPercent,
-      maxHeightFt: inputs.heightRestriction || 45,
+      maxHeightFt: heightRestrictionFt,
       buildableEnvelopeFt: `${buildW} ft × ${buildL} ft`,
       buildableFootprintSqFt,
       maxPermittedFootprintSqFt,
@@ -186,22 +188,46 @@ export function analyzePlotPhase0(inputs: DRGInputs): Phase0AnalysisReport {
       setbackAreaSqFt,
     },
     orientationRecommendation: {
-      bestBuildingOrientation,
-      entryExitLocation,
-      vehicleAccessPoint,
-      pedestrianGateLocation,
+      bestBuildingOrientation: `${facing}-Facing Facade`,
+      entryExitLocation: `North-East Gate`,
+      vehicleAccessPoint: `North-West Driveway Entry`,
+      pedestrianGateLocation: `North-East Gate`,
     },
     openSpaceAndClimate: {
-      naturalLightOpportunities,
-      crossVentilationOpportunities,
-      openSpaceAllocationSqFt,
+      naturalLightOpportunities: `Optimal daylight along East/North facades (${facing} road).`,
+      crossVentilationOpportunities: `SW to NE prevailing wind vector cross-ventilation.`,
+      openSpaceAllocationSqFt: setbackAreaSqFt,
     },
     serviceZones: {
-      kitchenUtilityZone,
-      toiletsStaircaseZone,
-      masterBedroomZone,
-      poojaMandirZone,
+      kitchenUtilityZone: "South-East (Agni) Zone",
+      toiletsStaircaseZone: "North-West (Vayu) Zone",
+      masterBedroomZone: "South-West (Nairuthi) Zone",
+      poojaMandirZone: "North-East (Eesanya) Zone",
     },
+    statutoryLimits: {
+      permissibleFar: farLimit,
+      permissibleCoveragePercent: coverageCapPercent,
+      maxBuildableAreaSqFt: permittedTotalBUASqFt,
+      maxGroundCoverageSqFt: maxCoverageAreaSqFt,
+      heightRestrictionFt,
+    },
+    gbaSetbacks: {
+      frontFt: frontSetbackFt,
+      sidesFt: leftSetbackFt,
+      rearFt: rearSetbackFt,
+      frontAreaSqFt,
+      sidesAreaSqFt,
+      rearAreaSqFt,
+      totalSetbackAreaSqFt,
+      totalSetbackPct,
+    },
+    storeyCapability: {
+      maxFloorsAllowedByRoad,
+      maxFloorsRecommendedBySbc,
+      finalRecommendedFloors,
+      recommendationReason,
+    },
+    parkingRentalStrategy,
     constraintsAndOpportunities: {
       siteConstraints,
       designOpportunities,

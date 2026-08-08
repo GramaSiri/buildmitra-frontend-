@@ -34,6 +34,8 @@ export type BuildingType =
 
 export type BuildingUsage = "Own Use" | "Rental Use" | "Own and Rental Use";
 
+export type StructuralSubview = "column_grid" | "footing_plan" | "specimen_detail" | "sbc_recommendation" | "all_combined";
+
 export type StructuralSystemPreference =
   | "RCC Framed Structure"
   | "Load-Bearing Structure"
@@ -316,6 +318,38 @@ export type Phase0AnalysisReport = {
     toiletsStaircaseZone: string;
     masterBedroomZone: string;
     poojaMandirZone: string;
+  };
+  statutoryLimits: {
+    permissibleFar: number;
+    permissibleCoveragePercent: number;
+    maxBuildableAreaSqFt: number;
+    maxGroundCoverageSqFt: number;
+    heightRestrictionFt: number;
+  };
+  gbaSetbacks: {
+    frontFt: number;
+    sidesFt: number;
+    rearFt: number;
+    frontAreaSqFt: number;
+    sidesAreaSqFt: number;
+    rearAreaSqFt: number;
+    totalSetbackAreaSqFt: number;
+    totalSetbackPct: number;
+  };
+  storeyCapability: {
+    maxFloorsAllowedByRoad: number;
+    maxFloorsRecommendedBySbc: number;
+    finalRecommendedFloors: number;
+    recommendationReason: string;
+  };
+  parkingRentalStrategy: {
+    parkingMode: string;
+    recommendedParkingType: "Stilt Parking" | "Cellar / Basement Parking" | "Ground Half Parking" | "Open Surface Parking";
+    carBaysCount: number;
+    bikeBaysCount: number;
+    allocatedParkingAreaSqFt: number;
+    rentalUnitsPossible: number;
+    strategyNotes: string;
   };
   constraintsAndOpportunities: {
     siteConstraints: string[];

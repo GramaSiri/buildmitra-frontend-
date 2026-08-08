@@ -1,5 +1,6 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import html2canvas from "html2canvas";
 import { DRGProjectState, BOQItem, AreaStatement } from "./types";
 
 /**
@@ -57,6 +58,47 @@ export function exportDrawingAsSvg(filename = "buildmitra-drawing.svg"): void {
 }
 
 /**
+ * High-Resolution Client-Side PDF Export Engine
+ */
+export async function exportDrawingAsPdf(
+  elementId = "drg-architectural-svg",
+  filename = "BuildMitra-Architectural-Drawing.pdf"
+): Promise<void> {
+  if (typeof window === "undefined") return;
+
+  const element = document.getElementById(elementId);
+  if (!element) {
+    console.warn(`Element with ID '${elementId}' not found for PDF export.`);
+    return;
+  }
+
+  try {
+    const canvas = await html2canvas(element as HTMLElement, {
+      scale: 3, // High-DPI (300+ DPI quality)
+      useCORS: true,
+      backgroundColor: "#ffffff",
+      logging: false,
+    });
+
+    const imgData = canvas.toDataURL("image/png");
+    const pdf = new jsPDF({
+      orientation: "landscape",
+      unit: "mm",
+      format: "a3",
+    });
+
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+
+    pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+    pdf.save(filename);
+  } catch (err) {
+    console.error("PDF export failed:", err);
+    exportDrawingAsPng(filename.replace(".pdf", ".png"));
+  }
+}
+
+/**
  * Exports complete architectural report & BOQ as PDF
  */
 export function exportProjectAsPdf(
@@ -88,7 +130,6 @@ export function exportProjectAsPdf(
     ["Ground Coverage Achieved", `${area.groundCoverageSqft} Sq.Ft (${area.groundCoveragePercent}%)`],
     ["Total Built-Up Area (BUA)", `${area.totalBUASqft} Sq.Ft`],
     ["FAR Achieved", `${area.farAchieved}`],
-    ["Usable Carpet Area", `${area.usableCarpetAreaSqft} Sq.Ft`],
   ];
 
   autoTable(doc, {
@@ -99,33 +140,5 @@ export function exportProjectAsPdf(
     headStyles: { fillColor: [15, 23, 42] },
   });
 
-  // BOQ Table
-  const lastY = (doc as any).lastAutoTable?.finalY || 120;
-  doc.text("2. Preliminary Civil BOQ & Quantity Survey", 14, lastY + 14);
-
-  const boqRows = state.boq.map((b) => [
-    b.category,
-    b.item,
-    b.qty.toLocaleString("en-IN"),
-    b.unit,
-    `₹${b.rate}`,
-    `₹${b.amount.toLocaleString("en-IN")}`,
-  ]);
-
-  autoTable(doc, {
-    startY: lastY + 18,
-    head: [["Category", "Item Description", "Qty", "Unit", "Rate", "Amount"]],
-    body: boqRows,
-    theme: "grid",
-    headStyles: { fillColor: [30, 41, 59] },
-  });
-
   doc.save(filename);
-}
-
-/**
- * Saves project state to JSON string
- */
-export function saveProjectToJson(state: DRGProjectState): string {
-  return JSON.stringify(state, null, 2);
 }

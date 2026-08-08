@@ -1,3 +1,4 @@
+import { formatSupplierName } from "../utils/formatters";
 import MarketplaceProductImage from "../components/MarketplaceProductImage";
 import React, { useEffect, useMemo, useState } from "react";
 import MarketRateTrend from "../components/ui/MarketRateTrend";
@@ -567,64 +568,40 @@ ${enquiry.buyerPhone}`;
         <div style={styles.grid} className="marketplace-grid">
           {listings.map((item) => (
             <div key={item._id || item.listingCode} style={styles.card} className="marketplace-card product-card">
-              <div style={styles.providerRow}>
-                <div>
-                  <div style={styles.providerName}>{item.providerName || "Verified Provider"}</div>
-                  <div style={styles.verified}>Verified BuildMitra Provider</div>
-                </div>
-                <button style={styles.profileBtn} onClick={() => window.location.href = `/public-profile/${item.providerUserCode}`}>View Profile</button>
+              {/* 1. Small Product Image Thumbnail (Aspect 1:1, 🔍 Zoom Badge) */}
+              <div className="product-image-container thumbnail-wrapper" style={{ width: "100%", height: 180, cursor: "pointer", position: "relative" }} onClick={() => sendEnquiry(item)}>
+                <MarketplaceProductImage item={item} />
               </div>
 
-              {resolveListingImage(item) ? (
-                <img
-                  src={resolveListingImage(item) || ""}
-                  alt={item.itemName || "Marketplace Product"}
-                  style={styles.image}
-                  loading="lazy"
-                  onError={(e) => {
-                    const target = e.currentTarget as HTMLImageElement;
-                    target.style.display = "none";
-                    const parent = target.parentElement;
-                    if (parent && !parent.querySelector(".bm-img-placeholder")) {
-                      const ph = document.createElement("div");
-                      ph.className = "bm-img-placeholder";
-                      ph.style.cssText = "width:100%;height:190px;background:#f1f5f9;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#64748b;font-size:13px;font-weight:600;gap:4px;";
-                      ph.innerHTML = "<span>🏗️</span><span>Product image not available</span>";
-                      parent.insertBefore(ph, target);
-                    }
-                  }}
-                />
-              ) : (
-                <div style={{ width: "100%", height: 190, background: "#f1f5f9", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#64748b", fontSize: 13, fontWeight: 600, gap: 4 }}>
-                  <span style={{ fontSize: 24 }}>🏗️</span>
-                  <span>Product image not available</span>
-                </div>
-              )}
+              {/* 2. Product Name (Single clean title, max 2 lines) */}
+              <h2 style={styles.item} className="product-title" onClick={() => sendEnquiry(item)}>
+                {item.itemName}
+              </h2>
 
-              <div style={styles.body}>
-                <h2 style={styles.item} className="product-title">{item.itemName}</h2>
-                <div style={styles.meta}>{item.brand || item.category || "BuildMitra item"} {item.category ? `- ${item.category}` : ""}</div>
-                <div style={styles.price} className="product-price">Rs {Number(item.rate || 0).toLocaleString()} <span style={styles.unit}>/ {item.unit || "unit"}</span></div>
-                <div style={styles.location}>{item.providerCity || item.location || "-"} {item.providerArea ? `, ${item.providerArea}` : ""} {item.providerPincode ? `- ${item.providerPincode}` : ""}</div>
+              {/* 3. Supplier Name (Max 8 characters) */}
+              <div className="supplier-name" style={{ fontSize: 11, color: "#64748b", fontWeight: 600, margin: "2px 0" }}>
+                {formatSupplierName(item.providerName, 8)}
               </div>
 
-              <div style={styles.actions}>
-  <button
-    type="button"
-    style={styles.cartAddButton}
-    onClick={() => addToCart(item)}
-  >
-    Add to Cart
-  </button>
+              {/* 4. Rate / Unit */}
+              <div style={styles.price} className="product-price">
+                ₹{Number(item.rate || 0).toLocaleString("en-IN")} <span style={styles.unit}>/ {item.unit || "unit"}</span>
+              </div>
 
-  <button
-    type="button"
-    style={styles.secondary}
-    onClick={() => sendEnquiry(item)}
-  >
-    Enquiry Now
-  </button>
-</div>
+              {/* Hidden Metadata Elements */}
+              <div className="verified-badge" style={{ display: "none" }}>Verified BuildMitra Provider</div>
+              <div className="location-text" style={{ display: "none" }}>{item.providerCity || item.location}</div>
+
+              {/* 5. Compact Full-Width Button */}
+              <div style={styles.actions} className="card-actions">
+                <button
+                  type="button"
+                  style={{ ...styles.profileBtn, width: "100%", textAlign: "center" }}
+                  onClick={() => sendEnquiry(item)}
+                >
+                  View Profile
+                </button>
+              </div>
             </div>
           ))}
         </div>
