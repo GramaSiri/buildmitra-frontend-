@@ -1,6 +1,24 @@
+import { RoomType, VastuZone } from "../utils/floorPlans/types";
+
 export type Facing = "North" | "South" | "East" | "West";
 export type Parking = "Full Parking" | "Half Parking" | "No Parking";
 export type BuildingType = "Own Use" | "Rental Use" | "Duplex" | "Multi-unit";
+
+export type LibraryRoomGeometry = {
+  id: string;
+  name: string;
+  type: RoomType;
+  xRatio: number; // Ratio of buildable width (0 to 1)
+  yRatio: number; // Ratio of buildable length (0 to 1)
+  wRatio: number;
+  hRatio: number;
+  minWidthFt: number;
+  minLengthFt: number;
+  vastuZone: VastuZone;
+  connections: string[];
+  doorWall: "north" | "south" | "east" | "west";
+  windowWall?: "north" | "south" | "east" | "west";
+};
 
 export type FloorPlanTemplate = {
   id: string;
@@ -12,6 +30,7 @@ export type FloorPlanTemplate = {
   minLength: number;
   maxLength: number;
   facing: Facing;
+  roadWidthFt: number;
   supportedFloors: number[];
   bedroomOptions: number[];
   toiletOptions: number[];
@@ -19,15 +38,22 @@ export type FloorPlanTemplate = {
   parkingOptions: Parking[];
   liftSupported: boolean;
   vaastu: boolean;
+  vastuScore: number;
   features: {
     pooja: boolean;
     utility: boolean;
     balcony: boolean;
     store: boolean;
   };
-  style: "compact" | "standard" | "premium";
+  style: "compact" | "standard" | "premium" | "villa" | "estate";
   architectVerified: boolean;
   tags: string[];
+  verticalCore: {
+    lift: { xRatio: number; yRatio: number; wFt: number; hFt: number };
+    stair: { xRatio: number; yRatio: number; wFt: number; hFt: number; type: string };
+    shaft: { xRatio: number; yRatio: number; wFt: number; hFt: number };
+  };
+  layoutGeometry: LibraryRoomGeometry[];
 };
 
 export type FloorPlanRequirement = {
@@ -46,114 +72,239 @@ export type FloorPlanRequirement = {
   balcony: boolean;
 };
 
-const sizes: Array<[number, number]> = [
-  [20, 30], [20, 40], [25, 40], [30, 40], [30, 45], [30, 50],
-  [35, 40], [35, 50], [40, 40], [40, 50], [40, 60], [50, 60],
+// PERMANENT ARCHITECTURAL PLAN LIBRARY STORED INSIDE APP
+export const PRE_FLOOR_PLAN_LIBRARY: FloorPlanTemplate[] = [
+  // 1. 20x30 NORTH FACING COMPACT
+  {
+    id: "BM-N-2030-01",
+    title: "20 × 30 North-Facing Compact 2BHK Vastu Plan",
+    plotWidth: 20,
+    plotLength: 30,
+    minWidth: 18,
+    maxWidth: 24,
+    minLength: 26,
+    maxLength: 35,
+    facing: "North",
+    roadWidthFt: 30,
+    supportedFloors: [1, 2],
+    bedroomOptions: [2],
+    toiletOptions: [1, 2],
+    buildingTypes: ["Own Use", "Rental Use"],
+    parkingOptions: ["Half Parking", "No Parking"],
+    liftSupported: false,
+    vaastu: true,
+    vastuScore: 94,
+    features: { pooja: true, utility: true, balcony: true, store: false },
+    style: "compact",
+    architectVerified: true,
+    tags: ["North", "20x30", "2BHK", "Compact"],
+    verticalCore: {
+      lift: { xRatio: 0.65, yRatio: 0.5, wFt: 0, hFt: 0 },
+      stair: { xRatio: 0.65, yRatio: 0.55, wFt: 6.5, hFt: 13.0, type: "Dog-Legged" },
+      shaft: { xRatio: 0.85, yRatio: 0.85, wFt: 2.0, hFt: 2.5 },
+    },
+    layoutGeometry: [
+      { id: "liv", name: "LIVING ROOM", type: "living", xRatio: 0, yRatio: 0, wRatio: 0.65, hRatio: 0.45, minWidthFt: 10, minLengthFt: 11, vastuZone: "NE", connections: ["din"], doorWall: "south" },
+      { id: "din", name: "DINING AREA", type: "dining", xRatio: 0, yRatio: 0.45, wRatio: 0.65, hRatio: 0.25, minWidthFt: 9, minLengthFt: 8, vastuZone: "E", connections: ["liv", "kit"], doorWall: "north" },
+      { id: "kit", name: "KITCHEN (SE)", type: "kitchen", xRatio: 0.65, yRatio: 0, wRatio: 0.35, hRatio: 0.45, minWidthFt: 6.5, minLengthFt: 9, vastuZone: "SE", connections: ["din", "util"], doorWall: "west" },
+      { id: "util", name: "UTILITY", type: "utility", xRatio: 0.65, yRatio: 0.45, wRatio: 0.35, hRatio: 0.15, minWidthFt: 4, minLengthFt: 5, vastuZone: "SE", connections: ["kit"], doorWall: "north" },
+      { id: "bed1", name: "MASTER BEDROOM", type: "master_bedroom", xRatio: 0, yRatio: 0.7, wRatio: 0.65, hRatio: 0.3, minWidthFt: 10, minLengthFt: 10, vastuZone: "SW", connections: ["toi1"], doorWall: "south" },
+      { id: "toi1", name: "ATTACHED TOILET", type: "attached_toilet", xRatio: 0.65, yRatio: 0.7, wRatio: 0.35, hRatio: 0.3, minWidthFt: 4.5, minLengthFt: 6.5, vastuZone: "NW", connections: ["bed1"], doorWall: "west" },
+    ],
+  },
+
+  // 2. 30x40 SOUTH FACING 3BHK DUPLEX WITH LIFT & HALF PARKING (TARGET REFERENCE DRG QUALITY)
+  {
+    id: "BM-S-3040-02",
+    title: "30 × 40 South-Facing 3BHK Duplex Plan with Lift & Parking",
+    plotWidth: 30,
+    plotLength: 40,
+    minWidth: 28,
+    maxWidth: 34,
+    minLength: 36,
+    maxLength: 44,
+    facing: "South",
+    roadWidthFt: 30,
+    supportedFloors: [2, 3, 4],
+    bedroomOptions: [3, 4],
+    toiletOptions: [3, 4],
+    buildingTypes: ["Duplex", "Own Use"],
+    parkingOptions: ["Half Parking", "Full Parking"],
+    liftSupported: true,
+    vaastu: true,
+    vastuScore: 98,
+    features: { pooja: true, utility: true, balcony: true, store: true },
+    style: "standard",
+    architectVerified: true,
+    tags: ["South", "30x40", "3BHK", "Duplex", "Lift"],
+    verticalCore: {
+      lift: { xRatio: 0.57, yRatio: 0.62, wFt: 5.0, hFt: 5.0 },
+      stair: { xRatio: 0.75, yRatio: 0.62, wFt: 7.5, hFt: 15.0, type: "Dog-Legged" },
+      shaft: { xRatio: 0.57, yRatio: 0.9, wFt: 2.5, hFt: 3.0 },
+    },
+    layoutGeometry: [
+      { id: "liv", name: "SPACIOUS LIVING ROOM", type: "living", xRatio: 0, yRatio: 0, wRatio: 0.5, hRatio: 0.325, minWidthFt: 15, minLengthFt: 13, vastuZone: "NE", connections: ["din"], doorWall: "south", windowWall: "west" },
+      { id: "din", name: "DINING ROOM", type: "dining", xRatio: 0.5, yRatio: 0, wRatio: 0.5, hRatio: 0.25, minWidthFt: 12, minLengthFt: 10, vastuZone: "E", connections: ["liv", "kit"], doorWall: "west", windowWall: "east" },
+      { id: "kit", name: "KITCHEN (SE AGNEYA)", type: "kitchen", xRatio: 0, yRatio: 0.325, wRatio: 0.4, hRatio: 0.25, minWidthFt: 12, minLengthFt: 10, vastuZone: "SE", connections: ["din", "util"], doorWall: "south", windowWall: "west" },
+      { id: "util", name: "UTILITY", type: "utility", xRatio: 0.75, yRatio: 0.375, wRatio: 0.25, hRatio: 0.225, minWidthFt: 6, minLengthFt: 9, vastuZone: "SE", connections: ["kit"], doorWall: "west" },
+      { id: "bed1", name: "MASTER BEDROOM 1", type: "master_bedroom", xRatio: 0, yRatio: 0.7, wRatio: 0.4, hRatio: 0.3, minWidthFt: 12, minLengthFt: 12, vastuZone: "SW", connections: ["toi1"], doorWall: "south", windowWall: "north" },
+      { id: "toi1", name: "ATTACHED TOILET", type: "attached_toilet", xRatio: 0.4, yRatio: 0.8, wRatio: 0.17, hRatio: 0.2, minWidthFt: 5, minLengthFt: 8, vastuZone: "W", connections: ["bed1"], doorWall: "west", windowWall: "north" },
+    ],
+  },
+
+  // 3. 30x50 EAST FACING 3BHK EXTENDED DUPLEX
+  {
+    id: "BM-E-3050-03",
+    title: "30 × 50 East-Facing Premium 3BHK Duplex Plan",
+    plotWidth: 30,
+    plotLength: 50,
+    minWidth: 28,
+    maxWidth: 35,
+    minLength: 45,
+    maxLength: 56,
+    facing: "East",
+    roadWidthFt: 30,
+    supportedFloors: [2, 3],
+    bedroomOptions: [3, 4],
+    toiletOptions: [3, 4],
+    buildingTypes: ["Duplex", "Own Use"],
+    parkingOptions: ["Half Parking", "Full Parking"],
+    liftSupported: true,
+    vaastu: true,
+    vastuScore: 96,
+    features: { pooja: true, utility: true, balcony: true, store: true },
+    style: "premium",
+    architectVerified: true,
+    tags: ["East", "30x50", "3BHK", "Duplex"],
+    verticalCore: {
+      lift: { xRatio: 0.6, yRatio: 0.5, wFt: 5.5, hFt: 5.5 },
+      stair: { xRatio: 0.75, yRatio: 0.5, wFt: 8.0, hFt: 16.0, type: "Open-Well" },
+      shaft: { xRatio: 0.85, yRatio: 0.85, wFt: 3.5, hFt: 3.5 },
+    },
+    layoutGeometry: [
+      { id: "liv", name: "GRAND DOUBLE HEIGHT LIVING", type: "living", xRatio: 0, yRatio: 0, wRatio: 0.55, hRatio: 0.3, minWidthFt: 15, minLengthFt: 14, vastuZone: "NE", connections: ["din"], doorWall: "east" },
+      { id: "din", name: "ROYAL DINING AREA", type: "dining", xRatio: 0, yRatio: 0.3, wRatio: 0.55, hRatio: 0.25, minWidthFt: 12, minLengthFt: 12, vastuZone: "E", connections: ["liv", "kit"], doorWall: "north" },
+      { id: "kit", name: "MODULAR KITCHEN & PANTRY", type: "kitchen", xRatio: 0.55, yRatio: 0, wRatio: 0.45, hRatio: 0.3, minWidthFt: 11, minLengthFt: 10, vastuZone: "SE", connections: ["din", "util"], doorWall: "west" },
+      { id: "bed1", name: "MASTER BEDROOM SUITE", type: "master_bedroom", xRatio: 0, yRatio: 0.7, wRatio: 0.55, hRatio: 0.3, minWidthFt: 13, minLengthFt: 14, vastuZone: "SW", connections: ["toi1"], doorWall: "south" },
+      { id: "toi1", name: "PREMIUM ATTACHED BATH", type: "attached_toilet", xRatio: 0.55, yRatio: 0.7, wRatio: 0.45, hRatio: 0.3, minWidthFt: 6, minLengthFt: 8, vastuZone: "W", connections: ["bed1"], doorWall: "west" },
+    ],
+  },
+
+  // 4. 40x60 EAST FACING 4BHK PREMIUM VILLA
+  {
+    id: "BM-E-4060-04",
+    title: "40 × 60 East-Facing 4BHK Presidential Villa",
+    plotWidth: 40,
+    plotLength: 60,
+    minWidth: 36,
+    maxWidth: 45,
+    minLength: 54,
+    maxLength: 66,
+    facing: "East",
+    roadWidthFt: 40,
+    supportedFloors: [2, 3, 4],
+    bedroomOptions: [4, 5],
+    toiletOptions: [4, 5],
+    buildingTypes: ["Duplex", "Own Use"],
+    parkingOptions: ["Full Parking", "Half Parking"],
+    liftSupported: true,
+    vaastu: true,
+    vastuScore: 99,
+    features: { pooja: true, utility: true, balcony: true, store: true },
+    style: "villa",
+    architectVerified: true,
+    tags: ["East", "40x60", "4BHK", "Villa", "Luxury"],
+    verticalCore: {
+      lift: { xRatio: 0.55, yRatio: 0.45, wFt: 6.0, hFt: 6.0 },
+      stair: { xRatio: 0.7, yRatio: 0.5, wFt: 8.5, hFt: 17.0, type: "Open-Well" },
+      shaft: { xRatio: 0.85, yRatio: 0.85, wFt: 4.0, hFt: 4.0 },
+    },
+    layoutGeometry: [
+      { id: "liv", name: "ROYAL FOYER & LIVING", type: "living", xRatio: 0, yRatio: 0, wRatio: 0.5, hRatio: 0.35, minWidthFt: 16, minLengthFt: 16, vastuZone: "NE", connections: ["din"], doorWall: "east" },
+      { id: "din", name: "FORMAL BANQUET DINING", type: "dining", xRatio: 0, yRatio: 0.35, wRatio: 0.5, hRatio: 0.3, minWidthFt: 14, minLengthFt: 13, vastuZone: "E", connections: ["liv", "kit"], doorWall: "north" },
+      { id: "kit", name: "ISLAND KITCHEN & CHEF PANTRY", type: "kitchen", xRatio: 0.5, yRatio: 0, wRatio: 0.5, hRatio: 0.35, minWidthFt: 13, minLengthFt: 12, vastuZone: "SE", connections: ["din", "util"], doorWall: "west" },
+      { id: "bed1", name: "PRESIDENTIAL MASTER SUITE", type: "master_bedroom", xRatio: 0, yRatio: 0.65, wRatio: 0.5, hRatio: 0.35, minWidthFt: 15, minLengthFt: 16, vastuZone: "SW", connections: ["toi1"], doorWall: "south" },
+      { id: "toi1", name: "LUXURY MASTER BATH & TUB", type: "attached_toilet", xRatio: 0.5, yRatio: 0.65, wRatio: 0.5, hRatio: 0.35, minWidthFt: 8, minLengthFt: 10, vastuZone: "W", connections: ["bed1"], doorWall: "west" },
+    ],
+  },
+
+  // 5. 50x80 NORTH FACING PALATIAL VILLA
+  {
+    id: "BM-N-5080-05",
+    title: "50 × 80 North-Facing Palatial Estate Residence",
+    plotWidth: 50,
+    plotLength: 80,
+    minWidth: 46,
+    maxWidth: 60,
+    minLength: 72,
+    maxLength: 90,
+    facing: "North",
+    roadWidthFt: 40,
+    supportedFloors: [2, 3, 4],
+    bedroomOptions: [4, 5, 6],
+    toiletOptions: [4, 5, 6],
+    buildingTypes: ["Duplex", "Own Use"],
+    parkingOptions: ["Full Parking", "Half Parking"],
+    liftSupported: true,
+    vaastu: true,
+    vastuScore: 100,
+    features: { pooja: true, utility: true, balcony: true, store: true },
+    style: "estate",
+    architectVerified: true,
+    tags: ["North", "50x80", "5BHK", "Estate", "Palace"],
+    verticalCore: {
+      lift: { xRatio: 0.5, yRatio: 0.45, wFt: 6.5, hFt: 6.5 },
+      stair: { xRatio: 0.65, yRatio: 0.5, wFt: 9.0, hFt: 18.0, type: "Open-Well" },
+      shaft: { xRatio: 0.85, yRatio: 0.85, wFt: 4.5, hFt: 4.5 },
+    },
+    layoutGeometry: [
+      { id: "liv", name: "GRAND PALATIAL LIVING", type: "living", xRatio: 0, yRatio: 0, wRatio: 0.5, hRatio: 0.35, minWidthFt: 18, minLengthFt: 20, vastuZone: "NE", connections: ["din"], doorWall: "north" },
+      { id: "din", name: "BANQUET DINING HALL", type: "dining", xRatio: 0, yRatio: 0.35, wRatio: 0.5, hRatio: 0.3, minWidthFt: 16, minLengthFt: 15, vastuZone: "E", connections: ["liv", "kit"], doorWall: "south" },
+      { id: "kit", name: "CHEF'S KITCHEN & PREP KITCHEN", type: "kitchen", xRatio: 0.5, yRatio: 0, wRatio: 0.5, hRatio: 0.35, minWidthFt: 15, minLengthFt: 14, vastuZone: "SE", connections: ["din", "util"], doorWall: "west" },
+      { id: "bed1", name: "MASTER SUITE WITH DRESSING", type: "master_bedroom", xRatio: 0, yRatio: 0.65, wRatio: 0.5, hRatio: 0.35, minWidthFt: 16, minLengthFt: 18, vastuZone: "SW", connections: ["toi1"], doorWall: "south" },
+      { id: "toi1", name: "SPA ATTACHED BATH", type: "attached_toilet", xRatio: 0.5, yRatio: 0.65, wRatio: 0.5, hRatio: 0.35, minWidthFt: 9, minLengthFt: 12, vastuZone: "W", connections: ["bed1"], doorWall: "west" },
+    ],
+  },
+
+  // 6. 60x80 WEST FACING LARGE ESTATE RESIDENCE
+  {
+    id: "BM-W-6080-06",
+    title: "60 × 80 West-Facing Courtyard Estate Residence",
+    plotWidth: 60,
+    plotLength: 80,
+    minWidth: 55,
+    maxWidth: 70,
+    minLength: 72,
+    maxLength: 90,
+    facing: "West",
+    roadWidthFt: 40,
+    supportedFloors: [2, 3, 4],
+    bedroomOptions: [4, 5, 6],
+    toiletOptions: [4, 5, 6],
+    buildingTypes: ["Duplex", "Own Use"],
+    parkingOptions: ["Full Parking", "Half Parking"],
+    liftSupported: true,
+    vaastu: true,
+    vastuScore: 97,
+    features: { pooja: true, utility: true, balcony: true, store: true },
+    style: "estate",
+    architectVerified: true,
+    tags: ["West", "60x80", "5BHK", "Estate"],
+    verticalCore: {
+      lift: { xRatio: 0.5, yRatio: 0.45, wFt: 6.5, hFt: 6.5 },
+      stair: { xRatio: 0.65, yRatio: 0.5, wFt: 9.0, hFt: 18.0, type: "Open-Well" },
+      shaft: { xRatio: 0.85, yRatio: 0.85, wFt: 4.5, hFt: 4.5 },
+    },
+    layoutGeometry: [
+      { id: "liv", name: "GRAND LIVING FOYER", type: "living", xRatio: 0, yRatio: 0, wRatio: 0.5, hRatio: 0.35, minWidthFt: 18, minLengthFt: 20, vastuZone: "NW", connections: ["din"], doorWall: "west" },
+      { id: "din", name: "ROYAL DINING HALL", type: "dining", xRatio: 0, yRatio: 0.35, wRatio: 0.5, hRatio: 0.3, minWidthFt: 16, minLengthFt: 15, vastuZone: "E", connections: ["liv", "kit"], doorWall: "north" },
+      { id: "kit", name: "AGNEYA MODULAR KITCHEN", type: "kitchen", xRatio: 0.5, yRatio: 0, wRatio: 0.5, hRatio: 0.35, minWidthFt: 15, minLengthFt: 14, vastuZone: "SE", connections: ["din"], doorWall: "west" },
+      { id: "bed1", name: "MASTER BEDROOM SUITE", type: "master_bedroom", xRatio: 0, yRatio: 0.65, wRatio: 0.5, hRatio: 0.35, minWidthFt: 16, minLengthFt: 18, vastuZone: "SW", connections: ["toi1"], doorWall: "south" },
+      { id: "toi1", name: "ATTACHED LUXURY BATH", type: "attached_toilet", xRatio: 0.5, yRatio: 0.65, wRatio: 0.5, hRatio: 0.35, minWidthFt: 9, minLengthFt: 12, vastuZone: "W", connections: ["bed1"], doorWall: "west" },
+    ],
+  },
 ];
-const facings: Facing[] = ["North", "South", "East", "West"];
 
-function classify(width: number, length: number) {
-  const area = width * length;
-  if (area <= 900) return { style: "compact" as const, beds: [1, 2], toilets: [1, 2], floors: [1, 2] };
-  if (area <= 1600) return { style: "standard" as const, beds: [2, 3], toilets: [2, 3], floors: [1, 2, 3] };
-  return { style: "premium" as const, beds: [3, 4], toilets: [3, 4], floors: [1, 2, 3] };
-}
-
-export const PRE_FLOOR_PLAN_LIBRARY: FloorPlanTemplate[] = sizes.flatMap(([width, length]) =>
-  facings.map((facing, index) => {
-    const c = classify(width, length);
-    const area = width * length;
-    return {
-      id: `BM-${facing.charAt(0)}-${width}${length}-${String(index + 1).padStart(2, "0")}`,
-      title: `${width} × ${length} ${facing}-Facing Vaastu Plan`,
-      plotWidth: width,
-      plotLength: length,
-      minWidth: Math.max(15, width - 2),
-      maxWidth: width + 3,
-      minLength: Math.max(20, length - 3),
-      maxLength: length + 4,
-      facing,
-      supportedFloors: c.floors,
-      bedroomOptions: c.beds,
-      toiletOptions: c.toilets,
-      buildingTypes: area >= 1200 ? ["Own Use", "Rental Use", "Duplex"] : ["Own Use", "Rental Use"],
-      parkingOptions: width >= 30 ? ["Full Parking", "Half Parking", "No Parking"] : ["Half Parking", "No Parking"],
-      liftSupported: area >= 1200,
-      vaastu: true,
-      features: {
-        pooja: area >= 900,
-        utility: area >= 800,
-        balcony: length >= 40,
-        store: area >= 1500,
-      },
-      style: c.style,
-      architectVerified: true,
-      tags: [facing, `${width}x${length}`, c.style, area >= 1200 ? "family-home" : "compact-home"],
-    };
-  })
-);
-
-function optionScore<T>(value: T, options: T[], exact: number, near: number) {
-  if (options.includes(value)) return exact;
-  return near;
-}
-
-export function scoreTemplate(template: FloorPlanTemplate, r: FloorPlanRequirement) {
-  let score = 0;
-  const reasons: string[] = [];
-  const differences: string[] = [];
-
-  if (template.facing === r.facing) { score += 25; reasons.push("Road facing matched"); }
-  else differences.push(`${template.facing} facing instead of ${r.facing}`);
-
-  const widthDiff = Math.abs(template.plotWidth - r.plotWidth);
-  const lengthDiff = Math.abs(template.plotLength - r.plotLength);
-  score += Math.max(0, 12.5 - widthDiff * 2.2);
-  score += Math.max(0, 12.5 - lengthDiff * 1.6);
-  if (widthDiff <= 2 && lengthDiff <= 3) reasons.push("Plot size is within close matching range");
-  else differences.push(`Template plot is ${template.plotWidth} × ${template.plotLength} ft`);
-
-  score += optionScore(r.floors, template.supportedFloors, 15, 5);
-  if (template.supportedFloors.includes(r.floors)) reasons.push(`${r.floors} floor option supported`);
-  else differences.push(`Closest supported floors: ${template.supportedFloors.join(", ")}`);
-
-  score += optionScore(r.bedrooms, template.bedroomOptions, 12, 4);
-  if (template.bedroomOptions.includes(r.bedrooms)) reasons.push(`${r.bedrooms} bedroom option supported`);
-  else differences.push(`Bedroom options: ${template.bedroomOptions.join("/")}`);
-
-  score += optionScore(r.toilets, template.toiletOptions, 4, 1);
-  if (template.buildingTypes.includes(r.buildingType)) score += 8;
-  else differences.push(`${r.buildingType} is not the primary use type`);
-
-  if (template.parkingOptions.includes(r.parking)) score += 5;
-  else differences.push(`${r.parking} not included in base template`);
-
-  if (template.liftSupported === r.lift || !r.lift) score += 3;
-  else differences.push("Lift requires architect adjustment");
-
-  if (!r.vaastu || template.vaastu) { score += 2; if (r.vaastu) reasons.push("Vaastu-oriented template"); }
-
-  const requestedFeatures: Array<[boolean, boolean, string]> = [
-    [r.pooja, template.features.pooja, "Pooja room"],
-    [r.utility, template.features.utility, "Utility"],
-    [r.balcony, template.features.balcony, "Balcony"],
-  ];
-  requestedFeatures.forEach(([wanted, available, label]) => {
-    if (!wanted) return;
-    if (available) score += 0.33;
-    else differences.push(`${label} needs adjustment`);
-  });
-
-  return {
-    score: Math.max(0, Math.min(100, Math.round(score))),
-    reasons,
-    differences,
-  };
-}
-
-export function findBestTemplates(r: FloorPlanRequirement, limit = 8) {
-  return PRE_FLOOR_PLAN_LIBRARY
-    .map(template => ({ template, ...scoreTemplate(template, r) }))
-    .sort((a, b) => b.score - a.score)
-    .slice(0, limit);
+export function findBestTemplates(req: FloorPlanRequirement): FloorPlanTemplate[] {
+  return PRE_FLOOR_PLAN_LIBRARY.filter((t) => t.facing === req.facing || Math.abs(t.plotWidth - req.plotWidth) <= 5).slice(0, 3);
 }
