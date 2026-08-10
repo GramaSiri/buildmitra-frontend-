@@ -1,181 +1,182 @@
-export interface PDFExportData {
-  documentTitle: string;
-  documentNo?: string;
-  date?: string;
-  buyerName?: string;
-  buyerCode?: string;
-  contractorName?: string;
-  contractorCode?: string;
-  projectName?: string;
-  items: Array<{
-    sno?: number;
-    description: string;
-    quantity: number | string;
-    unit?: string;
-    rate?: number | string;
-    amount?: number | string;
-    notes?: string;
-  }>;
-  subtotal?: number;
-  gstAmount?: number;
-  grandTotal?: number;
-  terms?: string[];
-  notes?: string;
-}
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
-import { BUILDMITRA_LOGO_DATA_URI } from "./logoDataUri";
+export const exportToPDF = (data: any[], columns: string[], fileName: string = "Electrical_BOQ_Report") => {
+  const doc = new jsPDF();
+  doc.setFontSize(16);
+  doc.text("BuildMitra — Electrical, Power & Solar BOQ Estimate", 14, 16);
+  doc.setFontSize(10);
+  doc.text("Official Technical Specification & Cost Estimate | Bengaluru Benchmark", 14, 22);
 
-export const DEFAULT_STANDARD_CONDITIONS = [
-  "The calculations and material quantities are fetched strictly as per your inputs provided.",
-  "For actual site quantities, structural design accuracy, and detailed execution BOQ, please submit your architectural and structural drawings.",
-  "Estimates are indicative and subject to standard site wastage (typically 3–5%), local supplier rates, and site execution variations.",
-  "All structural suggestions follow IS Codes (IS 456 / IS 800); site structural engineer approval is recommended prior to procurement.",
-  "BuildMitra Infra & Construction Technologies provides estimations for planning and budgeting purposes and assumes no liability for execution deviations."
-];
+  autoTable(doc, {
+    head: [columns],
+    body: data.map((row) => columns.map((col) => row[col])),
+    startY: 28,
+    styles: { fontSize: 9, cellPadding: 3 },
+    headStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255], fontStyle: "bold" },
+  });
 
-export const downloadBuildMitraPDF = (data: PDFExportData) => {
-  const printWindow = window.open("", "_blank");
-  if (!printWindow) {
-    alert("Please allow popups to download/print the BuildMitra document.");
-    return;
-  }
-
-  const subtotal = data.subtotal ?? data.items.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
-  const gst = data.gstAmount ?? Math.round(subtotal * 0.18);
-  const grandTotal = data.grandTotal ?? (subtotal + gst);
-  const dateStr = data.date || new Date().toISOString().split("T")[0];
-  const docNo = data.documentNo || `BM-DOC-${Date.now().toString().slice(-6)}`;
-
-  const itemsRows = data.items.map((item, idx) => `
-    <tr style="background-color: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'};">
-      <td style="padding: 10px; border: 1px solid #cbd5e1; text-align: center;">${item.sno || idx + 1}</td>
-      <td style="padding: 10px; border: 1px solid #cbd5e1; font-weight: 500;">
-        ${item.description}
-        ${item.notes ? `<div style="font-size: 10px; color: #64748b; margin-top: 2px;">Note: ${item.notes}</div>` : ''}
-      </td>
-      <td style="padding: 10px; border: 1px solid #cbd5e1; text-align: center; font-weight: 600;">${typeof item.quantity === 'number' ? (Number.isInteger(item.quantity) ? item.quantity : item.quantity.toFixed(2)) : item.quantity}</td>
-      <td style="padding: 10px; border: 1px solid #cbd5e1; text-align: center;">${item.unit || 'Nos'}</td>
-      <td style="padding: 10px; border: 1px solid #cbd5e1; text-align: right;">${item.rate != null && item.rate !== '' ? '₹' + Number(item.rate).toLocaleString() : '-'}</td>
-      <td style="padding: 10px; border: 1px solid #cbd5e1; text-align: right; font-weight: 700;">${item.amount != null && item.amount !== '' ? '₹' + Number(item.amount).toLocaleString() : '-'}</td>
-    </tr>
-  `).join("");
-
-  const defaultTerms = data.terms || DEFAULT_STANDARD_CONDITIONS;
-
-  const htmlContent = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>${data.documentTitle} - ${docNo}</title>
-      <style>
-        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; margin: 0; padding: 24px; color: #0f172a; background-color: #fff; }
-        .letterhead-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #0284c7; padding-bottom: 16px; margin-bottom: 20px; }
-        .company-title { margin: 0; font-size: 18px; font-weight: 800; color: #0f172a; letter-spacing: -0.3px; }
-        .tagline { font-size: 11px; font-weight: 600; color: #0284c7; margin-top: 2px; }
-        .address { font-size: 11px; color: #475569; margin-top: 4px; line-height: 1.4; }
-        .contact-block { text-align: right; font-size: 11px; color: #334155; line-height: 1.5; border-left: 2px solid #e2e8f0; padding-left: 16px; }
-        .doc-banner { background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; display: flex; justify-content: space-between; }
-        .doc-title { font-size: 16px; font-weight: 800; color: #0369a1; text-transform: uppercase; }
-        .table-custom { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px; }
-        .table-custom th { background-color: #0284c7; color: #ffffff; padding: 10px; border: 1px solid #0284c7; text-align: left; }
-        .totals-card { width: 280px; margin-left: auto; margin-bottom: 20px; background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px 16px; font-size: 12px; }
-        .total-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
-        .grand-total { border-top: 2px solid #0284c7; padding-top: 6px; font-weight: 800; font-size: 14px; }
-        .terms-block { border-top: 1px dashed #cbd5e1; padding-top: 12px; margin-bottom: 24px; font-size: 11px; color: #475569; }
-        .terms-list { margin: 6px 0 0 0; padding-left: 18px; color: #64748b; line-height: 1.6; }
-        .footer-note { border-top: 1px solid #e2e8f0; padding-top: 12px; text-align: center; font-size: 10px; color: #94a3b8; }
-        @media print {
-          body { padding: 0; }
-          .no-print { display: none; }
-        }
-      </style>
-    </head>
-    <body>BuildMitra
-      <div class="no-print" style="text-align: right; margin-bottom: 16px;">
-        <button onclick="window.print()" style="background-color: #0284c7; color: white; border: none; padding: 10px 20px; font-weight: bold; border-radius: 6px; cursor: pointer;">
-          
-        </button>
-      </div>
-
-      <div class="letterhead-header">
-        <div style="display: flex; align-items: center; gap: 16px;">
-          <div style="width: 70px; height: 70px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-            <img src="${BUILDMITRA_LOGO_DATA_URI}" alt="" style="max-width: 70px; max-height: 70px; object-fit: contain; border-radius: 8px;" />
-          </div>
-          <div>
-            BuildMitra
-            <div class="tagline">Build Smart, Cost Less • Materials, BOQ Costing & Real Estate Suite</div>
-            <div class="address">📍 No:378, Near Gurusidheswra theater, 80 ft Road, JP Nagar, 4th Block, 9th Phase, Bengaluru- 560062</div>
-          </div>
-        </div>
-        <div class="contact-block">
-          <div><strong>📱 Mobile:</strong> +91 76769 42386</div>
-          <div><strong>📧 Email:</strong> support@buildmitra.in</div>
-          <div><strong>🌐 Web:</strong> www.buildmitra.com</div>
-          <div><strong>GSTIN:</strong> 29AAAAA0000A1Z5</div>
-        </div>
-      </div>
-
-      <div class="doc-banner">
-        <div>
-          <div class="doc-title">📄 ${data.documentTitle}</div>
-          <div style="font-size: 12px; color: #64748b; margin-top: 2px;">Ref No: <strong>${docNo}</strong></div>
-        </div>
-        <div style="text-align: right; font-size: 12px; color: #334155;">
-          <div>Date: <strong>${dateStr}</strong></div>
-          ${data.projectName ? `<div>Project: <strong>${data.projectName}</strong></div>` : ''}
-        </div>
-      </div>
-
-      ${(data.buyerName || data.contractorName) ? `
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; background-color: #f1f5f9; padding: 12px 16px; border-radius: 8px; font-size: 12px;">
-          ${data.buyerName ? `<div><strong style="color: #64748b; font-size: 10px;">BUYER / CLIENT:</strong><br/><strong>${data.buyerName}</strong> ${data.buyerCode ? `(${data.buyerCode})` : ''}</div>` : ''}
-          ${data.contractorName ? `<div><strong style="color: #64748b; font-size: 10px;">SUPPLIER / CONTRACTOR:</strong><br/><strong>${data.contractorName}</strong> ${data.contractorCode ? `(${data.contractorCode})` : ''}</div>` : ''}
-        </div>
-      ` : ''}
-
-      <table class="table-custom">
-        <thead>
-          <tr>
-            <th style="width: 40px; text-align: center;">#</th>
-            <th>Item Description & Specifications</th>
-            <th style="width: 80px; text-align: center;">Qty</th>
-            <th style="width: 70px; text-align: center;">Unit</th>
-            <th style="width: 100px; text-align: right;">Rate (₹)</th>
-            <th style="width: 110px; text-align: right;">Amount (₹)</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${itemsRows}
-        </tbody>
-      </table>
-
-      ${grandTotal > 0 ? `
-        <div class="totals-card">
-          <div class="total-row"><span>Subtotal:</span><span>₹${subtotal.toLocaleString()}</span></div>
-          <div class="total-row" style="color: #64748b;"><span>GST (18%):</span><span>₹${gst.toLocaleString()}</span></div>
-          <div class="total-row grand-total"><span>Grand Total:</span><span>₹${grandTotal.toLocaleString()}</span></div>
-        </div>
-      ` : ''}
-
-      ${data.notes ? `<div style="background-color: #fffbe6; border: 1px solid #ffe58f; border-radius: 6px; padding: 10px; margin-bottom: 16px; font-size: 11px; color: #873800;"><strong>Remarks:</strong> ${data.notes}</div>` : ''}
-
-      <div class="terms-block">
-        <strong style="text-transform: uppercase; color: #0284c7; font-weight: 700;">📜 Standard Terms & Conditions:</strong>
-        <ul class="terms-list">
-          ${defaultTerms.map(t => `<li>${t}</li>`).join("")}
-        </ul>
-      </div>
-
-      <div class="footer-note">
-        BuildMitra Infra & Construction Technologies • www.buildmitra.com • Official Estimation Document
-      </div>
-    </body>
-    </html>
-  `;
-
-  printWindow.document.write(htmlContent);
-  printWindow.document.close();
+  doc.save(`${fileName}.pdf`);
 };
 
+export const generateElectricalPdfReport = (
+  sanctionedKw: number,
+  solarKw: number,
+  boqItems: Array<{ category: string; itemDescription: string; unit: string; quantity: number; ratePerUnit: number; totalAmount: number }>,
+  subtotal: number,
+  overheadAmount: number,
+  grandTotal: number
+) => {
+  const doc = new jsPDF();
 
+  // Title Header Block
+  doc.setFillColor(15, 23, 42); // #0f172a
+  doc.rect(0, 0, 210, 36, "F");
+
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(18);
+  doc.setFont("helvetica", "bold");
+  doc.text("BUILDMITRA — ELECTRICAL & SOLAR BOQ REPORT", 14, 18);
+
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(203, 213, 225);
+  doc.text("Residential Electrical Works, BESCOM Utility & Solar PV Specification Sheet", 14, 26);
+
+  // Project Summary Box
+  doc.setTextColor(15, 23, 42);
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "bold");
+  doc.text("PROJECT OVERVIEW & BESCOM SANCTION", 14, 46);
+
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.text(`• BESCOM Sanctioned Load: ${sanctionedKw} kW (${sanctionedKw <= 5 ? "Single Phase 230V" : "Three Phase 415V"})`, 14, 53);
+  doc.text(`• Rooftop Solar PV Capacity: ${solarKw > 0 ? `${solarKw} kW Grid-Tie Net Metered` : "None"}`, 14, 59);
+  doc.text(`• Date of Estimation: ${new Date().toLocaleDateString("en-IN")}`, 14, 65);
+
+  // BOQ Table
+  const tableData = boqItems.map((item) => [
+    item.category,
+    item.itemDescription.length > 45 ? item.itemDescription.slice(0, 42) + "..." : item.itemDescription,
+    item.unit,
+    item.quantity.toString(),
+    `Rs ${item.ratePerUnit.toLocaleString()}`,
+    `Rs ${item.totalAmount.toLocaleString()}`,
+  ]);
+
+  autoTable(doc, {
+    head: [["Category", "Item Description", "Unit", "Qty", "Rate (Rs)", "Amount (Rs)"]],
+    body: tableData,
+    startY: 72,
+    styles: { fontSize: 8.5, cellPadding: 3 },
+    headStyles: { fillColor: [30, 41, 59], textColor: [255, 255, 255], fontStyle: "bold" },
+    alternateRowStyles: { fillColor: [248, 250, 252] },
+  });
+
+  const finalY = (doc as any).lastAutoTable?.finalY || 180;
+
+  // Grand Total Summary
+  doc.setFillColor(241, 245, 249);
+  doc.rect(14, finalY + 8, 182, 32, "F");
+
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(51, 65, 85);
+  doc.text(`Subtotal Material & Service Cost: Rs ${subtotal.toLocaleString()}`, 20, finalY + 18);
+  doc.text(`Contractor Overheads & Labor: Rs ${overheadAmount.toLocaleString()}`, 20, finalY + 24);
+
+  doc.setFontSize(13);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(22, 101, 52);
+  doc.text(`GRAND TOTAL TURNKEY INVESTMENT: Rs ${grandTotal.toLocaleString()}`, 20, finalY + 33);
+
+  // Footer Disclaimer
+  doc.setFontSize(7.5);
+  doc.setFont("helvetica", "italic");
+  doc.setTextColor(100, 116, 139);
+  doc.text("Disclaimer: Rates based on Bengaluru market benchmarks. Verify site measurements and BESCOM demand notes before execution.", 14, 285);
+
+  doc.save(`BuildMitra_Electrical_Solar_BOQ_${Date.now()}.pdf`);
+};
+
+export const generatePlumbingPdfReport = (
+  sumpLiters: number,
+  rwhLiters: number,
+  boqItems: Array<{ category: string; itemDescription: string; unit: string; quantity: number; ratePerUnit: number; totalAmount: number }>,
+  subtotal: number,
+  overheadAmount: number,
+  grandTotal: number
+) => {
+  const doc = new jsPDF();
+
+  // Title Header Block
+  doc.setFillColor(14, 116, 144); // #0e7490 (Cyan-700)
+  doc.rect(0, 0, 210, 36, "F");
+
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(18);
+  doc.setFont("helvetica", "bold");
+  doc.text("BUILDMITRA — PLUMBING, BWSSB & RWH BOQ REPORT", 14, 18);
+
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(224, 242, 254);
+  doc.text("Residential Plumbing Works, BWSSB Connection, Water Treatment & RWH Report", 14, 26);
+
+  // Project Summary Box
+  doc.setTextColor(15, 23, 42);
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "bold");
+  doc.text("PROJECT OVERVIEW & WATER SPECIFICATIONS", 14, 46);
+
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.text(`• Recommended Underground Sump Storage: ${sumpLiters.toLocaleString()} Liters (135 LPCD IS 1172 Benchmark)`, 14, 53);
+  doc.text(`• Annual Rooftop Rainwater Harvested: ${rwhLiters.toLocaleString()} Liters / Year (BWSSB Compliant)`, 14, 59);
+  doc.text(`• Date of Estimation: ${new Date().toLocaleDateString("en-IN")}`, 14, 65);
+
+  // BOQ Table
+  const tableData = boqItems.map((item) => [
+    item.category,
+    item.itemDescription.length > 45 ? item.itemDescription.slice(0, 42) + "..." : item.itemDescription,
+    item.unit,
+    item.quantity.toString(),
+    `Rs ${item.ratePerUnit.toLocaleString()}`,
+    `Rs ${item.totalAmount.toLocaleString()}`,
+  ]);
+
+  autoTable(doc, {
+    head: [["Category", "Item Description", "Unit", "Qty", "Rate (Rs)", "Amount (Rs)"]],
+    body: tableData,
+    startY: 72,
+    styles: { fontSize: 8.5, cellPadding: 3 },
+    headStyles: { fillColor: [14, 116, 144], textColor: [255, 255, 255], fontStyle: "bold" },
+    alternateRowStyles: { fillColor: [240, 249, 255] },
+  });
+
+  const finalY = (doc as any).lastAutoTable?.finalY || 180;
+
+  // Grand Total Summary
+  doc.setFillColor(241, 245, 249);
+  doc.rect(14, finalY + 8, 182, 32, "F");
+
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(51, 65, 85);
+  doc.text(`Subtotal Material & Fixture Cost: Rs ${subtotal.toLocaleString()}`, 20, finalY + 18);
+  doc.text(`Labor, Piping & Fitting Charges: Rs ${overheadAmount.toLocaleString()}`, 20, finalY + 24);
+
+  doc.setFontSize(13);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(14, 116, 144);
+  doc.text(`GRAND TOTAL TURNKEY INVESTMENT: Rs ${grandTotal.toLocaleString()}`, 20, finalY + 33);
+
+  // Footer Disclaimer
+  doc.setFontSize(7.5);
+  doc.setFont("helvetica", "italic");
+  doc.setTextColor(100, 116, 139);
+  doc.text("Disclaimer: Rates based on Bengaluru market benchmarks. Verify site plumbing layouts and BWSSB prorata note before execution.", 14, 285);
+
+  doc.save(`BuildMitra_Plumbing_RWH_BOQ_${Date.now()}.pdf`);
+};

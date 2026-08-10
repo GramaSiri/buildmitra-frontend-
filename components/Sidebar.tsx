@@ -202,8 +202,10 @@ export const mainNavigationItems = [
   { name: "Layout Plans", icon: "🗺️", path: "/layout-plans" },
   { name: "Learn & Earn", icon: "📚", path: "/learn-earn" },
   { name: "Real Estate Hub", icon: "🏘️", path: "/realestate-hub" },
+  { name: "Affiliate & Marketing", icon: "📢", path: "/affiliate-marketing", badge: "NEW" },
   { name: "Pricing", icon: "💰", path: "/pricing" },
   { name: "Electrical & Utility", icon: "⚡", path: "/electrical", badge: "NEW" },
+  { name: "Plumbing & Utility", icon: "🚰", path: "/plumbing", badge: "NEW" },
   { name: "Housing Loan Finance", icon: "🏦", path: "/subscription" },
   { name: "Live Rates", icon: "📈", path: "/live-rates" },
   { name: "Reports Hub", icon: "📑", path: "/reports" }
@@ -277,7 +279,6 @@ export default function Sidebar({ children, currentPath }: { children?: any; cur
     { name: "Civil BOQ", path: "/boq-civil", icon: "📄" },
     { name: "Interior BOQ", path: "/boq-interior", icon: "🪑" },
     { name: "Plumbing BOQ", path: "/boq-plumbing", icon: "🔧" },
-    { name: "Electrical & Utility", path: "/electrical", icon: "⚡", badge: "NEW" },
     { name: "Painting BOQ", path: "/boq-painting", icon: "🎨" },
     { name: "False Ceiling BOQ", path: "/boq-false-ceiling", icon: "⬇️" }
   ];
@@ -683,29 +684,7 @@ if (isMobile) {
           </>
         )}
 
-        {/* STANDALONE SEPARATE ELECTRICAL & UTILITY TAB */}
-        {(() => {
-          const isElectricalActive = currentPath === "/electrical" || currentPath?.startsWith("/electrical");
-          const isHovered = hoveredMain === 'electrical-standalone';
-          return (
-            <div
-              className="main"
-              style={{
-                ...styles.main,
-                background: isElectricalActive ? "#ff7a00" : "#16213e",
-                color: "#ffffff",
-                fontWeight: "bold",
-                ...(isHovered && !isElectricalActive ? styles.mainHover : {})
-              }}
-              onMouseEnter={() => setHoveredMain('electrical-standalone' as any)}
-              onMouseLeave={() => setHoveredMain(null)}
-              onClick={() => go("/electrical")}
-            >
-              <span>⚡ ELECTRICAL & UTILITY</span>
-              <span style={{ background: "#ff7a00", color: "#fff", fontSize: "10px", padding: "2px 8px", borderRadius: "10px" }}>NEW</span>
-            </div>
-          );
-        })()}
+
 
         {/* CALCULATORS */}
         <div
@@ -814,6 +793,7 @@ if (isMobile) {
     </div>
   );
 }
+
 
 
 
