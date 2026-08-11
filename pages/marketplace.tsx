@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import MarketRateTrend from "../components/ui/MarketRateTrend";
 import { normalizeImageUrl, resolveListingImage } from "../utils/imageUrl";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE || "https://buildmitra-backend-beta.onrender.com";
 
 export default function Marketplace() {
   const [listings, setListings] = useState<any[]>([]);
@@ -219,6 +219,9 @@ export default function Marketplace() {
       /*
         Create one database enquiry for every selected item.
       */
+      const batchCode = `BATCH-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+
+
       for (const item of cart) {
         const res = await fetch(`${API_BASE}/api/enquiry`, {
           method: "POST",
@@ -226,6 +229,8 @@ export default function Marketplace() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
+            batchCode,
+
             buyerUserCode,
             buyerName: cartEnquiry.buyerName,
             buyerPhone: cartEnquiry.buyerPhone,
@@ -533,7 +538,7 @@ ${enquiry.buyerPhone}`;
         <input style={styles.input} placeholder="Brand" value={filters.brand} onChange={(e) => setFilters({ ...filters, brand: e.target.value })} />
         <input style={styles.input} placeholder="City" value={filters.city} onChange={(e) => setFilters({ ...filters, city: e.target.value })} />
         <input style={styles.input} placeholder="Area" value={filters.area} onChange={(e) => setFilters({ ...filters, area: e.target.value })} />
-        <input style={styles.input} placeholder="PIN code" value={filters.pincode} onChange={(e) => setFilters({ ...filters, pincode: e.target.value })} />
+        <input style={styles.input} inputMode="numeric" maxLength={6} placeholder="PIN code" value={filters.pincode} onChange={(e) => setFilters({ ...filters, pincode: e.target.value.replace(/\D/g, "").slice(0, 6) })} />
         <input style={styles.input} placeholder="Min price" value={filters.minPrice} onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })} />
         <input style={styles.input} placeholder="Max price" value={filters.maxPrice} onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })} />
         <select style={styles.input} value={filters.sort} onChange={(e) => setFilters({ ...filters, sort: e.target.value })}>
@@ -1570,6 +1575,10 @@ cartAddButton: {
     boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
   },
 };
+
+
+
+
 
 
 

@@ -1,7 +1,7 @@
-﻿import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { normalizeImageUrl, resolveListingImage } from "../utils/imageUrl";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE || "https://buildmitra-backend-beta.onrender.com";
 
 const roleType: Record<string, string> = {
   supplier: "material",
@@ -458,4 +458,5 @@ const styles: Record<string, React.CSSProperties> = {
   sectionTitle: { margin: "0 0 12px", fontSize: 20 },
   requestGrid: { display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8 },
 };
+
 

@@ -103,7 +103,7 @@ export const BuildMitraLetterhead: React.FC<LetterheadProps> = ({
                 gap: "6px"
               }}
             >
-              📲 Share on WhatsApp
+              📲 WhatsApp
             </button>
           )}
           {onPrint && (
@@ -123,7 +123,7 @@ export const BuildMitraLetterhead: React.FC<LetterheadProps> = ({
                 gap: "6px"
               }}
             >
-              📄 Download in PDF
+              📄 PDF
             </button>
           )}
         </div>
@@ -300,6 +300,7 @@ export const BuildMitraLetterhead: React.FC<LetterheadProps> = ({
     </div>
   );
 };
+
 
 
 

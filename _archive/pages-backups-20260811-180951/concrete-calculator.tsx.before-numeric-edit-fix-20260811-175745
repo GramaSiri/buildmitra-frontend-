@@ -433,98 +433,98 @@ export default function ConcretePage() {
         <div style={styles.grid}>
           <div>
             <label style={styles.label}>Net Volume (CUM m³)</label>
-            <input type="number" value={customVolumeCum} onChange={(e) => setCustomVolumeCum((e.target.value === "" ? ("" as any) : parseFloat(e.target.value)))} style={styles.input} />
+            <input type="number" value={customVolumeCum} onChange={(e) => setCustomVolumeCum(parseFloat(e.target.value) || 0)} style={styles.input} />
           </div>
           <div>
             <label style={styles.label}>Shuttering Area (SQFT)</label>
-            <input type="number" value={customShutteringSqft} onChange={(e) => setCustomShutteringSqft((e.target.value === "" ? ("" as any) : parseFloat(e.target.value)))} style={styles.input} />
+            <input type="number" value={customShutteringSqft} onChange={(e) => setCustomShutteringSqft(parseFloat(e.target.value) || 0)} style={styles.input} />
           </div>
           <div>
             <label style={styles.label}>Steel Ratio (KG / m³)</label>
-            <input type="number" value={customSteelRatioKg} onChange={(e) => setCustomSteelRatioKg((e.target.value === "" ? ("" as any) : parseFloat(e.target.value)))} style={styles.input} />
+            <input type="number" value={customSteelRatioKg} onChange={(e) => setCustomSteelRatioKg(parseFloat(e.target.value) || 0)} style={styles.input} />
           </div>
         </div>
       ) : memberType === 'staircase' ? (
         <div style={styles.grid}>
           <div>
             <label style={styles.label}>Flight Width ({unit})</label>
-            <input type="number" value={flightWidth} onChange={(e) => setFlightWidth((e.target.value === "" ? ("" as any) : parseFloat(e.target.value)))} style={styles.input} />
+            <input type="number" value={flightWidth} onChange={(e) => setFlightWidth(parseFloat(e.target.value) || 0)} style={styles.input} />
           </div>
           <div>
             <label style={styles.label}>Flight Length ({unit})</label>
-            <input type="number" value={flightLength} onChange={(e) => setFlightLength((e.target.value === "" ? ("" as any) : parseFloat(e.target.value)))} style={styles.input} />
+            <input type="number" value={flightLength} onChange={(e) => setFlightLength(parseFloat(e.target.value) || 0)} style={styles.input} />
           </div>
           <div>
             <label style={styles.label}>Waist Thickness (mm)</label>
-            <input type="number" value={thickness} onChange={(e) => setThickness((e.target.value === "" ? ("" as any) : parseFloat(e.target.value)))} style={styles.input} />
+            <input type="number" value={thickness} onChange={(e) => setThickness(parseFloat(e.target.value) || 0)} style={styles.input} />
           </div>
           <div>
             <label style={styles.label}>Number of Steps</label>
-            <input type="number" value={stepCount} onChange={(e) => setStepCount((e.target.value === "" ? ("" as any) : parseInt(e.target.value)))} style={styles.input} />
+            <input type="number" value={stepCount} onChange={(e) => setStepCount(parseInt(e.target.value) || 0)} style={styles.input} />
           </div>
           <div>
             <label style={styles.label}>Riser Height (mm)</label>
-            <input type="number" value={riser} onChange={(e) => setRiser((e.target.value === "" ? ("" as any) : parseFloat(e.target.value)))} style={styles.input} />
+            <input type="number" value={riser} onChange={(e) => setRiser(parseFloat(e.target.value) || 0)} style={styles.input} />
           </div>
           <div>
             <label style={styles.label}>Tread Width (mm)</label>
-            <input type="number" value={tread} onChange={(e) => setTread((e.target.value === "" ? ("" as any) : parseFloat(e.target.value)))} style={styles.input} />
+            <input type="number" value={tread} onChange={(e) => setTread(parseFloat(e.target.value) || 0)} style={styles.input} />
           </div>
           <div>
             <label style={styles.label}>Number of Flights</label>
-            <input type="number" value={quantityCount} onChange={(e) => setQuantityCount((e.target.value === "" ? ("" as any) : parseInt(e.target.value)))} style={styles.input} />
+            <input type="number" value={quantityCount} onChange={(e) => setQuantityCount(parseInt(e.target.value) || 1)} style={styles.input} />
           </div>
         </div>
       ) : memberType === 'retaining_wall' ? (
         <div style={styles.grid}>
           <div>
             <label style={styles.label}>Wall Length ({unit})</label>
-            <input type="number" value={length} onChange={(e) => setLength((e.target.value === "" ? ("" as any) : parseFloat(e.target.value)))} style={styles.input} />
+            <input type="number" value={length} onChange={(e) => setLength(parseFloat(e.target.value) || 0)} style={styles.input} />
           </div>
           <div>
             <label style={styles.label}>Stem Height ({unit})</label>
-            <input type="number" value={height} onChange={(e) => setHeight((e.target.value === "" ? ("" as any) : parseFloat(e.target.value)))} style={styles.input} />
+            <input type="number" value={height} onChange={(e) => setHeight(parseFloat(e.target.value) || 0)} style={styles.input} />
           </div>
           <div>
             <label style={styles.label}>Stem Top Thickness (mm)</label>
-            <input type="number" value={stemTopThickness} onChange={(e) => setStemTopThickness((e.target.value === "" ? ("" as any) : parseFloat(e.target.value)))} style={styles.input} />
+            <input type="number" value={stemTopThickness} onChange={(e) => setStemTopThickness(parseFloat(e.target.value) || 0)} style={styles.input} />
           </div>
           <div>
             <label style={styles.label}>Stem Bottom Thickness (mm)</label>
-            <input type="number" value={stemBottomThickness} onChange={(e) => setStemBottomThickness((e.target.value === "" ? ("" as any) : parseFloat(e.target.value)))} style={styles.input} />
+            <input type="number" value={stemBottomThickness} onChange={(e) => setStemBottomThickness(parseFloat(e.target.value) || 0)} style={styles.input} />
           </div>
           <div>
             <label style={styles.label}>Base Slab Width ({unit})</label>
-            <input type="number" value={baseWidth} onChange={(e) => setBaseWidth((e.target.value === "" ? ("" as any) : parseFloat(e.target.value)))} style={styles.input} />
+            <input type="number" value={baseWidth} onChange={(e) => setBaseWidth(parseFloat(e.target.value) || 0)} style={styles.input} />
           </div>
           <div>
             <label style={styles.label}>Base Thickness (mm)</label>
-            <input type="number" value={baseThickness} onChange={(e) => setBaseThickness((e.target.value === "" ? ("" as any) : parseFloat(e.target.value)))} style={styles.input} />
+            <input type="number" value={baseThickness} onChange={(e) => setBaseThickness(parseFloat(e.target.value) || 0)} style={styles.input} />
           </div>
         </div>
       ) : (
         <div style={styles.grid}>
           <div>
             <label style={styles.label}>Length ({unit})</label>
-            <input type="number" value={length} onChange={(e) => setLength((e.target.value === "" ? ("" as any) : parseFloat(e.target.value)))} style={styles.input} />
+            <input type="number" value={length} onChange={(e) => setLength(parseFloat(e.target.value) || 0)} style={styles.input} />
           </div>
           <div>
             <label style={styles.label}>Width ({unit})</label>
-            <input type="number" value={width} onChange={(e) => setWidth((e.target.value === "" ? ("" as any) : parseFloat(e.target.value)))} style={styles.input} />
+            <input type="number" value={width} onChange={(e) => setWidth(parseFloat(e.target.value) || 0)} style={styles.input} />
           </div>
           <div>
             <label style={styles.label}>Thickness / Depth (mm)</label>
-            <input type="number" value={thickness} onChange={(e) => setThickness((e.target.value === "" ? ("" as any) : parseFloat(e.target.value)))} style={styles.input} />
+            <input type="number" value={thickness} onChange={(e) => setThickness(parseFloat(e.target.value) || 0)} style={styles.input} />
           </div>
           {memberType === 'column' && (
             <div>
               <label style={styles.label}>Height ({unit})</label>
-              <input type="number" value={height} onChange={(e) => setHeight((e.target.value === "" ? ("" as any) : parseFloat(e.target.value)))} style={styles.input} />
+              <input type="number" value={height} onChange={(e) => setHeight(parseFloat(e.target.value) || 0)} style={styles.input} />
             </div>
           )}
           <div>
             <label style={styles.label}>Quantity (Nos)</label>
-            <input type="number" value={quantityCount} onChange={(e) => setQuantityCount((e.target.value === "" ? ("" as any) : parseInt(e.target.value)))} style={styles.input} />
+            <input type="number" value={quantityCount} onChange={(e) => setQuantityCount(parseInt(e.target.value) || 1)} style={styles.input} />
           </div>
         </div>
       )}
@@ -553,7 +553,7 @@ export default function ConcretePage() {
         </div>
         <div>
           <label style={styles.label}>Wastage Allowance (%)</label>
-          <input type="number" value={wastage} onChange={(e) => setWastage((e.target.value === "" ? ("" as any) : parseFloat(e.target.value)))} style={styles.input} />
+          <input type="number" value={wastage} onChange={(e) => setWastage(parseFloat(e.target.value) || 0)} style={styles.input} />
         </div>
       </div>
       
@@ -738,4 +738,3 @@ export default function ConcretePage() {
     </div>
   );
 }
-

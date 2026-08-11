@@ -389,7 +389,7 @@ export default function BeamCalculator() {
               type="number"
               style={styles.input}
               value={inputs.beamNos}
-              onChange={e => setInputs({ ...inputs, beamNos: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
+              onChange={e => setInputs({ ...inputs, beamNos: parseFloat(e.target.value) || 1 })}
             />
           </div>
 
@@ -399,7 +399,7 @@ export default function BeamCalculator() {
               type="number"
               style={styles.input}
               value={inputs.lengthFt}
-              onChange={e => setInputs({ ...inputs, lengthFt: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
+              onChange={e => setInputs({ ...inputs, lengthFt: parseFloat(e.target.value) || 0 })}
             />
           </div>
 
@@ -409,7 +409,7 @@ export default function BeamCalculator() {
               type="number"
               style={styles.input}
               value={inputs.widthIn}
-              onChange={e => setInputs({ ...inputs, widthIn: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
+              onChange={e => setInputs({ ...inputs, widthIn: parseFloat(e.target.value) || 0 })}
             />
           </div>
 
@@ -419,7 +419,7 @@ export default function BeamCalculator() {
               type="number"
               style={styles.input}
               value={inputs.depthIn}
-              onChange={e => setInputs({ ...inputs, depthIn: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
+              onChange={e => setInputs({ ...inputs, depthIn: parseFloat(e.target.value) || 0 })}
             />
           </div>
 
@@ -450,7 +450,7 @@ export default function BeamCalculator() {
                   type="number"
                   style={styles.input}
                   value={inputs.topDia}
-                  onChange={e => setInputs({ ...inputs, topDia: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
+                  onChange={e => setInputs({ ...inputs, topDia: parseFloat(e.target.value) || 16 })}
                 />
               </div>
 
@@ -460,7 +460,7 @@ export default function BeamCalculator() {
                   type="number"
                   style={styles.input}
                   value={inputs.topNos}
-                  onChange={e => setInputs({ ...inputs, topNos: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
+                  onChange={e => setInputs({ ...inputs, topNos: parseFloat(e.target.value) || 2 })}
                 />
               </div>
 
@@ -470,7 +470,7 @@ export default function BeamCalculator() {
                   type="number"
                   style={styles.input}
                   value={inputs.bottomDia}
-                  onChange={e => setInputs({ ...inputs, bottomDia: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
+                  onChange={e => setInputs({ ...inputs, bottomDia: parseFloat(e.target.value) || 12 })}
                 />
               </div>
 
@@ -480,7 +480,7 @@ export default function BeamCalculator() {
                   type="number"
                   style={styles.input}
                   value={inputs.bottomNos}
-                  onChange={e => setInputs({ ...inputs, bottomNos: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
+                  onChange={e => setInputs({ ...inputs, bottomNos: parseFloat(e.target.value) || 3 })}
                 />
               </div>
             </div>
@@ -498,7 +498,7 @@ export default function BeamCalculator() {
                   type="number"
                   style={styles.input}
                   value={inputs.stirrupDia}
-                  onChange={e => setInputs({ ...inputs, stirrupDia: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
+                  onChange={e => setInputs({ ...inputs, stirrupDia: parseFloat(e.target.value) || 8 })}
                 />
               </div>
 
@@ -508,7 +508,7 @@ export default function BeamCalculator() {
                   type="number"
                   style={styles.input}
                   value={inputs.spacingMm}
-                  onChange={e => setInputs({ ...inputs, spacingMm: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
+                  onChange={e => setInputs({ ...inputs, spacingMm: parseFloat(e.target.value) || 150 })}
                 />
               </div>
 
@@ -518,7 +518,7 @@ export default function BeamCalculator() {
                   type="number"
                   style={styles.input}
                   value={inputs.coverMm}
-                  onChange={e => setInputs({ ...inputs, coverMm: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
+                  onChange={e => setInputs({ ...inputs, coverMm: parseFloat(e.target.value) || 25 })}
                 />
               </div>
             </div>
@@ -624,4 +624,3 @@ export default function BeamCalculator() {
     </div>
   );
 }
-

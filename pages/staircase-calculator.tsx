@@ -423,7 +423,7 @@ export default function StaircaseCalculator() {
               type="number"
               style={styles.input}
               value={inputs.floors}
-              onChange={e => setInputs({ ...inputs, floors: parseFloat(e.target.value) || 1 })}
+              onChange={e => setInputs({ ...inputs, floors: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
             />
           </div>
 
@@ -433,7 +433,7 @@ export default function StaircaseCalculator() {
               type="number"
               style={styles.input}
               value={inputs.floorHeightFt}
-              onChange={e => setInputs({ ...inputs, floorHeightFt: parseFloat(e.target.value) || 0 })}
+              onChange={e => setInputs({ ...inputs, floorHeightFt: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
             />
           </div>
 
@@ -443,7 +443,7 @@ export default function StaircaseCalculator() {
               type="number"
               style={styles.input}
               value={inputs.riserIn}
-              onChange={e => setInputs({ ...inputs, riserIn: parseFloat(e.target.value) || 7 })}
+              onChange={e => setInputs({ ...inputs, riserIn: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
             />
           </div>
 
@@ -453,7 +453,7 @@ export default function StaircaseCalculator() {
               type="number"
               style={styles.input}
               value={inputs.treadIn}
-              onChange={e => setInputs({ ...inputs, treadIn: parseFloat(e.target.value) || 10 })}
+              onChange={e => setInputs({ ...inputs, treadIn: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
             />
           </div>
 
@@ -463,7 +463,7 @@ export default function StaircaseCalculator() {
               type="number"
               style={styles.input}
               value={inputs.widthFt}
-              onChange={e => setInputs({ ...inputs, widthFt: parseFloat(e.target.value) || 4 })}
+              onChange={e => setInputs({ ...inputs, widthFt: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
             />
           </div>
 
@@ -473,7 +473,7 @@ export default function StaircaseCalculator() {
               type="number"
               style={styles.input}
               value={inputs.waistThickMm}
-              onChange={e => setInputs({ ...inputs, waistThickMm: parseFloat(e.target.value) || 150 })}
+              onChange={e => setInputs({ ...inputs, waistThickMm: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
             />
           </div>
 
@@ -483,7 +483,7 @@ export default function StaircaseCalculator() {
               type="number"
               style={styles.input}
               value={inputs.landingLFt}
-              onChange={e => setInputs({ ...inputs, landingLFt: parseFloat(e.target.value) || 4 })}
+              onChange={e => setInputs({ ...inputs, landingLFt: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
             />
           </div>
 
@@ -493,7 +493,7 @@ export default function StaircaseCalculator() {
               type="number"
               style={styles.input}
               value={inputs.landingWFt}
-              onChange={e => setInputs({ ...inputs, landingWFt: parseFloat(e.target.value) || 4 })}
+              onChange={e => setInputs({ ...inputs, landingWFt: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
             />
           </div>
 
@@ -503,7 +503,7 @@ export default function StaircaseCalculator() {
               type="number"
               style={styles.input}
               value={inputs.landingsPerFloor}
-              onChange={e => setInputs({ ...inputs, landingsPerFloor: parseFloat(e.target.value) || 2 })}
+              onChange={e => setInputs({ ...inputs, landingsPerFloor: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
             />
           </div>
 
@@ -534,7 +534,7 @@ export default function StaircaseCalculator() {
                   type="number"
                   style={styles.input}
                   value={inputs.mainDia}
-                  onChange={e => setInputs({ ...inputs, mainDia: parseFloat(e.target.value) || 12 })}
+                  onChange={e => setInputs({ ...inputs, mainDia: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
                 />
               </div>
 
@@ -544,7 +544,7 @@ export default function StaircaseCalculator() {
                   type="number"
                   style={styles.input}
                   value={inputs.mainSpacingMm}
-                  onChange={e => setInputs({ ...inputs, mainSpacingMm: parseFloat(e.target.value) || 150 })}
+                  onChange={e => setInputs({ ...inputs, mainSpacingMm: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
                 />
               </div>
 
@@ -554,7 +554,7 @@ export default function StaircaseCalculator() {
                   type="number"
                   style={styles.input}
                   value={inputs.distDia}
-                  onChange={e => setInputs({ ...inputs, distDia: parseFloat(e.target.value) || 10 })}
+                  onChange={e => setInputs({ ...inputs, distDia: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
                 />
               </div>
 
@@ -564,7 +564,7 @@ export default function StaircaseCalculator() {
                   type="number"
                   style={styles.input}
                   value={inputs.distSpacingMm}
-                  onChange={e => setInputs({ ...inputs, distSpacingMm: parseFloat(e.target.value) || 200 })}
+                  onChange={e => setInputs({ ...inputs, distSpacingMm: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
                 />
               </div>
 
@@ -574,7 +574,7 @@ export default function StaircaseCalculator() {
                   type="number"
                   style={styles.input}
                   value={inputs.coverMm}
-                  onChange={e => setInputs({ ...inputs, coverMm: parseFloat(e.target.value) || 20 })}
+                  onChange={e => setInputs({ ...inputs, coverMm: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
                 />
               </div>
             </div>
@@ -710,3 +710,4 @@ export default function StaircaseCalculator() {
     </div>
   );
 }
+

@@ -1,0 +1,46 @@
+
+> buildmitra@1.0.0 build
+> next build
+
+  Γû▓ Next.js 14.2.35
+  - Environments: .env.local
+
+   Skipping validation of types
+   Skipping linting
+   Creating an optimized production build ...
+Failed to compile.
+
+./pages/realestate-hub.tsx
+Error: 
+  x Expression expected
+     ,-[D:\images\Desktop\BMFrontend-Beta-v1.0-2026-07-05\pages\realestate-hub.tsx:470:1]
+ 470 |   }
+ 471 | 
+ 472 |   return (
+ 473 |     <>
+     :      ^
+ 474 |       <div className="hubPage">
+ 475 |         <section className="hero">
+ 476 |           <div>
+     `----
+
+  x Expected ',', got 'jsx'
+     ,-[D:\images\Desktop\BMFrontend-Beta-v1.0-2026-07-05\pages\realestate-hub.tsx:843:1]
+ 843 |         )}
+ 844 |       </div>
+ 845 | 
+ 846 |       <style jsx>{`
+     :              ^^^
+ 847 |         * {
+ 848 |           box-sizing: border-box;
+ 849 |         }
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./pages/realestate-hub.tsx
+
+
+> Build failed because of webpack errors

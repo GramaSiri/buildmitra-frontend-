@@ -3,8 +3,7 @@ import { useRouter } from "next/router";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE ||
-  process.env.NEXT_PUBLIC_API_URL ||
-  "http://localhost:5000";
+  process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE || "https://buildmitra-backend-beta.onrender.com";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -425,3 +424,4 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: "pointer"
   }
 };
+

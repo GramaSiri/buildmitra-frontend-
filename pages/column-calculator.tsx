@@ -747,7 +747,7 @@ export default function ColumnCalculator() {
               type="number"
               style={styles.input}
               value={inputs.columnNos}
-              onChange={e => setInputs({ ...inputs, columnNos: parseFloat(e.target.value) || 1 })}
+              onChange={e => setInputs({ ...inputs, columnNos: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
             />
           </div>
 
@@ -757,7 +757,7 @@ export default function ColumnCalculator() {
               type="number"
               style={styles.input}
               value={inputs.heightFt}
-              onChange={e => setInputs({ ...inputs, heightFt: parseFloat(e.target.value) || 0 })}
+              onChange={e => setInputs({ ...inputs, heightFt: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
             />
           </div>
 
@@ -767,7 +767,7 @@ export default function ColumnCalculator() {
               type="number"
               style={styles.input}
               value={inputs.widthIn}
-              onChange={e => setInputs({ ...inputs, widthIn: parseFloat(e.target.value) || 0 })}
+              onChange={e => setInputs({ ...inputs, widthIn: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
             />
           </div>
 
@@ -777,7 +777,7 @@ export default function ColumnCalculator() {
               type="number"
               style={styles.input}
               value={inputs.depthIn}
-              onChange={e => setInputs({ ...inputs, depthIn: parseFloat(e.target.value) || 0 })}
+              onChange={e => setInputs({ ...inputs, depthIn: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
             />
           </div>
 
@@ -808,7 +808,7 @@ export default function ColumnCalculator() {
                   type="number"
                   style={styles.input}
                   value={inputs.cornerDia}
-                  onChange={e => setInputs({ ...inputs, cornerDia: parseFloat(e.target.value) || 12 })}
+                  onChange={e => setInputs({ ...inputs, cornerDia: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
                 />
               </div>
 
@@ -818,7 +818,7 @@ export default function ColumnCalculator() {
                   type="number"
                   style={styles.input}
                   value={inputs.cornerNos}
-                  onChange={e => setInputs({ ...inputs, cornerNos: parseFloat(e.target.value) || 4 })}
+                  onChange={e => setInputs({ ...inputs, cornerNos: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
                 />
               </div>
 
@@ -828,7 +828,7 @@ export default function ColumnCalculator() {
                   type="number"
                   style={styles.input}
                   value={inputs.middleDia}
-                  onChange={e => setInputs({ ...inputs, middleDia: parseFloat(e.target.value) || 12 })}
+                  onChange={e => setInputs({ ...inputs, middleDia: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
                 />
               </div>
 
@@ -838,7 +838,7 @@ export default function ColumnCalculator() {
                   type="number"
                   style={styles.input}
                   value={inputs.middleNos}
-                  onChange={e => setInputs({ ...inputs, middleNos: parseFloat(e.target.value) || 0 })}
+                  onChange={e => setInputs({ ...inputs, middleNos: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
                 />
               </div>
             </div>
@@ -856,7 +856,7 @@ export default function ColumnCalculator() {
                   type="number"
                   style={styles.input}
                   value={inputs.tieDia}
-                  onChange={e => setInputs({ ...inputs, tieDia: parseFloat(e.target.value) || 8 })}
+                  onChange={e => setInputs({ ...inputs, tieDia: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
                 />
               </div>
 
@@ -866,7 +866,7 @@ export default function ColumnCalculator() {
                   type="number"
                   style={styles.input}
                   value={inputs.tieSpacingMm}
-                  onChange={e => setInputs({ ...inputs, tieSpacingMm: parseFloat(e.target.value) || 150 })}
+                  onChange={e => setInputs({ ...inputs, tieSpacingMm: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
                 />
               </div>
 
@@ -876,7 +876,7 @@ export default function ColumnCalculator() {
                   type="number"
                   style={styles.input}
                   value={inputs.coverMm}
-                  onChange={e => setInputs({ ...inputs, coverMm: parseFloat(e.target.value) || 40 })}
+                  onChange={e => setInputs({ ...inputs, coverMm: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
                 />
               </div>
             </div>
@@ -982,6 +982,7 @@ export default function ColumnCalculator() {
     </div>
   );
 }
+
 
 
 

@@ -16,7 +16,6 @@ type Worker = {
   mobile?: string;
   status?: string;
   location?: string;
-  pincode?: string;
   experience?: string;
   teamSize?: string;
   description?: string;
@@ -97,7 +96,6 @@ export default function LabourNet() {
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
-  const [pincode, setPincode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [selected, setSelected] = useState<Worker | null>(null);
@@ -148,7 +146,6 @@ export default function LabourNet() {
         worker.skill,
         worker.mobile,
         worker.location,
-        worker.pincode,
         worker.status,
         worker.uploaderName
       ]
@@ -161,19 +158,11 @@ export default function LabourNet() {
         !status ||
         String(worker.status || "").toLowerCase() === status.toLowerCase();
 
-      const workerPin = String(worker.pincode || "")
-        .replace(/\D/g, "")
-        .slice(-6);
-
-      const pinMatch =
-        !pincode ||
-        workerPin === pincode;
-
-      return searchMatch && statusMatch && pinMatch;
+      return searchMatch && statusMatch;
     });
-  }, [workers, search, status, pincode]);
+  }, [workers, search, status]);
 
-  async function openWhatsApp(worker: Worker) {
+  function openWhatsApp(worker: Worker) {
     let phone = digits(worker.mobile || worker.uploaderMobile);
 
     if (!phone) {
@@ -182,146 +171,6 @@ export default function LabourNet() {
     }
 
     if (phone.length === 10) phone = `91${phone}`;
-
-    /*
-     * Save Labour Net enquiry through BuildMitra's existing
-     * MongoDB enquiry architecture before opening WhatsApp.
-     *
-     * Public visitors can still contact through WhatsApp.
-     * Logged-in BuildMitra users additionally get a persisted enquiry.
-     */
-    try {
-      let currentUser: any = {};
-
-      if (typeof window !== "undefined") {
-        const possibleKeys = [
-          "currentUser",
-          "loggedInUser",
-          "user"
-        ];
-
-        for (const key of possibleKeys) {
-          const stored = localStorage.getItem(key);
-
-          if (stored) {
-            try {
-              const parsed = JSON.parse(stored);
-
-              if (parsed && typeof parsed === "object") {
-                currentUser = parsed;
-                break;
-              }
-            } catch {}
-          }
-        }
-      }
-
-      const buyerName =
-        currentUser.name ||
-        currentUser.fullName ||
-        currentUser.userName ||
-        "";
-
-      const buyerPhone =
-        currentUser.phone ||
-        currentUser.mobile ||
-        currentUser.mobileNumber ||
-        "";
-
-      const buyerUserCode =
-        currentUser.userCode ||
-        currentUser.buyerUserCode ||
-        "";
-
-      const labour: any = worker;
-
-      const providerUserCode =
-        labour.providerUserCode ||
-        labour.uploaderUserCode ||
-        labour.userCode ||
-        labour.providerCode ||
-        labour.workerCode ||
-        "";
-
-      const providerName =
-        worker.uploaderName ||
-        worker.name ||
-        "Labour Provider";
-
-      const providerPhone =
-        worker.uploaderMobile ||
-        worker.mobile ||
-        "";
-
-      /*
-       * Persist only when valid buyer identity exists.
-       * Do not create incomplete/anonymous database records.
-       */
-      if (
-        buyerName &&
-        digits(buyerPhone).length >= 10 &&
-        providerUserCode
-      ) {
-        const response = await fetch(`${API_BASE}/api/enquiry`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            enquiryCategory: "general",
-
-            buyerUserCode,
-            buyerName,
-            buyerPhone,
-
-            providerUserCode,
-            providerRole: "labour",
-            providerName,
-            providerPhone,
-
-            itemType: "labour",
-            itemName:
-              worker.skill ||
-              worker.name ||
-              "Labour Requirement",
-
-            listingCode:
-              worker.workerCode ||
-              String(worker._id || ""),
-
-            quantity: 1,
-            unit: worker.rateUnit || "day",
-
-            location: worker.location || "",
-
-            specification:
-              `Labour Net enquiry - ${worker.skill || "Labour"}${
-                worker.experience
-                  ? `, Experience: ${worker.experience}`
-                  : ""
-              }`,
-
-            message:
-              "Enquiry created from BuildMitra Labour Net"
-          })
-        });
-
-        const result = await response.json().catch(() => ({}));
-
-        if (!response.ok || result?.success === false) {
-          console.error(
-            "Labour enquiry save failed:",
-            result?.message || response.status
-          );
-        }
-      }
-    } catch (error) {
-      /*
-       * Persistence failure must never break the existing
-       * user contact action.
-       */
-      console.error("Labour enquiry persistence error:", error);
-    }
 
     const message = encodeURIComponent(
       `Hello ${text(worker.name, "Labour Provider")},\n\n` +
@@ -336,11 +185,9 @@ export default function LabourNet() {
       `Please let me know if your team is available.`
     );
 
-    window.open(
-      `https://wa.me/${phone}?text=${message}`,
-      "_blank"
-    );
+    window.open(`https://wa.me/${phone}?text=${message}`, "_blank");
   }
+
   return (
     <>
       <Head>
@@ -378,21 +225,6 @@ export default function LabourNet() {
             placeholder="Search worker, skill, location, mobile or code"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-          />
-
-          <input
-            type="text"
-            inputMode="numeric"
-            maxLength={6}
-            placeholder="PIN code"
-            value={pincode}
-            onChange={(event) =>
-              setPincode(
-                event.target.value
-                  .replace(/\D/g, "")
-                  .slice(0, 6)
-              )
-            }
           />
 
           <select
@@ -925,7 +757,5 @@ export default function LabourNet() {
     </>
   );
 }
-
-
 
 

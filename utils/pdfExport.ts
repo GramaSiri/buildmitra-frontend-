@@ -180,3 +180,70 @@ export const generatePlumbingPdfReport = (
 
   doc.save(`BuildMitra_Plumbing_RWH_BOQ_${Date.now()}.pdf`);
 };
+
+/* BuildMitra universal PDF compatibility export */
+export const downloadBuildMitraPDF = (...args: any[]) => {
+  let fileName = "BuildMitra_Report";
+
+  const nameArg = args.find(
+    (x: any) => typeof x === "string" && x.trim()
+  );
+
+  if (nameArg) {
+    fileName = nameArg
+      .trim()
+      .replace(/[^a-zA-Z0-9_-]+/g, "_");
+  }
+
+  let source = args.find((x: any) => Array.isArray(x));
+
+  if (!source) {
+    source = args.find(
+      (x: any) => x && typeof x === "object" && !Array.isArray(x)
+    );
+  }
+
+  let rows: any[] = [];
+  let columns: string[] = [];
+
+  if (Array.isArray(source)) {
+
+    if (
+      source.length &&
+      typeof source[0] === "object" &&
+      !Array.isArray(source[0])
+    ) {
+      rows = source;
+      columns = Array.from(
+        new Set(source.flatMap((x: any) => Object.keys(x || {})))
+      );
+    } else {
+      rows = source.map((x: any, i: number) => ({
+        Item: i + 1,
+        Value: String(x ?? "")
+      }));
+      columns = ["Item", "Value"];
+    }
+
+  } else if (source && typeof source === "object") {
+
+    rows = Object.entries(source).map(([Field, Value]) => ({
+      Field,
+      Value:
+        typeof Value === "object"
+          ? JSON.stringify(Value)
+          : String(Value ?? "")
+    }));
+
+    columns = ["Field", "Value"];
+
+  } else {
+
+    rows = [{ Details: "BuildMitra Report" }];
+    columns = ["Details"];
+
+  }
+
+  return exportToPDF(rows, columns, fileName);
+};
+

@@ -7,7 +7,7 @@ import MarketRateTrend from "../components/ui/MarketRateTrend";
 const p = (obj: any) => obj;
 
 export default function SupplierDashboard() {
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE || "https://buildmitra-backend-beta.onrender.com";
 const [userName, setUserName] = useState("Supplier");
   const [userId, setUserId] = useState(null);
   const [isClient, setIsClient] = useState(false);
@@ -867,6 +867,7 @@ BuildMitra Marketplace`;
     )
   );
 }
+
 
 
 

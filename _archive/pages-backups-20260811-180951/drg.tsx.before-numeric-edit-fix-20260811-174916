@@ -345,8 +345,8 @@ export default function ProfessionalDRGPage() {
           <div style={{ background: "#f8fafc", padding: "14px", borderRadius: "12px", border: "1px solid #cbd5e1" }}>
             <h3 style={{ margin: "0 0 10px", fontSize: "12px", color: "#0284c7", fontWeight: "bold", textTransform: "uppercase" }}>Section 2 — Plot Information</h3>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", fontSize: "11px" }}>
-              <label style={{ fontWeight: "bold" }}>Plot Width (ft) <input type="number" value={inputs.plotWidth} onChange={(e) => updateInput("plotWidth", e.target.value === "" ? ("" as any) : Number(e.target.value))} style={{ width: "100%", padding: "6px", borderRadius: "6px", border: "1px solid #cbd5e1", marginTop: "2px", fontWeight: "bold" }} /></label>
-              <label style={{ fontWeight: "bold" }}>Plot Length (ft) <input type="number" value={inputs.plotLength} onChange={(e) => updateInput("plotLength", e.target.value === "" ? ("" as any) : Number(e.target.value))} style={{ width: "100%", padding: "6px", borderRadius: "6px", border: "1px solid #cbd5e1", marginTop: "2px", fontWeight: "bold" }} /></label>
+              <label style={{ fontWeight: "bold" }}>Plot Width (ft) <input type="number" value={inputs.plotWidth} onChange={(e) => updateInput("plotWidth", Math.max(10, Number(e.target.value)))} style={{ width: "100%", padding: "6px", borderRadius: "6px", border: "1px solid #cbd5e1", marginTop: "2px", fontWeight: "bold" }} /></label>
+              <label style={{ fontWeight: "bold" }}>Plot Length (ft) <input type="number" value={inputs.plotLength} onChange={(e) => updateInput("plotLength", Math.max(10, Number(e.target.value)))} style={{ width: "100%", padding: "6px", borderRadius: "6px", border: "1px solid #cbd5e1", marginTop: "2px", fontWeight: "bold" }} /></label>
               <label style={{ fontWeight: "bold" }}>
                 Road Facing Side
                 <select value={inputs.facing} onChange={(e) => updateInput("facing", e.target.value as Facing)} style={{ width: "100%", padding: "6px", borderRadius: "6px", border: "1px solid #cbd5e1", marginTop: "2px", fontWeight: "bold" }}>
@@ -976,5 +976,3 @@ export default function ProfessionalDRGPage() {
     </div>
   );
 }
-
-

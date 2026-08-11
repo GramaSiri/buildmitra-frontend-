@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
-import { clearBuildMitraSession } from "../utils/session";
+import { clearBuildMitraSession, getBuildMitraUser } from "../utils/session";
 
 const styles = {
   sidebar: {
@@ -195,7 +195,23 @@ const styles = {
   }
 };
 
-export default function Sidebar({ children, currentPath }) {
+export const mainNavigationItems = [
+  { name: "Marketplace", icon: "🛒", path: "/marketplace" },
+  { name: "DRG", icon: "📐", path: "/drg" },
+  { name: "Pre Floor Plan DRG", icon: "🏠", path: "/pre-floor-plan-drg" },
+  { name: "Layout Plans", icon: "🗺️", path: "/layout-plans" },
+  { name: "Learn & Earn", icon: "📚", path: "/learn-earn" },
+  { name: "Real Estate Hub", icon: "🏘️", path: "/realestate-hub" },
+  { name: "Affiliate & Marketing", icon: "📢", path: "/affiliate-marketing", badge: "NEW" },
+  { name: "Pricing", icon: "💰", path: "/pricing" },
+  { name: "Electrical & Utility", icon: "⚡", path: "/electrical", badge: "NEW" },
+  { name: "Plumbing & Utility", icon: "🚰", path: "/plumbing", badge: "NEW" },
+  { name: "Housing Loan Finance", icon: "🏦", path: "/subscription" },
+  { name: "Live Rates", icon: "📈", path: "/live-rates" },
+  { name: "Reports Hub", icon: "📑", path: "/reports" }
+];
+
+export default function Sidebar({ children, currentPath }: { children?: any; currentPath?: any }) {
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const [hoveredItem, setHoveredItem] = useState(null);
@@ -230,6 +246,7 @@ export default function Sidebar({ children, currentPath }) {
   if (role === "buyer") { dashboardName = "Buyer Dashboard"; dashboardIcon = "👤"; }
   else if (role === "supplier") { dashboardName = "Supplier Dashboard"; dashboardIcon = "📦"; }
   else if (role === "contractor") { dashboardName = "Contractor Dashboard"; dashboardIcon = "👷"; }
+  else if (role === "realestate") { dashboardName = "Real Estate Dashboard";dashboardIcon = "🏢"; }
   else if (role === "admin") { dashboardName = "Admin Dashboard"; dashboardIcon = "👑"; }
 
   // ---------------- CALCULATORS ----------------
@@ -251,28 +268,23 @@ export default function Sidebar({ children, currentPath }) {
     { name: "Retaining Wall", path: "/retaining-wall-calculator", icon: "🧱" },
     { name: "Roof Truss", path: "/roof-truss-calculator", icon: "🏠" },
     { name: "Pile Foundation", path: "/pile-foundation-calculator", icon: "⛏️" },
-    { name: "Lintel", path: "/lintel-calculator", icon: "📏" }
+    { name: "Lintel", path: "/lintel-calculator", icon: "📏" },
+    { name: "Land Survey Calculator", path: "/plot-layout", icon: "🗺️" },
+    { name: "Housing Loan Finance", path: "/subscription", icon: "🏦" }
   ];
 
   // ---------------- BOQ ----------------
   const boqTabs = [
+    { name: "Waterproofing BOQ", path: "/boq-waterproofing", icon: "💧" },
     { name: "Civil BOQ", path: "/boq-civil", icon: "📄" },
     { name: "Interior BOQ", path: "/boq-interior", icon: "🪑" },
     { name: "Plumbing BOQ", path: "/boq-plumbing", icon: "🔧" },
-    { name: "Electrical BOQ", path: "/boq-electrical", icon: "⚡" },
     { name: "Painting BOQ", path: "/boq-painting", icon: "🎨" },
     { name: "False Ceiling BOQ", path: "/boq-false-ceiling", icon: "⬇️" }
   ];
 
   // ---------------- OTHER MODULES ----------------
-  const otherTabs = [
-    { name: "Marketplace", icon: "🛒", path: "/marketplace" },    
-    { name: "DRG", icon: "📐", path: "/drg" },
-    { name: "Layout Plans", icon: "🗺️", path: "/layout-plans" },
-    { name: "Learn & Earn", icon: "📚", path: "/learn-earn" },
-    { name: "Real Estate Hub", icon: "🏘️", path: "/realestate-hub" },
-    { name: "Pricing", icon: "💰", path: "/pricing" }
-  ];
+  const otherTabs = mainNavigationItems;
 
   useEffect(() => {
     const checkMobile = () => {
@@ -300,17 +312,17 @@ const [uniqueCode, setUniqueCode] = useState("");
 useEffect(() => {
   setMounted(true);
 
-  const storedName = localStorage.getItem("userName");
-  const storedRole = localStorage.getItem("userRole");
-  const storedCode = localStorage.getItem("uniqueCode");
+  const storedName = sessionStorage.getItem("userName");
+  const storedRole = sessionStorage.getItem("userRole");
+  const storedCode = sessionStorage.getItem("uniqueCode");
   let sessionUser: any = null;
   try {
-    sessionUser = JSON.parse(localStorage.getItem("loggedInUser") || "null");
+    sessionUser = getBuildMitraUser();
   } catch {}
 
   if (storedName || sessionUser?.name) setUserName(storedName || sessionUser.name);
-  if (storedRole || sessionUser?.role) setUserRole(storedRole || sessionUser.role);
-  if (storedCode || sessionUser?.uniqueCode) setUniqueCode(storedCode || sessionUser.uniqueCode);
+  if (storedRole || sessionUser?.businessRole || sessionUser?.role) setUserRole(storedRole || sessionUser.businessRole || sessionUser.role);
+  if (storedCode || sessionUser?.userCode || sessionUser?.uniqueCode) setUniqueCode(storedCode || sessionUser.userCode || sessionUser.uniqueCode);
 }, []);
 
 if (!mounted) {
@@ -322,11 +334,26 @@ const mobileDashboardPath =
   userRole?.toLowerCase() === "supplier" ? "/supplier-dashboard" :
   userRole?.toLowerCase() === "admin" ? "/admin-dashboard" :
   userRole?.toLowerCase() === "realestate" ? "/realestate-dashboard" :
-  userRole?.toLowerCase() === "machinery" ? "/machinehire-dashboard" :
-  userRole?.toLowerCase() === "labour" ? "/laboursupply-dashboard" :
+  ["machinehire", "machinery", "equipment"].includes(userRole?.toLowerCase()) ? "/machinehire-dashboard" :
+  ["laboursupply", "labour"].includes(userRole?.toLowerCase()) ? "/laboursupply-dashboard" :
   "/contractor-dashboard";
 
 const mobileTabs = [
+  {
+    name: "Electrical & Utility",
+    icon: "⚡",
+    path: "/electrical",
+  },
+  {
+    name: "Pricing",
+    icon: "💰",
+    path: "/pricing",
+  },
+  {
+    name: "Floor Plan",
+    icon: "🏠",
+    path: "/pre-floor-plan-drg",
+  },
   {
     name: dashboardName,
     icon: dashboardIcon,
@@ -364,10 +391,28 @@ if (isMobile) {
         justifyContent: "space-between",
         boxShadow: "0 2px 10px rgba(0,0,0,0.18)"
       }}>
-        <div>
-          <div style={{ fontSize: 20, fontWeight: 900 }}>🏗️ BuildMitra</div>
-          <div style={{ fontSize: 11, opacity: 0.8 }}>
-            Build Smarter. Save Bigger.
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <button
+            type="button"
+            onClick={() => setShowMobileMenu(!showMobileMenu)}
+            style={{
+              border: 0,
+              borderRadius: 6,
+              padding: "6px 10px",
+              background: "#2563eb",
+              color: "#ffffff",
+              fontWeight: 800,
+              fontSize: "14px",
+              cursor: "pointer"
+            }}
+          >
+            {showMobileMenu ? "✕ Close" : "☰ Menu"}
+          </button>
+          <div>
+            <div style={{ fontSize: 18, fontWeight: 900 }}>🏗️ BuildMitra</div>
+            <div style={{ fontSize: 10, opacity: 0.8 }}>
+              Build Smarter. Save Bigger.
+            </div>
           </div>
         </div>
 
@@ -393,6 +438,75 @@ if (isMobile) {
           {showMobileGrid ? "Logout" : "← Back"}
         </button>
       </div>
+
+      {showMobileMenu && (
+        <div style={{
+          position: "fixed",
+          top: 54,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 999,
+          background: "#1a1a2e",
+          color: "#ffffff",
+          overflowY: "auto",
+          padding: "16px"
+        }}>
+          <div style={{ fontSize: 13, fontWeight: 900, color: "#ff7a00", marginBottom: 10 }}>⚡ UTILITIES & MODULES</div>
+          {otherTabs.map((o: any, i) => (
+            <div
+              key={i}
+              onClick={() => {
+                setShowMobileMenu(false);
+                go(o.path);
+              }}
+              style={{
+                padding: "12px 14px",
+                margin: "4px 0",
+                borderRadius: "8px",
+                background: currentPath === o.path ? "#ff7a00" : "#16213e",
+                color: "#ffffff",
+                fontWeight: 800,
+                fontSize: "13px",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                cursor: "pointer"
+              }}
+            >
+              <span>{o.icon} {o.name}</span>
+              {o.badge && <span style={{ background: "#ff7a00", color: "#fff", fontSize: "10px", padding: "2px 8px", borderRadius: "10px" }}>{o.badge}</span>}
+            </div>
+          ))}
+
+          <div style={{ fontSize: 13, fontWeight: 900, color: "#38bdf8", marginTop: 18, marginBottom: 10 }}>📋 BOQ MODULES</div>
+          {boqTabs.map((b: any, i) => (
+            <div
+              key={i}
+              onClick={() => {
+                setShowMobileMenu(false);
+                go(b.path);
+              }}
+              style={{
+                padding: "12px 14px",
+                margin: "4px 0",
+                borderRadius: "8px",
+                background: currentPath === b.path ? "#ff7a00" : "#16213e",
+                color: "#ffffff",
+                fontWeight: 800,
+                fontSize: "13px",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                cursor: "pointer"
+              }}
+            >
+              <span>{b.icon} {b.name}</span>
+              {b.badge && <span style={{ background: "#ff7a00", color: "#fff", fontSize: "10px", padding: "2px 8px", borderRadius: "10px" }}>{b.badge}</span>}
+            </div>
+          ))}
+        </div>
+      )}
 
       {showMobileGrid ? (
         <div style={{
@@ -521,48 +635,65 @@ if (isMobile) {
         </div>
 
         {open.dashboards && (
-       <div
-       className="item"
-       style={styles.item}
-       onClick={() => {
-      if (userRole?.toLowerCase() === "buyer") {
-        go("/buyer-dashboard");
-      } else if (userRole?.toLowerCase() === "supplier") {
-        go("/supplier-dashboard");
-      } else if (userRole?.toLowerCase() === "admin") {
-        go("/admin-dashboard");
-      } else if (userRole?.toLowerCase() === "realestate") {
-        go("/realestate-dashboard");
-      } else if (userRole?.toLowerCase() === "machinery") {
-        go("/machinehire-dashboard");
-      } else if (userRole?.toLowerCase() === "labour") {
-        go("/laboursupply-dashboard");
-      } else {
-        go("/contractor-dashboard");
-      }
-    }}
-  >
-    {dashboardIcon} {dashboardName}
-  </div>
-)}
+          <>
+            <div
+              className="item"
+              style={styles.item}
+              onClick={() => {
+                if (userRole?.toLowerCase() === "buyer") {
+                  go("/buyer-dashboard");
+                } else if (userRole?.toLowerCase() === "supplier") {
+                  go("/supplier-dashboard");
+                } else if (userRole?.toLowerCase() === "admin") {
+                  go("/admin-dashboard");
+                } else if (userRole?.toLowerCase() === "realestate") {
+                  go("/realestate-dashboard");
+                } else if (["machinehire", "machinery", "equipment"].includes(userRole?.toLowerCase())) {
+                  go("/machinehire-dashboard");
+                } else if (["laboursupply", "labour"].includes(userRole?.toLowerCase())) {
+                  go("/laboursupply-dashboard");
+                } else {
+                  go("/contractor-dashboard");
+                }
+              }}
+            >
+              {dashboardIcon} {dashboardName}
+            </div>
 
-        {/* OTHER MODULES */}
-        {otherTabs.map((o, i) => (
-          <div
-            key={i}
-            className="item"
-            style={styles.item}
-            onClick={() => go(o.path)}
-          >
-            {o.icon} {o.name}
-          </div>
-        ))}
+            {otherTabs.map((o: any, i) => {
+              const isActive = currentPath === o.path || (o.path !== '/' && Boolean(currentPath?.startsWith(o.path)));
+              const isHovered = hoveredItem === `other-${i}`;
+              return (
+                <div
+                  key={i}
+                  className="item"
+                  style={{
+                    ...styles.item,
+                    ...(isActive ? styles.itemActive : {}),
+                    ...(isHovered && !isActive ? styles.itemHover : {}),
+                  }}
+                  onMouseEnter={() => setHoveredItem(`other-${i}` as any)}
+                  onMouseLeave={() => setHoveredItem(null)}
+                  onClick={() => go(o.path)}
+                >
+                  <span>{o.icon} {o.name}</span>
+                  {o.badge && <span style={styles.badge}>{o.badge}</span>}
+                </div>
+              );
+            })}
+          </>
+        )}
+
+
 
         {/* CALCULATORS */}
         <div
           className="main"
-          style={styles.main}
-          onMouseEnter={() => setHoveredMain('calculators')}
+          style={{
+            ...styles.main,
+            ...(hoveredMain === 'calculators' ? styles.mainHover : {})
+          }}
+          onMouseEnter={() => setHoveredMain('calculators' as any)}
           onMouseLeave={() => setHoveredMain(null)}
           onClick={() => toggle("calculators")}
         >
@@ -571,40 +702,64 @@ if (isMobile) {
         </div>
 
         {open.calculators &&
-          calculatorTabs.map((c, i) => (
-            <div
-              key={i}
-              className="item"
-              style={styles.item}
-              onClick={() => go(c.path)}
-            >
-              {c.icon} {c.name}
-            </div>
-          ))}
+          calculatorTabs.map((c, i) => {
+            const isActive = currentPath === c.path || (c.path !== '/' && Boolean(currentPath?.startsWith(c.path)));
+            const isHovered = hoveredItem === `calc-${i}`;
+            return (
+              <div
+                key={i}
+                className="item"
+                style={{
+                  ...styles.item,
+                  ...(isActive ? styles.itemActive : {}),
+                  ...(isHovered && !isActive ? styles.itemHover : {}),
+                }}
+                onMouseEnter={() => setHoveredItem(`calc-${i}` as any)}
+                onMouseLeave={() => setHoveredItem(null)}
+                onClick={() => go(c.path)}
+              >
+                {c.icon} {c.name}
+              </div>
+            );
+          })}
 
         {/* BOQ */}
         <div
           className="main"
-          style={styles.main}
-          onMouseEnter={() => setHoveredMain('boq')}
+          style={{
+            ...styles.main,
+            ...(hoveredMain === 'boq' ? styles.mainHover : {})
+          }}
+          onMouseEnter={() => setHoveredMain('boq' as any)}
           onMouseLeave={() => setHoveredMain(null)}
           onClick={() => toggle("boq")}
         >
-          <span>📋 BOQ MODULES (6)</span>
+          <span>📋 BOQ MODULES (7)</span>
           <span>{open.boq ? "▼" : "▶"}</span>
         </div>
 
         {open.boq &&
-          boqTabs.map((b, i) => (
-            <div
-              key={i}
-              className="item"
-              style={styles.item}
-              onClick={() => go(b.path)}
-            >
-              {b.icon} {b.name}
-            </div>
-          ))}
+          boqTabs.map((b: any, i) => {
+            const isActive = currentPath === b.path || (b.path !== '/' && Boolean(currentPath?.startsWith(b.path)));
+            const isHovered = hoveredItem === `boq-${i}`;
+            return (
+              <div
+                key={i}
+                className="item"
+                style={{
+                  ...styles.item,
+                  ...(isActive ? styles.itemActive : {}),
+                  ...(isHovered && !isActive ? styles.itemHover : {}),
+                }}
+                onMouseEnter={() => setHoveredItem(`boq-${i}` as any)}
+                onMouseLeave={() => setHoveredItem(null)}
+                onClick={() => go(b.path)}
+              >
+                <span>{b.icon} {b.name}</span>
+                {b.badge && <span style={styles.badge}>{b.badge}</span>}
+              </div>
+            );
+          })}
 
         {/* DIVIDER */}
         {!collapsed && <div style={styles.divider}></div>}
@@ -638,6 +793,13 @@ if (isMobile) {
     </div>
   );
 }
+
+
+
+
+
+
+
 
 
 

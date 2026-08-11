@@ -400,7 +400,7 @@ export default function FootingCalculator() {
               type="number"
               style={styles.input}
               value={inputs.footingNos}
-              onChange={e => setInputs({ ...inputs, footingNos: parseFloat(e.target.value) || 1 })}
+              onChange={e => setInputs({ ...inputs, footingNos: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
             />
           </div>
 
@@ -410,7 +410,7 @@ export default function FootingCalculator() {
               type="number"
               style={styles.input}
               value={inputs.lengthFt}
-              onChange={e => setInputs({ ...inputs, lengthFt: parseFloat(e.target.value) || 0 })}
+              onChange={e => setInputs({ ...inputs, lengthFt: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
             />
           </div>
 
@@ -420,7 +420,7 @@ export default function FootingCalculator() {
               type="number"
               style={styles.input}
               value={inputs.widthFt}
-              onChange={e => setInputs({ ...inputs, widthFt: parseFloat(e.target.value) || 0 })}
+              onChange={e => setInputs({ ...inputs, widthFt: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
             />
           </div>
 
@@ -430,7 +430,7 @@ export default function FootingCalculator() {
               type="number"
               style={styles.input}
               value={inputs.depthFt}
-              onChange={e => setInputs({ ...inputs, depthFt: parseFloat(e.target.value) || 0 })}
+              onChange={e => setInputs({ ...inputs, depthFt: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
             />
           </div>
 
@@ -440,7 +440,7 @@ export default function FootingCalculator() {
               type="number"
               style={styles.input}
               value={inputs.excDepthFt}
-              onChange={e => setInputs({ ...inputs, excDepthFt: parseFloat(e.target.value) || 0 })}
+              onChange={e => setInputs({ ...inputs, excDepthFt: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
             />
           </div>
 
@@ -450,7 +450,7 @@ export default function FootingCalculator() {
               type="number"
               style={styles.input}
               value={inputs.workSpaceFt}
-              onChange={e => setInputs({ ...inputs, workSpaceFt: parseFloat(e.target.value) || 0 })}
+              onChange={e => setInputs({ ...inputs, workSpaceFt: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
             />
           </div>
 
@@ -460,7 +460,7 @@ export default function FootingCalculator() {
               type="number"
               style={styles.input}
               value={inputs.pccThickMm}
-              onChange={e => setInputs({ ...inputs, pccThickMm: parseFloat(e.target.value) || 100 })}
+              onChange={e => setInputs({ ...inputs, pccThickMm: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
             />
           </div>
 
@@ -470,7 +470,7 @@ export default function FootingCalculator() {
               type="number"
               style={styles.input}
               value={inputs.pccProjIn}
-              onChange={e => setInputs({ ...inputs, pccProjIn: parseFloat(e.target.value) || 6 })}
+              onChange={e => setInputs({ ...inputs, pccProjIn: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
             />
           </div>
 
@@ -501,7 +501,7 @@ export default function FootingCalculator() {
                   type="number"
                   style={styles.input}
                   value={inputs.mainDia}
-                  onChange={e => setInputs({ ...inputs, mainDia: parseFloat(e.target.value) || 12 })}
+                  onChange={e => setInputs({ ...inputs, mainDia: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
                 />
               </div>
 
@@ -511,7 +511,7 @@ export default function FootingCalculator() {
                   type="number"
                   style={styles.input}
                   value={inputs.mainSpacingMm}
-                  onChange={e => setInputs({ ...inputs, mainSpacingMm: parseFloat(e.target.value) || 150 })}
+                  onChange={e => setInputs({ ...inputs, mainSpacingMm: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
                 />
               </div>
 
@@ -521,7 +521,7 @@ export default function FootingCalculator() {
                   type="number"
                   style={styles.input}
                   value={inputs.distDia}
-                  onChange={e => setInputs({ ...inputs, distDia: parseFloat(e.target.value) || 12 })}
+                  onChange={e => setInputs({ ...inputs, distDia: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
                 />
               </div>
 
@@ -531,7 +531,7 @@ export default function FootingCalculator() {
                   type="number"
                   style={styles.input}
                   value={inputs.distSpacingMm}
-                  onChange={e => setInputs({ ...inputs, distSpacingMm: parseFloat(e.target.value) || 150 })}
+                  onChange={e => setInputs({ ...inputs, distSpacingMm: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
                 />
               </div>
 
@@ -541,7 +541,7 @@ export default function FootingCalculator() {
                   type="number"
                   style={styles.input}
                   value={inputs.coverMm}
-                  onChange={e => setInputs({ ...inputs, coverMm: parseFloat(e.target.value) || 50 })}
+                  onChange={e => setInputs({ ...inputs, coverMm: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
                 />
               </div>
 
@@ -551,7 +551,7 @@ export default function FootingCalculator() {
                   type="number"
                   style={styles.input}
                   value={inputs.bendLengthMm}
-                  onChange={e => setInputs({ ...inputs, bendLengthMm: parseFloat(e.target.value) || 300 })}
+                  onChange={e => setInputs({ ...inputs, bendLengthMm: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
                 />
               </div>
             </div>
@@ -657,3 +657,4 @@ export default function FootingCalculator() {
     </div>
   );
 }
+

@@ -16,7 +16,6 @@ type Worker = {
   mobile?: string;
   status?: string;
   location?: string;
-  pincode?: string;
   experience?: string;
   teamSize?: string;
   description?: string;
@@ -97,7 +96,6 @@ export default function LabourNet() {
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
-  const [pincode, setPincode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [selected, setSelected] = useState<Worker | null>(null);
@@ -148,7 +146,6 @@ export default function LabourNet() {
         worker.skill,
         worker.mobile,
         worker.location,
-        worker.pincode,
         worker.status,
         worker.uploaderName
       ]
@@ -161,17 +158,9 @@ export default function LabourNet() {
         !status ||
         String(worker.status || "").toLowerCase() === status.toLowerCase();
 
-      const workerPin = String(worker.pincode || "")
-        .replace(/\D/g, "")
-        .slice(-6);
-
-      const pinMatch =
-        !pincode ||
-        workerPin === pincode;
-
-      return searchMatch && statusMatch && pinMatch;
+      return searchMatch && statusMatch;
     });
-  }, [workers, search, status, pincode]);
+  }, [workers, search, status]);
 
   async function openWhatsApp(worker: Worker) {
     let phone = digits(worker.mobile || worker.uploaderMobile);
@@ -378,21 +367,6 @@ export default function LabourNet() {
             placeholder="Search worker, skill, location, mobile or code"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-          />
-
-          <input
-            type="text"
-            inputMode="numeric"
-            maxLength={6}
-            placeholder="PIN code"
-            value={pincode}
-            onChange={(event) =>
-              setPincode(
-                event.target.value
-                  .replace(/\D/g, "")
-                  .slice(0, 6)
-              )
-            }
           />
 
           <select
@@ -925,7 +899,6 @@ export default function LabourNet() {
     </>
   );
 }
-
 
 
 

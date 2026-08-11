@@ -44,7 +44,7 @@ export const ExportButtonBar: React.FC<ExportButtonBarProps> = ({
           transition: "all 0.2s ease"
         }}
       >
-        📄 Download in PDF
+        📄 PDF
       </button>
 
       <button
@@ -88,7 +88,7 @@ export const ExportButtonBar: React.FC<ExportButtonBarProps> = ({
           transition: "all 0.2s ease"
         }}
       >
-        📲 Share on WhatsApp
+        📲 WhatsApp
       </button>
 
       {extraButtons}
@@ -97,3 +97,4 @@ export const ExportButtonBar: React.FC<ExportButtonBarProps> = ({
 };
 
 export default ExportButtonBar;
+

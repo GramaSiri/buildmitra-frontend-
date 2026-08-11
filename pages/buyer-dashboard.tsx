@@ -6,7 +6,7 @@ import { themeTokens, PrimaryButton, SecondaryButton, Card, Badge, LoadingSpinne
 import MarketRateTrend from "../components/ui/MarketRateTrend";
 
 export default function BuyerDashboard() {
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE || "https://buildmitra-backend-beta.onrender.com";
 const isReadOnly = false;
   const denyContractorEdit = () => {
     alert("Buyer access is read-only. Project records can only be updated by the assigned contractor.");
@@ -1758,6 +1758,7 @@ const isReadOnly = false;
     )
   );
 }
+
 
 
 

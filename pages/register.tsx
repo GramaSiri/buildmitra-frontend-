@@ -3,8 +3,7 @@ import { useRouter } from "next/router";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL ||
-  process.env.NEXT_PUBLIC_API_BASE ||
-  "http://localhost:5000";
+  process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE || "https://buildmitra-backend-beta.onrender.com";
 
 type Billing = "monthly" | "annual";
 type PlanId = "basic" | "professional" | "business";
@@ -866,3 +865,4 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 800
   }
 };
+

@@ -4,7 +4,6 @@ import { useRouter } from 'next/router';
 import { usePaymentBarrier } from '../hooks/usePaymentBarrier';
 import { downloadBuildMitraPDF } from '../utils/pdfExport';
 import MarketRateTrend from '../components/ui/MarketRateTrend';
-import EngineeringSpecimen from '../components/engineering/EngineeringSpecimen';
 import { getMasterRate, syncApprovedRatesFromBackend, MasterRateResult } from "../utils/masterRates";
 
 const styles: Record<string, React.CSSProperties> = {
@@ -14,11 +13,11 @@ const styles: Record<string, React.CSSProperties> = {
   badge: { backgroundColor: '#a51d36', color: '#ffffff', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: '700' },
   backBtn: { backgroundColor: 'rgba(255,255,255,0.15)', border: 'none', color: 'white', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '600' },
 
-  dropdownCard: { backgroundColor: '#ffffff', borderRadius: '10px', border: '1px solid #cbd5e1', padding: '16px', marginBottom: '18px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' },
+  dropdownCard: { backgroundColor: '#eef3f8', borderRadius: '10px', border: '1px solid #94a3b8', padding: '16px', marginBottom: '18px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' },
   dropdownLabel: { fontSize: '12px', fontWeight: '800', color: '#800020', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '6px', display: 'block' },
   modeSelect: { width: '100%', padding: '12px 14px', border: '2px solid #800020', borderRadius: '8px', fontSize: '15px', fontWeight: '700', color: '#800020', backgroundColor: '#fff5f7', outline: 'none', cursor: 'pointer' },
 
-  stepperCard: { backgroundColor: '#ffffff', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '18px', marginBottom: '18px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' },
+  stepperCard: { backgroundColor: '#eef3f8', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '18px', marginBottom: '18px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' },
   sectionHeader: { fontSize: '15px', fontWeight: '700', color: '#800020', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '2px solid #fecdd3', paddingBottom: '8px' },
 
   grid3: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px', marginBottom: '14px' },
@@ -26,8 +25,8 @@ const styles: Record<string, React.CSSProperties> = {
 
   fieldGroup: { display: 'flex', flexDirection: 'column', gap: '4px' },
   label: { fontSize: '11px', fontWeight: '700', color: '#334155', textTransform: 'uppercase', letterSpacing: '0.3px' },
-  input: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#fff', outline: 'none' },
-  select: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', backgroundColor: '#fff', outline: 'none' },
+  input: { width: '100%', padding: '9px 12px', border: '1px solid #94a3b8', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#fff', outline: 'none' },
+  select: { width: '100%', padding: '9px 12px', border: '1px solid #94a3b8', borderRadius: '6px', fontSize: '13px', backgroundColor: '#fff', outline: 'none' },
 
   btnPrimary: { backgroundColor: '#800020', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '6px' },
   btnSecondary: { backgroundColor: '#2563eb', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' },
@@ -52,7 +51,7 @@ const styles: Record<string, React.CSSProperties> = {
   rateTagWarn: { backgroundColor: '#fff7ed', color: '#c2410c', border: '1px solid #ffedd5', padding: '2px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: '700' },
 
   warnBanner: { backgroundColor: '#fff7ed', border: '1px solid #fdba74', color: '#9a3412', padding: '12px', borderRadius: '8px', marginBottom: '16px', fontSize: '12px', fontWeight: '600' },
-  noteBox: { backgroundColor: '#fff5f7', border: '1px solid #fecdd3', padding: '12px', borderRadius: '8px', fontSize: '12px', color: '#800020', marginBottom: '14px' }
+  noteBox: { backgroundColor: '#fff5f7', border: '1px solid #fecdd3', padding: '12px', borderRadius: '8px', fontSize: '13px', color: '#7f1d1d', marginBottom: '14px' }
 };
 
 const formatCurrency = (val: number | null | undefined): string => {
@@ -65,7 +64,283 @@ const formatNumber = (val: number | null | undefined, decimals = 2): string => {
   return val.toLocaleString('en-IN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 };
 
-export default function BeamCalculator() {
+
+type ColumnSpecimenProps = {
+  heightFt: number;
+  widthIn: number;
+  depthIn: number;
+  grade: string;
+  cornerDia: number;
+  cornerNos: number;
+  middleDia: number;
+  middleNos: number;
+  tieDia: number;
+  tieSpacingMm: number;
+  coverMm: number;
+  showConcrete: boolean;
+  showSteel: boolean;
+};
+
+function ColumnSpecimen(props: ColumnSpecimenProps) {
+  const heightFt = Math.max(Number(props.heightFt) || 1, 1);
+  const widthIn = Math.max(Number(props.widthIn) || 1, 1);
+  const depthIn = Math.max(Number(props.depthIn) || 1, 1);
+
+  const visualHeight = Math.min(155, Math.max(75, 65 + heightFt * 7));
+  const visualWidth = Math.min(82, Math.max(45, widthIn * 5));
+  const visualDepth = Math.min(34, Math.max(17, depthIn * 2.5));
+
+  const x = 120;
+  const bottom = 188;
+  const top = bottom - visualHeight;
+  const left = x - visualWidth / 2;
+  const right = x + visualWidth / 2;
+
+  const spacing = Math.max(Number(props.tieSpacingMm) || 150, 50);
+  const tieCount = Math.min(
+    10,
+    Math.max(3, Math.round((heightFt * 304.8) / spacing))
+  );
+
+  return (
+    <div
+      style={{
+        width: '100%',
+        maxWidth: '260px',
+        marginLeft: 'auto',
+        padding: '10px',
+        backgroundColor: '#eef3f8',
+        border: '1px solid #94a3b8',
+        borderRadius: '10px',
+        boxShadow: '0 3px 10px rgba(15,23,42,0.16)',
+        boxSizing: 'border-box'
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '4px'
+        }}
+      >
+        <strong style={{ fontSize: '13px', color: '#7f1d1d' }}>
+          Dynamic Column Specimen
+        </strong>
+
+        <span
+          style={{
+            fontSize: '9px',
+            fontWeight: '700',
+            color: '#475569',
+            backgroundColor: '#f1f5f9',
+            padding: '3px 7px',
+            borderRadius: '10px'
+          }}
+        >
+          3D ISOMETRIC
+        </span>
+      </div>
+
+      <svg
+        viewBox="0 0 300 225"
+        width="100%"
+        height="195"
+        style={{ display: 'block' }}
+      >
+        <defs>
+          <marker
+            id="column-dimension-arrow"
+            markerWidth="7"
+            markerHeight="7"
+            refX="3.5"
+            refY="3.5"
+            orient="auto-start-reverse"
+          >
+            <path d="M0,0 L7,3.5 L0,7 Z" fill="#334155" />
+          </marker>
+        </defs>
+
+        <line
+          x1="35"
+          y1={bottom + 10}
+          x2="250"
+          y2={bottom + 10}
+          stroke="#94a3b8"
+          strokeWidth="1.5"
+        />
+
+        <polygon
+          points={`${left},${top} ${right},${top} ${right},${bottom} ${left},${bottom}`}
+          fill={props.showConcrete ? '#cbd5e1' : '#f8fafc'}
+          fillOpacity={props.showConcrete ? 0.9 : 0.4}
+          stroke="#334155"
+          strokeWidth="1.5"
+        />
+
+        <polygon
+          points={`${right},${top} ${right + visualDepth},${top - visualDepth * 0.48} ${right + visualDepth},${bottom - visualDepth * 0.48} ${right},${bottom}`}
+          fill={props.showConcrete ? '#94a3b8' : '#e2e8f0'}
+          fillOpacity={props.showConcrete ? 0.9 : 0.4}
+          stroke="#334155"
+          strokeWidth="1.5"
+        />
+
+        <polygon
+          points={`${left},${top} ${left + visualDepth},${top - visualDepth * 0.48} ${right + visualDepth},${top - visualDepth * 0.48} ${right},${top}`}
+          fill={props.showConcrete ? '#f1f5f9' : '#ffffff'}
+          stroke="#334155"
+          strokeWidth="1.5"
+        />
+
+        {props.showSteel && (
+          <>
+            <line
+              x1={left + 8}
+              y1={top + 5}
+              x2={left + 8}
+              y2={bottom - 5}
+              stroke="#b91c1c"
+              strokeWidth="3"
+            />
+
+            <line
+              x1={right - 8}
+              y1={top + 5}
+              x2={right - 8}
+              y2={bottom - 5}
+              stroke="#b91c1c"
+              strokeWidth="3"
+            />
+
+            <line
+              x1={right + visualDepth - 7}
+              y1={top - visualDepth * 0.48 + 6}
+              x2={right + visualDepth - 7}
+              y2={bottom - visualDepth * 0.48 - 5}
+              stroke="#b91c1c"
+              strokeWidth="3"
+            />
+
+            {Array.from({ length: tieCount }).map((_, index) => {
+              const ratio = tieCount === 1 ? 0 : index / (tieCount - 1);
+              const tieY = bottom - 8 - ratio * (visualHeight - 16);
+
+              return (
+                <polyline
+                  key={index}
+                  points={`${left + 5},${tieY} ${right - 5},${tieY} ${right + visualDepth - 5},${tieY - visualDepth * 0.48}`}
+                  fill="none"
+                  stroke="#15803d"
+                  strokeWidth="1.3"
+                  strokeDasharray="3 2"
+                />
+              );
+            })}
+          </>
+        )}
+
+        <line
+          x1={left - 23}
+          y1={top}
+          x2={left - 23}
+          y2={bottom}
+          stroke="#334155"
+          markerStart="url(#column-dimension-arrow)"
+          markerEnd="url(#column-dimension-arrow)"
+        />
+
+        <text
+          x={left - 31}
+          y={(top + bottom) / 2}
+          textAnchor="middle"
+          transform={`rotate(-90 ${left - 31} ${(top + bottom) / 2})`}
+          fill="#0f172a"
+          fontSize="11"
+          fontWeight="700"
+        >
+          H = {heightFt} ft
+        </text>
+
+        <line
+          x1={left}
+          y1={bottom + 25}
+          x2={right}
+          y2={bottom + 25}
+          stroke="#334155"
+          markerStart="url(#column-dimension-arrow)"
+          markerEnd="url(#column-dimension-arrow)"
+        />
+
+        <text
+          x={x}
+          y={bottom + 42}
+          textAnchor="middle"
+          fill="#0f172a"
+          fontSize="11"
+          fontWeight="700"
+        >
+          W = {widthIn}"
+        </text>
+
+        <text
+          x={right + visualDepth + 8}
+          y={bottom - visualDepth * 0.48}
+          fill="#0f172a"
+          fontSize="11"
+          fontWeight="700"
+        >
+          D = {depthIn}"
+        </text>
+
+        <rect
+          x="198"
+          y="23"
+          width="94"
+          height="122"
+          rx="7"
+          fill="#ffffff"
+          fillOpacity="0.94"
+          stroke="#cbd5e1"
+        />
+
+        <text x="205" y="38" fill="#7f1d1d" fontSize="11" fontWeight="700">
+          {props.grade}
+        </text>
+
+        {props.showSteel && (
+          <>
+            <text x="205" y="57" fill="#b91c1c" fontSize="10" fontWeight="700">
+              Main bars
+            </text>
+
+            <text x="205" y="71" fill="#334155" fontSize="10">
+              {props.cornerNos} x {props.cornerDia} mm
+            </text>
+
+            <text x="205" y="84" fill="#334155" fontSize="10">
+              {props.middleNos} x {props.middleDia} mm
+            </text>
+
+            <text x="205" y="103" fill="#15803d" fontSize="10" fontWeight="700">
+              Ties {props.tieDia} mm
+            </text>
+
+            <text x="205" y="116" fill="#334155" fontSize="10">
+              @ {props.tieSpacingMm} mm
+            </text>
+
+            <text x="205" y="135" fill="#334155" fontSize="10">
+              Cover {props.coverMm} mm
+            </text>
+          </>
+        )}
+      </svg>
+    </div>
+  );
+}
+
+export default function ColumnCalculator() {
   const router = useRouter();
   const { checkAndRun } = usePaymentBarrier();
 
@@ -76,24 +351,24 @@ export default function BeamCalculator() {
   // Scope Option: 'both' vs 'concrete_only' vs 'steel_only'
   const [scopeOption, setScopeOption] = useState<'both' | 'concrete_only' | 'steel_only'>('both');
 
-  // DETAILED BEAM INPUTS
+  // DETAILED COLUMN INPUTS
   const initialInputs = {
-    beamNos: 3,         // Number of beams
-    lengthFt: 40,       // Length in feet
-    widthIn: 6,         // Width in inches (e.g. 6")
-    depthIn: 12,        // Depth in inches (e.g. 12")
-    grade: 'M20',       // Concrete grade: M20, M25, M30
+    columnNos: 4,      // Number of columns
+    heightFt: 10,      // Height in feet
+    widthIn: 9,        // Width in inches (e.g. 9")
+    depthIn: 9,        // Depth in inches (e.g. 9")
+    grade: 'M20',      // Concrete grade: M20, M25, M30
 
-    // Reinforcement
-    bottomDia: 12,      // Bottom bar dia in mm
-    bottomNos: 3,       // Bottom bar count per beam
-    topDia: 16,         // Top bar dia in mm
-    topNos: 2,          // Top bar count per beam
+    // Vertical Reinforcement
+    cornerDia: 12,     // Corner bar dia in mm
+    cornerNos: 4,      // Corner bar count per column
+    middleDia: 12,     // Middle bar dia in mm
+    middleNos: 4,      // Middle bar count per column
 
-    // Stirrups & Cover
-    stirrupDia: 8,      // Stirrup dia in mm (8mm)
-    spacingMm: 150,     // Spacing in mm
-    coverMm: 25         // Clear cover in mm (25mm for beams)
+    // Lateral Ties / Stirrups
+    tieDia: 8,         // Tie dia in mm (8mm)
+    tieSpacingMm: 150, // Spacing in mm
+    coverMm: 40        // Clear cover in mm (40mm for columns)
   };
 
   const [inputs, setInputs] = useState(initialInputs);
@@ -107,22 +382,22 @@ export default function BeamCalculator() {
   const wireRate = getMasterRate(["MAT-BWR-01", "binding wire"], 80);
   const coverRate = getMasterRate(["MAT-CVR-01", "cover block"], 5);
   const waterRate = getMasterRate(["MAT-WTR-01", "construction water", "water"], 0.05);
-  const shutteringRate = getMasterRate(["SRV-BEM-SHT", "beam shuttering", "formwork"], 35);
-  const rccLabourRate = getMasterRate(["SRV-RCC-LAY", "rcc labour", "beam labour"], 1000);
+  const shutteringBoxRate = getMasterRate(["SRV-COL-SHT", "shuttering box", "formwork"], 35);
+  const rccLabourRate = getMasterRate(["SRV-RCC-LAY", "rcc labour", "column labour"], 1000);
 
   const handleReset = () => setInputs(initialInputs);
 
-  // IS 456 Structural Beam Engine
+  // IS 456 Structural Column Engine
   const calcResults = useMemo(() => {
     const hasConcrete = scopeOption === 'both' || scopeOption === 'concrete_only';
     const hasSteel = scopeOption === 'both' || scopeOption === 'steel_only';
 
-    const H_m = inputs.lengthFt * 0.3048;
+    const H_m = inputs.heightFt * 0.3048;
     const W_m = (inputs.widthIn * 25.4) / 1000;
     const D_m = (inputs.depthIn * 25.4) / 1000;
 
-    const volPerBeamCum = H_m * W_m * D_m;
-    const totalVolCum = volPerBeamCum * inputs.beamNos;
+    const volPerColCum = H_m * W_m * D_m;
+    const totalVolCum = volPerColCum * inputs.columnNos;
     const totalVolCft = totalVolCum * 35.3147;
 
     // Concrete Mix Ingredients
@@ -148,29 +423,30 @@ export default function BeamCalculator() {
     const ca20Cft = hasConcrete ? (totalVolCum * ca20Factor) : 0;
     const ca12Cft = hasConcrete ? (totalVolCum * ca12Factor) : 0;
 
-    // Steel Reinforcement
-    const L_topM = (inputs.lengthFt * 0.3048) + (2 * 50 * inputs.topDia / 1000);
-    const L_botM = (inputs.lengthFt * 0.3048) + (2 * 50 * inputs.bottomDia / 1000);
+    // Vertical Reinforcement
+    const L_cornerM = (inputs.heightFt * 0.3048) + (50 * inputs.cornerDia / 1000);
+    const L_middleM = (inputs.heightFt * 0.3048) + (50 * inputs.middleDia / 1000);
 
-    const topWeightKg = hasSteel ? (inputs.beamNos * inputs.topNos * L_topM * ((inputs.topDia * inputs.topDia) / 162.2)) : 0;
-    const botWeightKg = hasSteel ? (inputs.beamNos * inputs.bottomNos * L_botM * ((inputs.bottomDia * inputs.bottomDia) / 162.2)) : 0;
+    const cornerWeightKg = hasSteel ? (inputs.columnNos * inputs.cornerNos * L_cornerM * ((inputs.cornerDia * inputs.cornerDia) / 162.2)) : 0;
+    const middleWeightKg = hasSteel ? (inputs.columnNos * inputs.middleNos * L_middleM * ((inputs.middleDia * inputs.middleDia) / 162.2)) : 0;
+    const totalVerticalKg = cornerWeightKg + middleWeightKg;
 
-    // Stirrups
+    // Ties / Stirrups
     const W_coreM = Math.max((inputs.widthIn * 25.4 - 2 * inputs.coverMm) / 1000, 0);
     const D_coreM = Math.max((inputs.depthIn * 25.4 - 2 * inputs.coverMm) / 1000, 0);
-    const cuttingLengthStirrupM = (2 * (W_coreM + D_coreM)) + (24 * inputs.stirrupDia / 1000);
+    const cuttingLengthTieM = (2 * (W_coreM + D_coreM)) + (24 * inputs.tieDia / 1000);
 
-    const stirrupNosPerBeam = Math.ceil((inputs.lengthFt * 304.8) / inputs.spacingMm) + 1;
-    const totalStirrupNos = hasSteel ? (stirrupNosPerBeam * inputs.beamNos) : 0;
-    const stirrupTotalWeightKg = hasSteel ? (totalStirrupNos * cuttingLengthStirrupM * ((inputs.stirrupDia * inputs.stirrupDia) / 162.2)) : 0;
+    const tieNosPerCol = Math.ceil((inputs.heightFt * 304.8) / inputs.tieSpacingMm) + 1;
+    const totalTieNos = hasSteel ? (tieNosPerCol * inputs.columnNos) : 0;
+    const tieTotalWeightKg = hasSteel ? (totalTieNos * cuttingLengthTieM * ((inputs.tieDia * inputs.tieDia) / 162.2)) : 0;
 
-    const totalSteelKg = topWeightKg + botWeightKg + stirrupTotalWeightKg;
+    const totalSteelKg = totalVerticalKg + tieTotalWeightKg;
     const bindingWireKg = hasSteel ? (totalSteelKg * 0.015) : 0;
-    const coverBlockNos = hasSteel ? Math.ceil(inputs.beamNos * (inputs.lengthFt / 3) * 4) : 0;
+    const coverBlockNos = hasSteel ? Math.ceil(inputs.columnNos * (inputs.heightFt / 3) * 4) : 0;
     const waterLtr = hasConcrete ? (cementBags * 25) : 0;
 
-    // Beam Formwork Shuttering Area (Soffit + 2 Sides)
-    const shutteringAreaSqft = hasConcrete ? (((inputs.widthIn / 12) + (2 * inputs.depthIn / 12)) * inputs.lengthFt * inputs.beamNos) : 0;
+    // Column Shuttering Box Surface Area
+    const shutteringAreaSqft = hasConcrete ? (2 * ((inputs.widthIn / 12) + (inputs.depthIn / 12)) * inputs.heightFt * inputs.columnNos) : 0;
 
     // Cost Breakdown
     const cementCost = cementBags * (cementRate.found ? cementRate.rate : 385);
@@ -181,7 +457,7 @@ export default function BeamCalculator() {
     const wireCost = bindingWireKg * (wireRate.found ? wireRate.rate : 80);
     const coverCost = coverBlockNos * (coverRate.found ? coverRate.rate : 5);
     const waterCost = waterLtr * (waterRate.found ? waterRate.rate : 0.05);
-    const shutteringCost = shutteringAreaSqft * (shutteringRate.found ? shutteringRate.rate : 35);
+    const shutteringCost = shutteringAreaSqft * (shutteringBoxRate.found ? shutteringBoxRate.rate : 35);
 
     const labourRatePerCum = (hasConcrete && hasSteel) ? 1000 : hasConcrete ? 600 : 400;
     const rccLabourCost = totalVolCum * labourRatePerCum;
@@ -199,24 +475,24 @@ export default function BeamCalculator() {
         { code: ca20Rate.itemCode || "MAT-AGG-20", category: "Material", description: `20mm Coarse Aggregate`, unit: "CFT", engQty: ca20Cft, procQty: Math.ceil(ca20Cft), rate: ca20Rate.rate, rateFound: ca20Rate.found, amount: ca20Cost },
         { code: ca12Rate.itemCode || "MAT-AGG-12", category: "Material", description: `12mm Coarse Aggregate`, unit: "CFT", engQty: ca12Cft, procQty: Math.ceil(ca12Cft), rate: ca12Rate.rate, rateFound: ca12Rate.found, amount: ca12Cost },
         { code: waterRate.itemCode || "MAT-WTR-01", category: "Site Utility", description: `Construction Water for Curing & Concrete`, unit: "LTR", engQty: waterLtr, procQty: Math.ceil(waterLtr), rate: waterRate.rate, rateFound: waterRate.found, amount: waterCost },
-        { code: shutteringRate.itemCode || "SRV-BEM-SHT", category: "Formwork", description: `Beam Steel/Ply Formwork Shuttering Rental & Fixing Charges`, unit: "SQFT", engQty: shutteringAreaSqft, procQty: Math.ceil(shutteringAreaSqft), rate: shutteringRate.rate, rateFound: shutteringRate.found, amount: shutteringCost }
+        { code: shutteringBoxRate.itemCode || "SRV-COL-SHT", category: "Formwork", description: `Column Steel/Ply Shuttering Box Rental & Fixing Charges`, unit: "SQFT", engQty: shutteringAreaSqft, procQty: Math.ceil(shutteringAreaSqft), rate: shutteringBoxRate.rate, rateFound: shutteringBoxRate.found, amount: shutteringCost }
       );
     }
 
     if (hasSteel) {
       resultItems.push(
-        { code: steelRate.itemCode || "MAT-STL-01", category: "Material", description: `Steel - ${inputs.topDia}mm Top Longitudinal Bars (${inputs.topNos} nos x ${inputs.beamNos} beams)`, unit: "KG", engQty: topWeightKg, procQty: Math.ceil(topWeightKg), rate: steelRate.rate, rateFound: steelRate.found, amount: topWeightKg * steelRate.rate },
-        { code: steelRate.itemCode || "MAT-STL-01", category: "Material", description: `Steel - ${inputs.bottomDia}mm Bottom Longitudinal Bars (${inputs.bottomNos} nos x ${inputs.beamNos} beams)`, unit: "KG", engQty: botWeightKg, procQty: Math.ceil(botWeightKg), rate: steelRate.rate, rateFound: steelRate.found, amount: botWeightKg * steelRate.rate },
-        { code: steelRate.itemCode || "MAT-STL-01", category: "Material", description: `Steel - ${inputs.stirrupDia}mm Shear Stirrups (${totalStirrupNos} Nos @ ${inputs.spacingMm}mm)`, unit: "KG", engQty: stirrupTotalWeightKg, procQty: Math.ceil(stirrupTotalWeightKg), rate: steelRate.rate, rateFound: steelRate.found, amount: stirrupTotalWeightKg * steelRate.rate },
+        { code: steelRate.itemCode || "MAT-STL-01", category: "Material", description: `Steel - ${inputs.cornerDia}mm Corner Rebar (${inputs.cornerNos} nos x ${inputs.columnNos} cols)`, unit: "KG", engQty: cornerWeightKg, procQty: Math.ceil(cornerWeightKg), rate: steelRate.rate, rateFound: steelRate.found, amount: cornerWeightKg * steelRate.rate },
+        { code: steelRate.itemCode || "MAT-STL-01", category: "Material", description: `Steel - ${inputs.middleDia}mm Middle Rebar (${inputs.middleNos} nos x ${inputs.columnNos} cols)`, unit: "KG", engQty: middleWeightKg, procQty: Math.ceil(middleWeightKg), rate: steelRate.rate, rateFound: steelRate.found, amount: middleWeightKg * steelRate.rate },
+        { code: steelRate.itemCode || "MAT-STL-01", category: "Material", description: `Steel - ${inputs.tieDia}mm Lateral Ties/Stirrups (${totalTieNos} Nos @ ${inputs.tieSpacingMm}mm)`, unit: "KG", engQty: tieTotalWeightKg, procQty: Math.ceil(tieTotalWeightKg), rate: steelRate.rate, rateFound: steelRate.found, amount: tieTotalWeightKg * steelRate.rate },
         { code: wireRate.itemCode || "MAT-BWR-01", category: "Material", description: `Steel Binding Wire (1.5% of steel)`, unit: "KG", engQty: bindingWireKg, procQty: Math.ceil(bindingWireKg), rate: wireRate.rate, rateFound: wireRate.found, amount: wireCost },
-        { code: coverRate.itemCode || "MAT-CVR-01", category: "Material", description: `Heavy Duty Beam Concrete Cover Blocks (25mm)`, unit: "NOS", engQty: coverBlockNos, procQty: coverBlockNos, rate: coverRate.rate, rateFound: coverRate.found, amount: coverCost }
+        { code: coverRate.itemCode || "MAT-CVR-01", category: "Material", description: `Heavy Duty Column Concrete Cover Blocks (40mm)`, unit: "NOS", engQty: coverBlockNos, procQty: coverBlockNos, rate: coverRate.rate, rateFound: coverRate.found, amount: coverCost }
       );
     }
 
     resultItems.push({
       code: rccLabourRate.itemCode || "SRV-RCC-LAY",
       category: "Labour",
-      description: `Beam ${scopeOption === 'both' ? 'Concrete Casting & Bar Bending' : scopeOption === 'concrete_only' ? 'Concrete Casting & Shuttering' : 'Bar Bending & Steel Tying'} Labour`,
+      description: `Column ${scopeOption === 'both' ? 'Concrete Casting & Bar Bending' : scopeOption === 'concrete_only' ? 'Concrete Casting & Shuttering' : 'Bar Bending & Steel Tying'} Labour`,
       unit: "CUM",
       engQty: totalVolCum,
       procQty: totalVolCum,
@@ -232,10 +508,10 @@ export default function BeamCalculator() {
       totalVolCft,
       cementBags,
       totalSteelKg,
-      topWeightKg,
-      botWeightKg,
-      stirrupTotalWeightKg,
-      totalStirrupNos,
+      cornerWeightKg,
+      middleWeightKg,
+      tieTotalWeightKg,
+      totalTieNos,
       mSandCft,
       ca20Cft,
       ca12Cft,
@@ -249,13 +525,13 @@ export default function BeamCalculator() {
       costPerCft,
       resultItems
     };
-  }, [inputs, scopeOption, cementRate, steelRate, sandRate, ca20Rate, ca12Rate, wireRate, coverRate, waterRate, shutteringRate, rccLabourRate]);
+  }, [inputs, scopeOption, cementRate, steelRate, sandRate, ca20Rate, ca12Rate, wireRate, coverRate, waterRate, shutteringBoxRate, rccLabourRate]);
 
   // Download PDF
   const handleDownloadPDF = () => {
-    checkAndRun('calculator_export', 'beam-calculator', () => {
+    checkAndRun('calculator_export', 'column-calculator', () => {
       downloadBuildMitraPDF({
-        documentTitle: `BuildMitra RCC Beam Structural Estimate (${scopeOption})`,
+        documentTitle: `BuildMitra Column Structural Estimate (${scopeOption})`,
         items: calcResults.resultItems.map((item: any, idx: number) => ({
           sno: idx + 1,
           description: `[${item.category}] ${item.description}`,
@@ -271,7 +547,7 @@ export default function BeamCalculator() {
 
   // Export Excel
   const handleExportExcel = () => {
-    checkAndRun('calculator_export', 'beam-calculator', () => {
+    checkAndRun('calculator_export', 'column-calculator', () => {
       const data = calcResults.resultItems.map(item => ({
         "Master Item Code": item.code,
         "Category": item.category,
@@ -285,20 +561,20 @@ export default function BeamCalculator() {
 
       const ws = XLSX.utils.json_to_sheet(data);
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Beam_Structural_BOQ");
-      XLSX.writeFile(wb, `BuildMitra_Beam_Estimate_${scopeOption}.xlsx`);
+      XLSX.utils.book_append_sheet(wb, ws, "Column_Structural_BOQ");
+      XLSX.writeFile(wb, `BuildMitra_Column_Estimate_${scopeOption}.xlsx`);
     });
   };
 
   // Share WhatsApp
   const handleShareWhatsApp = () => {
-    checkAndRun('calculator_export', 'beam-calculator', () => {
-      const msg = `*BuildMitra RCC Beam Structural Report*%0A` +
+    checkAndRun('calculator_export', 'column-calculator', () => {
+      const msg = `*BuildMitra RCC Column Structural Report*%0A` +
         `*Scope Option*: ${scopeOption === 'both' ? 'Both Concrete & Steel' : scopeOption === 'concrete_only' ? 'Only Concrete & Shuttering' : 'Only Steel Rebar'}%0A` +
         `----------------------------------------%0A` +
-        `• *Beams*: ${inputs.beamNos} Nos (${inputs.widthIn}"x${inputs.depthIn}" x ${inputs.lengthFt}ft - ${inputs.grade})%0A` +
+        `• *Columns*: ${inputs.columnNos} Nos (${inputs.widthIn}"x${inputs.depthIn}" x ${inputs.heightFt}ft - ${inputs.grade})%0A` +
         `• *Concrete Volume*: ${formatNumber(calcResults.totalVolCft)} CFT (${formatNumber(calcResults.totalVolCum, 3)} CUM)%0A` +
-        (calcResults.hasConcrete ? `• *Cement*: ${formatNumber(calcResults.cementBags)} Bags | *Shuttering*: ${formatNumber(calcResults.shutteringAreaSqft)} Sqft%0A` : '') +
+        (calcResults.hasConcrete ? `• *Cement*: ${formatNumber(calcResults.cementBags)} Bags | *Shuttering Box*: ${formatNumber(calcResults.shutteringAreaSqft)} Sqft%0A` : '') +
         (calcResults.hasSteel ? `• *Steel Rebar*: ${formatNumber(calcResults.totalSteelKg)} kg%0A` : '') +
         `• *Material & Formwork Total*: ${formatCurrency(calcResults.grandMatCost)}%0A` +
         `• *Labour Total*: ${formatCurrency(calcResults.rccLabourCost)}%0A` +
@@ -310,64 +586,146 @@ export default function BeamCalculator() {
 
   return (
     <div style={styles.container}>
-            <div className="engineering-top-layout">
-        <div className="engineering-top-left">
-{/* 1. Header */}
-      <div style={styles.header}>
-        <div>
-          <button style={styles.backBtn} onClick={() => router.push('/calculators')}>← Back to Calculators</button>
+      {/* Top Header, Live Rates, Scope and Dynamic Specimen */}
+      <div className="column-top-layout">
+
+        <div className="column-top-left">
+
+          {/* 1. Header */}
+          <div
+            style={{
+              ...styles.header,
+              justifyContent: 'flex-start',
+              gap: '16px',
+              marginBottom: '12px'
+            }}
+          >
+            <button
+              style={styles.backBtn}
+              onClick={() => router.push('/calculators')}
+            >
+              ← Back to Calculators
+            </button>
+
+            <h1
+              style={{
+                ...styles.headerTitle,
+                flex: 1,
+                minWidth: 0,
+                flexWrap: 'wrap'
+              }}
+            >
+              🏛️ RCC Column Structural & Formwork Box Calculator
+
+              <span style={styles.badge}>
+                IS 456 Column Bar Schedule
+              </span>
+            </h1>
+          </div>
+
+          {/* 2. Live Market Rates restricted to left area */}
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '100%',
+              overflow: 'hidden',
+              marginBottom: '12px'
+            }}
+          >
+            <MarketRateTrend />
+          </div>
+
+          {/* 3. Scope Option Dropdown */}
+          <div
+            style={{
+              ...styles.dropdownCard,
+              marginBottom: 0
+            }}
+          >
+            <label style={styles.dropdownLabel}>
+              Select Scope Option
+            </label>
+
+            <select
+              style={styles.modeSelect}
+              value={scopeOption}
+              onChange={(e) =>
+                setScopeOption(
+                  e.target.value as
+                    | 'both'
+                    | 'concrete_only'
+                    | 'steel_only'
+                )
+              }
+            >
+              <option value="both">
+                🔵 Both Concrete Materials & Steel Rebar
+              </option>
+
+              <option value="concrete_only">
+                🧱 Only Concrete Materials & Shuttering Box
+              </option>
+
+              <option value="steel_only">
+                ⚙️ Only Steel Rebar & Bar Bending Schedule
+              </option>
+            </select>
+          </div>
         </div>
-        <h1 style={styles.headerTitle}>
-          📊 RCC Beam Structural & Formwork Calculator
-          <span style={styles.badge}>IS 456 Beam Bar Schedule</span>
-        </h1>
-        <div>
-          <span style={{ fontSize: '11px', color: '#fecdd3' }}>BuildMitra Professional Edition</span>
+
+        {/* Fixed top-right dynamic specimen */}
+        <div className="column-specimen-top">
+          <ColumnSpecimen
+            heightFt={inputs.heightFt}
+            widthIn={inputs.widthIn}
+            depthIn={inputs.depthIn}
+            grade={inputs.grade}
+            cornerDia={inputs.cornerDia}
+            cornerNos={inputs.cornerNos}
+            middleDia={inputs.middleDia}
+            middleNos={inputs.middleNos}
+            tieDia={inputs.tieDia}
+            tieSpacingMm={inputs.tieSpacingMm}
+            coverMm={inputs.coverMm}
+            showConcrete={calcResults.hasConcrete}
+            showSteel={calcResults.hasSteel}
+          />
         </div>
       </div>
 
-      {/* 2. Single Live Market Rate Ticker */}
-      <MarketRateTrend />
-
-      {/* 3. Scope Option Dropdown Selector */}
-      <div style={styles.dropdownCard}>
-        <label style={styles.dropdownLabel}>Select Scope Option</label>
-        <select
-          style={styles.modeSelect}
-          value={scopeOption}
-          onChange={(e) => setScopeOption(e.target.value as 'both' | 'concrete_only' | 'steel_only')}
-        >
-          <option value="both">🔵 Both Concrete Materials & Steel Rebar (Complete RCC Beam)</option>
-          <option value="concrete_only">🧱 Only Concrete Materials & Formwork (No Steel Rebar)</option>
-          <option value="steel_only">⚙️ Only Steel Rebar & Bar Bending Schedule (No Concrete Mix)</option>
-        </select>
-      </div>
-        </div>
-        <div className="engineering-specimen-top">
-      <EngineeringSpecimen kind="beam" title="Dynamic Beam Specimen" material={inputs.grade} data={{ lengthFt: inputs.lengthFt, widthIn: inputs.widthIn, depthIn: inputs.depthIn, grade: inputs.grade, topDia: inputs.topDia, topNos: inputs.topNos, bottomDia: inputs.bottomDia, bottomNos: inputs.bottomNos, stirrupDia: inputs.stirrupDia, spacingMm: inputs.spacingMm, coverMm: inputs.coverMm, showSteel: calcResults.hasSteel, scopeOption }} />
-        </div>
-      </div>
       <style jsx>{`
-        .engineering-top-layout {
+        .column-top-layout {
           display: grid;
           grid-template-columns: minmax(0, 1fr) 260px;
           gap: 16px;
           align-items: start;
           margin-bottom: 18px;
         }
-        .engineering-top-left { min-width: 0; overflow: hidden; }
-        .engineering-specimen-top {
+
+        .column-top-left {
+          min-width: 0;
+          overflow: hidden;
+        }
+
+        .column-specimen-top {
           width: 260px;
           position: sticky;
           top: 12px;
           align-self: start;
           z-index: 2;
         }
+
         @media (max-width: 900px) {
-          .engineering-top-layout { grid-template-columns: 1fr; }
-          .engineering-specimen-top {
-            width: 100%; max-width: 260px; position: static;
-            margin-left: auto; margin-right: auto;
+          .column-top-layout {
+            grid-template-columns: 1fr;
+          }
+
+          .column-specimen-top {
+            width: 100%;
+            max-width: 260px;
+            position: static;
+            margin-left: auto;
+            margin-right: auto;
           }
         }
       `}</style>
@@ -375,31 +733,31 @@ export default function BeamCalculator() {
       {/* 4. Detailed Input Form */}
       <div style={styles.stepperCard}>
         <div style={styles.sectionHeader}>
-          <span>📐 Beam Geometry & Structural Specifications</span>
+          <span>📐 Column Geometry & Structural Specifications</span>
         </div>
 
         <div style={styles.noteBox}>
-          💡 <strong>IS 456 Structural Beam Standards</strong>: Select whether to compute Concrete Materials, Steel Rebar, or Both. Includes nominal mix proportions, top & bottom bar anchorage lengths, stirrup 135° hooks, 25mm clear cover, and beam soffit/side formwork shuttering.
+          💡 <strong>IS 456 Structural Column Standards</strong>: Select whether to compute Concrete Materials, Steel Rebar, or Both. Includes nominal mix proportions, vertical bar lap weights, stirrup 135° hooks, 40mm clear cover, and column shuttering box rental.
         </div>
 
         <div style={styles.grid4}>
           <div style={styles.fieldGroup}>
-            <label style={styles.label}>Number of Beams (Nos)</label>
+            <label style={styles.label}>Number of Columns (Nos)</label>
             <input
               type="number"
               style={styles.input}
-              value={inputs.beamNos}
-              onChange={e => setInputs({ ...inputs, beamNos: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
+              value={inputs.columnNos}
+              onChange={e => setInputs({ ...inputs, columnNos: parseFloat(e.target.value) || 1 })}
             />
           </div>
 
           <div style={styles.fieldGroup}>
-            <label style={styles.label}>Length (Ft)</label>
+            <label style={styles.label}>Height (Ft)</label>
             <input
               type="number"
               style={styles.input}
-              value={inputs.lengthFt}
-              onChange={e => setInputs({ ...inputs, lengthFt: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
+              value={inputs.heightFt}
+              onChange={e => setInputs({ ...inputs, heightFt: parseFloat(e.target.value) || 0 })}
             />
           </div>
 
@@ -409,7 +767,7 @@ export default function BeamCalculator() {
               type="number"
               style={styles.input}
               value={inputs.widthIn}
-              onChange={e => setInputs({ ...inputs, widthIn: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
+              onChange={e => setInputs({ ...inputs, widthIn: parseFloat(e.target.value) || 0 })}
             />
           </div>
 
@@ -419,7 +777,7 @@ export default function BeamCalculator() {
               type="number"
               style={styles.input}
               value={inputs.depthIn}
-              onChange={e => setInputs({ ...inputs, depthIn: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
+              onChange={e => setInputs({ ...inputs, depthIn: parseFloat(e.target.value) || 0 })}
             />
           </div>
 
@@ -439,76 +797,76 @@ export default function BeamCalculator() {
           )}
         </div>
 
-        {/* Reinforcement Controls */}
+        {/* Vertical Reinforcement Controls */}
         {calcResults.hasSteel && (
           <div style={{ backgroundColor: '#fff5f7', padding: '14px', borderRadius: '8px', marginBottom: '16px', border: '1px solid #fecdd3' }}>
-            <div style={{ fontSize: '13px', fontWeight: '700', color: '#800020', marginBottom: '10px' }}>🔄 Top & Bottom Longitudinal Reinforcement</div>
+            <div style={{ fontSize: '13px', fontWeight: '700', color: '#800020', marginBottom: '10px' }}>🔄 Vertical Main Reinforcement (Bar Schedule)</div>
             <div style={styles.grid4}>
               <div style={styles.fieldGroup}>
-                <label style={styles.label}>Top Bar Dia (mm)</label>
+                <label style={styles.label}>Corner Bar Dia (mm)</label>
                 <input
                   type="number"
                   style={styles.input}
-                  value={inputs.topDia}
-                  onChange={e => setInputs({ ...inputs, topDia: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
+                  value={inputs.cornerDia}
+                  onChange={e => setInputs({ ...inputs, cornerDia: parseFloat(e.target.value) || 12 })}
                 />
               </div>
 
               <div style={styles.fieldGroup}>
-                <label style={styles.label}>Top Bar Count (Nos)</label>
+                <label style={styles.label}>Corner Bar Count (Nos)</label>
                 <input
                   type="number"
                   style={styles.input}
-                  value={inputs.topNos}
-                  onChange={e => setInputs({ ...inputs, topNos: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
+                  value={inputs.cornerNos}
+                  onChange={e => setInputs({ ...inputs, cornerNos: parseFloat(e.target.value) || 4 })}
                 />
               </div>
 
               <div style={styles.fieldGroup}>
-                <label style={styles.label}>Bottom Bar Dia (mm)</label>
+                <label style={styles.label}>Middle Bar Dia (mm)</label>
                 <input
                   type="number"
                   style={styles.input}
-                  value={inputs.bottomDia}
-                  onChange={e => setInputs({ ...inputs, bottomDia: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
+                  value={inputs.middleDia}
+                  onChange={e => setInputs({ ...inputs, middleDia: parseFloat(e.target.value) || 12 })}
                 />
               </div>
 
               <div style={styles.fieldGroup}>
-                <label style={styles.label}>Bottom Bar Count (Nos)</label>
+                <label style={styles.label}>Middle Bar Count (Nos)</label>
                 <input
                   type="number"
                   style={styles.input}
-                  value={inputs.bottomNos}
-                  onChange={e => setInputs({ ...inputs, bottomNos: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
+                  value={inputs.middleNos}
+                  onChange={e => setInputs({ ...inputs, middleNos: parseFloat(e.target.value) || 0 })}
                 />
               </div>
             </div>
           </div>
         )}
 
-        {/* Stirrups & Cover Controls */}
+        {/* Lateral Ties / Stirrups */}
         {calcResults.hasSteel && (
           <div style={{ backgroundColor: '#f0fdf4', padding: '14px', borderRadius: '8px', marginBottom: '16px', border: '1px solid #bbf7d0' }}>
-            <div style={{ fontSize: '13px', fontWeight: '700', color: '#166534', marginBottom: '10px' }}>🔄 Shear Stirrups & Cover Controls</div>
+            <div style={{ fontSize: '13px', fontWeight: '700', color: '#166534', marginBottom: '10px' }}>🔄 Lateral Ties / Stirrups & Cover Controls</div>
             <div style={styles.grid3}>
               <div style={styles.fieldGroup}>
-                <label style={styles.label}>Stirrup Bar Dia (mm)</label>
+                <label style={styles.label}>Tie Bar Dia (mm)</label>
                 <input
                   type="number"
                   style={styles.input}
-                  value={inputs.stirrupDia}
-                  onChange={e => setInputs({ ...inputs, stirrupDia: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
+                  value={inputs.tieDia}
+                  onChange={e => setInputs({ ...inputs, tieDia: parseFloat(e.target.value) || 8 })}
                 />
               </div>
 
               <div style={styles.fieldGroup}>
-                <label style={styles.label}>Stirrup Spacing (mm)</label>
+                <label style={styles.label}>Tie Spacing (mm)</label>
                 <input
                   type="number"
                   style={styles.input}
-                  value={inputs.spacingMm}
-                  onChange={e => setInputs({ ...inputs, spacingMm: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
+                  value={inputs.tieSpacingMm}
+                  onChange={e => setInputs({ ...inputs, tieSpacingMm: parseFloat(e.target.value) || 150 })}
                 />
               </div>
 
@@ -518,7 +876,7 @@ export default function BeamCalculator() {
                   type="number"
                   style={styles.input}
                   value={inputs.coverMm}
-                  onChange={e => setInputs({ ...inputs, coverMm: (e.target.value === "" ? ("" as any) : parseFloat(e.target.value)) })}
+                  onChange={e => setInputs({ ...inputs, coverMm: parseFloat(e.target.value) || 40 })}
                 />
               </div>
             </div>
@@ -526,14 +884,14 @@ export default function BeamCalculator() {
         )}
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
-          <button style={styles.btnReset} onClick={handleReset}>🔄 Reset Beam Form</button>
+          <button style={styles.btnReset} onClick={handleReset}>🔄 Reset Column Form</button>
         </div>
       </div>
 
       {/* Results Summary Cards */}
       <div style={styles.stepperCard}>
         <div style={styles.sectionHeader}>
-          <span>📊 Beam Results BOQ ({scopeOption === 'both' ? 'Concrete & Steel' : scopeOption === 'concrete_only' ? 'Concrete & Formwork' : 'Steel Rebar Only'})</span>
+          <span>📊 Column Results BOQ ({scopeOption === 'both' ? 'Concrete & Steel' : scopeOption === 'concrete_only' ? 'Concrete & Shuttering' : 'Steel Rebar Only'})</span>
         </div>
 
         {/* Metric Grid */}
@@ -555,7 +913,7 @@ export default function BeamCalculator() {
             <div style={{ ...styles.metricCard, ...styles.metricOrange }}>
               <span style={styles.metricTitle}>Steel Rebar</span>
               <span style={styles.metricVal}>{formatNumber(calcResults.totalSteelKg, 1)} kg</span>
-              <span style={{ fontSize: '11px', opacity: 0.9 }}>({inputs.topDia}mm / {inputs.bottomDia}mm)</span>
+              <span style={{ fontSize: '11px', opacity: 0.9 }}>({inputs.cornerDia}mm / {inputs.middleDia}mm)</span>
             </div>
           )}
 
@@ -624,4 +982,7 @@ export default function BeamCalculator() {
     </div>
   );
 }
+
+
+
 
