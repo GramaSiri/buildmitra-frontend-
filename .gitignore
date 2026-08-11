@@ -21,3 +21,6 @@ contractor-full.txt
 all_calculators.txt
 .vercel
 .env*
+
+# Local BuildMitra safety backups
+_archive/
