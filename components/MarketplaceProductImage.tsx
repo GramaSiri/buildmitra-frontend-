@@ -1,73 +1,70 @@
-import React, { useMemo, useState } from "react";
-
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL ||
-  process.env.NEXT_PUBLIC_API_BASE ||
-  "http://localhost:5000";
+import React, { useEffect, useMemo, useState } from "react";
+import { resolveMediaUrl } from "../utils/resolveMediaUrl";
 
 const FALLBACK_IMAGE = "/images/marketplace-fallback.svg";
 
-function firstValue(value: any): any {
+function firstUseful(value: any): string {
+  if (!value) return "";
+
   if (Array.isArray(value)) {
-    return value.find(Boolean);
+    for (const entry of value) {
+      const found = firstUseful(entry);
+      if (found) return found;
+    }
+    return "";
   }
 
-  return value;
+  if (typeof value === "object") {
+    return String(
+      value.url ||
+      value.imageUrl ||
+      value.imageURL ||
+      value.path ||
+      value.src ||
+      ""
+    ).trim();
+  }
+
+  return String(value).trim();
 }
 
-function normalizePath(value: any): string {
-  const raw = String(firstValue(value) || "").trim();
+function getMarketplaceImage(item: any): string {
+  if (!item) return FALLBACK_IMAGE;
 
-  if (!raw) return "";
-
-  if (
-    raw.startsWith("data:") ||
-    raw.startsWith("blob:") ||
-    raw.startsWith("http://") ||
-    raw.startsWith("https://")
-  ) {
-    return raw;
-  }
-
-  const cleaned = raw
-    .replace(/\\/g, "/")
-    .replace(/^\.?\//, "");
-
-  if (cleaned.startsWith("images/")) {
-    return `/${cleaned}`;
-  }
-
-  if (
-    cleaned.startsWith("uploads/") ||
-    cleaned.startsWith("api/")
-  ) {
-    return `${API_BASE}/${cleaned}`;
-  }
-
-  return `${API_BASE}/uploads/material-images/${cleaned}`;
-}
-
-export function resolveMarketplaceImage(item: any): string {
   const candidates = [
-    item?.imageUrl,
-    item?.imageURL,
-    item?.image,
-    item?.imagePath,
-    item?.thumbnail,
-    item?.photo,
-    item?.mediaUrl,
-    item?.imageUrls,
-    item?.images,
-    item?.media,
-    item?.productImage,
-    item?.materialImage
+    item.imageUrl,
+    item.imageURL,
+    item.image_url,
+
+    item.imagePath,
+    item.image_path,
+
+    item.image,
+    item.images,
+
+    item.imageUrls,
+    item.imageURLs,
+
+    item.photo,
+    item.photoUrl,
+    item.thumbnail,
+    item.thumbnailUrl,
+
+    item.media,
+    item.mediaUrls,
+
+    item.productImage,
+    item.product_image,
+
+    item.masterImage,
+    item.masterImageUrl,
   ];
 
   for (const candidate of candidates) {
-    const resolved = normalizePath(candidate);
+    const value = firstUseful(candidate);
 
-    if (resolved) {
-      return resolved;
+    if (value) {
+      return value;
     }
   }
 
@@ -76,24 +73,40 @@ export function resolveMarketplaceImage(item: any): string {
 
 export default function MarketplaceProductImage({
   item,
-  alt
+  alt,
 }: {
   item: any;
   alt?: string;
 }) {
-  const resolved = useMemo(
-    () => resolveMarketplaceImage(item),
+  const selected = useMemo(
+    () => getMarketplaceImage(item),
     [item]
   );
 
-  const [src, setSrc] = useState(resolved);
+  const resolved = useMemo(
+    () => resolveMediaUrl(selected),
+    [selected]
+  );
 
-  React.useEffect(() => {
-    setSrc(resolved);
+  const [src, setSrc] = useState(
+    resolved || FALLBACK_IMAGE
+  );
+
+  useEffect(() => {
+    setSrc(resolved || FALLBACK_IMAGE);
   }, [resolved]);
 
   return (
-    <div className="thumbnail-wrapper" style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden" }}>
+    <div
+      className="thumbnail-wrapper"
+      style={{
+        position: "relative",
+        width: "100%",
+        height: "100%",
+        overflow: "hidden",
+        background: "#ffffff",
+      }}
+    >
       <img
         src={src}
         alt={
@@ -102,7 +115,7 @@ export default function MarketplaceProductImage({
           item?.product_name ||
           item?.productName ||
           item?.name ||
-          "Marketplace item"
+          "BuildMitra product"
         }
         loading="lazy"
         decoding="async"
@@ -112,9 +125,21 @@ export default function MarketplaceProductImage({
           }
         }}
         className="bm-marketplace-product-image"
-        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+        style={{
+          width: "100%",
+          height: "100%",
+          objectFit: "contain",
+          objectPosition: "center",
+          display: "block",
+          visibility: "visible",
+          opacity: 1,
+          background: "#ffffff",
+        }}
       />
-      <span className="magnifier-badge">🔍 Zoom</span>
+
+      <span className="magnifier-badge">
+        🔍 Zoom
+      </span>
     </div>
   );
 }

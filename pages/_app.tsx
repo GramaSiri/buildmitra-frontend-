@@ -8,6 +8,7 @@ import Sidebar from "../components/Sidebar";
 import { useRouter } from "next/router";
 import ClientErrorBoundary from "../components/ClientErrorBoundary";
 
+import "../styles/buildmitra-adaptive-mobile.css";
 export default function App({ Component, pageProps }: any) {
   const router = useRouter();
 
@@ -35,3 +36,4 @@ export default function App({ Component, pageProps }: any) {
     </ClientErrorBoundary>
   );
 }
+

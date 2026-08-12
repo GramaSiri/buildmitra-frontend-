@@ -1190,11 +1190,11 @@ ${enquiry.buyerPhone}`;
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  page: { minHeight: "100vh", background: "#f5f7fb", padding: 24, fontFamily: "Arial, sans-serif", color: "#111827" },
+  page: { minHeight: "100vh", background: "#f5f7fb", padding: typeof window !== "undefined" && window.innerWidth < 768 ? "4px 0px" : 24, fontFamily: "Arial, sans-serif", color: "#111827" },
   header: { maxWidth: 1250, margin: "0 auto 18px" },
   title: { margin: 0, fontSize: 34, fontWeight: 900 },
   subtitle: { marginTop: 8, color: "#6b7280", fontSize: 16 },
-  filters: { maxWidth: 1250, margin: "0 auto 14px", background: "#fff", padding: 16, borderRadius: 8, display: "grid", gridTemplateColumns: "2fr repeat(5, 1fr)", gap: 10, border: "1px solid #e5e7eb" },
+  filters: { maxWidth: "100%", margin: typeof window !== "undefined" && window.innerWidth < 768 ? "0 0 8px 0" : "0 auto 14px", background: "#fff", padding: typeof window !== "undefined" && window.innerWidth < 768 ? "8px 4px" : 16, borderRadius: 8, display: "flex", flexWrap: "wrap", gap: typeof window !== "undefined" && window.innerWidth < 768 ? 6 : 12, alignItems: "center" },
   input: { padding: "11px 12px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 14, background: "#fff" },
   clear: { padding: "11px 14px", borderRadius: 8, border: 0, background: "#ef4444", color: "#fff", fontWeight: 800, cursor: "pointer" },
   count: {
@@ -1233,7 +1233,7 @@ cartAddButton: {
   fontWeight: 900,
   cursor: "pointer",
 },
-  grid: { maxWidth: 1250, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 18 },
+  grid: { maxWidth: "100%", margin: "0", padding: "0", display: "grid", gridTemplateColumns: typeof window !== "undefined" && window.innerWidth < 768 ? "repeat(4, 1fr)" : "repeat(auto-fit, minmax(260px, 1fr))", gap: typeof window !== "undefined" && window.innerWidth < 768 ? 4 : 16 },
   card: { background: "#fff", borderRadius: 8, border: "1px solid #e5e7eb", overflow: "hidden", boxShadow: "0 2px 10px rgba(0,0,0,0.05)" },
   providerRow: { display: "flex", justifyContent: "space-between", gap: 12, padding: 14, borderBottom: "1px solid #eef0f4" },
   providerName: { fontSize: 17, fontWeight: 900 },
@@ -1575,6 +1575,8 @@ cartAddButton: {
     boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
   },
 };
+
+
 
 
 
