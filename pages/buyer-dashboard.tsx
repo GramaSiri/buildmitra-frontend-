@@ -1,4 +1,18 @@
-import React, { useState, useEffect } from "react";
+,
+      React.createElement(
+        "div",
+        {
+          style: {
+            fontSize: "12px",
+            color: "#64748b",
+            marginTop: "3px",
+            fontWeight: 700
+          }
+        },
+        enquiry.batchCode
+          ? `Batch: ${enquiry.batchCode}`
+          : ""
+      )import React, { useState, useEffect } from "react";
 import { exportProjectReport } from "../utils/reporting";
 import { DEFAULT_PROJECT_PERMISSIONS, getLoggedInUser, migrateLegacyProjects, saveProjectsForBuyer } from "../utils/projectStorage";
 import { logoutToLogin } from "../utils/session";
@@ -1758,6 +1772,7 @@ const isReadOnly = false;
     )
   );
 }
+
 
 
 

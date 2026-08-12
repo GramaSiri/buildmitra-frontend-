@@ -217,6 +217,7 @@ export default function Sidebar({ children, currentPath }: { children?: any; cur
   const [hoveredMain, setHoveredMain] = useState(null);
   const [hoveredLogout, setHoveredLogout] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [mobileGroup, setMobileGroup] = useState<"root" | "public" | "calculators" | "boq">("root");
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   const [open, setOpen] = useState({
@@ -269,7 +270,7 @@ export default function Sidebar({ children, currentPath }: { children?: any; cur
     { name: "Pile Foundation", path: "/pile-foundation-calculator", icon: "⛏️" },
     { name: "Lintel", path: "/lintel-calculator", icon: "📏" },
     { name: "Land Survey Calculator", path: "/plot-layout", icon: "🗺️" },
-    { name: "Housing Loan Calculator", path: "/housing-loan-calculator", icon: "🏦" }
+
   ];
 
   // ---------------- BOQ ----------------
@@ -371,204 +372,231 @@ const handleMobileBack = () => {
   router.push(mobileDashboardPath);
 };
 
-if (isMobile) {
-  return (
-    <div style={{
-      minHeight: "100vh",
-      background: "#f3f4f6",
-      width: "100%"
-    }}>
-      <div style={{
-        position: "sticky",
-        top: 0,
-        zIndex: 1000,
-        background: "#1a1a2e",
-        color: "#ffffff",
-        padding: "12px 14px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        boxShadow: "0 2px 10px rgba(0,0,0,0.18)"
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <button
-            type="button"
-            onClick={() => setShowMobileMenu(!showMobileMenu)}
-            style={{
-              border: 0,
-              borderRadius: 6,
-              padding: "6px 10px",
-              background: "#2563eb",
-              color: "#ffffff",
-              fontWeight: 800,
-              fontSize: "14px",
-              cursor: "pointer"
-            }}
-          >
-            {showMobileMenu ? "✕ Close" : "☰ Menu"}
-          </button>
-          <div>
-            <div style={{ fontSize: 18, fontWeight: 900 }}>🏗️ BuildMitra</div>
-            <div style={{ fontSize: 10, opacity: 0.8 }}>
-              Build Smarter. Save Bigger.
-            </div>
-          </div>
-        </div>
+  if (isMobile) {
+    const publicMobileTabs = [
+      {
+        name: dashboardName,
+        icon: dashboardIcon,
+        path: `${mobileDashboardPath}?mobileModule=1`,
+      },
+      ...mainNavigationItems.filter(
+        (tab: any) =>
+          tab.name !== "Pricing" &&
+          tab.name !== "Reports Hub"
+      ),
+    ];
 
-        <button
-          type="button"
-          onClick={() => {
-            if (showMobileGrid) {
-              clearBuildMitraSession();
-              router.push("/login");
-            } else {
-              handleMobileBack();
-            }
-          }}
+    const openMobileTab = (path: string) => {
+      setMobileGroup("root");
+      router.push(path);
+    };
+
+    const rootCardStyle: any = {
+      width: "100%",
+      minWidth: 0,
+      minHeight: 96,
+      border: "1px solid #e2e8f0",
+      borderRadius: 14,
+      background: "#ffffff",
+      padding: "10px 5px",
+      cursor: "pointer",
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "center",
+      alignItems: "center",
+      gap: 7,
+      fontWeight: 800,
+      fontSize: 11,
+      textAlign: "center",
+      color: "#172033",
+      boxShadow: "0 3px 12px rgba(15,23,42,0.08)",
+    };
+
+    const tabCardStyle: any = {
+      width: "100%",
+      minWidth: 0,
+      minHeight: 88,
+      border: "1px solid #e5e7eb",
+      borderRadius: 12,
+      background: "#ffffff",
+      padding: "8px 4px",
+      cursor: "pointer",
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "center",
+      alignItems: "center",
+      gap: 5,
+      fontWeight: 700,
+      fontSize: 10,
+      lineHeight: 1.2,
+      textAlign: "center",
+      color: "#172033",
+      overflow: "hidden",
+    };
+
+    const renderGroup = (title: string, tabs: any[]) => (
+      <div style={{ width: "100%" }}>
+        <div
           style={{
-            border: 0,
-            borderRadius: 8,
-            padding: "8px 10px",
-            background: showMobileGrid ? "#ef4444" : "#ffffff",
-            color: showMobileGrid ? "#ffffff" : "#1a1a2e",
-            fontWeight: 800
+            display: "flex",
+            alignItems: "center",
+            gap: 9,
+            marginBottom: 10,
           }}
         >
-          {showMobileGrid ? "Logout" : "← Back"}
-        </button>
-      </div>
+          <button
+            type="button"
+            onClick={() => setMobileGroup("root")}
+            style={{
+              minHeight: 38,
+              border: "1px solid #cbd5e1",
+              borderRadius: 9,
+              background: "#ffffff",
+              padding: "6px 10px",
+              fontWeight: 800,
+              cursor: "pointer",
+            }}
+          >
+            ← Back
+          </button>
 
-      {showMobileMenu && (
-        <div style={{
-          position: "fixed",
-          top: 54,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          zIndex: 999,
-          background: "#1a1a2e",
-          color: "#ffffff",
-          overflowY: "auto",
-          padding: "16px"
-        }}>
-          <div style={{ fontSize: 13, fontWeight: 900, color: "#ff7a00", marginBottom: 10 }}>⚡ UTILITIES & MODULES</div>
-          {otherTabs.map((o: any, i) => (
-            <div
-              key={i}
-              onClick={() => {
-                setShowMobileMenu(false);
-                go(o.path);
-              }}
-              style={{
-                padding: "12px 14px",
-                margin: "4px 0",
-                borderRadius: "8px",
-                background: currentPath === o.path ? "#ff7a00" : "#16213e",
-                color: "#ffffff",
-                fontWeight: 800,
-                fontSize: "13px",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                cursor: "pointer"
-              }}
-            >
-              <span>{o.icon} {o.name}</span>
-              {o.badge && <span style={{ background: "#ff7a00", color: "#fff", fontSize: "10px", padding: "2px 8px", borderRadius: "10px" }}>{o.badge}</span>}
-            </div>
-          ))}
-
-          <div style={{ fontSize: 13, fontWeight: 900, color: "#38bdf8", marginTop: 18, marginBottom: 10 }}>📋 BOQ MODULES</div>
-          {boqTabs.map((b: any, i) => (
-            <div
-              key={i}
-              onClick={() => {
-                setShowMobileMenu(false);
-                go(b.path);
-              }}
-              style={{
-                padding: "12px 14px",
-                margin: "4px 0",
-                borderRadius: "8px",
-                background: currentPath === b.path ? "#ff7a00" : "#16213e",
-                color: "#ffffff",
-                fontWeight: 800,
-                fontSize: "13px",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                cursor: "pointer"
-              }}
-            >
-              <span>{b.icon} {b.name}</span>
-              {b.badge && <span style={{ background: "#ff7a00", color: "#fff", fontSize: "10px", padding: "2px 8px", borderRadius: "10px" }}>{b.badge}</span>}
-            </div>
-          ))}
+          <strong style={{ fontSize: 15 }}>
+            {title}
+          </strong>
         </div>
-      )}
 
-      {showMobileGrid ? (
-        <div style={{
-          padding: "12px",
-          background: "#ffffff",
-          borderBottom: "1px solid #e5e7eb"
-        }}>
-          <div style={{
+        <div
+          style={{
             display: "grid",
-            gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-            gap: "10px"
-          }}>
-            {mobileTabs.map((tab, i) => (
-              <button
-                key={`${tab.path}-${i}`}
-                type="button"
-                onClick={() => go(tab.path)}
+            gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+            gap: 7,
+            width: "100%",
+          }}
+        >
+          {tabs.map((tab: any, index: number) => (
+            <button
+              key={`${tab.name}-${index}`}
+              type="button"
+              onClick={() => openMobileTab(tab.path)}
+              style={tabCardStyle}
+            >
+              <span style={{ fontSize: 25, lineHeight: 1 }}>
+                {tab.icon || "▦"}
+              </span>
+
+              <span
                 style={{
-                  minHeight: "82px",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: "12px",
-                  background: "#ffffff",
-                  padding: "9px 5px",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "6px",
-                  color: "#111827",
-                  cursor: "pointer",
-                  boxShadow: "0 2px 7px rgba(0,0,0,0.06)"
+                  width: "100%",
+                  overflow: "hidden",
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical",
                 }}
               >
-                <span style={{ fontSize: "25px", lineHeight: 1 }}>
-                  {tab.icon}
-                </span>
-
-                <span style={{
-                  fontSize: "10px",
-                  lineHeight: 1.15,
-                  fontWeight: 800,
-                  textAlign: "center",
-                  overflowWrap: "anywhere"
-                }}>
-                  {tab.name}
-                </span>
-              </button>
-            ))}
-          </div>
+                {tab.name}
+              </span>
+            </button>
+          ))}
         </div>
-      ) : (
-        <main style={{
+      </div>
+    );
+
+    return (
+      <div
+        style={{
           width: "100%",
-          minWidth: 0,
-          minHeight: "calc(100vh - 70px)",
-          overflowX: "hidden"
-        }}>
+          maxWidth: "100vw",
+          minHeight: "100vh",
+          margin: 0,
+          padding: 0,
+          background: "#f6f7f9",
+          overflowX: "hidden",
+          boxSizing: "border-box",
+        }}
+      >
+        <div
+          style={{
+            width: "100%",
+            padding: "7px 6px 10px",
+            margin: 0,
+            boxSizing: "border-box",
+          }}
+        >
+          {mobileGroup === "root" && (
+            <>
+              <div
+                style={{
+                  padding: "3px 2px 9px",
+                  fontSize: 16,
+                  fontWeight: 900,
+                  color: "#172033",
+                }}
+              >
+                BuildMitra
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                  gap: 7,
+                  width: "100%",
+                }}
+              >
+                <button
+                  type="button"
+                  style={rootCardStyle}
+                  onClick={() => setMobileGroup("public")}
+                >
+                  <span style={{ fontSize: 30 }}>🏠</span>
+                  <span>BuildMitra Services</span>
+                </button>
+
+                <button
+                  type="button"
+                  style={rootCardStyle}
+                  onClick={() => setMobileGroup("calculators")}
+                >
+                  <span style={{ fontSize: 30 }}>🧮</span>
+                  <span>Calculators</span>
+                </button>
+
+                <button
+                  type="button"
+                  style={rootCardStyle}
+                  onClick={() => setMobileGroup("boq")}
+                >
+                  <span style={{ fontSize: 30 }}>📋</span>
+                  <span>BOQs</span>
+                </button>
+              </div>
+            </>
+          )}
+
+          {mobileGroup === "public" &&
+            renderGroup("BuildMitra Services", publicMobileTabs)}
+
+          {mobileGroup === "calculators" &&
+            renderGroup("Calculators", calculatorTabs)}
+
+          {mobileGroup === "boq" &&
+            renderGroup("BOQs", boqTabs)}
+        </div>
+
+        <div
+          style={{
+            width: "100%",
+            padding: "0 6px 12px",
+            margin: 0,
+            boxSizing: "border-box",
+            overflowX: "hidden",
+          }}
+        >
           {children}
-        </main>
-      )}
-    </div>
-  );
-}
+        </div>
+      </div>
+    );
+  }
   return (
 
   <div style={{ display: "flex" }}>
@@ -792,6 +820,8 @@ if (isMobile) {
     </div>
   );
 }
+
+
 
 
 

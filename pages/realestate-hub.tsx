@@ -316,6 +316,138 @@ export default function RealEstateHub() {
     setMaxPrice("");
   }
 
+  async function sendPropertyEnquiry(property: PropertyItem) {
+    try {
+      let user: any = {};
+
+      if (typeof window !== "undefined") {
+        const keys = ["currentUser", "loggedInUser", "user"];
+
+        for (const key of keys) {
+          const stored = window.localStorage.getItem(key);
+
+          if (!stored) continue;
+
+          try {
+            const parsed = JSON.parse(stored);
+
+            if (parsed && typeof parsed === "object") {
+              user = parsed;
+              break;
+            }
+          } catch {}
+        }
+      }
+
+      let buyerName =
+        user.name ||
+        user.fullName ||
+        user.userName ||
+        "";
+
+      let buyerPhone =
+        user.phone ||
+        user.mobile ||
+        user.mobileNumber ||
+        "";
+
+      const buyerUserCode =
+        user.userCode ||
+        user.buyerUserCode ||
+        "";
+
+      if (!buyerName) {
+        buyerName =
+          window.prompt("Enter your name")?.trim() || "";
+      }
+
+      if (!buyerPhone) {
+        buyerPhone =
+          window.prompt("Enter your 10-digit mobile number")?.trim() || "";
+      }
+
+      const cleanPhone = String(buyerPhone)
+        .replace(/\D/g, "")
+        .slice(-10);
+
+      if (!buyerName) {
+        alert("Please enter your name.");
+        return;
+      }
+
+      if (cleanPhone.length !== 10) {
+        alert("Please enter a valid 10-digit mobile number.");
+        return;
+      }
+
+      if (!property.propertyCode) {
+        alert("Property code is unavailable.");
+        return;
+      }
+
+      const response = await fetch(`${API_BASE}/api/enquiry`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          enquiryCategory: "realestate",
+          itemType: "realestate",
+
+          propertyCode: property.propertyCode,
+
+          buyerUserCode,
+          buyerName,
+          buyerPhone: cleanPhone,
+
+          itemName:
+            property.title ||
+            property.propertyCode ||
+            "Real Estate Property",
+
+          location: [
+            property.locality,
+            property.city
+          ]
+            .filter(Boolean)
+            .join(", "),
+
+          pincode:
+            (property as any).pincode ||
+            (property as any).pinCode ||
+            "",
+
+          message:
+            `Interested in property ${property.propertyCode}. Please share complete details.`
+        })
+      });
+
+      const result = await response
+        .json()
+        .catch(() => ({}));
+
+      if (!response.ok || result?.success === false) {
+        throw new Error(
+          result?.message ||
+          `Unable to submit enquiry (${response.status})`
+        );
+      }
+
+      alert(
+        result?.enquiry?.enquiryCode
+          ? `Enquiry submitted successfully: ${result.enquiry.enquiryCode}`
+          : "Enquiry submitted successfully."
+      );
+
+    } catch (error: any) {
+      console.error("Real Estate enquiry error:", error);
+
+      alert(
+        error?.message ||
+        "Unable to submit enquiry. Please try again."
+      );
+    }
+  }
   function openWhatsApp(property: PropertyItem) {
     const phone = text(property.providerPhone).replace(/\D/g, "");
 
@@ -687,6 +819,14 @@ export default function RealEstateHub() {
                         }
                       >
                         View Details
+                      </button>
+
+                      <button
+                        type="button"
+                        className="enquiryButton"
+                        onClick={() => sendPropertyEnquiry(property)}
+                      >
+                        Enquiry
                       </button>
 
                       <button
@@ -1192,9 +1332,88 @@ export default function RealEstateHub() {
             height: 150px;
           }
         }
-      `}</style>
+      `}
+        /* BUILDMITRA REAL ESTATE MOBILE FINAL */
+
+        .enquiryButton {
+          border: 0;
+          background: #1565c0;
+          color: #ffffff;
+          font-weight: 800;
+        }
+
+        @media (max-width: 520px) {
+
+          .hubPage {
+            width: 100%;
+            max-width: 100%;
+            padding-left: 7px !important;
+            padding-right: 7px !important;
+            overflow-x: hidden;
+          }
+
+          .hero,
+          .searchPanel,
+          .propertyGrid,
+          .resultHeader {
+            width: 100%;
+            max-width: 100%;
+          }
+
+          .propertyGrid {
+            grid-template-columns: 1fr !important;
+            gap: 12px !important;
+          }
+
+          .propertyCard {
+            width: 100%;
+            max-width: 100%;
+            margin: 0;
+          }
+
+          .imageWrap {
+            width: 100%;
+            height: 210px !important;
+            overflow: hidden;
+          }
+
+          .imageWrap img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            object-position: center;
+            filter: none !important;
+          }
+
+          .cardBody {
+            padding: 12px !important;
+          }
+
+          .actions {
+            display: grid !important;
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 6px !important;
+            width: 100%;
+          }
+
+          .actions button {
+            width: 100%;
+            min-width: 0;
+            min-height: 42px;
+            padding: 7px 4px;
+            font-size: 11px;
+            border-radius: 9px;
+            white-space: nowrap;
+          }
+
+          .searchPanel {
+            grid-template-columns: 1fr !important;
+          }
+        }
+</style>
     </>
   );
 }
+
 
 
