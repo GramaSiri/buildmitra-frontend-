@@ -15,6 +15,7 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
 
   const redirectToDashboard = (rawRole: string) => {
     const role = String(rawRole || "")
@@ -225,16 +226,25 @@ export default function LoginPage() {
 
         <div style={styles.tabs}>
           
-          <div
-            style={{
-              marginTop: "14px",
-              marginBottom: "10px",
-              border: "1px solid #d9e1ea",
-              borderRadius: "10px",
-              background: "#f8fafc",
-              overflow: "hidden",
-            }}
-          >
+                    {showTerms && (
+            <div
+              style={{
+                margin: "7px 0",
+                border: "1px solid #d9e1ea",
+                borderRadius: "9px",
+                background: "#f8fafc",
+                overflow: "hidden",
+              }}
+            >
+
+            
+
+            <div
+              style={{
+                borderTop: "1px solid #e5e7eb",
+                background: "#f8fafc",
+              }}
+            >
             <div
               style={{
                 padding: "10px 12px",
@@ -379,39 +389,11 @@ export default function LoginPage() {
               </p>
             </div>
           </div>
+          
+            </div>
+          )}
 
-          <label
-            style={{
-              display: "flex",
-              alignItems: "flex-start",
-              gap: "8px",
-              margin: "8px 0 12px",
-              cursor: "pointer",
-              fontSize: "12px",
-              lineHeight: 1.45,
-              color: "#334155",
-              textAlign: "left",
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={agreedToTerms}
-              onChange={(e) => setAgreedToTerms(e.target.checked)}
-              style={{
-                marginTop: "2px",
-                width: "16px",
-                height: "16px",
-                flexShrink: 0,
-                cursor: "pointer",
-              }}
-            />
-
-            <span>
-              <strong>I Agree.</strong> I confirm that I have read and
-              understood the above Platform Terms & User Acknowledgement and
-              agree to BuildMitra's Terms of Use and Privacy Policy.
-            </span>
-          </label>
+          
 <button disabled={!agreedToTerms}
             type="button"
             style={{ ...styles.tab, ...styles.activeTab }}
@@ -466,7 +448,47 @@ export default function LoginPage() {
         </form>
 
         <div style={styles.links}>
-          <button
+          
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "6px",
+              margin: "7px 0 5px",
+              fontSize: "12px",
+              color: "#475569",
+              cursor: "pointer",
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={agreedToTerms}
+              onChange={(e) => setAgreedToTerms(e.target.checked)}
+              style={{
+                width: "14px",
+                height: "14px",
+                margin: 0,
+                cursor: "pointer",
+              }}
+            />
+
+            <span
+              onDoubleClick={(e) => {
+                e.preventDefault();
+                setShowTerms((current) => !current);
+              }}
+              title="Double-click to read Terms & Conditions"
+              style={{
+                fontWeight: 700,
+                cursor: "pointer",
+                userSelect: "none",
+              }}
+            >
+              I Agree
+            </span>
+          </label>
+<button
             type="button"
             style={styles.linkButton}
             onClick={() => router.push("/forgot-password")}
@@ -617,5 +639,7 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: "pointer"
   }
 };
+
+
 
 
