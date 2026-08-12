@@ -204,12 +204,10 @@ export const mainNavigationItems = [
   { name: "Learn & Earn", icon: "📚", path: "/learn-earn" },
   { name: "Real Estate Hub", icon: "🏘️", path: "/realestate-hub" },
   { name: "Affiliate & Marketing", icon: "📢", path: "/affiliate-marketing", badge: "NEW" },
-  { name: "Pricing", icon: "💰", path: "/pricing" },
   { name: "Electrical & Utility", icon: "⚡", path: "/electrical", badge: "NEW" },
   { name: "Plumbing & Utility", icon: "🚰", path: "/plumbing", badge: "NEW" },
-  { name: "Housing Loan Finance", icon: "🏦", path: "/subscription" },
+  { name: "Housing Loan Finance", icon: "🏦", path: "/housing-loan-finance" },
   { name: "Live Rates", icon: "📈", path: "/live-rates" },
-  { name: "Reports Hub", icon: "📑", path: "/reports" }
 ];
 
 export default function Sidebar({ children, currentPath }: { children?: any; currentPath?: any }) {
@@ -271,7 +269,7 @@ export default function Sidebar({ children, currentPath }: { children?: any; cur
     { name: "Pile Foundation", path: "/pile-foundation-calculator", icon: "⛏️" },
     { name: "Lintel", path: "/lintel-calculator", icon: "📏" },
     { name: "Land Survey Calculator", path: "/plot-layout", icon: "🗺️" },
-    { name: "Housing Loan Finance", path: "/subscription", icon: "🏦" }
+    { name: "Housing Loan Calculator", path: "/housing-loan-calculator", icon: "🏦" }
   ];
 
   // ---------------- BOQ ----------------
@@ -794,6 +792,7 @@ if (isMobile) {
     </div>
   );
 }
+
 
 
 
