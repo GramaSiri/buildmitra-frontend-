@@ -1,19 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { resolveMediaUrl, FALLBACK_IMAGE_URL as FALLBACK_IMAGE } from "../utils/mediaResolver";
+import { resolveMediaUrl } from "../utils/mediaResolver";
 
-type Candidate = {
-  url: string;
-  isPrimary: boolean;
-  sourceType: string;
-};
+const PLACEHOLDER_SRC = "/assets/placeholder-product.webp";
 
 function extractUrl(value: any): string {
   if (!value) return "";
-
-  if (typeof value === "string") {
-    return value.trim();
-  }
-
+  if (typeof value === "string") return value.trim();
   if (typeof value === "object") {
     return String(
       value.url ||
@@ -26,130 +18,42 @@ function extractUrl(value: any): string {
       ""
     ).trim();
   }
-
   return "";
 }
 
 function collectCandidates(item: any): string[] {
-  const result: Candidate[] = [];
+  if (!item) return [];
 
-  const add = (
-    value: any,
-    isPrimary = false,
-    sourceType = ""
-  ) => {
-    const url = extractUrl(value);
+  const result: string[] = [];
 
-    if (!url) return;
-
-    result.push({
-      url,
-      isPrimary,
-      sourceType,
-    });
+  const add = (val: any) => {
+    const url = extractUrl(val);
+    if (url && !result.includes(url) && url !== PLACEHOLDER_SRC) {
+      result.push(url);
+    }
   };
 
-  /*
-   * Structured DB image records.
-   *
-   * Example:
-   * /api/marketplace/images/<id>
-   * sourceType = master-image-library
-   */
-  if (Array.isArray(item?.images)) {
+  // 1. Structured images array from DB
+  if (Array.isArray(item.images)) {
     item.images.forEach((img: any) => {
-      add(
-        img,
-        Boolean(img?.isPrimary),
-        String(img?.sourceType || "")
-      );
+      if (img?.isPrimary) add(img);
     });
+    item.images.forEach((img: any) => add(img));
   }
 
-  /*
-   * Other possible arrays.
-   */
-  [
-    item?.imageUrls,
-    item?.imageURLs,
-    item?.mediaUrls,
-    item?.photos,
-  ].forEach((collection) => {
-    if (!Array.isArray(collection)) return;
+  // 2. Direct listing fields
+  add(item.imageUrl);
+  add(item.image);
+  add(item.imagePath);
+  add(item.image_url);
+  add(item.image_path);
+  add(item.masterImage);
+  add(item.masterImageUrl);
+  add(item.productImage);
+  add(item.thumbnail);
+  add(item.thumbnailUrl);
 
-    collection.forEach((entry: any) => {
-      add(entry);
-    });
-  });
-
-  /*
-   * Legacy/single-value fields.
-   */
-  [
-    item?.imageUrl,
-    item?.imageURL,
-    item?.image_url,
-    item?.imagePath,
-    item?.image_path,
-    item?.image,
-    item?.masterImageUrl,
-    item?.masterImage,
-    item?.productImage,
-    item?.product_image,
-    item?.thumbnail,
-    item?.thumbnailUrl,
-  ].forEach((entry) => add(entry));
-
-  /*
-   * Highest priority:
-   *
-   * 1. DB-backed /api/marketplace/images/<id>
-   * 2. master-image-library source
-   * 3. explicitly primary
-   * 4. legacy /uploads paths
-   */
-  result.sort((a, b) => {
-    const score = (candidate: Candidate) => {
-      let points = 0;
-
-      if (
-        candidate.url.startsWith(
-          "/api/marketplace/images/"
-        )
-      ) {
-        points += 1000;
-      }
-
-      if (
-        candidate.sourceType ===
-        "master-image-library"
-      ) {
-        points += 500;
-      }
-
-      if (candidate.isPrimary) {
-        points += 250;
-      }
-
-      if (
-        candidate.url.startsWith("/uploads/")
-      ) {
-        points += 50;
-      }
-
-      return points;
-    };
-
-    return score(b) - score(a);
-  });
-
-  return Array.from(
-    new Set(
-      result
-        .map((candidate) => candidate.url)
-        .filter(Boolean)
-    )
-  );
+  return result;
 }
 
 export default function MarketplaceProductImage({
@@ -159,94 +63,76 @@ export default function MarketplaceProductImage({
   item: any;
   alt?: string;
 }) {
-  const candidates = useMemo(
-    () => collectCandidates(item),
-    [item]
-  );
+  // Stable listing identity - reset ONLY when this unique identity changes
+  const listingId = String(item?._id || item?.listingCode || item?.id || "");
 
-  const [index, setIndex] = useState(0);
-  const [allFailed, setAllFailed] = useState(false);
+  // Build candidate list once per listing identity
+  const candidates = useMemo(() => collectCandidates(item), [listingId]);
 
+  // Track failed URLs so each URL is attempted at most ONCE
+  const [failedUrls, setFailedUrls] = useState<string[]>([]);
+  const [candidateIndex, setCandidateIndex] = useState(0);
+
+  // Reset candidate index & failed tracking ONLY when listing identity changes
   useEffect(() => {
-    setIndex(0);
-    setAllFailed(false);
-  }, [
-    item?._id,
-    item?.listingCode,
-    item?.imageUrl,
-    item?.images,
-  ]);
+    setCandidateIndex(0);
+    setFailedUrls([]);
+  }, [listingId]);
 
-  const raw =
-    !allFailed && candidates[index]
-      ? candidates[index]
-      : FALLBACK_IMAGE;
-
-  const src =
-    raw === FALLBACK_IMAGE
-      ? FALLBACK_IMAGE
-      : resolveMediaUrl(raw);
-
-  const tryNextImage = () => {
-    /*
-     * IMPORTANT:
-     * Do not immediately show the mountain/sun fallback.
-     *
-     * Try every real DB/upload candidate first.
-     */
-    if (index + 1 < candidates.length) {
-      setIndex((previous) => previous + 1);
-      return;
+  // Find first candidate that has NOT failed
+  let activeCandidate: string | null = null;
+  for (let i = candidateIndex; i < candidates.length; i++) {
+    const candidate = candidates[i];
+    const resolved = resolveMediaUrl(candidate);
+    if (!failedUrls.includes(resolved) && !failedUrls.includes(candidate)) {
+      activeCandidate = candidate;
+      break;
     }
+  }
 
-    setAllFailed(true);
+  // Determine final display src
+  const displaySrc = activeCandidate ? resolveMediaUrl(activeCandidate) : PLACEHOLDER_SRC;
+
+  const handleImageError = () => {
+    // Terminal placeholder guarantee: never retry if placeholder is displayed
+    if (displaySrc === PLACEHOLDER_SRC) return;
+
+    // Record the current failed URL
+    setFailedUrls((prev) => {
+      if (prev.includes(displaySrc)) return prev;
+      return [...prev, displaySrc];
+    });
+
+    // Advance candidate index to try next unique candidate
+    setCandidateIndex((prev) => prev + 1);
   };
 
   return (
-    <div
-      className="thumbnail-wrapper"
+    <img
+      src={displaySrc}
+      alt={
+        alt ||
+        item?.itemName ||
+        item?.product_name ||
+        item?.productName ||
+        item?.name ||
+        "BuildMitra product"
+      }
+      loading="lazy"
+      decoding="async"
+      onError={handleImageError}
+      className="bm-marketplace-product-image object-cover"
       style={{
-        position: "relative",
+        display: "block",
         width: "100%",
         height: "100%",
-        minWidth: 0,
-        overflow: "hidden",
+        maxWidth: "100%",
+        objectFit: "cover",
+        objectPosition: "center",
+        visibility: "visible",
+        opacity: 1,
         background: "#ffffff",
       }}
-    >
-      <img
-        key={`${raw}-${index}`}
-        src={src}
-        alt={
-          alt ||
-          item?.itemName ||
-          item?.product_name ||
-          item?.productName ||
-          item?.name ||
-          "BuildMitra product"
-        }
-        loading="lazy"
-        decoding="async"
-        onError={(e) => {
-          e.currentTarget.src = "/assets/placeholder-product.webp";
-          if (raw !== FALLBACK_IMAGE) {
-            tryNextImage();
-          }
-        }}
-        className="bm-marketplace-product-image object-cover"
-        style={{
-          display: "block",
-          visibility: "visible",
-          opacity: 1,
-          width: "100%",
-          height: "100%",
-          maxWidth: "100%",
-          objectFit: "cover",
-          objectPosition: "center",
-          background: "#ffffff",
-        }}
-      />
-    </div>
+    />
   );
 }
-
