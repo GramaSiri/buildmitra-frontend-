@@ -483,7 +483,7 @@ svg {
     position: relative !important;
     width: 100% !important;
     aspect-ratio: 1 / 1 !important;
-    height: 75px !important;
+    height: auto !important;
     border-radius: 5px !important;
     overflow: hidden !important;
     background-color: #f8fafc !important;
@@ -571,13 +571,13 @@ svg {
     display: block !important;
     width: 100% !important;
     max-width: 100% !important;
-    height: 70px !important;
-    min-height: 70px !important;
-    max-height: 70px !important;
-    margin: 0 auto 4px !important;
-    padding: 2px !important;
+    height: 100% !important;
+    min-height: 100% !important;
+    max-height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
     border-radius: 4px !important;
-    object-fit: contain !important;
+    object-fit: cover !important;
     object-position: center !important;
     background: #ffffff !important;
     opacity: 1 !important;

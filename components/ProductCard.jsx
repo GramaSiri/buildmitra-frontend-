@@ -21,7 +21,7 @@ export default function ProductCard({ item, product, onSendEnquiry }) {
           alt={p.itemName || p.productName || p.name || "BuildMitra product"}
           loading="lazy"
           decoding="async"
-          onError={(e) => { e.currentTarget.src = "/assets/placeholder-product.webp"; }}
+          onError={(e) => { e.currentTarget.src = "/assets/placeholder-product.svg"; }}
           className="bm-marketplace-product-image object-cover"
           style={{
             display: "block",
@@ -62,3 +62,4 @@ export default function ProductCard({ item, product, onSendEnquiry }) {
     </div>
   );
 }
+

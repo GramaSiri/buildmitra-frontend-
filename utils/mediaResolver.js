@@ -1,6 +1,6 @@
 const { getApiBase } = require('./apiConfig');
 
-const FALLBACK_IMAGE_URL = "/assets/placeholder-product.webp";
+const FALLBACK_IMAGE_URL = "/assets/placeholder-product.svg";
 
 function resolveMediaUrl(imagePath) {
   if (!imagePath || typeof imagePath !== "string") {
@@ -59,3 +59,4 @@ module.exports = {
   resolveMediaUrl,
   FALLBACK_IMAGE_URL
 };
+

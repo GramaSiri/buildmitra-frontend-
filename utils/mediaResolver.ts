@@ -1,6 +1,6 @@
 import { getApiBase } from "./apiConfig";
 
-export const FALLBACK_IMAGE_URL = "/assets/placeholder-product.webp";
+export const FALLBACK_IMAGE_URL = "/assets/placeholder-product.svg";
 
 /**
  * Centralized Media Resolver for BuildMitra
@@ -10,7 +10,7 @@ export const FALLBACK_IMAGE_URL = "/assets/placeholder-product.webp";
  * b) Strip http://localhost:5000 or http://127.0.0.1:5000 prefix.
  * c) Static Vercel CDN assets (/uploads/..., /material-images/..., /assets/...) -> Return relative path for 0ms Vercel CDN delivery on mobile.
  * d) Dynamic API image endpoints -> Prepend Render backend origin.
- * e) Missing/invalid paths -> Return /assets/placeholder-product.webp.
+ * e) Missing/invalid paths -> Return /assets/placeholder-product.svg.
  */
 export function resolveMediaUrl(imagePath?: any): string {
   if (!imagePath || typeof imagePath !== "string") {
@@ -73,3 +73,4 @@ export function resolveMediaUrl(imagePath?: any): string {
 }
 
 export default resolveMediaUrl;
+

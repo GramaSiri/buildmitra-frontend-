@@ -26,6 +26,19 @@ function getCandidateUrl(value: any): string {
   return "";
 }
 
+function getNormalizedMatCode(code: any): string | null {
+  if (!code) return null;
+  const str = String(code).trim();
+  if (/^MAT-\d+$/i.test(str)) return str.toUpperCase();
+  const matchCeme = str.match(/^CEME(\d+)$/i);
+  if (matchCeme) return "MAT-" + matchCeme[1].padStart(6, "0");
+  const matchTmt = str.match(/^TMT\s*(\d+)$/i);
+  if (matchTmt) return "MAT-" + matchTmt[1].padStart(6, "0");
+  const matchDigits = str.match(/^(\d+)$/);
+  if (matchDigits) return "MAT-" + matchDigits[1].padStart(6, "0");
+  return null;
+}
+
 function extractCandidates(item: any): string[] {
   const candidates: string[] = [];
 
@@ -39,10 +52,10 @@ function extractCandidates(item: any): string[] {
     }
   };
 
-  // The reconciled MongoDB imageUrl is the authoritative first choice.
+  // 1. Authoritative DB imageUrl
   add(item?.imageUrl);
 
-  // Then use the primary image from images[].
+  // 2. Primary image from images[] array
   if (Array.isArray(item?.images)) {
     const primary = item.images.find(
       (img: any) =>
@@ -60,7 +73,21 @@ function extractCandidates(item: any): string[] {
     });
   }
 
-  // Legacy fields are fallback candidates only.
+  // 3. Normalized master item code static CDN candidates (Vercel edge CDN instant 0ms load)
+  const normCode = getNormalizedMatCode(item?.masterItemCode || item?.masterCode || item?.itemCode || item?.code);
+  if (normCode) {
+    add(`/images/master-images/${normCode}.webp`);
+    add(`/uploads/master-materials/bulk-material/${normCode}.png`);
+    add(`/uploads/master-materials/bricks/${normCode}.png`);
+    add(`/uploads/master-materials/concrete-blocks/${normCode}.png`);
+    add(`/uploads/master-materials/electrical-wires/${normCode}.png`);
+    add(`/uploads/master-materials/plumbing-cpvc/${normCode}.png`);
+    add(`/uploads/master-materials/cement/${normCode}.png`);
+    add(`/uploads/master-materials/tmt-bars/${normCode}.png`);
+    add(`/uploads/master-materials/tiles-flooring/${normCode}.png`);
+  }
+
+  // 4. Legacy fields as fallback candidates
   add(item?.image);
   add(item?.imagePath);
   add(item?.image_path);
@@ -79,16 +106,11 @@ export default function MarketplaceProductImage({
   item: any;
   alt?: string;
 }) {
+  const listingId = String(item?._id || item?.listingCode || item?.id || "");
+
   const candidates = useMemo(
     () => extractCandidates(item),
-    [
-      item?._id,
-      item?.listingCode,
-      item?.masterItemCode,
-      item?.imageUrl,
-      item?.images,
-      item?.image
-    ]
+    [listingId]
   );
 
   const [index, setIndex] = useState(0);
@@ -97,12 +119,7 @@ export default function MarketplaceProductImage({
   useEffect(() => {
     setIndex(0);
     setUseFallback(false);
-  }, [
-    item?._id,
-    item?.listingCode,
-    item?.masterItemCode,
-    item?.imageUrl
-  ]);
+  }, [listingId]);
 
   const raw =
     !useFallback && candidates[index]
@@ -139,7 +156,7 @@ export default function MarketplaceProductImage({
       loading="lazy"
       decoding="async"
       onError={handleError}
-      className="bm-marketplace-product-image"
+      className="bm-marketplace-product-image object-cover"
       style={{
         display: "block",
         visibility: "visible",
