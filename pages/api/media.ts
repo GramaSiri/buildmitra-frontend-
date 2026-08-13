@@ -1,10 +1,19 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 
-const BACKEND =
+const RAW_BACKEND =
+  process.env.BACKEND_API_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
   process.env.NEXT_PUBLIC_API_BASE ||
-  process.env.BACKEND_API_URL ||
-  "http://localhost:5000";
+  "https://buildmitra-backend-beta.onrender.com";
+
+const BACKEND = (() => {
+  try {
+    const url = new URL(RAW_BACKEND);
+    return url.origin;
+  } catch {
+    return "https://buildmitra-backend-beta.onrender.com";
+  }
+})();
 
 function allowedMediaPath(path: string) {
   return (
@@ -105,4 +114,5 @@ export default async function handler(
     });
   }
 }
+
 
