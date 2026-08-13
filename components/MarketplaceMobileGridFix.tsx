@@ -76,6 +76,9 @@ export default function MarketplaceMobileGridFix() {
         "img"
       ) as HTMLImageElement | null;
 
+      // Do not trigger zoom viewer on mobile viewports (< 768px) to keep cards clean and readable
+      if (typeof window !== "undefined" && window.innerWidth < 768) return;
+
       if (image && (image.closest(".bm-marketplace-product-card") || image.closest("[class*='card']") || document.body.classList.contains("bm-marketplace-route"))) {
         const src = image.currentSrc || image.src || image.getAttribute("src");
         if (src && !src.includes("logo") && !src.includes("icon")) {

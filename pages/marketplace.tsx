@@ -1,47 +1,13 @@
+
 import { formatSupplierName } from "../utils/formatters";
 import MarketplaceProductImage from "../components/MarketplaceProductImage";
 import React, { useEffect, useMemo, useState } from "react";
 import MarketRateTrend from "../components/ui/MarketRateTrend";
 import { normalizeImageUrl, resolveListingImage } from "../utils/imageUrl";
+import { getApiBase } from "../utils/apiConfig";
+import { resolveMediaUrl } from "../utils/mediaResolver";
 
-function getMarketplaceApiBase() {
-  const configured =
-    process.env.NEXT_PUBLIC_API_URL ||
-    process.env.NEXT_PUBLIC_API_BASE ||
-    "";
-
-  if (typeof window !== "undefined") {
-    const host = window.location.hostname;
-
-    // Laptop local browser
-    if (host === "localhost" || host === "127.0.0.1") {
-      return "http://localhost:5000";
-    }
-
-    // Real phone / tablet on same local Wi-Fi
-    const isPrivateLan =
-      /^192\.168\./.test(host) ||
-      /^10\./.test(host) ||
-      /^172\.(1[6-9]|2\d|3[0-1])\./.test(host);
-
-    if (isPrivateLan) {
-      return `http://${host}:5000`;
-    }
-  }
-
-  // Production/Vercel
-  if (
-    configured &&
-    !configured.includes("localhost") &&
-    !configured.includes("127.0.0.1")
-  ) {
-    return configured.replace(/\/+$/, "");
-  }
-
-  return "https://buildmitra-backend-beta.onrender.com";
-}
-
-const API_BASE = getMarketplaceApiBase();
+const API_BASE = getApiBase();
 
 export default function Marketplace() {
   const [listings, setListings] = useState<any[]>([]);

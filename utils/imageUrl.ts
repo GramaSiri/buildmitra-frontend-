@@ -1,7 +1,4 @@
-import { getApiBase as getUniversalApiBase } from "./apiConfig";
-function getApiBase(): string {
-  return getUniversalApiBase();
-}
+import { resolveMediaUrl } from "./mediaResolver";
 
 export function normalizeImageUrl(
   url: string | null | undefined
@@ -19,43 +16,9 @@ export function normalizeImageUrl(
     return null;
   }
 
-  const apiBase = getApiBase();
-
-  // Convert localhost/127.0.0.1 references to actual API base when accessed externally
-  if (typeof window !== "undefined") {
-    const host = window.location.hostname;
-    if (host !== "localhost" && host !== "127.0.0.1") {
-      trimmed = trimmed.replace(/^https?:\/\/(?:localhost|127\.0\.0\.1):5000/i, apiBase);
-    }
-  }
-
-  if (
-    trimmed.startsWith("http://") ||
-    trimmed.startsWith("https://") ||
-    trimmed.startsWith("data:") ||
-    trimmed.startsWith("blob:")
-  ) {
-    return trimmed;
-  }
-
-  if (
-    trimmed.startsWith("/api/marketplace/images/") ||
-    trimmed.startsWith("api/marketplace/images/") ||
-    trimmed.startsWith("/uploads/") ||
-    trimmed.startsWith("uploads/")
-  ) {
-    const cleanPath = trimmed.startsWith("/")
-      ? trimmed
-      : `/${trimmed}`;
-
-    return `${apiBase}${cleanPath}`;
-  }
-
-  if (trimmed.startsWith("/")) {
-    return trimmed;
-  }
-
-  return `${apiBase}/${trimmed}`;
+  const resolved = resolveMediaUrl(trimmed);
+  if (resolved === "/assets/placeholder-product.webp") return null;
+  return resolved;
 }
 
 export function resolveListingImage(item: any): string | null {
@@ -111,5 +74,3 @@ export function resolveListingImage(item: any): string | null {
 
   return null;
 }
-
-

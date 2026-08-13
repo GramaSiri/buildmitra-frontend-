@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
+import { getApiBase } from "../utils/apiConfig";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE ||
-  process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE || "https://buildmitra-backend-beta.onrender.com";
+const API_BASE = getApiBase();
 
 export default function LoginPage() {
   const router = useRouter();
@@ -419,8 +418,8 @@ export default function LoginPage() {
 
         <form onSubmit={handleLogin}>
           <div style={styles.field}>
-            <label style={styles.label}>Mobile Number or Email</label>
-            <input
+            <label style={styles.label} className="label-compact">Mobile Number or Email</label>
+            <input className="input-compact" className="input-compact"
               type="text"
               value={loginId}
               onChange={(e) => setLoginId(e.target.value)}
@@ -431,8 +430,8 @@ export default function LoginPage() {
           </div>
 
           <div style={styles.field}>
-            <label style={styles.label}>Password</label>
-            <input
+            <label style={styles.label} className="label-compact">Password</label>
+            <input className="input-compact" className="input-compact"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -461,7 +460,7 @@ export default function LoginPage() {
               cursor: "pointer",
             }}
           >
-            <input
+            <input className="input-compact" className="input-compact"
               type="checkbox"
               checked={agreedToTerms}
               onChange={(e) => setAgreedToTerms(e.target.checked)}

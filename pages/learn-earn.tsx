@@ -29,6 +29,7 @@ import FormulaGallery from '../components/FormulaGallery';
 import { DesignGamesHub } from '../components/learn-earn/games/DesignGamesHub';
 
 import { getApiBase } from "../utils/apiConfig";
+import { resolveMediaUrl } from "../utils/mediaResolver";
 // ============= 40 MAJOR CONSTRUCTION STAGES =============
 const CONSTRUCTION_STAGES = [
   { number: 1, name: "Site inspection and site marking" },
@@ -6903,7 +6904,7 @@ export default function LearnAndEarnPage() {
                           <CardMedia
                             component="img"
                             sx={{ width: { xs: '100%', sm: 220 }, height: 220, objectFit: 'cover' }}
-                            image={item.imageUrl || 'https://images.unsplash.com/photo-1541888946425-d0fbb186a5b7?w=800'}
+                            image={resolveMediaUrl(item.imageUrl)}
                             alt={item.title}
                           />
                           <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1, p: 2 }}>
@@ -6977,9 +6978,9 @@ export default function LearnAndEarnPage() {
                           <CardMedia
                             component="img"
                             height="180"
-                            image={item.imageUrl || 'https://images.unsplash.com/photo-1541888946425-d0fbb186a5b7?w=800'}
+                            image={resolveMediaUrl(item.imageUrl)}
                             alt={item.title}
-                            onError={(e: any) => { e.target.src = 'https://images.unsplash.com/photo-1541888946425-d0fbb186a5b7?w=800'; }}
+                            onError={(e: any) => { e.target.src = resolveMediaUrl(null); }}
                           />
                           <Chip
                             label={item.publication}

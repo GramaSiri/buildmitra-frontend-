@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import * as XLSX from 'xlsx';
+import { getApiBase } from './utils/apiConfig';
 
 interface Rate {
   _id: string;
@@ -30,7 +31,7 @@ const PEBCalculator = () => {
   const [quality, setQuality] = useState<'standard' | 'premium'>('standard');
 
   useEffect(() => {
-    axios.get('http://localhost:5000/api/rates')
+    axios.get(`${getApiBase()}/api/rates`)
       .then(res => setRates(res.data))
       .catch(err => console.error('Failed to fetch rates', err));
   }, []);

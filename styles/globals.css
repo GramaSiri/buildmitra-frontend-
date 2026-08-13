@@ -4,6 +4,137 @@
   box-sizing: border-box;
 }
 
+/* =========================================================================
+   PHASE 2: GLOBAL TYPOGRAPHY & COMPACT DESIGN SYSTEM UTILITIES
+   ========================================================================= */
+
+/* Global typography & word wrapping rule */
+h1, h2, h3, h4, h5, h6, p, span, label, a, button, input, select, textarea,
+.MuiTypography-root {
+  overflow-wrap: break-word !important;
+  word-break: break-word !important;
+  hyphens: auto !important;
+}
+
+/* .input-compact: Compact heights, padding, and mobile font sizes */
+.input-compact,
+input.input-compact,
+select.input-compact,
+textarea.input-compact,
+.MuiInputBase-root.input-compact {
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 6px 10px !important;
+  font-size: 13px !important;
+  border-radius: 6px !important;
+  border: 1px solid #cbd5e1 !important;
+  background-color: #ffffff !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.input-compact:focus,
+input.input-compact:focus,
+select.input-compact:focus,
+textarea.input-compact:focus {
+  outline: none !important;
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15) !important;
+}
+
+@media (max-width: 767px) {
+  .input-compact,
+  input.input-compact,
+  select.input-compact,
+  textarea.input-compact,
+  .MuiInputBase-root.input-compact {
+    height: 32px !important;
+    min-height: 32px !important;
+    padding: 4px 8px !important;
+    font-size: 12px !important;
+    border-radius: 5px !important;
+  }
+}
+
+/* .card-compact: Reduced padding (p-2.5 on mobile, p-4 on desktop) */
+.card-compact {
+  padding: 16px !important;
+  border-radius: 8px !important;
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+  box-sizing: border-box !important;
+}
+
+@media (max-width: 767px) {
+  .card-compact {
+    padding: 10px !important;
+    border-radius: 6px !important;
+  }
+}
+
+/* .label-compact: Small, crisp font sizes with tight margin */
+.label-compact {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: #334155 !important;
+  margin-bottom: 4px !important;
+  display: inline-block !important;
+  line-height: 1.2 !important;
+}
+
+@media (max-width: 767px) {
+  .label-compact {
+    font-size: 11px !important;
+    margin-bottom: 2px !important;
+  }
+}
+
+/* MARKETPLACE 4-COLUMN MOBILE GRID & ASPECT-SQUARE THUMBNAILS */
+.marketplace-grid,
+.products-grid,
+.product-grid,
+.bm-marketplace-product-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 4px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.product-image-container,
+.thumbnail-wrapper,
+.aspect-square {
+  aspect-ratio: 1 / 1 !important;
+  width: 100% !important;
+  position: relative !important;
+  overflow: hidden !important;
+  background-color: #f8fafc !important;
+  border-radius: 4px !important;
+}
+
+.aspect-square img,
+.thumbnail-wrapper img,
+.product-image-container img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+}
+
+/* Hide intrusive image zoom overlays on mobile viewports */
+@media (max-width: 767px) {
+  .bm-marketplace-viewer-overlay,
+  .bm-marketplace-viewer-panel,
+  .magnifier-badge {
+    display: none !important;
+    pointer-events: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+  }
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
   background-color: #f0f2f5;

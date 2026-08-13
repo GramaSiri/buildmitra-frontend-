@@ -183,7 +183,7 @@ Remarks: ${remarks}${attachmentInfo}
 
   return (
     <div style={styles.page}>
-      <div style={styles.card}>
+      <div style={styles.card} className="card-compact">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
           <h1 style={{ margin: 0, fontSize: "22px", color: "#0f172a" }}>📝 Reply Official Quotation</h1>
           <button
@@ -247,18 +247,18 @@ Remarks: ${remarks}${attachmentInfo}
               <p style={{ margin: "4px 0" }}><b>Specification / Notes:</b> {enquiry.specification || enquiry.message || "-"}</p>
             </div>
 
-            <label style={styles.label}>Quoted Rate (₹ / {enquiry.uploadedUnit || enquiry.unit || "Unit"})</label>
-            <input style={styles.input} type="number" placeholder="Enter rate per unit" value={rate} onChange={(e) => setRate(e.target.value)} />
+            <label style={styles.label} className="label-compact">Quoted Rate (₹ / {enquiry.uploadedUnit || enquiry.unit || "Unit"})</label>
+            <input style={styles.input} className="input-compact" type="number" placeholder="Enter rate per unit" value={rate} onChange={(e) => setRate(e.target.value)} />
             <p style={styles.note}>Uploaded rate auto-filled. Edit rate if required.</p>
 
-            <label style={styles.label}>Delivery Timeline</label>
-            <input style={styles.input} placeholder="Delivery Time" value={deliveryTime} onChange={(e) => setDeliveryTime(e.target.value)} />
+            <label style={styles.label} className="label-compact">Delivery Timeline</label>
+            <input style={styles.input} className="input-compact" placeholder="Delivery Time" value={deliveryTime} onChange={(e) => setDeliveryTime(e.target.value)} />
 
-            <label style={styles.label}>Payment Terms & Conditions</label>
-            <textarea style={styles.textarea} placeholder="Payment Terms" value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)} />
+            <label style={styles.label} className="label-compact">Payment Terms & Conditions</label>
+            <textarea style={styles.textarea} className="input-compact" placeholder="Payment Terms" value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)} />
 
-            <label style={styles.label}>Remarks / Specifications</label>
-            <textarea style={styles.textarea} placeholder="Remarks" value={remarks} onChange={(e) => setRemarks(e.target.value)} />
+            <label style={styles.label} className="label-compact">Remarks / Specifications</label>
+            <textarea style={styles.textarea} className="input-compact" placeholder="Remarks" value={remarks} onChange={(e) => setRemarks(e.target.value)} />
 
             <div style={{ display: "flex", gap: "10px", marginTop: "16px" }}>
               <button style={{ ...styles.button, flex: 1 }} onClick={sendQuote} disabled={loading}>

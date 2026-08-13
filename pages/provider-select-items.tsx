@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { normalizeImageUrl, resolveListingImage } from "../utils/imageUrl";
+import { getApiBase } from "../utils/apiConfig";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE || "https://buildmitra-backend-beta.onrender.com";
+const API_BASE = getApiBase();
 
 const roleType: Record<string, string> = {
   supplier: "material",

@@ -1,7 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { resolveMediaUrl } from "../utils/resolveMediaUrl";
-
-const FALLBACK_IMAGE = "/images/marketplace-fallback.svg";
+import { resolveMediaUrl, FALLBACK_IMAGE_URL as FALLBACK_IMAGE } from "../utils/mediaResolver";
 
 type Candidate = {
   url: string;

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 
 import { getApiBase } from "../utils/apiConfig";
+import { resolveMediaUrl } from "../utils/mediaResolver";
 const API_BASE = getApiBase();
 
 type PropertyItem = {
@@ -84,20 +85,8 @@ function valueOf(input: any): string {
 
 function fullMediaUrl(input: any): string {
   const raw = valueOf(input).trim();
-
   if (!raw) return "";
-
-  if (
-    raw.startsWith("http://") ||
-    raw.startsWith("https://") ||
-    raw.startsWith("data:")
-  ) {
-    return raw;
-  }
-
-  if (raw.startsWith("/")) return `${API_BASE}${raw}`;
-
-  return `${API_BASE}/${raw}`;
+  return resolveMediaUrl(raw);
 }
 
 function propertyImages(property: PropertyItem): string[] {

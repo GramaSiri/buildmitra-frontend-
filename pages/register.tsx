@@ -1,9 +1,8 @@
 import React, { useMemo, useState } from "react";
 import { useRouter } from "next/router";
+import { getApiBase } from "../utils/apiConfig";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL ||
-  process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE || "https://buildmitra-backend-beta.onrender.com";
+const API_BASE = getApiBase();
 
 type Billing = "monthly" | "annual";
 type PlanId = "basic" | "professional" | "business";
@@ -255,7 +254,7 @@ if (!registrationSuccess) return;
                 value={form.name}
                 onChange={updateField}
                 placeholder="Enter your name"
-                style={styles.input}
+                style={styles.input} className="input-compact"
               />
             </Field>
 
@@ -265,7 +264,7 @@ if (!registrationSuccess) return;
                 value={form.companyName}
                 onChange={updateField}
                 placeholder="Optional"
-                style={styles.input}
+                style={styles.input} className="input-compact"
               />
             </Field>
 
@@ -276,7 +275,7 @@ if (!registrationSuccess) return;
                 value={form.email}
                 onChange={updateField}
                 placeholder="Optional"
-                style={styles.input}
+                style={styles.input} className="input-compact"
               />
             </Field>
 
@@ -287,7 +286,7 @@ if (!registrationSuccess) return;
                 value={form.phone}
                 onChange={updateField}
                 placeholder="10-digit mobile number"
-                style={styles.input}
+                style={styles.input} className="input-compact"
                 maxLength={10}
               />
             </Field>
@@ -299,7 +298,7 @@ if (!registrationSuccess) return;
                 value={form.pincode}
                 onChange={updateField}
                 placeholder="6-digit PIN code"
-                style={styles.input}
+                style={styles.input} className="input-compact"
                 maxLength={6}
               />
             </Field>
@@ -309,7 +308,7 @@ if (!registrationSuccess) return;
                 name="businessRole"
                 value={form.businessRole}
                 onChange={updateField}
-                style={styles.input}
+                style={styles.input} className="input-compact"
               >
                 <option value="buyer">Buyer / Owner</option>
                 <option value="contractor">Contractor</option>
@@ -328,7 +327,7 @@ if (!registrationSuccess) return;
               value={form.address}
               onChange={updateField}
               placeholder="House / Street / Area"
-              style={styles.input}
+              style={styles.input} className="input-compact"
             />
           </Field>
 
@@ -339,7 +338,7 @@ if (!registrationSuccess) return;
                 value={form.city}
                 onChange={updateField}
                 placeholder="City"
-                style={styles.input}
+                style={styles.input} className="input-compact"
               />
             </Field>
 
@@ -349,7 +348,7 @@ if (!registrationSuccess) return;
                 value={form.state}
                 onChange={updateField}
                 placeholder="State"
-                style={styles.input}
+                style={styles.input} className="input-compact"
               />
             </Field>
           </div>
@@ -361,7 +360,7 @@ if (!registrationSuccess) return;
               value={form.password}
               onChange={updateField}
               placeholder="Minimum 6 characters"
-              style={styles.input}
+              style={styles.input} className="input-compact"
             />
           </Field>
 
@@ -610,7 +609,7 @@ function Field({
 }) {
   return (
     <label style={styles.field}>
-      <span style={styles.label}>{label}</span>
+      <span style={styles.label} className="label-compact">{label}</span>
       {children}
     </label>
   );
