@@ -1436,3 +1436,75 @@ div[class*="table-wrapper"] {
   overflow-x: auto !important;
   -webkit-overflow-scrolling: touch !important;
 }
+
+/* BUILDMITRA FINAL MARKETPLACE IMAGE VISIBILITY FIX */
+
+.marketplace-grid .marketplace-card .product-image-container.thumbnail-wrapper {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+
+  width: 100% !important;
+  height: 180px !important;
+  min-height: 180px !important;
+  max-height: 180px !important;
+
+  padding: 0 !important;
+  margin: 0 0 6px 0 !important;
+
+  overflow: hidden !important;
+  position: relative !important;
+
+  aspect-ratio: auto !important;
+  background: #f3f4f6 !important;
+
+  flex: none !important;
+}
+
+.marketplace-grid .marketplace-card
+.product-image-container.thumbnail-wrapper
+.bm-marketplace-product-image {
+
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+
+  width: 100% !important;
+  height: 180px !important;
+  min-height: 180px !important;
+  max-height: 180px !important;
+
+  object-fit: cover !important;
+  object-position: center !important;
+
+  position: relative !important;
+  inset: auto !important;
+
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.marketplace-grid .marketplace-card img.bm-marketplace-product-image {
+  display: block !important;
+}
+
+@media (max-width: 768px) {
+
+  .marketplace-grid .marketplace-card .product-image-container.thumbnail-wrapper {
+    display: block !important;
+    height: 110px !important;
+    min-height: 110px !important;
+    max-height: 110px !important;
+  }
+
+  .marketplace-grid .marketplace-card
+  .product-image-container.thumbnail-wrapper
+  .bm-marketplace-product-image {
+    display: block !important;
+    height: 110px !important;
+    min-height: 110px !important;
+    max-height: 110px !important;
+  }
+}
+
+/* END BUILDMITRA FINAL MARKETPLACE IMAGE VISIBILITY FIX */
