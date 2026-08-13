@@ -1,11 +1,15 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { resolveMediaUrl } from "../utils/mediaResolver";
 
-const PLACEHOLDER_SRC = "/assets/placeholder-product.webp";
+const FALLBACK_IMAGE = "/assets/placeholder-product.webp";
 
-function extractUrl(value: any): string {
+function getCandidateUrl(value: any): string {
   if (!value) return "";
-  if (typeof value === "string") return value.trim();
+
+  if (typeof value === "string") {
+    return value.trim();
+  }
+
   if (typeof value === "object") {
     return String(
       value.url ||
@@ -18,120 +22,135 @@ function extractUrl(value: any): string {
       ""
     ).trim();
   }
+
   return "";
 }
 
-function collectCandidates(item: any): string[] {
-  if (!item) return [];
+function extractCandidates(item: any): string[] {
+  const candidates: string[] = [];
 
-  const result: string[] = [];
+  const add = (value: any) => {
+    const url = getCandidateUrl(value);
 
-  const add = (val: any) => {
-    const url = extractUrl(val);
-    if (url && !result.includes(url) && url !== PLACEHOLDER_SRC) {
-      result.push(url);
+    if (!url) return;
+
+    if (!candidates.includes(url)) {
+      candidates.push(url);
     }
   };
 
-  // 1. Structured images array from DB
-  if (Array.isArray(item.images)) {
+  // The reconciled MongoDB imageUrl is the authoritative first choice.
+  add(item?.imageUrl);
+
+  // Then use the primary image from images[].
+  if (Array.isArray(item?.images)) {
+    const primary = item.images.find(
+      (img: any) =>
+        img?.isPrimary === true &&
+        img?.isActive !== false &&
+        img?.status !== "rejected"
+    );
+
+    if (primary) add(primary);
+
     item.images.forEach((img: any) => {
-      if (img?.isPrimary) add(img);
+      if (img?.isActive !== false && img?.status !== "rejected") {
+        add(img);
+      }
     });
-    item.images.forEach((img: any) => add(img));
   }
 
-  // 2. Direct listing fields
-  add(item.imageUrl);
-  add(item.image);
-  add(item.imagePath);
-  add(item.image_url);
-  add(item.image_path);
-  add(item.masterImage);
-  add(item.masterImageUrl);
-  add(item.productImage);
-  add(item.thumbnail);
-  add(item.thumbnailUrl);
+  // Legacy fields are fallback candidates only.
+  add(item?.image);
+  add(item?.imagePath);
+  add(item?.image_path);
+  add(item?.masterImageUrl);
+  add(item?.masterImage);
+  add(item?.productImage);
+  add(item?.thumbnail);
 
-  return result;
+  return candidates;
 }
 
 export default function MarketplaceProductImage({
   item,
-  alt,
+  alt
 }: {
   item: any;
   alt?: string;
 }) {
-  // Stable listing identity - reset ONLY when this unique identity changes
-  const listingId = String(item?._id || item?.listingCode || item?.id || "");
+  const candidates = useMemo(
+    () => extractCandidates(item),
+    [
+      item?._id,
+      item?.listingCode,
+      item?.masterItemCode,
+      item?.imageUrl,
+      item?.images,
+      item?.image
+    ]
+  );
 
-  // Build candidate list once per listing identity
-  const candidates = useMemo(() => collectCandidates(item), [listingId]);
+  const [index, setIndex] = useState(0);
+  const [useFallback, setUseFallback] = useState(false);
 
-  // Track failed URLs so each URL is attempted at most ONCE
-  const [failedUrls, setFailedUrls] = useState<string[]>([]);
-  const [candidateIndex, setCandidateIndex] = useState(0);
-
-  // Reset candidate index & failed tracking ONLY when listing identity changes
   useEffect(() => {
-    setCandidateIndex(0);
-    setFailedUrls([]);
-  }, [listingId]);
+    setIndex(0);
+    setUseFallback(false);
+  }, [
+    item?._id,
+    item?.listingCode,
+    item?.masterItemCode,
+    item?.imageUrl
+  ]);
 
-  // Find first candidate that has NOT failed
-  let activeCandidate: string | null = null;
-  for (let i = candidateIndex; i < candidates.length; i++) {
-    const candidate = candidates[i];
-    const resolved = resolveMediaUrl(candidate);
-    if (!failedUrls.includes(resolved) && !failedUrls.includes(candidate)) {
-      activeCandidate = candidate;
-      break;
+  const raw =
+    !useFallback && candidates[index]
+      ? candidates[index]
+      : FALLBACK_IMAGE;
+
+  const src =
+    raw === FALLBACK_IMAGE
+      ? FALLBACK_IMAGE
+      : resolveMediaUrl(raw);
+
+  const handleError = () => {
+    if (useFallback || raw === FALLBACK_IMAGE) {
+      return;
     }
-  }
 
-  // Determine final display src
-  const displaySrc = activeCandidate ? resolveMediaUrl(activeCandidate) : PLACEHOLDER_SRC;
+    if (index + 1 < candidates.length) {
+      setIndex((current) => current + 1);
+      return;
+    }
 
-  const handleImageError = () => {
-    // Terminal placeholder guarantee: never retry if placeholder is displayed
-    if (displaySrc === PLACEHOLDER_SRC) return;
-
-    // Record the current failed URL
-    setFailedUrls((prev) => {
-      if (prev.includes(displaySrc)) return prev;
-      return [...prev, displaySrc];
-    });
-
-    // Advance candidate index to try next unique candidate
-    setCandidateIndex((prev) => prev + 1);
+    setUseFallback(true);
   };
 
   return (
     <img
-      src={displaySrc}
+      src={src}
       alt={
         alt ||
         item?.itemName ||
-        item?.product_name ||
         item?.productName ||
-        item?.name ||
         "BuildMitra product"
       }
       loading="lazy"
       decoding="async"
-      onError={handleImageError}
-      className="bm-marketplace-product-image object-cover"
+      onError={handleError}
+      className="bm-marketplace-product-image"
       style={{
         display: "block",
-        width: "100%",
-        height: "100%",
-        maxWidth: "100%",
-        objectFit: "cover",
-        objectPosition: "center",
         visibility: "visible",
         opacity: 1,
-        background: "#ffffff",
+        width: "100%",
+        height: "100%",
+        minWidth: 0,
+        minHeight: 0,
+        objectFit: "cover",
+        objectPosition: "center",
+        border: 0
       }}
     />
   );
