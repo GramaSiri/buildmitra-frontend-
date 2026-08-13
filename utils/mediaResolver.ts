@@ -6,10 +6,11 @@ export const FALLBACK_IMAGE_URL = "/assets/placeholder-product.webp";
  * Centralized Media Resolver for BuildMitra
  *
  * Logic:
- * a) Base64 or https:// URLs -> Return as-is.
- * b) Paths starting with http://localhost:5000/ -> Strip localhost prefix and attach Render backend origin.
- * c) Relative paths like /uploads/... or uploads/... -> Prepend Render backend origin.
- * d) Missing/broken paths -> Return fallback image /assets/placeholder-product.webp.
+ * a) Base64 or blob or https:// URLs -> Return as-is.
+ * b) Strip http://localhost:5000 or http://127.0.0.1:5000 prefix.
+ * c) Static Vercel CDN assets (/uploads/..., /material-images/..., /assets/...) -> Return relative path for 0ms Vercel CDN delivery on mobile.
+ * d) Dynamic API image endpoints -> Prepend Render backend origin.
+ * e) Missing/invalid paths -> Return /assets/placeholder-product.webp.
  */
 export function resolveMediaUrl(imagePath?: any): string {
   if (!imagePath || typeof imagePath !== "string") {
@@ -22,7 +23,8 @@ export function resolveMediaUrl(imagePath?: any): string {
     !trimmed ||
     trimmed === "null" ||
     trimmed === "undefined" ||
-    trimmed === "[object Object]"
+    trimmed === "[object Object]" ||
+    trimmed === "/placeholder-material.png"
   ) {
     return FALLBACK_IMAGE_URL;
   }
@@ -30,22 +32,20 @@ export function resolveMediaUrl(imagePath?: any): string {
   // Normalize Windows backslashes
   trimmed = trimmed.replace(/\\/g, "/");
 
-  // Rule a: Base64 or blob URLs -> Return as-is
+  // Base64 or blob URLs -> Return as-is
   if (trimmed.startsWith("data:") || trimmed.startsWith("blob:")) {
     return trimmed;
   }
 
-  // Rule a: https:// URLs -> Return as-is
+  // https:// URLs -> Return as-is
   if (trimmed.startsWith("https://")) {
     return trimmed;
   }
 
-  // Rule b: Paths starting with http://localhost:5000/ or http://127.0.0.1:5000/
+  // Strip http://localhost:5000 or http://127.0.0.1:5000 prefix
   if (/^http:\/\/(?:localhost|127\.0\.0\.1):5000/i.test(trimmed)) {
-    const cleanPath = trimmed.replace(/^http:\/\/(?:localhost|127\.0\.0\.1):5000/i, "");
-    if (!cleanPath) return FALLBACK_IMAGE_URL;
-    const base = getApiBase();
-    return `${base}${cleanPath.startsWith("/") ? cleanPath : `/${cleanPath}`}`;
+    trimmed = trimmed.replace(/^http:\/\/(?:localhost|127\.0\.0\.1):5000/i, "");
+    if (!trimmed) return FALLBACK_IMAGE_URL;
   }
 
   // Generic http:// external URLs
@@ -53,20 +53,22 @@ export function resolveMediaUrl(imagePath?: any): string {
     return trimmed;
   }
 
-  // Frontend static assets in /public
+  const cleanPath = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+
+  // Static Vercel CDN assets in /public (uploads, material-images, assets, images)
   if (
-    trimmed.startsWith("/assets/") ||
-    trimmed.startsWith("/logo.png") ||
-    trimmed.startsWith("/favicon.ico") ||
-    trimmed.startsWith("/images/buildmitra-") ||
-    trimmed.startsWith("/images/static/")
+    cleanPath.startsWith("/uploads/") ||
+    cleanPath.startsWith("/material-images/") ||
+    cleanPath.startsWith("/assets/") ||
+    cleanPath.startsWith("/images/") ||
+    cleanPath.startsWith("/logo") ||
+    cleanPath.startsWith("/favicon")
   ) {
-    return trimmed;
+    return cleanPath;
   }
 
-  // Rule c: Relative paths like /uploads/..., uploads/..., /material-images/...
+  // Dynamic backend API endpoints
   const base = getApiBase();
-  const cleanPath = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
   return `${base}${cleanPath}`;
 }
 

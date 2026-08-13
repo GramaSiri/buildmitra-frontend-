@@ -1,8 +1,8 @@
-import { getApiBase } from "./apiConfig";
+const { getApiBase } = require('./apiConfig');
 
-export const FALLBACK_IMAGE_URL = "/assets/placeholder-product.webp";
+const FALLBACK_IMAGE_URL = "/assets/placeholder-product.webp";
 
-export function resolveMediaUrl(imagePath) {
+function resolveMediaUrl(imagePath) {
   if (!imagePath || typeof imagePath !== "string") {
     return FALLBACK_IMAGE_URL;
   }
@@ -13,7 +13,8 @@ export function resolveMediaUrl(imagePath) {
     !trimmed ||
     trimmed === "null" ||
     trimmed === "undefined" ||
-    trimmed === "[object Object]"
+    trimmed === "[object Object]" ||
+    trimmed === "/placeholder-material.png"
   ) {
     return FALLBACK_IMAGE_URL;
   }
@@ -29,29 +30,32 @@ export function resolveMediaUrl(imagePath) {
   }
 
   if (/^http:\/\/(?:localhost|127\.0\.0\.1):5000/i.test(trimmed)) {
-    const cleanPath = trimmed.replace(/^http:\/\/(?:localhost|127\.0\.0\.1):5000/i, "");
-    if (!cleanPath) return FALLBACK_IMAGE_URL;
-    const base = getApiBase();
-    return `${base}${cleanPath.startsWith("/") ? cleanPath : `/${cleanPath}`}`;
+    trimmed = trimmed.replace(/^http:\/\/(?:localhost|127\.0\.0\.1):5000/i, "");
+    if (!trimmed) return FALLBACK_IMAGE_URL;
   }
 
   if (trimmed.startsWith("http://")) {
     return trimmed;
   }
 
+  const cleanPath = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+
   if (
-    trimmed.startsWith("/assets/") ||
-    trimmed.startsWith("/logo.png") ||
-    trimmed.startsWith("/favicon.ico") ||
-    trimmed.startsWith("/images/buildmitra-") ||
-    trimmed.startsWith("/images/static/")
+    cleanPath.startsWith("/uploads/") ||
+    cleanPath.startsWith("/material-images/") ||
+    cleanPath.startsWith("/assets/") ||
+    cleanPath.startsWith("/images/") ||
+    cleanPath.startsWith("/logo") ||
+    cleanPath.startsWith("/favicon")
   ) {
-    return trimmed;
+    return cleanPath;
   }
 
   const base = getApiBase();
-  const cleanPath = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
   return `${base}${cleanPath}`;
 }
 
-export default resolveMediaUrl;
+module.exports = {
+  resolveMediaUrl,
+  FALLBACK_IMAGE_URL
+};
