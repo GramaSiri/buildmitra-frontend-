@@ -227,12 +227,13 @@ export default function MarketplaceProductImage({
         }
         loading="lazy"
         decoding="async"
-        onError={() => {
+        onError={(e) => {
+          e.currentTarget.src = "/assets/placeholder-product.webp";
           if (raw !== FALLBACK_IMAGE) {
             tryNextImage();
           }
         }}
-        className="bm-marketplace-product-image"
+        className="bm-marketplace-product-image object-cover"
         style={{
           display: "block",
           visibility: "visible",
@@ -240,7 +241,7 @@ export default function MarketplaceProductImage({
           width: "100%",
           height: "100%",
           maxWidth: "100%",
-          objectFit: "contain",
+          objectFit: "cover",
           objectPosition: "center",
           background: "#ffffff",
         }}
