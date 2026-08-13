@@ -1,3 +1,4 @@
+import { getApiBase } from "./apiConfig";
 export type MasterRateResult = {
   rate: number;
   found: boolean;
@@ -145,7 +146,7 @@ export const getCombinedBOQRate = (
 };
 
 export const syncApprovedRatesFromBackend = async (
-  apiBase: string = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000"
+  apiBase: string = getApiBase()
 ): Promise<{ success: boolean; count: number; error?: string }> => {
   if (typeof window === "undefined") return { success: false, count: 0, error: "Browser only" };
 
@@ -217,7 +218,7 @@ export const syncApprovedRatesFromBackend = async (
 export async function resolveModuleBulkRates(
   items: Array<{ masterItemCode?: string; itemName: string; itemType: string; unit: string; category?: string }>,
   city = "Bengaluru",
-  apiBase = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000"
+  apiBase = getApiBase()
 ) {
   try {
     const res = await fetch(`${apiBase}/api/rates/resolve-bulk`, {
@@ -244,3 +245,4 @@ export async function resolveModuleBulkRates(
     status: "Rate Pending Admin Update"
   }));
 }
+

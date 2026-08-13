@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { syncApprovedRatesFromBackend } from "../utils/masterRates";
 
+import { getApiBase } from "../utils/apiConfig";
 let MobileNav: any = null;
 try {
   MobileNav = require("../components/MobileNav").default;
@@ -8,10 +9,7 @@ try {
   MobileNav = null;
 }
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL ||
-  process.env.NEXT_PUBLIC_API_BASE ||
-  "http://localhost:5000";
+const API_BASE = getApiBase();
 
 type MasterRate = {
   name: string;
@@ -158,7 +156,7 @@ export default function WaterproofingCalculator() {
   const [customRates, setCustomRates] = useState<Record<string, number>>({});
   const [gst, setGst] = useState(18);
   const [masterRates, setMasterRates] = useState<MasterRate[]>([]);
-  const [rateStatus, setRateStatus] = useState("Loading Admin Master rates...");
+  const [rateStatus, setRateStatus] = useState("Loading Admin Rate (₹)s...");
 
   useEffect(() => {
     syncApprovedRatesFromBackend();
@@ -171,13 +169,13 @@ export default function WaterproofingCalculator() {
         setMasterRates(rows);
         setRateStatus(
           rows.length
-            ? `${rows.length} Admin Master rates loaded`
-            : "No Admin Master rates found — Using Benchmark Rates"
+            ? `${rows.length} Admin Rate (₹)s loaded`
+            : "No Admin Rate (₹)s found — Using Benchmark Rates"
         );
       } catch {
         setMasterRates([]);
         setRateStatus(
-          "Admin Master rates unavailable — Market Benchmark rates applied"
+          "Admin Rate (₹)s unavailable — Market Benchmark rates applied"
         );
       }
     };
@@ -450,10 +448,10 @@ export default function WaterproofingCalculator() {
             (r.quantity * r.rate).toFixed(2)
           ].join(",")
         ),
-        ["Labour Cost", "-", "-", "-", "-", result.labourCost.toFixed(2)],
+        ["Labour (₹)", "-", "-", "-", "-", result.labourCost.toFixed(2)],
         ["Subtotal", "-", "-", "-", "-", result.subtotal.toFixed(2)],
         ["GST (18%)", "-", "-", "-", "-", result.gstAmount.toFixed(2)],
-        ["Grand Total", "-", "-", "-", "-", result.grandTotal.toFixed(2)]
+        ["Grand Total (₹)", "-", "-", "-", "-", result.grandTotal.toFixed(2)]
       ].join("\n");
 
     const encodedUri = encodeURI(csvContent);
@@ -469,11 +467,11 @@ export default function WaterproofingCalculator() {
     if (navigator.share) {
       navigator.share({
         title: "Water Proofing BOQ Estimate",
-        text: `BuildMitra Waterproofing BOQ Estimate for ${location}: Billable Area = ${fmt(result.billableArea)} m², Grand Total = ₹${fmt(result.grandTotal)}`,
+        text: `BuildMitra Waterproofing BOQ Estimate for ${location}: Billable Area = ${fmt(result.billableArea)} m², Grand Total (₹) = ₹${fmt(result.grandTotal)}`,
         url: window.location.href
       }).catch(() => {});
     } else {
-      alert(`Waterproofing BOQ Estimate:\nBillable Area: ${fmt(result.billableArea)} m²\nGrand Total: ₹${fmt(result.grandTotal)}`);
+      alert(`Waterproofing BOQ Estimate:\nBillable Area: ${fmt(result.billableArea)} m²\nGrand Total (₹): ₹${fmt(result.grandTotal)}`);
     }
   };
 
@@ -605,16 +603,16 @@ export default function WaterproofingCalculator() {
             <small style={{ fontSize: "10px", color: "#4a5568" }}>Net: {fmt(result.netArea)} m² (+{wastage}% Wastage)</small>
           </div>
 
-          {/* Card 2: Material Cost */}
+          {/* Card 2: Mat. Cost (₹) */}
           <div style={{ background: "linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%)", border: "2px solid #805ad5", borderRadius: "12px", padding: "14px", boxShadow: "0 4px 10px rgba(128,90,213,0.1)" }}>
-            <span style={{ fontSize: "11px", fontWeight: 800, color: "#553c9a", textTransform: "uppercase", letterSpacing: "0.5px" }}>📦 MATERIAL COST</span>
+            <span style={{ fontSize: "11px", fontWeight: 800, color: "#553c9a", textTransform: "uppercase", letterSpacing: "0.5px" }}>📦 Mat. Cost (₹)</span>
             <div style={{ fontSize: "20px", fontWeight: 900, color: "#6b46c1", marginTop: "4px" }}>₹{fmt(result.materialCost)}</div>
             <small style={{ fontSize: "10px", color: "#4a5568" }}>{result.rows.length} Material items estimated</small>
           </div>
 
-          {/* Card 3: Labour Cost */}
+          {/* Card 3: Labour (₹) */}
           <div style={{ background: "linear-gradient(135deg, #fffaf0 0%, #feebc8 100%)", border: "2px solid #dd6b20", borderRadius: "12px", padding: "14px", boxShadow: "0 4px 10px rgba(221,107,32,0.1)" }}>
-            <span style={{ fontSize: "11px", fontWeight: 800, color: "#9c4221", textTransform: "uppercase", letterSpacing: "0.5px" }}>👷 LABOUR COST</span>
+            <span style={{ fontSize: "11px", fontWeight: 800, color: "#9c4221", textTransform: "uppercase", letterSpacing: "0.5px" }}>👷 Labour (₹)</span>
             <div style={{ fontSize: "20px", fontWeight: 900, color: "#c05621", marginTop: "4px" }}>₹{fmt(result.labourCost)}</div>
             <small style={{ fontSize: "10px", color: "#4a5568" }}>Rate: ₹{result.appliedLabourRate}/m²</small>
           </div>
@@ -626,12 +624,12 @@ export default function WaterproofingCalculator() {
             <small style={{ fontSize: "10px", color: "#4a5568" }}>GST Amount: ₹{fmt(result.gstAmount)}</small>
           </div>
 
-          {/* Card 5: Consolidated GRAND TOTAL */}
+          {/* Card 5: Consolidated Grand Total (₹) */}
           <div style={{ background: "linear-gradient(135deg, #800020 0%, #4a0012 100%)", border: "2px solid #ffd700", borderRadius: "12px", padding: "14px", color: "#ffffff", boxShadow: "0 4px 15px rgba(128,0,32,0.25)", gridColumn: "1 / -1" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
               <div>
                 <span style={{ fontSize: "11px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "1px", color: "#ffd700" }}>
-                  💰 CONSOLIDATED GRAND TOTAL ESTIMATE
+                  💰 CONSOLIDATED Grand Total (₹) ESTIMATE
                 </span>
                 <div style={{ fontSize: "26px", fontWeight: 900, marginTop: "2px" }}>₹{fmt(result.grandTotal)}</div>
               </div>
@@ -720,3 +718,9 @@ export default function WaterproofingCalculator() {
     </div>
   );
 }
+
+
+
+
+
+

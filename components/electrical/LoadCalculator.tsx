@@ -295,11 +295,7 @@ export const LoadCalculator: React.FC = () => {
 };
 
 const styles: Record<string, React.CSSProperties> = {
-  container: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 20,
-  },
+  container: { width: '100%', maxWidth: '100%', margin: '0', padding: '4px 8px', boxSizing: 'border-box' },
   banner: {
     padding: 24,
     borderRadius: 16,
@@ -326,53 +322,23 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 14,
     lineHeight: 1.5,
   },
-  card: {
-    backgroundColor: "#ffffff",
-    padding: 20,
-    borderRadius: 14,
-    border: "1px solid #e2e8f0",
-    boxShadow: "0 2px 10px rgba(0,0,0,0.03)",
-  },
+  card: { padding: "3px 2px", borderRadius: "4px", textAlign: "center", minHeight: "0", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" },
   cardTitle: {
     margin: "0 0 16px",
     fontSize: 16,
     fontWeight: 800,
     color: "#0f172a",
   },
-  inputGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-    gap: 16,
-  },
-  label: {
-    display: "block",
-    fontSize: 12,
-    fontWeight: 800,
-    color: "#475569",
-    marginBottom: 6,
-    textTransform: "uppercase",
-    letterSpacing: "0.04em",
-  },
-  input: {
-    width: "100%",
-    padding: "10px 12px",
-    borderRadius: 8,
-    border: "1px solid #cbd5e1",
-    fontSize: 14,
-    boxSizing: "border-box",
-    backgroundColor: "#ffffff",
-  },
+  inputgrid: { display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '4px', marginBottom: '6px' },
+  label: { display: 'block', fontSize: '10px', fontWeight: '600', marginBottom: '2px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  input: { width: '100%', padding: '2px 4px', height: '30px', fontSize: '12px', textAlign: 'center', borderRadius: '4px', border: '1px solid #d1d5db', boxSizing: 'border-box' },
   hint: {
     fontSize: 11,
     color: "#64748b",
     marginTop: 4,
     display: "block",
   },
-  applianceGrid: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 10,
-  },
+  appliancegrid: { display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '4px', marginBottom: '6px' },
   appItem: {
     display: "flex",
     alignItems: "center",
@@ -430,18 +396,8 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 900,
     color: "#2563eb",
   },
-  resultCard: {
-    backgroundColor: "#0f172a",
-    color: "#ffffff",
-    padding: 24,
-    borderRadius: 16,
-    boxShadow: "0 4px 25px rgba(15, 23, 42, 0.2)",
-  },
-  statGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-    gap: 12,
-  },
+  resultcard: { padding: "3px 2px", borderRadius: "4px", textAlign: "center", minHeight: "0", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" },
+  statgrid: { display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '4px', marginBottom: '6px' },
   statBox: {
     backgroundColor: "rgba(255,255,255,0.06)",
     padding: 14,
@@ -454,11 +410,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 12,
     border: "1px solid #3b82f6",
   },
-  statLabel: {
-    fontSize: 11,
-    fontWeight: 700,
-    color: "#94a3b8",
-  },
+  statlabel: { display: 'block', fontSize: '10px', fontWeight: '600', marginBottom: '2px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
   statVal: {
     fontSize: 22,
     fontWeight: 900,
@@ -496,11 +448,7 @@ const styles: Record<string, React.CSSProperties> = {
     paddingTop: 16,
     borderTop: "1px dashed rgba(255,255,255,0.15)",
   },
-  phaseBarGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(3, 1fr)",
-    gap: 12,
-  },
+  phaseBargrid: { display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '4px', marginBottom: '6px' },
   phaseCol: {
     backgroundColor: "rgba(255,255,255,0.05)",
     padding: 12,
@@ -526,17 +474,8 @@ const styles: Record<string, React.CSSProperties> = {
     color: "#94a3b8",
     marginTop: 2,
   },
-  savingsControlsGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-    gap: 16,
-  },
-  savingsResultGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-    gap: 14,
-    marginTop: 20,
-  },
+  savingsControlsgrid: { display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '4px', marginBottom: '6px' },
+  savingsResultgrid: { display: "grid", gridAutoFlow: "column", gridAutoColumns: "minmax(0, 1fr)", gap: "4px", marginBottom: "6px", width: "100%", boxSizing: "border-box" },
   savingBox: {
     padding: 16,
     borderRadius: 12,
@@ -549,11 +488,7 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: "#f0fdf4",
     border: "1px solid #bbf7d0",
   },
-  savingLabel: {
-    fontSize: 12,
-    fontWeight: 700,
-    color: "#475569",
-  },
+  savinglabel: { display: 'block', fontSize: '10px', fontWeight: '600', marginBottom: '2px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
   savingVal: {
     fontSize: 22,
     fontWeight: 900,
@@ -579,3 +514,15 @@ const styles: Record<string, React.CSSProperties> = {
 };
 
 export default LoadCalculator;
+
+
+
+
+
+
+
+
+
+
+
+

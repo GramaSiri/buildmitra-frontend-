@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 
+import { getApiBase } from "../../utils/apiConfig";
 interface TickerRate {
   itemCode: string;
   itemName: string;
@@ -27,7 +28,7 @@ export default function MarketRateTrend() {
   const [loading, setLoading] = useState(true);
   const [paused, setPaused] = useState(false);
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
+  const API_BASE = getApiBase();
 
   useEffect(() => {
     fetchTickerRates();
@@ -198,3 +199,4 @@ export default function MarketRateTrend() {
     </div>
   );
 }
+

@@ -199,7 +199,7 @@ const PEBCalculator = () => {
     boqItems.forEach((item, idx) => {
       wsData.push([idx+1, item.desc, item.qty, item.unit, item.rate, item.amount]);
     });
-    wsData.push(['', '', '', '', 'Grand Total', grandTotal]);
+    wsData.push(['', '', '', '', 'Grand Total (₹)', grandTotal]);
     const ws = XLSX.utils.aoa_to_sheet(wsData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'PEB Shed BOQ');
@@ -259,7 +259,7 @@ const PEBCalculator = () => {
                   </tr>
                 ))}
                 <tr className="bg-gray-100 font-bold">
-                  <td colSpan={5} className="p-2 text-right">Grand Total</td>
+                  <td colSpan={5} className="p-2 text-right">Grand Total (₹)</td>
                   <td className="p-2 text-right">₹{grandTotal.toLocaleString()}</td>
                 </table>
               </tbody>
@@ -275,3 +275,5 @@ export default PEBCalculator;
 '@ | Set-Content -Path src/PEBCalculator.tsx -Encoding utf8
 
 Write-Host "✅ PEBCalculator.tsx created. Add route and navigation link to see it in action." -ForegroundColor Green
+
+

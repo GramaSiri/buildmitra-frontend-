@@ -103,7 +103,7 @@ export default function PlumbingEstimator() {
       `• Bathrooms: ${bathrooms}\n` +
       `• Total Plumbing Points: ${totalPoints}\n` +
       `• SWR Drainage: ${swrRunFeet} ft\n` +
-      `• Grand Total Estimate: ₹ ${grandTotal.toLocaleString()}\n\n` +
+      `• Grand Total (₹) Estimate: ₹ ${grandTotal.toLocaleString()}\n\n` +
       `Export PDF/Excel from BuildMitra Plumbing Engine!`;
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, "_blank");
   };
@@ -257,11 +257,7 @@ export default function PlumbingEstimator() {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  container: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 20
-  },
+  container: { width: '100%', maxWidth: '100%', margin: '0', padding: '4px 8px', boxSizing: 'border-box' },
   banner: {
     background: "linear-gradient(135deg, #0e7490 0%, #164e63 100%)",
     color: "#ffffff",
@@ -286,17 +282,8 @@ const styles: Record<string, React.CSSProperties> = {
     opacity: 0.9,
     lineHeight: 1.5
   },
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))",
-    gap: 20
-  },
-  card: {
-    background: "#ffffff",
-    borderRadius: 16,
-    padding: 20,
-    border: "1px solid #e2e8f0"
-  },
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '4px', marginBottom: '6px' },
+  card: { padding: "3px 2px", borderRadius: "4px", textAlign: "center", minHeight: "0", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" },
   cardTitle: {
     margin: 0,
     fontSize: 16,
@@ -308,51 +295,22 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 12,
     color: "#64748b"
   },
-  inputGroup: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 4,
-    marginBottom: 12
-  },
+  inputGroup: { marginBottom: '0px', minWidth: 0 },
   row2: {
     display: "grid",
     gridTemplateColumns: "1fr 1fr",
     gap: 12
   },
-  label: {
-    fontSize: 12,
-    fontWeight: 700,
-    color: "#334155"
-  },
-  input: {
-    padding: "9px 12px",
-    borderRadius: 8,
-    border: "1px solid #cbd5e1",
-    fontSize: 13,
-    fontWeight: 700,
-    outline: "none"
-  },
+  label: { display: 'block', fontSize: '10px', fontWeight: '600', marginBottom: '2px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  input: { width: '100%', padding: '2px 4px', height: '30px', fontSize: '12px', textAlign: 'center', borderRadius: '4px', border: '1px solid #d1d5db', boxSizing: 'border-box' },
   checkboxGroup: {
     display: "flex",
     flexDirection: "column",
     gap: 10,
     marginTop: 10
   },
-  checkLabel: {
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    fontSize: 12,
-    fontWeight: 700,
-    color: "#334155",
-    cursor: "pointer"
-  },
-  costGrid: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 10,
-    marginBottom: 16
-  },
+  checklabel: { display: 'block', fontSize: '10px', fontWeight: '600', marginBottom: '2px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  costgrid: { display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '4px', marginBottom: '6px' },
   costRow: {
     display: "flex",
     justifyContent: "space-between",
@@ -381,31 +339,14 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 12,
     cursor: "pointer"
   },
-  tableCard: {
-    background: "#ffffff",
-    borderRadius: 16,
-    padding: 20,
-    border: "1px solid #e2e8f0"
-  },
-  table: {
-    width: "100%",
-    borderCollapse: "collapse",
-    fontSize: 12
-  },
+  tablecard: { padding: "3px 2px", borderRadius: "4px", textAlign: "center", minHeight: "0", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" },
+  table: { width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', fontSize: '10px' },
   trHead: {
     background: "#0e7490",
     color: "#ffffff"
   },
-  th: {
-    padding: "10px 12px",
-    textAlign: "left",
-    fontWeight: 800
-  },
-  td: {
-    padding: "10px 12px",
-    borderBottom: "1px solid #f1f5f9",
-    color: "#334155"
-  },
+  th: { padding: '3px 4px', fontSize: '10px', fontWeight: 'bold', backgroundColor: '#f1f5f9', textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  td: { padding: '3px 4px', fontSize: '10px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
   trEven: {
     background: "#f8fafc"
   },
@@ -413,3 +354,17 @@ const styles: Record<string, React.CSSProperties> = {
     background: "#ffffff"
   }
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+

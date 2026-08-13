@@ -2,10 +2,10 @@ import React from "react";
 
 export default function CalculatorTemplate() {
   const styles = {
-    container: { padding: "24px", backgroundColor: "#f0f2f5", minHeight: "100vh" },
-    header: { backgroundColor: "#800020", color: "white", padding: "16px", borderRadius: "12px", marginBottom: "20px" },
+    container: { width: '100%', maxWidth: '100%', margin: '0', padding: '4px 8px', boxSizing: 'border-box' },
+    header: { maxWidth: '100%', margin: '0 0 8px 0', padding: '6px 10px', borderRadius: '6px' },
     headerTitle: { margin: 0, fontSize: "20px" },
-    card: { backgroundColor: "white", borderRadius: "12px", padding: "24px", textAlign: "center" },
+    card: { padding: "3px 2px", borderRadius: "4px", textAlign: "center", minHeight: "0", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" },
     comingSoon: { fontSize: "48px", marginBottom: "16px" }
   };
 
@@ -21,4 +21,15 @@ export default function CalculatorTemplate() {
     )
   );
 }
+
+
+
+
+
+
+
+
+
+
+
 

@@ -1,3 +1,4 @@
+import { getApiBase } from "./apiConfig";
 export type BuildMitraMasterRates = {
   steel: number;
   bindingWire: number;
@@ -6,10 +7,7 @@ export type BuildMitraMasterRates = {
   [key: string]: number;
 };
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL ||
-  process.env.NEXT_PUBLIC_API_BASE ||
-  "http://localhost:5000";
+const API_BASE = getApiBase();
 
 const CACHE_KEY = "buildmitra_admin_master_rates_v1";
 
@@ -172,4 +170,5 @@ export function clearBuildMitraRateCache() {
     localStorage.removeItem(CACHE_KEY);
   }
 }
+
 

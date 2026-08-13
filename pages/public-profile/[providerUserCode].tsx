@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
+
+import { getApiBase } from "../../utils/apiConfig";
+const API_BASE = getApiBase();
 
 export default function PublicProviderProfile() {
   const router = useRouter();
@@ -81,3 +82,4 @@ const styles: Record<string, React.CSSProperties> = {
   price: { marginTop: 12, fontSize: 23, fontWeight: 900, color: "#087443" },
   unit: { fontSize: 14, color: "#374151", fontWeight: 500 },
 };
+

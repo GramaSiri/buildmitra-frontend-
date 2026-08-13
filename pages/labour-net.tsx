@@ -1,10 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Head from "next/head";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL ||
-  process.env.NEXT_PUBLIC_API_BASE ||
-  "http://localhost:5000";
+import { getApiBase } from "../utils/apiConfig";
+const API_BASE = getApiBase();
 
 type Worker = {
   _id?: string;
@@ -925,6 +923,7 @@ export default function LabourNet() {
     </>
   );
 }
+
 
 
 

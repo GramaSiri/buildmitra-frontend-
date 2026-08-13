@@ -4,7 +4,44 @@ import React, { useEffect, useMemo, useState } from "react";
 import MarketRateTrend from "../components/ui/MarketRateTrend";
 import { normalizeImageUrl, resolveListingImage } from "../utils/imageUrl";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE || "https://buildmitra-backend-beta.onrender.com";
+function getMarketplaceApiBase() {
+  const configured =
+    process.env.NEXT_PUBLIC_API_URL ||
+    process.env.NEXT_PUBLIC_API_BASE ||
+    "";
+
+  if (typeof window !== "undefined") {
+    const host = window.location.hostname;
+
+    // Laptop local browser
+    if (host === "localhost" || host === "127.0.0.1") {
+      return "http://localhost:5000";
+    }
+
+    // Real phone / tablet on same local Wi-Fi
+    const isPrivateLan =
+      /^192\.168\./.test(host) ||
+      /^10\./.test(host) ||
+      /^172\.(1[6-9]|2\d|3[0-1])\./.test(host);
+
+    if (isPrivateLan) {
+      return `http://${host}:5000`;
+    }
+  }
+
+  // Production/Vercel
+  if (
+    configured &&
+    !configured.includes("localhost") &&
+    !configured.includes("127.0.0.1")
+  ) {
+    return configured.replace(/\/+$/, "");
+  }
+
+  return "https://buildmitra-backend-beta.onrender.com";
+}
+
+const API_BASE = getMarketplaceApiBase();
 
 export default function Marketplace() {
   const [listings, setListings] = useState<any[]>([]);
@@ -1575,6 +1612,7 @@ cartAddButton: {
     boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
   },
 };
+
 
 
 

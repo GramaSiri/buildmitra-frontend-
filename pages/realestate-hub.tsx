@@ -1,10 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
-
-const API_BASE = (
-  process.env.NEXT_PUBLIC_API_URL ||
-  process.env.NEXT_PUBLIC_API_BASE ||
-  "http://localhost:5000"
-).replace(/\/$/, "");
+
+import { getApiBase } from "../utils/apiConfig";
+const API_BASE = getApiBase();
 
 type PropertyItem = {
   _id?: string;
@@ -1196,5 +1193,6 @@ export default function RealEstateHub() {
     </>
   );
 }
+
 
 

@@ -15,15 +15,15 @@ interface CalcItem {
 const ALL_20_CALCULATORS: CalcItem[] = [
   { id: 'housing-loan-finance', name: 'Housing Loan Finance Hub', icon: '🏦', category: 'Land & Survey', unitBadge: 'Acres', description: 'FOIR & LTV Eligibility, EMI Amortization, 6 Major Banks Matrix, RBI Repo Simulator & Prepayment Saver.' },
   { id: 'land-survey-calculator', name: 'Land Survey & Area Converter', icon: '🗺️', category: 'Land & Survey', unitBadge: 'Acres', description: 'Small 30x40 plots to 100+ Acres, SFT, Acres, Guntas, Hectares, Cents, Sq Yds.' },
-  { id: 'concrete-calculator', name: 'Concrete Estimator', icon: '🧱', category: 'Concrete & RCC', unitBadge: 'Cum', description: 'Mix ratios M7.5-M30, cement bags, sand, aggregate.' },
+  { id: 'concrete-calculator', name: 'Concrete Estimator', icon: '🧱', category: 'Concrete & RCC', unitBadge: 'Cum', description: 'Mix ratios M7.5-M30, Cement (Bags), sand, aggregate.' },
   { id: 'steel-calculator', name: 'Steel Rebar Weight & Cost', icon: '🔩', category: 'Masonry & Steel', unitBadge: 'Kg', description: 'Bar diameters 8mm-32mm, cutting length, bend deductions.' },
   { id: 'tile-calculator', name: 'Tile & Flooring Estimator', icon: '📐', category: 'Finishing & Plumbing', unitBadge: 'Sft', description: 'Floor/wall tile count, wastage %, adhesive & grout.' },
   { id: 'paint-calculator', name: 'Paint & Primer Calculator', icon: '🎨', category: 'Finishing & Plumbing', unitBadge: 'Sft', description: 'Wall surface area, double coat paint liters, putty requirement.' },
   { id: 'plaster-calculator', name: 'Plastering Calculator', icon: '🧱', category: 'Finishing & Plumbing', unitBadge: 'Sft', description: '12mm internal & 20mm external 1:4 and 1:6 cement-sand mortar.' },
   { id: 'brick-work-calculator', name: 'Brickwork & AAC Blockwork', icon: '🧱', category: 'Masonry & Steel', unitBadge: 'Nos', description: 'Red bricks, AAC blocks, solid block count & mortar volume.' },
   { id: 'rcc-slab-calculator', name: 'RCC Slab & Beam', icon: '🏗️', category: 'Concrete & RCC', unitBadge: 'Cum', description: 'Slab thickness, main & distribution steel rebar weight.' },
-  { id: 'rcc-steel-building-calculator', name: 'RCC + Steel + Blockwork', icon: '🏢', category: 'Concrete & RCC', unitBadge: 'Sft', description: 'Full building superstructure composite material cost breakdown.' },
-  { id: 'column-calculator', name: 'Column Estimator', icon: '📏', category: 'Structural Elements', unitBadge: 'Cum', description: 'Vertical rebar, lateral stirrup ties, concrete volume.' },
+  { id: 'rcc-steel-building-calculator', name: 'RCC + Steel + Blockwork', icon: '🏢', category: 'Concrete & RCC', unitBadge: 'Sft', description: 'Full building superstructure composite Mat. Cost (₹) breakdown.' },
+  { id: 'column-calculator', name: 'Column Estimator', icon: '📏', category: 'Structural Elements', unitBadge: 'Cum', description: 'Vertical rebar, lateral stirrup ties, Con. Vol.' },
   { id: 'beam-calculator', name: 'Beam Estimator', icon: '📐', category: 'Structural Elements', unitBadge: 'Cum', description: 'Top/bottom main bars, stirrups spacing, concrete.' },
   { id: 'footing-calculator', name: 'Footing Estimator', icon: '🔽', category: 'Structural Elements', unitBadge: 'Cum', description: 'Trapezoidal & isolated footing concrete & mesh steel.' },
   { id: 'staircase-calculator', name: 'Staircase Estimator', icon: '🪜', category: 'Structural Elements', unitBadge: 'Cum', description: 'Flight waist slab concrete, riser/tread step count.' },
@@ -173,3 +173,5 @@ export default function CalculatorsPage() {
     </>
   );
 }
+
+

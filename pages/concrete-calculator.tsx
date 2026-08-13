@@ -33,12 +33,12 @@ const MEMBER_TYPES: { id: MemberType; label: string; icon: string }[] = [
 ];
 
 const styles = {
-  container: { maxWidth: '100%', margin: 0, padding: '16px', backgroundColor: '#f8fafc', minHeight: '100vh', boxSizing: 'border-box' as const },
-  header: { background: 'linear-gradient(135deg, #4a2c11, #7f1d1d)', padding: '16px 20px', borderRadius: '12px', marginBottom: '16px', color: 'white', display: 'flex', alignItems: 'center', gap: '12px', boxShadow: '0 4px 12px rgba(127, 29, 29, 0.15)' },
+  container: { width: '100%', maxWidth: '100%', margin: '0', padding: '4px 8px', boxSizing: 'border-box' },
+  header: { maxWidth: '100%', margin: '0 0 8px 0', padding: '6px 10px', borderRadius: '6px' },
   backButton: { backgroundColor: 'rgba(255, 255, 255, 0.15)', border: 'none', color: 'white', fontSize: '20px', cursor: 'pointer', padding: '6px 12px', borderRadius: '6px' },
   headerTitle: { margin: 0, fontSize: '20px', fontWeight: '800', flex: 1 },
   sectionTitle: { backgroundColor: '#e2e8f0', color: '#1e293b', padding: '10px 14px', borderRadius: '8px', marginBottom: '14px', fontSize: '13px', fontWeight: '800', borderLeft: '4px solid #7f1d1d' },
-  memberBar: { display: 'flex', gap: '8px', overflowX: 'auto' as const, paddingBottom: '8px', marginBottom: '16px' },
+  memberBar: { display: 'flex', flexWrap: 'nowrap', overflowX: 'auto', gap: '6px', padding: '4px 2px', marginBottom: '8px', WebkitOverflowScrolling: 'touch' },
   memberTab: (active: boolean) => ({
     padding: '8px 14px',
     borderRadius: '8px',
@@ -53,28 +53,28 @@ const styles = {
     alignItems: 'center',
     gap: '6px'
   }),
-  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '16px' },
-  inputGroup: { marginBottom: '8px' },
-  label: { display: 'block', marginBottom: '4px', fontWeight: '700', fontSize: '11px', color: '#475569', textTransform: 'uppercase' as const },
-  input: { width: '100%', padding: '9px 10px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box' as const, backgroundColor: '#fff' },
-  select: { width: '100%', padding: '9px 10px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', backgroundColor: '#fff' },
-  buttonRow: { display: 'flex', justifyContent: 'center', gap: '14px', margin: '20px 0' },
-  buttonGenerate: { backgroundColor: '#7f1d1d', color: 'white', padding: '10px 24px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '800' },
-  buttonExport: { backgroundColor: '#16a34a', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '700' },
-  buttonWhatsapp: { backgroundColor: '#25D366', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '700' },
-  cardContainer: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '20px' },
-  card: { padding: '14px', borderRadius: '10px', textAlign: 'center' as const, color: 'white', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' },
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '4px', marginBottom: '6px' },
+  inputGroup: { marginBottom: '0px', minWidth: 0 },
+  label: { display: 'block', fontSize: '10px', fontWeight: '600', marginBottom: '2px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  input: { width: '100%', padding: '2px 4px', height: '30px', fontSize: '12px', textAlign: 'center', borderRadius: '4px', border: '1px solid #d1d5db', boxSizing: 'border-box' },
+  select: { width: '100%', padding: '2px 4px', height: '30px', fontSize: '11px', borderRadius: '4px', border: '1px solid #d1d5db', boxSizing: 'border-box' },
+  buttonRow: { display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '4px', marginBottom: '6px', width: '100%' },
+  buttonGenerate: { backgroundColor: '#16a34a', color: '#fff', border: 'none', borderRadius: '4px', padding: '4px 6px', height: '32px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap' },
+  buttonExport: { backgroundColor: '#2563eb', color: '#fff', border: 'none', borderRadius: '4px', padding: '4px 6px', height: '32px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap' },
+  buttonWhatsapp: { backgroundColor: '#059669', color: '#fff', border: 'none', borderRadius: '4px', padding: '4px 6px', height: '32px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap' },
+  cardContainer: { display: "grid", gridAutoFlow: "column", gridAutoColumns: "minmax(0, 1fr)", gap: "4px", marginBottom: "6px", width: "100%", boxSizing: "border-box" },
+  card: { padding: "3px 2px", borderRadius: "4px", textAlign: "center", minHeight: "0", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" },
   cardBlue: { backgroundColor: '#0284c7' },
   cardLightGreen: { backgroundColor: '#16a34a' },
   cardLightOrange: { backgroundColor: '#ea580c' },
   cardLightTeal: { backgroundColor: '#0f766e' },
-  cardValue: { fontSize: '16px', fontWeight: '800', marginTop: '4px' },
-  tableContainer: { overflowX: 'auto' as const, marginTop: '16px', border: '1px solid #e2e8f0', borderRadius: '10px', backgroundColor: '#fff' },
-  table: { width: '100%', borderCollapse: 'collapse' as const, fontSize: '12px' },
-  th: { backgroundColor: '#334155', color: 'white', padding: '10px 12px', textAlign: 'left' as const, fontWeight: '700' },
-  td: { padding: '9px 12px', borderBottom: '1px solid #f1f5f9' },
+  cardValue: { fontSize: "10px", fontWeight: "bold", margin: "1px 0 0 0", color: "#0f172a", whiteSpace: "nowrap" },
+  tablecontainer: { width: '100%', maxWidth: '100%', margin: '0', padding: '4px 8px', boxSizing: 'border-box' },
+  table: { width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', fontSize: '10px' },
+  th: { padding: '3px 4px', fontSize: '10px', fontWeight: 'bold', backgroundColor: '#f1f5f9', textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  td: { padding: '3px 4px', fontSize: '10px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
   evenRow: { backgroundColor: '#f8fafc' },
-  rateInfo: { backgroundColor: '#f1f5f9', padding: '10px 14px', borderRadius: '8px', fontSize: '11px', textAlign: 'center' as const, marginBottom: '16px', color: '#334155', border: '1px solid #cbd5e1' }
+  rateInfo: { maxWidth: '100%', margin: '0 0 8px 0', padding: '4px 8px', borderRadius: '6px' }
 };
 
 const formatNumber = (num: number | null | undefined, decimals = 2): string => {
@@ -128,7 +128,7 @@ export default function ConcretePage() {
   const [results, setResults] = useState<any>(null);
   const [generated, setGenerated] = useState(false);
 
-  // Dynamic Rate Lookups with Realistic Indian Master Rates Fallbacks (Bengaluru / India 2026 Standards)
+  // Dynamic Rate Lookups with Realistic Indian Rate (₹)s Fallbacks (Bengaluru / India 2026 Standards)
   const cementRateRes = getMasterRate(["cement", "opc", "ppc", "cement bag"], 380, ["bm_material_rates"]);
   const sandRateRes = getMasterRate(["m sand", "m-sand", "sand", "fine aggregate"], 46, ["bm_material_rates"]);
   const agg20RateRes = getMasterRate(["20mm aggregate", "20 mm aggregate", "ca1", "20mm"], 38, ["bm_material_rates"]);
@@ -353,7 +353,7 @@ export default function ConcretePage() {
           { sno: 5, itemCode: "SRV-CNC-LAB", category: "Labour", description: "Concreting Labour Charges", quantity: results.volumeCum, unit: "CUM", rate: results.rates.concretingLabour, amount: results.costs.concretingLabour },
           { sno: 6, itemCode: "SRV-SHT-LAB", category: "Labour", description: "Formwork & Shuttering Labour", quantity: results.shutteringAreaSqft, unit: "SQFT", rate: results.rates.shutteringLabour, amount: results.costs.shutteringLabour }
         ],
-        notes: `Concrete Volume: ${formatNumber(results.volumeCft)} CFT (${formatNumber(results.volumeCum)} CUM) | Grade: ${concreteGrade}`
+        notes: `Con. Vol: ${formatNumber(results.volumeCft)} CFT (${formatNumber(results.volumeCum)} CUM) | Grade: ${concreteGrade}`
       });
     });
   };
@@ -364,7 +364,7 @@ export default function ConcretePage() {
       const isRmc = concreteGrade.startsWith("RMC");
       const data = [
         { Item: 'Concrete Net Volume (CFT)', Quantity: formatNumber(results.volumeCft), Unit: 'CFT', Rate: '-', Cost: '-' },
-        { Item: 'Concrete Volume (CUM)', Quantity: formatNumber(results.volumeCum), Unit: 'CUM', Rate: '-', Cost: '-' },
+        { Item: 'Con. Vol (CUM)', Quantity: formatNumber(results.volumeCum), Unit: 'CUM', Rate: '-', Cost: '-' },
         ...(isRmc ? [
           { Item: 'Ready-Mix Concrete (RMC)', Quantity: formatNumber(results.quantities.rmcVolumeCum), Unit: 'CUM', Rate: formatCurrency(results.rates.rmc), Cost: formatCurrency(results.costs.rmc) }
         ] : [
@@ -374,12 +374,12 @@ export default function ConcretePage() {
           { Item: '12mm Coarse Aggregate', Quantity: formatNumber(results.quantities.agg12Cft), Unit: 'CFT', Rate: formatCurrency(results.rates.agg12), Cost: formatCurrency(results.costs.agg12) },
           { Item: 'Water', Quantity: formatNumber(results.quantities.waterLtr), Unit: 'Ltr', Rate: `₹${results.rates.water}/Ltr`, Cost: formatCurrency(results.costs.water) }
         ]),
-        { Item: 'Material Subtotal', Quantity: '', Unit: '', Rate: '', Cost: formatCurrency(results.costs.materialTotal) },
+        { Item: 'Tot. Mat (₹)', Quantity: '', Unit: '', Rate: '', Cost: formatCurrency(results.costs.materialTotal) },
         { Item: 'Labour - Concreting', Quantity: formatNumber(results.volumeCum), Unit: 'CUM', Rate: formatCurrency(results.rates.concretingLabour), Cost: formatCurrency(results.costs.concretingLabour) },
         { Item: 'Labour - Formwork / Shuttering', Quantity: formatNumber(results.shutteringAreaSqft), Unit: 'SQFT', Rate: formatCurrency(results.rates.shutteringLabour), Cost: formatCurrency(results.costs.shutteringLabour) },
         { Item: 'Labour - Steel Bar Bending', Quantity: formatNumber(results.steelWeightKg), Unit: 'KG', Rate: formatCurrency(results.rates.barBendingLabour), Cost: formatCurrency(results.costs.barBendingLabour) },
         { Item: 'Labour Subtotal', Quantity: '', Unit: '', Rate: '', Cost: formatCurrency(results.costs.labourTotal) },
-        { Item: 'GRAND TOTAL', Quantity: '', Unit: '', Rate: '', Cost: formatCurrency(results.costs.grandTotal) }
+        { Item: 'Grand Total (₹)', Quantity: '', Unit: '', Rate: '', Cost: formatCurrency(results.costs.grandTotal) }
       ];
       const ws = XLSX.utils.json_to_sheet(data);
       const wb = XLSX.utils.book_new();
@@ -392,13 +392,13 @@ export default function ConcretePage() {
     if (!results) return;
     checkAndRun('calculator_export', 'concrete-calculator', () => {
       const memberObj = MEMBER_TYPES.find(m => m.id === memberType);
-      const message = `🏗️ *BUILDMITRA INFRA — CONCRETE BOQ REPORT*\nNo:378, Near Gurusidheswra theater, 80 ft Road, JP Nagar, 4th Block, 9th Phase, Bengaluru- 560062 | 📱 +91 76769 42386\n\n*MEMBER TYPE*: ${memberObj?.label || memberType}\n• *Concrete Volume*: ${formatNumber(results.volumeCft)} CFT (${formatNumber(results.volumeCum)} CUM)\n• *Cement Bags*: ${formatNumber(results.quantities.cementBags)} Bags\n• *Material Cost*: ${formatCurrency(results.costs.materialTotal)}\n• *Labour Cost*: ${formatCurrency(results.costs.labourTotal)}\n• *GRAND TOTAL*: ${formatCurrency(results.costs.grandTotal)}\n\nGenerated via BuildMitra Construction Suite.`;
+      const message = `🏗️ *BUILDMITRA INFRA — CONCRETE BOQ REPORT*\nNo:378, Near Gurusidheswra theater, 80 ft Road, JP Nagar, 4th Block, 9th Phase, Bengaluru- 560062 | 📱 +91 76769 42386\n\n*MEMBER TYPE*: ${memberObj?.label || memberType}\n• *Con. Vol*: ${formatNumber(results.volumeCft)} CFT (${formatNumber(results.volumeCum)} CUM)\n• *Cement (Bags)*: ${formatNumber(results.quantities.cementBags)} Bags\n• *Mat. Cost (₹)*: ${formatCurrency(results.costs.materialTotal)}\n• *Labour (₹)*: ${formatCurrency(results.costs.labourTotal)}\n• *Grand Total (₹)*: ${formatCurrency(results.costs.grandTotal)}\n\nGenerated via BuildMitra Construction Suite.`;
       window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
     });
   };
 
   if (loading) {
-    return <div style={{ padding: '20px', textAlign: 'center' }}>Loading Admin Master Rates...</div>;
+    return <div style={{ padding: '20px', textAlign: 'center' }}>Loading Admin Rate (₹)s...</div>;
   }
 
   const isRmc = concreteGrade.startsWith("RMC");
@@ -413,7 +413,7 @@ export default function ConcretePage() {
       <MarketRateTrend />
       
       <div style={styles.rateInfo}>
-        <div>💰 <b>Admin Master Rates:</b> Cement ₹{cementRateRes.rate}/bag | Sand ₹{sandRateRes.rate}/CFT | 20mm Agg ₹{agg20RateRes.rate}/CFT | Water ₹{waterRateRes.rate}/Ltr</div>
+        <div>💰 <b>Admin Rate (₹)s:</b> Cement ₹{cementRateRes.rate}/bag | Sand ₹{sandRateRes.rate}/CFT | 20mm Agg ₹{agg20RateRes.rate}/CFT | Water ₹{waterRateRes.rate}/Ltr</div>
         <div style={{ marginTop: '4px' }}>👷 <b>Labour Rates:</b> Concreting ₹{concretingLabourRes.rate}/CUM | Shuttering ₹{shutteringLabourRes.rate}/SQFT | Bar Bending ₹{barBendingLabourRes.rate}/KG</div>
       </div>
       
@@ -558,10 +558,10 @@ export default function ConcretePage() {
       </div>
       
       <div style={styles.buttonRow}>
-        <button onClick={handleGenerate} style={styles.buttonGenerate}>🔨 Calculate Concrete & Materials</button>
+        <button onClick={handleGenerate} style={styles.buttonGenerate}>🔨 Calculate</button>
         {generated && results && (
           <>
-            <button onClick={handleExportPDF} style={{ ...styles.buttonExport, backgroundColor: '#800020', color: 'white' }}>🖨️ PDF Letterhead</button>
+            <button onClick={handleExportPDF} style={{ ...styles.buttonExport, backgroundColor: '#800020', color: 'white' }}>🖨️ PDF</button>
             <button onClick={handleExportExcel} style={styles.buttonExport}>📊 Excel</button>
             <button onClick={handleWhatsApp} style={styles.buttonWhatsapp}>💬 Share</button>
           </>
@@ -573,22 +573,22 @@ export default function ConcretePage() {
           <div style={styles.cardContainer}>
             <div style={{ ...styles.card, ...styles.cardBlue }}>
               <div>📦</div>
-              <div>Concrete Volume</div>
+              <div>Con. Vol</div>
               <div style={styles.cardValue}>{formatNumber(results.volumeCft)} CFT ({formatNumber(results.volumeCum)} m³)</div>
             </div>
             <div style={{ ...styles.card, ...styles.cardLightGreen }}>
               <div>🪣</div>
-              <div>{isRmc ? 'RMC Volume' : 'Cement Bags'}</div>
+              <div>{isRmc ? 'RMC Volume' : 'Cement (Bags)'}</div>
               <div style={styles.cardValue}>{isRmc ? `${formatNumber(results.quantities.rmcVolumeCum)} m³` : `${formatNumber(results.quantities.cementBags)} bags`}</div>
             </div>
             <div style={{ ...styles.card, ...styles.cardLightOrange }}>
               <div>💰</div>
-              <div>Material Subtotal</div>
+              <div>Tot. Mat (₹)</div>
               <div style={styles.cardValue}>{formatCurrency(results.costs.materialTotal)}</div>
             </div>
             <div style={{ ...styles.card, ...styles.cardLightTeal }}>
               <div>💎</div>
-              <div>Grand Total</div>
+              <div>Grand Total (₹)</div>
               <div style={styles.cardValue}>{formatCurrency(results.costs.grandTotal)}</div>
             </div>
           </div>
@@ -597,11 +597,11 @@ export default function ConcretePage() {
             <table style={styles.table}>
               <thead>
                 <tr>
-                  <th style={styles.th}>Item / Material Description</th>
+                  <th style={styles.th}>Description</th>
                   <th style={styles.th}>Quantity</th>
                   <th style={styles.th}>Unit</th>
-                  <th style={styles.th}>Master Rate</th>
-                  <th style={styles.th}>Cost (INR)</th>
+                  <th style={styles.th}>Rate (₹)</th>
+                  <th style={styles.th}>Amount (₹)</th>
                 </tr>
               </thead>
               <tbody>
@@ -671,7 +671,7 @@ export default function ConcretePage() {
                 )}
 
                 <tr style={{ backgroundColor: '#e2e8f0', fontWeight: 'bold' }}>
-                  <td colSpan={4} style={styles.td}>MATERIAL SUBTOTAL</td>
+                  <td colSpan={4} style={styles.td}>Tot. Mat (₹)</td>
                   <td style={{ ...styles.td, color: '#0369a1', fontSize: '13px' }}>{formatCurrency(results.costs.materialTotal)}</td>
                 </tr>
 
@@ -703,7 +703,7 @@ export default function ConcretePage() {
                 </tr>
 
                 <tr style={{ backgroundColor: '#7f1d1d', color: 'white', fontWeight: 'bold' }}>
-                  <td colSpan={4} style={{ padding: '12px' }}>ESTIMATED GRAND TOTAL (MATERIAL + LABOUR)</td>
+                  <td colSpan={4} style={{ padding: '12px' }}>ESTIMATED Grand Total (₹) (MATERIAL + LABOUR)</td>
                   <td style={{ padding: '12px', fontSize: '14px' }}>{formatCurrency(results.costs.grandTotal)}</td>
                 </tr>
               </tbody>
@@ -738,4 +738,18 @@ export default function ConcretePage() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

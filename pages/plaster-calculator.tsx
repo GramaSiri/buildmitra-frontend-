@@ -7,26 +7,26 @@ import EngineeringSpecimen from '../components/engineering/EngineeringSpecimen';
 import { getMasterRate, syncApprovedRatesFromBackend, MasterRateResult } from "../utils/masterRates";
 
 const styles: Record<string, React.CSSProperties> = {
-  container: { maxWidth: '1200px', margin: '0 auto', padding: '16px', backgroundColor: '#f8fafc', minHeight: '100vh', boxSizing: 'border-box', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' },
-  header: { backgroundColor: '#0f766e', padding: '16px 20px', borderRadius: '10px', marginBottom: '16px', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 8px rgba(15,118,110,0.2)' },
+  container: { width: '100%', maxWidth: '100%', margin: '0', padding: '4px 8px', boxSizing: 'border-box' },
+  header: { maxWidth: '100%', margin: '0 0 8px 0', padding: '6px 10px', borderRadius: '6px' },
   headerTitle: { margin: 0, fontSize: '20px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '10px' },
   badge: { backgroundColor: '#14b8a6', color: '#ffffff', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: '700' },
   backBtn: { backgroundColor: 'rgba(255,255,255,0.15)', border: 'none', color: 'white', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '600' },
 
-  dropdownCard: { backgroundColor: '#ffffff', borderRadius: '10px', border: '1px solid #cbd5e1', padding: '16px', marginBottom: '18px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' },
-  dropdownLabel: { fontSize: '12px', fontWeight: '800', color: '#0f766e', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '6px', display: 'block' },
-  modeSelect: { width: '100%', padding: '12px 14px', border: '2px solid #0f766e', borderRadius: '8px', fontSize: '15px', fontWeight: '700', color: '#0f766e', backgroundColor: '#f0fdfa', outline: 'none', cursor: 'pointer' },
+  dropdowncard: { padding: "3px 2px", borderRadius: "4px", textAlign: "center", minHeight: "0", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" },
+  dropdownlabel: { display: 'block', fontSize: '10px', fontWeight: '600', marginBottom: '2px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  modeselect: { width: '100%', padding: '2px 4px', height: '30px', fontSize: '11px', borderRadius: '4px', border: '1px solid #d1d5db', boxSizing: 'border-box' },
 
-  stepperCard: { backgroundColor: '#ffffff', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '18px', marginBottom: '18px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' },
-  sectionHeader: { fontSize: '15px', fontWeight: '700', color: '#0f766e', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '2px solid #ccfbf1', paddingBottom: '8px' },
+  steppercard: { padding: "3px 2px", borderRadius: "4px", textAlign: "center", minHeight: "0", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" },
+  sectionheader: { maxWidth: '100%', margin: '0 0 8px 0', padding: '6px 10px', borderRadius: '6px' },
 
   grid3: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px', marginBottom: '14px' },
   grid4: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '14px' },
 
   fieldGroup: { display: 'flex', flexDirection: 'column', gap: '4px' },
-  label: { fontSize: '11px', fontWeight: '700', color: '#334155', textTransform: 'uppercase', letterSpacing: '0.3px' },
-  input: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#fff', outline: 'none' },
-  select: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', backgroundColor: '#fff', outline: 'none' },
+  label: { display: 'block', fontSize: '10px', fontWeight: '600', marginBottom: '2px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  input: { width: '100%', padding: '2px 4px', height: '30px', fontSize: '12px', textAlign: 'center', borderRadius: '4px', border: '1px solid #d1d5db', boxSizing: 'border-box' },
+  select: { width: '100%', padding: '2px 4px', height: '30px', fontSize: '11px', borderRadius: '4px', border: '1px solid #d1d5db', boxSizing: 'border-box' },
 
   btnPrimary: { backgroundColor: '#0f766e', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '6px' },
   btnSecondary: { backgroundColor: '#2563eb', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' },
@@ -34,8 +34,8 @@ const styles: Record<string, React.CSSProperties> = {
   btnSuccess: { backgroundColor: '#16a34a', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '700' },
   btnReset: { backgroundColor: '#64748b', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '600' },
 
-  summaryGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '14px', marginBottom: '18px' },
-  metricCard: { padding: '14px', borderRadius: '8px', color: 'white', textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center' },
+  summarygrid: { display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '4px', marginBottom: '6px' },
+  metriccard: { padding: "3px 2px", borderRadius: "4px", textAlign: "center", minHeight: "0", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" },
   metricTeal: { backgroundColor: '#0f766e' },
   metricBlue: { backgroundColor: '#2563eb' },
   metricGreen: { backgroundColor: '#16a34a' },
@@ -43,10 +43,10 @@ const styles: Record<string, React.CSSProperties> = {
   metricTitle: { fontSize: '11px', textTransform: 'uppercase', opacity: 0.9, fontWeight: '600' },
   metricVal: { fontSize: '19px', fontWeight: '800', marginTop: '4px' },
 
-  tableContainer: { overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: '#fff', marginBottom: '18px' },
-  table: { width: '100%', borderCollapse: 'collapse', fontSize: '12px' },
-  th: { backgroundColor: '#0f766e', color: 'white', padding: '10px', textAlign: 'left', fontWeight: '700' },
-  td: { padding: '8px 10px', borderBottom: '1px solid #f1f5f9', color: '#334155' },
+  tablecontainer: { width: '100%', maxWidth: '100%', margin: '0', padding: '4px 8px', boxSizing: 'border-box' },
+  table: { width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', fontSize: '10px' },
+  th: { padding: '3px 4px', fontSize: '10px', fontWeight: 'bold', backgroundColor: '#f1f5f9', textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  td: { padding: '3px 4px', fontSize: '10px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
 
   rateTag: { backgroundColor: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', padding: '2px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: '700' },
   rateTagWarn: { backgroundColor: '#fff7ed', color: '#c2410c', border: '1px solid #ffedd5', padding: '2px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: '700' },
@@ -109,7 +109,7 @@ export default function PlasterCalculator() {
   ]);
   const [openingInput, setOpeningInput] = useState({ name: 'Door', length: 3.5, width: 7, nos: 1 });
 
-  // Admin Approved Master Rate Lookup
+  // Admin Approved Rate (₹) Lookup
   const cementRate = getMasterRate(["MAT-CEM-01", "cement", "opc 53", "opc"], 385);
   const sandRate = getMasterRate(["MAT-MSND-01", "MAT-PSND-01", "m-sand", "p-sand", "sand"], 46);
   const waterRate = getMasterRate(["MAT-WTR-01", "construction water", "water"], 0.05); // ₹0.05 per Litre
@@ -342,8 +342,8 @@ export default function PlasterCalculator() {
         `• *Cement (50kg OPC 53)*: ${formatNumber(res.cemBags)} Bags%0A` +
         `• *M-Sand / P-Sand*: ${formatNumber(res.sandCft)} CFT%0A` +
         `• *Site Water*: ${formatNumber(res.waterLtr)} Litres%0A` +
-        `• *Material Cost*: ${formatCurrency(res.grandMatCost)}%0A` +
-        `• *Labour Cost*: ${formatCurrency(res.grandLabCost)}%0A` +
+        `• *Mat. Cost (₹)*: ${formatCurrency(res.grandMatCost)}%0A` +
+        `• *Labour (₹)*: ${formatCurrency(res.grandLabCost)}%0A` +
         `• *TOTAL ESTIMATED COST*: ${formatCurrency(res.grandTotal)} (${formatCurrency(res.costPerSqft)}/Sqft)%0A%0A` +
         `*Generated via BuildMitra Professional Estimator*`;
       window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
@@ -551,7 +551,7 @@ export default function PlasterCalculator() {
 
             {quickCalcResults.unpricedCount > 0 ? (
               <div style={styles.warnBanner}>
-                ⚠️ Partial Estimate: Admin Master Rates unavailable for: {quickCalcResults.unpricedList.join(', ')}.
+                ⚠️ Partial Estimate: Admin Rate (₹)s unavailable for: {quickCalcResults.unpricedList.join(', ')}.
               </div>
             ) : (
               <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', padding: '10px', borderRadius: '8px', marginBottom: '16px', fontSize: '12px', fontWeight: '700' }}>
@@ -572,15 +572,15 @@ export default function PlasterCalculator() {
                 <span style={{ fontSize: '10px', opacity: 0.85 }}>(BUA x 3.5 Thumb Rule)</span>
               </div>
               <div style={{ ...styles.metricCard, ...styles.metricBlue }}>
-                <span style={styles.metricTitle}>Material Cost</span>
+                <span style={styles.metricTitle}>Mat. Cost (₹)</span>
                 <span style={styles.metricVal}>{formatCurrency(quickCalcResults.grandMatCost)}</span>
               </div>
               <div style={{ ...styles.metricCard, ...styles.metricOrange }}>
-                <span style={styles.metricTitle}>Labour Cost</span>
+                <span style={styles.metricTitle}>Labour (₹)</span>
                 <span style={styles.metricVal}>{formatCurrency(quickCalcResults.grandLabCost)}</span>
               </div>
               <div style={{ ...styles.metricCard, ...styles.metricGreen }}>
-                <span style={styles.metricTitle}>Grand Total</span>
+                <span style={styles.metricTitle}>Grand Total (₹)</span>
                 <span style={styles.metricVal}>{formatCurrency(quickCalcResults.grandTotal)}</span>
                 <span style={{ fontSize: '11px', opacity: 0.9 }}>({formatCurrency(quickCalcResults.costPerSqft)} / Sqft)</span>
               </div>
@@ -804,7 +804,7 @@ export default function PlasterCalculator() {
 
             {detailedCalcResults.unpricedCount > 0 ? (
               <div style={styles.warnBanner}>
-                ⚠️ Partial Estimate: Admin Master Rates unavailable for: {detailedCalcResults.unpricedList.join(', ')}.
+                ⚠️ Partial Estimate: Admin Rate (₹)s unavailable for: {detailedCalcResults.unpricedList.join(', ')}.
               </div>
             ) : (
               <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', padding: '10px', borderRadius: '8px', marginBottom: '16px', fontSize: '12px', fontWeight: '700' }}>
@@ -818,15 +818,15 @@ export default function PlasterCalculator() {
                 <span style={styles.metricVal}>{formatNumber(detailedCalcResults.netArea)} Sqft</span>
               </div>
               <div style={{ ...styles.metricCard, ...styles.metricBlue }}>
-                <span style={styles.metricTitle}>Material Cost</span>
+                <span style={styles.metricTitle}>Mat. Cost (₹)</span>
                 <span style={styles.metricVal}>{formatCurrency(detailedCalcResults.grandMatCost)}</span>
               </div>
               <div style={{ ...styles.metricCard, ...styles.metricOrange }}>
-                <span style={styles.metricTitle}>Labour Cost</span>
+                <span style={styles.metricTitle}>Labour (₹)</span>
                 <span style={styles.metricVal}>{formatCurrency(detailedCalcResults.grandLabCost)}</span>
               </div>
               <div style={{ ...styles.metricCard, ...styles.metricGreen }}>
-                <span style={styles.metricTitle}>Grand Total</span>
+                <span style={styles.metricTitle}>Grand Total (₹)</span>
                 <span style={styles.metricVal}>{formatCurrency(detailedCalcResults.grandTotal)}</span>
                 <span style={{ fontSize: '11px', opacity: 0.9 }}>({formatCurrency(detailedCalcResults.costPerSqft)} / Sqft)</span>
               </div>
@@ -890,3 +890,17 @@ export default function PlasterCalculator() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -218,11 +218,7 @@ export default function FixtureCalculator() {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  container: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 20
-  },
+  container: { width: '100%', maxWidth: '100%', margin: '0', padding: '4px 8px', boxSizing: 'border-box' },
   banner: {
     background: "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)",
     color: "#ffffff",
@@ -247,17 +243,8 @@ const styles: Record<string, React.CSSProperties> = {
     opacity: 0.9,
     lineHeight: 1.5
   },
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))",
-    gap: 20
-  },
-  card: {
-    background: "#ffffff",
-    borderRadius: 16,
-    padding: 20,
-    border: "1px solid #e2e8f0"
-  },
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '4px', marginBottom: '6px' },
+  card: { padding: "3px 2px", borderRadius: "4px", textAlign: "center", minHeight: "0", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" },
   cardTitle: {
     margin: 0,
     fontSize: 16,
@@ -324,29 +311,15 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: "column",
     gap: 16
   },
-  summaryCard: {
-    background: "#ffffff",
-    borderRadius: 16,
-    padding: 20,
-    border: "1px solid #e2e8f0"
-  },
-  metricsGrid: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: 12,
-    marginBottom: 16
-  },
+  summarycard: { padding: "3px 2px", borderRadius: "4px", textAlign: "center", minHeight: "0", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" },
+  metricsgrid: { display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '4px', marginBottom: '6px' },
   metricBox: {
     background: "#f0f9ff",
     border: "1px solid #bae6fd",
     borderRadius: 10,
     padding: 12
   },
-  metricLabel: {
-    fontSize: 11,
-    color: "#0369a1",
-    fontWeight: 700
-  },
+  metriclabel: { display: 'block', fontSize: '10px', fontWeight: '600', marginBottom: '2px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
   metricVal: {
     fontSize: 18,
     fontWeight: 900,
@@ -359,48 +332,22 @@ const styles: Record<string, React.CSSProperties> = {
     padding: 16,
     borderRadius: 12
   },
-  savingsCard: {
-    background: "#ecfdf5",
-    border: "1px solid #a7f3d0",
-    borderRadius: 16,
-    padding: 18
-  },
-  savingsGrid: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: 10
-  },
+  savingscard: { padding: "3px 2px", borderRadius: "4px", textAlign: "center", minHeight: "0", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" },
+  savingsgrid: { display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '4px', marginBottom: '6px' },
   savingsBox: {
     background: "#ffffff",
     padding: 10,
     borderRadius: 10,
     border: "1px solid #a7f3d0"
   },
-  tableCard: {
-    background: "#ffffff",
-    borderRadius: 16,
-    padding: 20,
-    border: "1px solid #e2e8f0"
-  },
-  table: {
-    width: "100%",
-    borderCollapse: "collapse",
-    fontSize: 12
-  },
+  tablecard: { padding: "3px 2px", borderRadius: "4px", textAlign: "center", minHeight: "0", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" },
+  table: { width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', fontSize: '10px' },
   trHead: {
     background: "#0f172a",
     color: "#ffffff"
   },
-  th: {
-    padding: "10px 12px",
-    textAlign: "left",
-    fontWeight: 800
-  },
-  td: {
-    padding: "10px 12px",
-    borderBottom: "1px solid #f1f5f9",
-    color: "#334155"
-  },
+  th: { padding: '3px 4px', fontSize: '10px', fontWeight: 'bold', backgroundColor: '#f1f5f9', textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  td: { padding: '3px 4px', fontSize: '10px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
   trEven: {
     background: "#f8fafc"
   },
@@ -408,3 +355,17 @@ const styles: Record<string, React.CSSProperties> = {
     background: "#ffffff"
   }
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+

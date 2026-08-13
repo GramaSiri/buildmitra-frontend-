@@ -3,9 +3,10 @@ import * as XLSX from 'xlsx';
 import { logoutToLogin } from "../utils/session";
 import { themeTokens, PrimaryButton, SecondaryButton, Card, Badge, LoadingSpinner, EmptyState } from "../components/ui/DesignSystem";
 import MarketRateTrend from "../components/ui/MarketRateTrend";
-
+
+import { getApiBase } from "../utils/apiConfig";
 export default function MachineHireDashboard() {
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
+const API_BASE = getApiBase();
 const [activeTab, setActiveTab] = useState("dashboard");
   const [showAddMachineModal, setShowAddMachineModal] = useState(false);
   const [showRentalModal, setShowRentalModal] = useState(false);
@@ -600,6 +601,7 @@ const [activeTab, setActiveTab] = useState("dashboard");
     )
   );
 }
+
 
 
 

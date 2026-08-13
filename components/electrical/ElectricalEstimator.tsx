@@ -24,7 +24,7 @@ export const ElectricalEstimator: React.FC = () => {
   const [solarKw, setSolarKw] = useState<number>(3);
   const [overheadPercent, setOverheadPercent] = useState<number>(10);
 
-  // Custom unit rate overrides initialized with master rates if available
+  // Custom unit rate overrides initialized with Rate (₹)s if available
   const [rates, setRates] = useState<Record<string, number>>(() => ({
     light_point: getMasterRate(["light", "point", "electrical"], 1000).rate,
     power_6a: getMasterRate(["6a", "socket", "power"], 1200).rate,
@@ -142,7 +142,7 @@ export const ElectricalEstimator: React.FC = () => {
     }));
     exportData.push({
       Category: "TOTAL",
-      Item: `Overheads (${overheadPercent}%) & Grand Total`,
+      Item: `Overheads (${overheadPercent}%) & Grand Total (₹)`,
       Unit: "LumpSum",
       Quantity: 1,
       Rate: grandTotalAmount,
@@ -163,7 +163,7 @@ export const ElectricalEstimator: React.FC = () => {
   };
 
   const handleShareWhatsApp = () => {
-    const msg = `⚡ *BuildMitra Electrical & Solar Turnkey Estimate* ⚡\n\n- Sanctioned Load: ${sanctionedKw} kW\n- Solar System: ${solarKw} kW PV\n- Total Items: ${boqItems.length}\n- *Grand Total Estimate:* ₹${grandTotalAmount.toLocaleString()}\n\nGenerated via BuildMitra Electrical Engine.`;
+    const msg = `⚡ *BuildMitra Electrical & Solar Turnkey Estimate* ⚡\n\n- Sanctioned Load: ${sanctionedKw} kW\n- Solar System: ${solarKw} kW PV\n- Total Items: ${boqItems.length}\n- *Grand Total (₹) Estimate:* ₹${grandTotalAmount.toLocaleString()}\n\nGenerated via BuildMitra Electrical Engine.`;
     shareWhatsApp(msg);
   };
 
@@ -344,7 +344,7 @@ export const ElectricalEstimator: React.FC = () => {
             <strong>₹{overheadAmount.toLocaleString()}</strong>
           </div>
           <div style={{ ...styles.totRow, paddingTop: 10, borderTop: "1px dashed #cbd5e1", fontSize: 18, color: "#166534" }}>
-            <span>Grand Total Estimated Investment:</span>
+            <span>Grand Total (₹) Estimated Investment:</span>
             <span style={{ fontSize: 24, fontWeight: 900 }}>₹{grandTotalAmount.toLocaleString()}</span>
           </div>
         </div>
@@ -354,11 +354,7 @@ export const ElectricalEstimator: React.FC = () => {
 };
 
 const styles: Record<string, React.CSSProperties> = {
-  container: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 20,
-  },
+  container: { width: '100%', maxWidth: '100%', margin: '0', padding: '4px 8px', boxSizing: 'border-box' },
   banner: {
     padding: 24,
     borderRadius: 16,
@@ -385,50 +381,17 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 14,
     lineHeight: 1.5,
   },
-  card: {
-    backgroundColor: "#ffffff",
-    padding: 20,
-    borderRadius: 14,
-    border: "1px solid #e2e8f0",
-    boxShadow: "0 2px 10px rgba(0,0,0,0.03)",
-  },
-  cardHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: 12,
-    marginBottom: 16,
-  },
+  card: { padding: "3px 2px", borderRadius: "4px", textAlign: "center", minHeight: "0", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" },
+  cardheader: { maxWidth: '100%', margin: '0 0 8px 0', padding: '6px 10px', borderRadius: '6px' },
   cardTitle: {
     margin: 0,
     fontSize: 17,
     fontWeight: 800,
     color: "#0f172a",
   },
-  inputGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-    gap: 16,
-  },
-  label: {
-    display: "block",
-    fontSize: 12,
-    fontWeight: 800,
-    color: "#475569",
-    marginBottom: 6,
-    textTransform: "uppercase",
-    letterSpacing: "0.04em",
-  },
-  input: {
-    width: "100%",
-    padding: "10px 12px",
-    borderRadius: 8,
-    border: "1px solid #cbd5e1",
-    fontSize: 14,
-    boxSizing: "border-box",
-    backgroundColor: "#ffffff",
-  },
+  inputgrid: { display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '4px', marginBottom: '6px' },
+  label: { display: 'block', fontSize: '10px', fontWeight: '600', marginBottom: '2px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  input: { width: '100%', padding: '2px 4px', height: '30px', fontSize: '12px', textAlign: 'center', borderRadius: '4px', border: '1px solid #d1d5db', boxSizing: 'border-box' },
   hint: {
     fontSize: 11,
     color: "#64748b",
@@ -473,12 +436,7 @@ const styles: Record<string, React.CSSProperties> = {
   tableWrap: {
     overflowX: "auto",
   },
-  table: {
-    width: "100%",
-    borderCollapse: "collapse",
-    fontSize: 13,
-    textAlign: "left",
-  },
+  table: { width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', fontSize: '10px' },
   catBadge: {
     backgroundColor: "#f1f5f9",
     color: "#334155",
@@ -487,14 +445,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 11,
     fontWeight: 700,
   },
-  rateInput: {
-    width: 90,
-    padding: "6px 8px",
-    borderRadius: 6,
-    border: "1px solid #cbd5e1",
-    fontSize: 13,
-    fontWeight: 700,
-  },
+  rateinput: { width: '100%', padding: '2px 4px', height: '30px', fontSize: '12px', textAlign: 'center', borderRadius: '4px', border: '1px solid #d1d5db', boxSizing: 'border-box' },
   totalsBox: {
     marginTop: 20,
     padding: 18,
@@ -515,3 +466,17 @@ const styles: Record<string, React.CSSProperties> = {
 };
 
 export default ElectricalEstimator;
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -3,9 +3,10 @@ import * as XLSX from 'xlsx';
 import { themeTokens, PrimaryButton, SecondaryButton, Card, Badge, LoadingSpinner, EmptyState, BuildMitraHeader } from "../components/ui/DesignSystem";
 import MarketRateTrend from "../components/ui/MarketRateTrend";
 import { normalizeImageUrl, resolveListingImage } from "../utils/imageUrl";
-const API = (process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000") + "/api";
+const API = getApiBase() + "/api";
 import { getBuildMitraUser, logoutToLogin } from "../utils/session";
-
+
+import { getApiBase } from "../utils/apiConfig";
 export default function AdminDashboard() {
   React.useEffect(() => {
     try {
@@ -59,7 +60,7 @@ export default function AdminDashboard() {
 
   const [users, setUsers] = useState(() => loadLocalData("users", []));
 
-    const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
+    const API_BASE = getApiBase();
 
   useEffect(() => {
     const loadMongoUsers = async () => {
@@ -2335,3 +2336,4 @@ const rejectRealEstate = async (propertyCode) => {
     )
   );
 }
+

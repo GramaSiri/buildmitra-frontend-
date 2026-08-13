@@ -3,7 +3,7 @@ import { generateBuildMitraDocument } from "../utils/documentGenerator";
 import { themeTokens, PrimaryButton, SecondaryButton, Card, Badge, LoadingSpinner, EmptyState, BuildMitraHeader } from "../components/ui/DesignSystem";
 import MarketRateTrend from "../components/ui/MarketRateTrend";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
+const API_BASE = getApiBase();
 import { exportProjectReport } from "../utils/reporting";
 import { downloadBuildMitraPDF } from "../utils/pdfExport";
 import {
@@ -14,7 +14,8 @@ import {
   saveProjectsForContractor, getAllProjects
 } from "../utils/projectStorage";
 import { logoutToLogin } from "../utils/session";
-import { generateCivilMilestones } from "../utils/milestoneEngine";
+import { generateCivilMilestones } from "../utils/milestoneEngine";
+import { getApiBase } from "../utils/apiConfig";
 export default function ContractorDashboard() {
 
   
@@ -2925,6 +2926,7 @@ useEffect(() => {
     )
   );
 }
+
 
 
 

@@ -169,11 +169,7 @@ export default function TankPumpCalculator() {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  container: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 20
-  },
+  container: { width: '100%', maxWidth: '100%', margin: '0', padding: '4px 8px', boxSizing: 'border-box' },
   banner: {
     background: "linear-gradient(135deg, #0369a1 0%, #0c4a6e 100%)",
     color: "#ffffff",
@@ -198,17 +194,8 @@ const styles: Record<string, React.CSSProperties> = {
     opacity: 0.9,
     lineHeight: 1.5
   },
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))",
-    gap: 20
-  },
-  card: {
-    background: "#ffffff",
-    borderRadius: 16,
-    padding: 20,
-    border: "1px solid #e2e8f0"
-  },
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '4px', marginBottom: '6px' },
+  card: { padding: "3px 2px", borderRadius: "4px", textAlign: "center", minHeight: "0", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" },
   cardTitle: {
     margin: 0,
     fontSize: 16,
@@ -220,49 +207,20 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 12,
     color: "#64748b"
   },
-  inputGroup: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 4,
-    marginBottom: 12
-  },
+  inputGroup: { marginBottom: '0px', minWidth: 0 },
   row2: {
     display: "grid",
     gridTemplateColumns: "1fr 1fr",
     gap: 12
   },
-  label: {
-    fontSize: 12,
-    fontWeight: 700,
-    color: "#334155"
-  },
-  input: {
-    padding: "9px 12px",
-    borderRadius: 8,
-    border: "1px solid #cbd5e1",
-    fontSize: 13,
-    fontWeight: 700,
-    outline: "none"
-  },
-  select: {
-    padding: "9px 12px",
-    borderRadius: 8,
-    border: "1px solid #cbd5e1",
-    fontSize: 13,
-    fontWeight: 700,
-    backgroundColor: "#ffffff",
-    outline: "none"
-  },
+  label: { display: 'block', fontSize: '10px', fontWeight: '600', marginBottom: '2px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  input: { width: '100%', padding: '2px 4px', height: '30px', fontSize: '12px', textAlign: 'center', borderRadius: '4px', border: '1px solid #d1d5db', boxSizing: 'border-box' },
+  select: { width: '100%', padding: '2px 4px', height: '30px', fontSize: '11px', borderRadius: '4px', border: '1px solid #d1d5db', boxSizing: 'border-box' },
   hint: {
     fontSize: 11,
     color: "#64748b"
   },
-  storageGrid: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 12,
-    marginBottom: 14
-  },
+  storagegrid: { display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '4px', marginBottom: '6px' },
   sumpBox: {
     background: "#f0f9ff",
     border: "1px solid #bae6fd",
@@ -299,17 +257,8 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 12,
     color: "#334155"
   },
-  pumpCard: {
-    background: "#ffffff",
-    borderRadius: 16,
-    padding: 20,
-    border: "1px solid #e2e8f0"
-  },
-  pumpGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-    gap: 14
-  },
+  pumpcard: { padding: "3px 2px", borderRadius: "4px", textAlign: "center", minHeight: "0", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" },
+  pumpgrid: { display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '4px', marginBottom: '6px' },
   pumpBox: {
     background: "#f8fafc",
     border: "1px solid #e2e8f0",
@@ -317,3 +266,19 @@ const styles: Record<string, React.CSSProperties> = {
     padding: 14
   }
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -24,3 +24,13 @@ all_calculators.txt
 
 # Local BuildMitra safety backups
 _archive/
+# BuildMitra local temporary files
+backups/
+*.before-*
+*.backup-*
+*.BROKEN
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.syntax-backup-*
+*.orig

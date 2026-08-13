@@ -7,34 +7,34 @@ import EngineeringSpecimen from '../components/engineering/EngineeringSpecimen';
 import { getMasterRate, syncApprovedRatesFromBackend, MasterRateResult } from "../utils/masterRates";
 
 const styles: Record<string, React.CSSProperties> = {
-  container: { maxWidth: '1200px', margin: '0 auto', padding: '16px', backgroundColor: '#f8fafc', minHeight: '100vh', boxSizing: 'border-box', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' },
-  header: { backgroundColor: '#800020', padding: '16px 20px', borderRadius: '10px', marginBottom: '16px', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 8px rgba(128,0,32,0.2)' },
+  container: { width: '100%', maxWidth: '100%', margin: '0', padding: '4px 8px', boxSizing: 'border-box' },
+  header: { maxWidth: '100%', margin: '0 0 8px 0', padding: '6px 10px', borderRadius: '6px' },
   headerTitle: { margin: 0, fontSize: '20px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '10px' },
   badge: { backgroundColor: '#a51d36', color: '#ffffff', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: '700' },
   backBtn: { backgroundColor: 'rgba(255,255,255,0.15)', border: 'none', color: 'white', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '600' },
 
-  dropdownCard: { backgroundColor: '#ffffff', borderRadius: '10px', border: '1px solid #cbd5e1', padding: '16px', marginBottom: '18px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' },
-  dropdownLabel: { fontSize: '12px', fontWeight: '800', color: '#800020', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '6px', display: 'block' },
-  modeSelect: { width: '100%', padding: '12px 14px', border: '2px solid #800020', borderRadius: '8px', fontSize: '15px', fontWeight: '700', color: '#800020', backgroundColor: '#fff5f7', outline: 'none', cursor: 'pointer' },
+  dropdowncard: { padding: "3px 2px", borderRadius: "4px", textAlign: "center", minHeight: "0", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" },
+  dropdownlabel: { display: 'block', fontSize: '10px', fontWeight: '600', marginBottom: '2px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  modeselect: { width: '100%', padding: '2px 4px', height: '30px', fontSize: '11px', borderRadius: '4px', border: '1px solid #d1d5db', boxSizing: 'border-box' },
 
-  stepperCard: { backgroundColor: '#ffffff', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '18px', marginBottom: '18px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' },
-  sectionHeader: { fontSize: '15px', fontWeight: '700', color: '#800020', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '2px solid #fecdd3', paddingBottom: '8px' },
+  steppercard: { padding: "3px 2px", borderRadius: "4px", textAlign: "center", minHeight: "0", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" },
+  sectionheader: { maxWidth: '100%', margin: '0 0 8px 0', padding: '6px 10px', borderRadius: '6px' },
 
   grid3: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px', marginBottom: '14px' },
   grid4: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '14px' },
 
   fieldGroup: { display: 'flex', flexDirection: 'column', gap: '4px' },
-  label: { fontSize: '11px', fontWeight: '700', color: '#334155', textTransform: 'uppercase', letterSpacing: '0.3px' },
-  input: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#fff', outline: 'none' },
-  select: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', backgroundColor: '#fff', outline: 'none' },
+  label: { display: 'block', fontSize: '10px', fontWeight: '600', marginBottom: '2px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  input: { width: '100%', padding: '2px 4px', height: '30px', fontSize: '12px', textAlign: 'center', borderRadius: '4px', border: '1px solid #d1d5db', boxSizing: 'border-box' },
+  select: { width: '100%', padding: '2px 4px', height: '30px', fontSize: '11px', borderRadius: '4px', border: '1px solid #d1d5db', boxSizing: 'border-box' },
 
   btnPrimary: { backgroundColor: '#800020', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '6px' },
   btnSecondary: { backgroundColor: '#2563eb', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' },
   btnSuccess: { backgroundColor: '#16a34a', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '700' },
   btnReset: { backgroundColor: '#64748b', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '600' },
 
-  summaryGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '14px', marginBottom: '18px' },
-  metricCard: { padding: '14px', borderRadius: '8px', color: 'white', textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center' },
+  summarygrid: { display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '4px', marginBottom: '6px' },
+  metriccard: { padding: "3px 2px", borderRadius: "4px", textAlign: "center", minHeight: "0", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" },
   metricMaroon: { backgroundColor: '#800020' },
   metricTeal: { backgroundColor: '#0f766e' },
   metricGreen: { backgroundColor: '#16a34a' },
@@ -42,10 +42,10 @@ const styles: Record<string, React.CSSProperties> = {
   metricTitle: { fontSize: '11px', textTransform: 'uppercase', opacity: 0.9, fontWeight: '600' },
   metricVal: { fontSize: '19px', fontWeight: '800', marginTop: '4px' },
 
-  tableContainer: { overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: '#fff', marginBottom: '18px' },
-  table: { width: '100%', borderCollapse: 'collapse', fontSize: '12px' },
-  th: { backgroundColor: '#800020', color: 'white', padding: '10px', textAlign: 'left', fontWeight: '700' },
-  td: { padding: '8px 10px', borderBottom: '1px solid #f1f5f9', color: '#334155' },
+  tablecontainer: { width: '100%', maxWidth: '100%', margin: '0', padding: '4px 8px', boxSizing: 'border-box' },
+  table: { width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', fontSize: '10px' },
+  th: { padding: '3px 4px', fontSize: '10px', fontWeight: 'bold', backgroundColor: '#f1f5f9', textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  td: { padding: '3px 4px', fontSize: '10px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
 
   rateTag: { backgroundColor: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', padding: '2px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: '700' },
   rateTagWarn: { backgroundColor: '#fff7ed', color: '#c2410c', border: '1px solid #ffedd5', padding: '2px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: '700' },
@@ -97,7 +97,7 @@ export default function WaterTankCalculator() {
 
   const [inputs, setInputs] = useState(initialInputs);
 
-  // Admin Master Rates Lookup
+  // Admin Rate (₹)s Lookup
   const cementRate = getMasterRate(["MAT-CEM-01", "cement", "opc 53", "opc"], 385);
   const steelRate = getMasterRate(["MAT-STL-01", "tmt steel", "steel", "rebar"], 68);
   const sandRate = getMasterRate(["MAT-MSND-01", "m-sand", "sand"], 46);
@@ -131,7 +131,7 @@ export default function WaterTankCalculator() {
     const outerLengthFt = inputs.lengthFt + 2 * wallThickFt;
     const outerWidthFt = inputs.widthFt + 2 * wallThickFt;
 
-    // Concrete Volumes
+    // Con. Vols
     const baseSlabVolCft = outerLengthFt * outerWidthFt * baseThickFt;
     const sideWallsVolCft = 2 * (inputs.lengthFt + inputs.widthFt) * inputs.heightFt * wallThickFt;
     const coverSlabVolCft = (outerLengthFt * outerWidthFt * coverThickFt) - (2 * 2 * coverThickFt);
@@ -305,7 +305,7 @@ export default function WaterTankCalculator() {
         `----------------------------------------%0A` +
         `• *Tank*: ${inputs.tankNos} Nos (${inputs.lengthFt}'x${inputs.widthFt}' x ${inputs.heightFt}ft Internal - ${inputs.grade})%0A` +
         `• *Water Capacity*: ${formatNumber(calcResults.capacityLiters)} Litres (${formatNumber(calcResults.internalVolCft)} CFT)%0A` +
-        `• *RCC Concrete Volume*: ${formatNumber(calcResults.rccVolCft)} CFT (${formatNumber(calcResults.rccVolCum, 3)} CUM)%0A` +
+        `• *RCC Con. Vol*: ${formatNumber(calcResults.rccVolCft)} CFT (${formatNumber(calcResults.rccVolCum, 3)} CUM)%0A` +
         (calcResults.hasConcrete ? `• *Cement*: ${formatNumber(calcResults.cementBags)} Bags | *Shuttering*: ${formatNumber(calcResults.shutteringAreaSqft)} Sqft%0A` : '') +
         (calcResults.hasSteel ? `• *Steel Rebar*: ${formatNumber(calcResults.totalSteelKg)} kg%0A` : '') +
         `• *Coatings*: Waterproofing & Food Paint (${formatNumber(calcResults.wettedAreaSqft)} Sqft)%0A` +
@@ -528,7 +528,7 @@ export default function WaterTankCalculator() {
           </div>
 
           <div style={{ ...styles.metricCard, ...styles.metricTeal }}>
-            <span style={styles.metricTitle}>RCC Concrete Volume</span>
+            <span style={styles.metricTitle}>RCC Con. Vol</span>
             <span style={styles.metricVal}>{formatNumber(calcResults.rccVolCft, 1)} CFT</span>
             <span style={{ fontSize: '11px', opacity: 0.9 }}>({formatNumber(calcResults.rccVolCum, 3)} CUM @ {inputs.grade})</span>
           </div>
@@ -605,3 +605,17 @@ export default function WaterTankCalculator() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+

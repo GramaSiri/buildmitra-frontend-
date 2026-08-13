@@ -1,12 +1,6 @@
+import { getApiBase as getUniversalApiBase } from "./apiConfig";
 function getApiBase(): string {
-  const envUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE;
-  if (typeof window !== "undefined") {
-    const host = window.location.hostname;
-    if (host !== "localhost" && host !== "127.0.0.1") {
-      return (envUrl && !envUrl.includes("localhost") ? envUrl : "https://buildmitra-backend-beta.onrender.com").replace(/\/+$/, "");
-    }
-  }
-  return (envUrl || "http://localhost:5000").replace(/\/+$/, "");
+  return getUniversalApiBase();
 }
 
 export function normalizeImageUrl(
@@ -117,4 +111,5 @@ export function resolveListingImage(item: any): string | null {
 
   return null;
 }
+
 

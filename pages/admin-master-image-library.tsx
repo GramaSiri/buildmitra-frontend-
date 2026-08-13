@@ -1,10 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE ||
-  process.env.NEXT_PUBLIC_API_URL ||
-  "http://localhost:5000";
+import { getApiBase } from "../utils/apiConfig";
+const API_BASE = getApiBase();
 
 type MasterImageItem = {
   _id?: string;
@@ -800,4 +798,5 @@ const styles: Record<string, React.CSSProperties> = {
     color: "#64748b",
   },
 };
+
 

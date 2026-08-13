@@ -3,15 +3,17 @@ import { resolveMediaUrl } from "../utils/resolveMediaUrl";
 
 const FALLBACK_IMAGE = "/images/marketplace-fallback.svg";
 
-function firstUseful(value: any): string {
+type Candidate = {
+  url: string;
+  isPrimary: boolean;
+  sourceType: string;
+};
+
+function extractUrl(value: any): string {
   if (!value) return "";
 
-  if (Array.isArray(value)) {
-    for (const entry of value) {
-      const found = firstUseful(entry);
-      if (found) return found;
-    }
-    return "";
+  if (typeof value === "string") {
+    return value.trim();
   }
 
   if (typeof value === "object") {
@@ -19,56 +21,137 @@ function firstUseful(value: any): string {
       value.url ||
       value.imageUrl ||
       value.imageURL ||
+      value.imagePath ||
+      value.image_path ||
       value.path ||
       value.src ||
       ""
     ).trim();
   }
 
-  return String(value).trim();
+  return "";
 }
 
-function getMarketplaceImage(item: any): string {
-  if (!item) return FALLBACK_IMAGE;
+function collectCandidates(item: any): string[] {
+  const result: Candidate[] = [];
 
-  const candidates = [
-    item.imageUrl,
-    item.imageURL,
-    item.image_url,
+  const add = (
+    value: any,
+    isPrimary = false,
+    sourceType = ""
+  ) => {
+    const url = extractUrl(value);
 
-    item.imagePath,
-    item.image_path,
+    if (!url) return;
 
-    item.image,
-    item.images,
+    result.push({
+      url,
+      isPrimary,
+      sourceType,
+    });
+  };
 
-    item.imageUrls,
-    item.imageURLs,
-
-    item.photo,
-    item.photoUrl,
-    item.thumbnail,
-    item.thumbnailUrl,
-
-    item.media,
-    item.mediaUrls,
-
-    item.productImage,
-    item.product_image,
-
-    item.masterImage,
-    item.masterImageUrl,
-  ];
-
-  for (const candidate of candidates) {
-    const value = firstUseful(candidate);
-
-    if (value) {
-      return value;
-    }
+  /*
+   * Structured DB image records.
+   *
+   * Example:
+   * /api/marketplace/images/<id>
+   * sourceType = master-image-library
+   */
+  if (Array.isArray(item?.images)) {
+    item.images.forEach((img: any) => {
+      add(
+        img,
+        Boolean(img?.isPrimary),
+        String(img?.sourceType || "")
+      );
+    });
   }
 
-  return FALLBACK_IMAGE;
+  /*
+   * Other possible arrays.
+   */
+  [
+    item?.imageUrls,
+    item?.imageURLs,
+    item?.mediaUrls,
+    item?.photos,
+  ].forEach((collection) => {
+    if (!Array.isArray(collection)) return;
+
+    collection.forEach((entry: any) => {
+      add(entry);
+    });
+  });
+
+  /*
+   * Legacy/single-value fields.
+   */
+  [
+    item?.imageUrl,
+    item?.imageURL,
+    item?.image_url,
+    item?.imagePath,
+    item?.image_path,
+    item?.image,
+    item?.masterImageUrl,
+    item?.masterImage,
+    item?.productImage,
+    item?.product_image,
+    item?.thumbnail,
+    item?.thumbnailUrl,
+  ].forEach((entry) => add(entry));
+
+  /*
+   * Highest priority:
+   *
+   * 1. DB-backed /api/marketplace/images/<id>
+   * 2. master-image-library source
+   * 3. explicitly primary
+   * 4. legacy /uploads paths
+   */
+  result.sort((a, b) => {
+    const score = (candidate: Candidate) => {
+      let points = 0;
+
+      if (
+        candidate.url.startsWith(
+          "/api/marketplace/images/"
+        )
+      ) {
+        points += 1000;
+      }
+
+      if (
+        candidate.sourceType ===
+        "master-image-library"
+      ) {
+        points += 500;
+      }
+
+      if (candidate.isPrimary) {
+        points += 250;
+      }
+
+      if (
+        candidate.url.startsWith("/uploads/")
+      ) {
+        points += 50;
+      }
+
+      return points;
+    };
+
+    return score(b) - score(a);
+  });
+
+  return Array.from(
+    new Set(
+      result
+        .map((candidate) => candidate.url)
+        .filter(Boolean)
+    )
+  );
 }
 
 export default function MarketplaceProductImage({
@@ -78,23 +161,48 @@ export default function MarketplaceProductImage({
   item: any;
   alt?: string;
 }) {
-  const selected = useMemo(
-    () => getMarketplaceImage(item),
+  const candidates = useMemo(
+    () => collectCandidates(item),
     [item]
   );
 
-  const resolved = useMemo(
-    () => resolveMediaUrl(selected),
-    [selected]
-  );
-
-  const [src, setSrc] = useState(
-    resolved || FALLBACK_IMAGE
-  );
+  const [index, setIndex] = useState(0);
+  const [allFailed, setAllFailed] = useState(false);
 
   useEffect(() => {
-    setSrc(resolved || FALLBACK_IMAGE);
-  }, [resolved]);
+    setIndex(0);
+    setAllFailed(false);
+  }, [
+    item?._id,
+    item?.listingCode,
+    item?.imageUrl,
+    item?.images,
+  ]);
+
+  const raw =
+    !allFailed && candidates[index]
+      ? candidates[index]
+      : FALLBACK_IMAGE;
+
+  const src =
+    raw === FALLBACK_IMAGE
+      ? FALLBACK_IMAGE
+      : resolveMediaUrl(raw);
+
+  const tryNextImage = () => {
+    /*
+     * IMPORTANT:
+     * Do not immediately show the mountain/sun fallback.
+     *
+     * Try every real DB/upload candidate first.
+     */
+    if (index + 1 < candidates.length) {
+      setIndex((previous) => previous + 1);
+      return;
+    }
+
+    setAllFailed(true);
+  };
 
   return (
     <div
@@ -103,11 +211,13 @@ export default function MarketplaceProductImage({
         position: "relative",
         width: "100%",
         height: "100%",
+        minWidth: 0,
         overflow: "hidden",
         background: "#ffffff",
       }}
     >
       <img
+        key={`${raw}-${index}`}
         src={src}
         alt={
           alt ||
@@ -120,26 +230,24 @@ export default function MarketplaceProductImage({
         loading="lazy"
         decoding="async"
         onError={() => {
-          if (src !== FALLBACK_IMAGE) {
-            setSrc(FALLBACK_IMAGE);
+          if (raw !== FALLBACK_IMAGE) {
+            tryNextImage();
           }
         }}
         className="bm-marketplace-product-image"
         style={{
-          width: "100%",
-          height: "100%",
-          objectFit: "contain",
-          objectPosition: "center",
           display: "block",
           visibility: "visible",
           opacity: 1,
+          width: "100%",
+          height: "100%",
+          maxWidth: "100%",
+          objectFit: "contain",
+          objectPosition: "center",
           background: "#ffffff",
         }}
       />
-
-      <span className="magnifier-badge">
-        🔍 Zoom
-      </span>
     </div>
   );
 }
+

@@ -6,33 +6,33 @@ import { useRouter } from 'next/router';
 import { useRates } from '../contexts/RateContext';
 
 const styles = {
-  container: { maxWidth: '100%', margin: 0, padding: '12px', backgroundColor: '#f5f0e8', minHeight: '100vh', boxSizing: 'border-box' },
-  header: { backgroundColor: '#2d6a4f', padding: '12px', borderRadius: '8px', marginBottom: '15px', color: 'white', display: 'flex', alignItems: 'center', gap: '10px' },
+  container: { width: '100%', maxWidth: '100%', margin: '0', padding: '4px 8px', boxSizing: 'border-box' },
+  header: { maxWidth: '100%', margin: '0 0 8px 0', padding: '6px 10px', borderRadius: '6px' },
   backButton: { backgroundColor: 'transparent', border: 'none', color: 'white', fontSize: '22px', cursor: 'pointer', padding: '5px' },
   headerTitle: { margin: 0, fontSize: '18px', flex: 1 },
   sectionTitle: { backgroundColor: '#e8f4f8', color: '#2d6a4f', padding: '8px', borderRadius: '6px', marginBottom: '12px', fontSize: '14px', fontWeight: 'bold', textAlign: 'center', border: '1px solid #cce5ed' },
   row6: { display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '8px', marginBottom: '12px' },
-  inputGroup: { marginBottom: '8px' },
-  label: { display: 'block', marginBottom: '4px', fontWeight: '600', fontSize: '11px', color: '#555' },
-  input: { width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#fff' },
-  select: { width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '6px', fontSize: '13px', backgroundColor: '#fff' },
-  buttonRow: { display: 'flex', justifyContent: 'center', gap: '15px', margin: '20px 0' },
-  buttonGenerate: { backgroundColor: '#800020', color: 'white', padding: '8px 20px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' },
-  buttonExport: { backgroundColor: '#28a745', color: 'white', padding: '8px 20px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' },
-  buttonWhatsapp: { backgroundColor: '#25D366', color: 'white', padding: '8px 20px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' },
-  cardContainer: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '20px' },
-  card: { padding: '8px', borderRadius: '10px', textAlign: 'center', color: 'white' },
+  inputGroup: { marginBottom: '0px', minWidth: 0 },
+  label: { display: 'block', fontSize: '10px', fontWeight: '600', marginBottom: '2px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  input: { width: '100%', padding: '2px 4px', height: '30px', fontSize: '12px', textAlign: 'center', borderRadius: '4px', border: '1px solid #d1d5db', boxSizing: 'border-box' },
+  select: { width: '100%', padding: '2px 4px', height: '30px', fontSize: '11px', borderRadius: '4px', border: '1px solid #d1d5db', boxSizing: 'border-box' },
+  buttonRow: { display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '4px', marginBottom: '6px', width: '100%' },
+  buttonGenerate: { backgroundColor: '#16a34a', color: '#fff', border: 'none', borderRadius: '4px', padding: '4px 6px', height: '32px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap' },
+  buttonExport: { backgroundColor: '#2563eb', color: '#fff', border: 'none', borderRadius: '4px', padding: '4px 6px', height: '32px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap' },
+  buttonWhatsapp: { backgroundColor: '#059669', color: '#fff', border: 'none', borderRadius: '4px', padding: '4px 6px', height: '32px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap' },
+  cardContainer: { display: "grid", gridAutoFlow: "column", gridAutoColumns: "minmax(0, 1fr)", gap: "4px", marginBottom: "6px", width: "100%", boxSizing: "border-box" },
+  card: { padding: "3px 2px", borderRadius: "4px", textAlign: "center", minHeight: "0", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" },
   cardBlue: { backgroundColor: '#2196F3' },
   cardLightGreen: { backgroundColor: '#8BC34A' },
   cardLightOrange: { backgroundColor: '#FFB74D' },
   cardLightTeal: { backgroundColor: '#4DB6AC' },
-  cardValue: { fontSize: '14px', fontWeight: 'bold', marginTop: '4px' },
-  tableContainer: { overflowX: 'auto', marginTop: '15px', border: '1px solid #ddd', borderRadius: '8px', backgroundColor: '#fff' },
-  table: { width: '100%', borderCollapse: 'collapse', fontSize: '12px' },
-  th: { backgroundColor: '#2d6a4f', color: 'white', padding: '8px', textAlign: 'left' },
-  td: { padding: '6px', borderBottom: '1px solid #eee' },
+  cardValue: { fontSize: "10px", fontWeight: "bold", margin: "1px 0 0 0", color: "#0f172a", whiteSpace: "nowrap" },
+  tablecontainer: { width: '100%', maxWidth: '100%', margin: '0', padding: '4px 8px', boxSizing: 'border-box' },
+  table: { width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', fontSize: '10px' },
+  th: { padding: '3px 4px', fontSize: '10px', fontWeight: 'bold', backgroundColor: '#f1f5f9', textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  td: { padding: '3px 4px', fontSize: '10px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
   evenRow: { backgroundColor: '#f9f9f9' },
-  rateInfo: { backgroundColor: '#e8f4f8', padding: '6px', borderRadius: '4px', fontSize: '10px', textAlign: 'center', marginBottom: '10px', color: '#555' }
+  rateInfo: { maxWidth: '100%', margin: '0 0 8px 0', padding: '4px 8px', borderRadius: '6px' }
 };
 
 const formatNumber = (num) => {
@@ -135,7 +135,7 @@ const router = useRouter();
     if (!results) return;
     const data = [
       { Item: 'Patio Area', Quantity: results.area.sqft, Unit: 'sqft', Cost: '-' },
-      { Item: 'Concrete Volume', Quantity: results.concrete.volumeCft, Unit: 'CFT', Cost: '-' },
+      { Item: 'Con. Vol', Quantity: results.concrete.volumeCft, Unit: 'CFT', Cost: '-' },
       { Item: 'Cement', Quantity: results.concrete.cement, Unit: 'bags', Cost: `₹${results.costs.cement}` },
       { Item: 'M Sand', Quantity: results.concrete.sandCft, Unit: 'CFT', Cost: `₹${results.costs.sand}` },
       { Item: '20mm Aggregate', Quantity: results.concrete.agg20Cft, Unit: 'CFT', Cost: `₹${results.costs.agg20}` },
@@ -147,7 +147,7 @@ const router = useRouter();
       { Item: 'Labour - Concreting', Quantity: results.concrete.volumeCum, Unit: 'CUM', Cost: `₹${results.labourBreakdown.concreting}` },
       { Item: 'Contractor Profit', Quantity: results.concrete.volumeCum, Unit: 'CUM', Cost: `₹${results.labourBreakdown.profit}` },
       { Item: 'Total Labour', Quantity: '', Unit: '', Cost: `₹${results.costs.labour}` },
-      { Item: 'GRAND TOTAL', Quantity: '', Unit: '', Cost: `₹${results.costs.grandTotal}` }
+      { Item: 'Grand Total (₹)', Quantity: '', Unit: '', Cost: `₹${results.costs.grandTotal}` }
     ];
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
@@ -199,7 +199,7 @@ const router = useRouter();
         React.createElement('div', { style: { ...styles.card, ...styles.cardBlue } }, React.createElement('div', null, '📦'), React.createElement('div', null, 'Concrete'), React.createElement('div', { style: styles.cardValue }, `${results.concrete.volumeCft} CFT`)),
         React.createElement('div', { style: { ...styles.card, ...styles.cardLightGreen } }, React.createElement('div', null, '🪣'), React.createElement('div', null, 'Cement'), React.createElement('div', { style: styles.cardValue }, `${results.concrete.cement} bags`)),
         React.createElement('div', { style: { ...styles.card, ...styles.cardLightOrange } }, React.createElement('div', null, '💰'), React.createElement('div', null, 'Material Total'), React.createElement('div', { style: styles.cardValue }, `₹${results.costs.materialTotal}`)),
-        React.createElement('div', { style: { ...styles.card, ...styles.cardLightTeal } }, React.createElement('div', null, '💎'), React.createElement('div', null, 'Grand Total'), React.createElement('div', { style: styles.cardValue }, `₹${results.costs.grandTotal}`))
+        React.createElement('div', { style: { ...styles.card, ...styles.cardLightTeal } }, React.createElement('div', null, '💎'), React.createElement('div', null, 'Grand Total (₹)'), React.createElement('div', { style: styles.cardValue }, `₹${results.costs.grandTotal}`))
       ),
       
       React.createElement('div', { style: styles.tableContainer },
@@ -207,7 +207,7 @@ const router = useRouter();
           React.createElement('thead', null, React.createElement('tr', null, React.createElement('th', { style: styles.th }, 'Item'), React.createElement('th', { style: styles.th }, 'Quantity'), React.createElement('th', { style: styles.th }, 'Unit'), React.createElement('th', { style: styles.th }, 'Cost'))),
           React.createElement('tbody', null,
             React.createElement('tr', null, React.createElement('td', { style: styles.td }, 'Patio Area'), React.createElement('td', { style: styles.td }, results.area.sqft), React.createElement('td', { style: styles.td }, 'sqft'), React.createElement('td', { style: styles.td }, '-')),
-            React.createElement('tr', { style: styles.evenRow }, React.createElement('td', { style: styles.td }, 'Concrete Volume'), React.createElement('td', { style: styles.td }, results.concrete.volumeCft), React.createElement('td', { style: styles.td }, 'CFT'), React.createElement('td', { style: styles.td }, '-')),
+            React.createElement('tr', { style: styles.evenRow }, React.createElement('td', { style: styles.td }, 'Con. Vol'), React.createElement('td', { style: styles.td }, results.concrete.volumeCft), React.createElement('td', { style: styles.td }, 'CFT'), React.createElement('td', { style: styles.td }, '-')),
             React.createElement('tr', null, React.createElement('td', { style: styles.td }, 'Cement'), React.createElement('td', { style: styles.td }, results.concrete.cement), React.createElement('td', { style: styles.td }, 'bags'), React.createElement('td', { style: styles.td }, `₹${results.costs.cement}`)),
             React.createElement('tr', { style: styles.evenRow }, React.createElement('td', { style: styles.td }, 'M Sand'), React.createElement('td', { style: styles.td }, results.concrete.sandCft), React.createElement('td', { style: styles.td }, 'CFT'), React.createElement('td', { style: styles.td }, `₹${results.costs.sand}`)),
             React.createElement('tr', null, React.createElement('td', { style: styles.td }, '20mm Aggregate'), React.createElement('td', { style: styles.td }, results.concrete.agg20Cft), React.createElement('td', { style: styles.td }, 'CFT'), React.createElement('td', { style: styles.td }, `₹${results.costs.agg20}`)),
@@ -219,13 +219,27 @@ const router = useRouter();
             React.createElement('tr', null, React.createElement('td', { style: styles.td }, 'Labour - Concreting'), React.createElement('td', { style: styles.td }, results.concrete.volumeCum), React.createElement('td', { style: styles.td }, 'CUM'), React.createElement('td', { style: styles.td }, `₹${results.labourBreakdown.concreting}`)),
             React.createElement('tr', { style: styles.evenRow }, React.createElement('td', { style: styles.td }, 'Contractor Profit'), React.createElement('td', { style: styles.td }, results.concrete.volumeCum), React.createElement('td', { style: styles.td }, 'CUM'), React.createElement('td', { style: styles.td }, `₹${results.labourBreakdown.profit}`)),
             React.createElement('tr', { style: { backgroundColor: '#f0f7f5', fontWeight: 'bold' } }, React.createElement('td', { colSpan: 3, style: styles.td }, 'Total Labour'), React.createElement('td', { style: styles.td }, `₹${results.costs.labour}`)),
-            React.createElement('tr', { style: { backgroundColor: '#800020', color: 'white', fontWeight: 'bold' } }, React.createElement('td', { colSpan: 3, style: { padding: '8px' } }, 'GRAND TOTAL'), React.createElement('td', { style: { padding: '8px' } }, `₹${results.costs.grandTotal}`))
+            React.createElement('tr', { style: { backgroundColor: '#800020', color: 'white', fontWeight: 'bold' } }, React.createElement('td', { colSpan: 3, style: { padding: '8px' } }, 'Grand Total (₹)'), React.createElement('td', { style: { padding: '8px' } }, `₹${results.costs.grandTotal}`))
           )
         )
       )
     )
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

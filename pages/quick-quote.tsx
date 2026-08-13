@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { BuildMitraLetterhead, BUILDMITRA_COMPANY_DETAILS } from "../components/BuildMitraLetterhead";
 import { downloadBuildMitraPDF } from "../utils/pdfExport";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
+
+import { getApiBase } from "../utils/apiConfig";
+const API_BASE = getApiBase();
 
 export default function QuickQuotePage() {
   const router = useRouter();
@@ -289,4 +290,5 @@ const styles: Record<string, any> = {
   buttonInfo: { width: "100%", padding: 12, background: "#0284c7", color: "#fff", border: 0, borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: 14 },
   reject: { width: "100%", padding: 10, background: "#ef4444", color: "#fff", border: 0, borderRadius: 8, fontWeight: 700, marginTop: 12, cursor: "pointer", fontSize: 13 },
 };
+
 

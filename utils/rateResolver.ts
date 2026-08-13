@@ -1,3 +1,4 @@
+import { getApiBase } from "./apiConfig";
 export interface RateResolveItemInput {
   masterItemCode?: string;
   itemCode?: string;
@@ -22,7 +23,7 @@ export interface ResolvedRateItem {
   status: string;
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
+const API_BASE = getApiBase();
 
 export async function resolveBulkRates(
   items: RateResolveItemInput[],
@@ -57,3 +58,4 @@ export async function resolveBulkRates(
     status: "Rate Pending Admin Update"
   }));
 }
+

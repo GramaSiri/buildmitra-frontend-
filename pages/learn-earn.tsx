@@ -27,7 +27,8 @@ import {
 } from '@mui/icons-material';
 import FormulaGallery from '../components/FormulaGallery';
 import { DesignGamesHub } from '../components/learn-earn/games/DesignGamesHub';
-
+
+import { getApiBase } from "../utils/apiConfig";
 // ============= 40 MAJOR CONSTRUCTION STAGES =============
 const CONSTRUCTION_STAGES = [
   { number: 1, name: "Site inspection and site marking" },
@@ -5869,7 +5870,7 @@ export default function LearnAndEarnPage() {
   const fetchExpertTalks = async () => {
     setLoadingTalks(true);
     try {
-      const apiHost = typeof window !== 'undefined' ? (window.location.hostname === 'localhost' ? 'http://localhost:5000' : '') : '';
+      const apiHost = getApiBase();
       let url = `${apiHost}/api/expert-talks?publication=${encodeURIComponent(expertPublication)}&category=${encodeURIComponent(expertCategory)}&search=${encodeURIComponent(expertSearch)}&sort=${expertSort}`;
       const res = await fetch(url);
       const data = await res.json();
@@ -5889,7 +5890,7 @@ export default function LearnAndEarnPage() {
   const handleManualSyncTalks = async () => {
     setSyncingTalks(true);
     try {
-      const apiHost = typeof window !== 'undefined' ? (window.location.hostname === 'localhost' ? 'http://localhost:5000' : '') : '';
+      const apiHost = getApiBase();
       const res = await fetch(`${apiHost}/api/expert-talks/sync`, { method: 'POST' });
       const data = await res.json();
       if (data.success) {
@@ -5912,7 +5913,7 @@ export default function LearnAndEarnPage() {
   const fetchConstructionVideos = async () => {
     setLoadingVideos(true);
     try {
-      const apiHost = typeof window !== 'undefined' ? (window.location.hostname === 'localhost' ? 'http://localhost:5000' : '') : '';
+      const apiHost = getApiBase();
       const res = await fetch(`${apiHost}/api/construction-videos`);
       const data = await res.json();
       if (data.success && Array.isArray(data.videos)) {
@@ -5937,7 +5938,7 @@ export default function LearnAndEarnPage() {
 
     try {
       const stageObj = CONSTRUCTION_STAGES.find(s => s.number === Number(uploadStageNum));
-      const apiHost = typeof window !== 'undefined' ? (window.location.hostname === 'localhost' ? 'http://localhost:5000' : '') : '';
+      const apiHost = getApiBase();
       const res = await fetch(`${apiHost}/api/construction-videos`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -7397,6 +7398,7 @@ export default function LearnAndEarnPage() {
     </ThemeProvider>
   );
 }
+
 
 
 
