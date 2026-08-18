@@ -91,17 +91,27 @@ textarea.input-compact:focus {
   }
 }
 
-/* MARKETPLACE 4-COLUMN MOBILE GRID & ASPECT-SQUARE THUMBNAILS */
+/* MARKETPLACE FLUID AUTO-ADAPTING MOBILE & DESKTOP GRID */
 .marketplace-grid,
 .products-grid,
 .product-grid,
 .bm-marketplace-product-grid {
   display: grid !important;
-  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-  gap: 4px !important;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
+  gap: 8px !important;
   width: 100% !important;
   max-width: 100% !important;
   box-sizing: border-box !important;
+}
+
+@media (max-width: 767px) {
+  .marketplace-grid,
+  .products-grid,
+  .product-grid,
+  .bm-marketplace-product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+  }
 }
 
 .product-image-container,
@@ -120,7 +130,7 @@ textarea.input-compact:focus {
 .product-image-container img {
   width: 100% !important;
   height: 100% !important;
-  object-fit: contain !important;
+  object-fit: cover !important;
 }
 
 /* Hide intrusive image zoom overlays on mobile viewports */
@@ -133,6 +143,18 @@ textarea.input-compact:focus {
     opacity: 0 !important;
     visibility: hidden !important;
   }
+}
+
+/* UNIVERSAL COMPACT HORIZONTAL SCROLL CONTAINERS FOR CALCULATOR RESULTS & TABLES */
+.bm-scroll-x-container,
+.cardContainer,
+[class*="tableContainer"],
+[class*="tableWrap"] {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  box-sizing: border-box !important;
 }
 
 body {
@@ -152,9 +174,25 @@ main,
   width: 100%;
   max-width: 100vw !important;
   min-height: 100%;
+  min-height: 100dvh;
   margin: 0;
   overflow-x: hidden !important;
   box-sizing: border-box;
+}
+
+/* Modern mobile dynamic viewport height & safe-area helpers */
+.min-h-screen-dvh {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.h-screen-dvh {
+  height: 100vh;
+  height: 100dvh;
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 12px);
 }
 
 *,
@@ -974,48 +1012,32 @@ svg {
 /* MARKETPLACE MOBILE 4-COLUMN GRID & ZERO GAPS FIX  */
 /* ================================================== */
 @media (max-width: 767px) {
-  /* Remove container outer padding and gaps */
+  /* Remove container outer padding and gaps cleanly */
   .marketplace-page,
-  .marketplace-container,
-  main,
-  div[class*="px-"],
-  div[class*="mx-"] {
-    padding-left: 2px !important;
-    padding-right: 2px !important;
+  .marketplace-container {
+    padding-left: 4px !important;
+    padding-right: 4px !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
   }
 
-  /* Force exact 4 columns across all product grid wrappers */
-  .marketplace-page div[class*="grid"],
+  /* Target marketplace grids with responsive columns */
   .marketplace-grid,
   .product-grid {
     display: grid !important;
-    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-    gap: 4px !important;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)) !important;
+    gap: 6px !important;
   }
 
   /* Compress product cards */
-  .marketplace-page div[class*="rounded"],
+  .marketplace-card,
   .product-card {
-    padding: 2px !important;
+    padding: 4px !important;
     margin: 0 !important;
     width: 100% !important;
     box-sizing: border-box !important;
-  }
-
-  /* Scale thumbnail images for 4-column fit */
-  .marketplace-page img,
-  .product-card img {
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    width: 100% !important;
-    height: 60px !important;
-    object-fit: cover !important;
-    border-radius: 4px !important;
   }
 
   /* Compress text and price tags */
@@ -1507,4 +1529,1667 @@ div[class*="table-wrapper"] {
   }
 }
 
+/* Supplier Dashboard Mobile Responsive Table -> Card View */
+@media (max-width: 767px) {
+  .desktop-table-wrap {
+    display: none !important;
+  }
+  .mobile-card-wrap {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+}
+
 /* END BUILDMITRA FINAL MARKETPLACE IMAGE VISIBILITY FIX */
+
+/* =========================================================================
+   BUILDMITRA UNIVERSAL CALCULATOR COMPACT UX DESIGN SYSTEM
+   ========================================================================= */
+
+/* Auto-responsive input grid: Up to 4 per row on mobile (320-430px), 6 on tablet, 6+ desktop */
+.bm-calc-input-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 4px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-bottom: 6px !important;
+  box-sizing: border-box !important;
+}
+
+@media (max-width: 600px) {
+  .bm-calc-input-grid {
+    grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)) !important;
+    gap: 4px !important;
+  }
+}
+
+.bm-calc-input-grid > * {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+.bm-calc-input-grid .bm-full-width,
+.bm-calc-input-grid [data-full-width="true"] {
+  grid-column: 1 / -1 !important;
+}
+
+/* Horizontal scroll result strip for quick & consolidated result boxes */
+.bm-calc-result-strip,
+.bm-result-strip {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  gap: 6px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  padding: 4px 2px 6px 2px !important;
+  box-sizing: border-box !important;
+  margin-bottom: 8px !important;
+}
+
+.bm-calc-result-box {
+  flex: 1 1 auto !important;
+  min-width: 110px !important;
+  max-width: 170px !important;
+  padding: 6px 8px !important;
+  border-radius: 6px !important;
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  text-align: center !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03) !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+
+.bm-calc-result-box .bm-res-label {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  color: #64748b !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.02em !important;
+  white-space: nowrap !important;
+  margin-bottom: 2px !important;
+}
+
+.bm-calc-result-box .bm-res-value {
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  color: #0f172a !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
+}
+
+.bm-calc-result-box .bm-res-unit {
+  font-size: 9.5px !important;
+  font-weight: 600 !important;
+  color: #2563eb !important;
+  margin-top: 1px !important;
+  white-space: nowrap !important;
+}
+
+
+/* ============================================================
+   BUILDMITRA FINAL CALCULATOR MOBILE SAFETY
+   ============================================================ */
+
+@media (max-width: 768px) {
+
+  /* Do not let generic old CSS stretch calculator numeric fields */
+  input[type="number"] {
+    box-sizing: border-box !important;
+  }
+
+  /* Horizontal engineering/result areas must remain touch-scrollable */
+  .bm-calc-result-strip,
+  .bm-scroll-x-container {
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-x !important;
+    overscroll-behavior-x: contain !important;
+  }
+
+  /* Prevent accidental outer page sideways drift */
+  html,
+  body,
+  #__next {
+    max-width: 100vw !important;
+  }
+}
+
+
+/* BuildMitra mobile calculator table cleanup */
+@media (max-width: 768px) {
+  .bm-mobile-hide-col {
+    display: none !important;
+  }
+
+  table {
+    max-width: 100% !important;
+  }
+
+  th,
+  td {
+    font-size: 10px !important;
+    padding: 3px 4px !important;
+  }
+}
+
+
+/* ============================================================
+   BUILDMITRA — MOBILE CALCULATOR TABLE COMPACT FINAL
+   ============================================================ */
+
+@media (max-width: 768px) {
+
+  .bm-mobile-hide-col {
+    display: none !important;
+  }
+
+  table {
+    width: 100% !important;
+    max-width: 100% !important;
+    table-layout: auto !important;
+  }
+
+  th,
+  td {
+    padding: 2px 3px !important;
+    font-size: 9.5px !important;
+    line-height: 1.15 !important;
+    vertical-align: middle !important;
+  }
+
+  th {
+    white-space: normal !important;
+  }
+
+  td {
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  /* Description gets the useful space */
+  th:nth-child(3),
+  td:nth-child(3) {
+    min-width: 110px !important;
+  }
+
+  /* Unit / Proc Qty / Amount stay compact */
+  th,
+  td {
+    min-width: 0 !important;
+  }
+
+  code {
+    font-size: 9px !important;
+  }
+}
+
+
+/* BuildMitra mobile calculator table cleanup */
+@media (max-width: 768px) {
+  .bm-mobile-hide-col {
+    display: none !important;
+  }
+
+  table {
+    max-width: 100% !important;
+  }
+
+  th,
+  td {
+    font-size: 10px !important;
+    padding: 3px 4px !important;
+  }
+}
+
+
+/* ============================================================
+   BUILDMITRA — FORCE HORIZONTAL SCROLL ACROSS ALL CALCULATORS
+   ============================================================ */
+
+@media (max-width: 1024px) {
+
+  /* ----------------------------------------------------------
+     CALCULATOR RESULT / SUMMARY STRIPS
+     ---------------------------------------------------------- */
+
+  .bm-calc-results-scroll,
+  [class*="summaryGrid"],
+  [class*="summarygrid"],
+  [class*="resultGrid"],
+  [class*="resultgrid"],
+  [class*="resultsGrid"],
+  [class*="resultsgrid"],
+  [class*="metricGrid"],
+  [class*="metricgrid"],
+  [class*="cardContainer"],
+  [class*="resultCards"],
+  [class*="summaryCards"] {
+
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+
+    width: 100% !important;
+    max-width: 100% !important;
+
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-x !important;
+    overscroll-behavior-x: contain !important;
+
+    gap: 6px !important;
+
+    padding: 3px 2px 9px !important;
+    margin: 3px 0 6px !important;
+
+    scroll-snap-type: x proximity !important;
+
+    scrollbar-width: auto !important;
+  }
+
+  .bm-calc-results-scroll > *,
+  [class*="summaryGrid"] > *,
+  [class*="summarygrid"] > *,
+  [class*="resultGrid"] > *,
+  [class*="resultgrid"] > *,
+  [class*="resultsGrid"] > *,
+  [class*="resultsgrid"] > *,
+  [class*="metricGrid"] > *,
+  [class*="metricgrid"] > *,
+  [class*="cardContainer"] > *,
+  [class*="resultCards"] > *,
+  [class*="summaryCards"] > * {
+
+    flex: 0 0 145px !important;
+
+    width: 145px !important;
+    min-width: 145px !important;
+    max-width: 145px !important;
+
+    scroll-snap-align: start !important;
+  }
+
+
+  /* ----------------------------------------------------------
+     ALL CALCULATOR TABLE / BOQ CONTAINERS
+     ---------------------------------------------------------- */
+
+  .bm-calc-table-scroll,
+  [class*="tableContainer"],
+  [class*="tablecontainer"],
+  [class*="boqTable"],
+  [class*="boq-table"],
+  [class*="resultTable"],
+  [class*="resultsTable"] {
+
+    display: block !important;
+
+    width: 100% !important;
+    max-width: 100% !important;
+
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-x !important;
+    overscroll-behavior-x: contain !important;
+
+    padding-bottom: 8px !important;
+
+    scrollbar-width: auto !important;
+  }
+
+
+  /* ----------------------------------------------------------
+     TABLE MUST BE ALLOWED TO BE WIDER THAN MOBILE VIEWPORT
+     otherwise there is nothing to scroll
+     ---------------------------------------------------------- */
+
+  .bm-calc-table-scroll table,
+  [class*="tableContainer"] table,
+  [class*="tablecontainer"] table,
+  [class*="boqTable"] table,
+  [class*="boq-table"] table,
+  [class*="resultTable"] table,
+  [class*="resultsTable"] table {
+
+    width: max-content !important;
+    min-width: 620px !important;
+    max-width: none !important;
+
+    table-layout: auto !important;
+  }
+
+
+  /* ----------------------------------------------------------
+     KEEP CELLS READABLE
+     ---------------------------------------------------------- */
+
+  .bm-calc-table-scroll th,
+  .bm-calc-table-scroll td,
+  [class*="tableContainer"] th,
+  [class*="tableContainer"] td,
+  [class*="tablecontainer"] th,
+  [class*="tablecontainer"] td {
+
+    white-space: nowrap !important;
+
+    font-size: 10px !important;
+    line-height: 1.15 !important;
+
+    padding: 4px 6px !important;
+  }
+
+
+  /* ----------------------------------------------------------
+     SHOW A REAL SCROLLBAR
+     ---------------------------------------------------------- */
+
+  .bm-calc-results-scroll::-webkit-scrollbar,
+  .bm-calc-table-scroll::-webkit-scrollbar,
+  [class*="tableContainer"]::-webkit-scrollbar,
+  [class*="tablecontainer"]::-webkit-scrollbar {
+
+    height: 6px !important;
+  }
+
+  .bm-calc-results-scroll::-webkit-scrollbar-thumb,
+  .bm-calc-table-scroll::-webkit-scrollbar-thumb,
+  [class*="tableContainer"]::-webkit-scrollbar-thumb,
+  [class*="tablecontainer"]::-webkit-scrollbar-thumb {
+
+    border-radius: 10px !important;
+  }
+}
+
+
+/* ============================================================
+   BODY MUST STAY FIXED
+   CHILD RESULT/TABLE AREAS CAN SCROLL
+   ============================================================ */
+
+html, body, #__next { width: 100% !important; max-width: 100% !important; overflow-x: visible !important; }
+
+
+
+/* ============================================================
+   BUILDMITRA — UNBLOCK MOBILE HORIZONTAL SWIPE
+   ============================================================ */
+
+html,
+body,
+#__next {
+  overflow-x: visible !important;
+}
+
+/* Results */
+.bm-calc-results-scroll {
+  display: flex !important;
+  flex-flow: row nowrap !important;
+
+  width: 100% !important;
+  max-width: 100% !important;
+
+  overflow-x: scroll !important;
+  overflow-y: hidden !important;
+
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: pan-x !important;
+
+  scrollbar-width: auto !important;
+}
+
+.bm-calc-results-scroll > * {
+  flex: 0 0 145px !important;
+  min-width: 145px !important;
+}
+
+/* BOQ / calculator tables */
+.bm-calc-table-scroll {
+  display: block !important;
+
+  width: 100% !important;
+  max-width: 100% !important;
+
+  overflow-x: scroll !important;
+  overflow-y: visible !important;
+
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: pan-x !important;
+
+  scrollbar-width: auto !important;
+}
+
+.bm-calc-table-scroll table {
+  min-width: 620px !important;
+  width: max-content !important;
+  max-width: none !important;
+  table-layout: auto !important;
+}
+
+/* Make scrollbar visible enough to indicate swipe */
+.bm-calc-results-scroll::-webkit-scrollbar,
+.bm-calc-table-scroll::-webkit-scrollbar {
+  height: 7px !important;
+}
+
+@media (max-width: 768px) {
+
+  .bm-calc-results-scroll,
+  .bm-calc-table-scroll {
+    overflow-x: scroll !important;
+    overscroll-behavior-x: auto !important;
+    touch-action: pan-x !important;
+  }
+
+}
+
+
+/* ============================================================
+   BUILDMITRA FINAL ITEM-WISE MOBILE RESULTS
+   ============================================================ */
+
+/*
+   IMPORTANT:
+   Quick Result coloured cards are NOT changed here.
+*/
+
+
+/* ------------------------------------------------------------
+   ITEM-WISE RESULT TABLE CONTAINER
+   ------------------------------------------------------------ */
+
+.bm-item-results-scroll {
+  display: block !important;
+
+  width: 100% !important;
+  max-width: 100% !important;
+
+  overflow-x: scroll !important;
+  overflow-y: hidden !important;
+
+  -webkit-overflow-scrolling: touch !important;
+
+  touch-action: pan-x !important;
+  overscroll-behavior-x: contain !important;
+
+  box-sizing: border-box !important;
+
+  margin: 3px 0 7px !important;
+  padding: 0 0 9px !important;
+
+  scrollbar-width: auto !important;
+  scrollbar-gutter: stable !important;
+}
+
+
+/* The table MUST be wider than its container.
+   Otherwise horizontal scrolling cannot physically occur. */
+
+.bm-item-results-scroll .bm-item-results-table {
+  width: max-content !important;
+  min-width: 720px !important;
+  max-width: none !important;
+
+  table-layout: auto !important;
+
+  border-collapse: collapse !important;
+
+  margin: 0 !important;
+}
+
+
+/* Keep each value readable instead of crushing columns */
+
+.bm-item-results-table th,
+.bm-item-results-table td {
+  padding: 4px 6px !important;
+
+  font-size: 10px !important;
+  line-height: 1.15 !important;
+
+  white-space: nowrap !important;
+
+  vertical-align: middle !important;
+
+  box-sizing: border-box !important;
+}
+
+
+/* Description gets more useful width */
+
+.bm-item-results-table th:nth-child(3),
+.bm-item-results-table td:nth-child(3) {
+  min-width: 190px !important;
+  max-width: 240px !important;
+
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+
+
+/* ------------------------------------------------------------
+   VERY VISIBLE HORIZONTAL SCROLL BAR
+   Same concept as working Quick Results
+   ------------------------------------------------------------ */
+
+.bm-item-results-scroll::-webkit-scrollbar {
+  display: block !important;
+  height: 9px !important;
+}
+
+.bm-item-results-scroll::-webkit-scrollbar-track {
+  background: #e2e8f0 !important;
+  border-radius: 10px !important;
+}
+
+.bm-item-results-scroll::-webkit-scrollbar-thumb {
+  background: #64748b !important;
+  border-radius: 10px !important;
+  border: 2px solid #e2e8f0 !important;
+}
+
+.bm-item-results-scroll::-webkit-scrollbar-thumb:hover {
+  background: #334155 !important;
+}
+
+
+/* ============================================================
+   MOBILE
+   ============================================================ */
+
+@media (max-width: 768px) {
+
+  /*
+     Leave body stationary.
+     Only the item-wise table itself moves left/right.
+  */
+
+  html,
+  body,
+  #__next {
+    width: 100% !important;
+    max-width: 100vw !important;
+
+    overflow-x: hidden !important;
+  }
+
+
+  .bm-item-results-scroll {
+    width: calc(100vw - 16px) !important;
+    max-width: calc(100vw - 16px) !important;
+
+    overflow-x: scroll !important;
+    overflow-y: hidden !important;
+
+    touch-action: pan-x !important;
+
+    -webkit-overflow-scrolling: touch !important;
+
+    padding-bottom: 10px !important;
+  }
+
+
+  /*
+     Keep enough real width so right-side values can be reached.
+  */
+
+  .bm-item-results-scroll .bm-item-results-table {
+    min-width: 620px !important;
+    width: 620px !important;
+    max-width: none !important;
+  }
+
+
+  /*
+     Existing mobile-hidden columns remain hidden.
+     Visible useful columns get tighter gaps.
+  */
+
+  .bm-item-results-table th,
+  .bm-item-results-table td {
+    padding: 3px 4px !important;
+    font-size: 9.5px !important;
+  }
+
+
+  /* Description */
+  .bm-item-results-table th:nth-child(3),
+  .bm-item-results-table td:nth-child(3) {
+    min-width: 180px !important;
+    width: 180px !important;
+    max-width: 180px !important;
+  }
+
+
+  /* Unit */
+  .bm-item-results-table th:nth-child(4),
+  .bm-item-results-table td:nth-child(4) {
+    min-width: 55px !important;
+    width: 55px !important;
+  }
+
+
+  /* Procurement Qty */
+  .bm-item-results-table th:nth-child(6),
+  .bm-item-results-table td:nth-child(6) {
+    min-width: 85px !important;
+    width: 85px !important;
+  }
+
+
+  /* Amount */
+  .bm-item-results-table th:nth-child(8),
+  .bm-item-results-table td:nth-child(8) {
+    min-width: 110px !important;
+    width: 110px !important;
+  }
+
+
+  /* ==========================================================
+     SPECIMEN / ISOMETRIC:
+     approximately 75% LESS VERTICAL SPACE than the large version
+     ========================================================== */
+
+  .engineering-top-layout {
+    display: grid !important;
+
+    grid-template-columns: minmax(0, 1fr) 82px !important;
+
+    gap: 4px !important;
+
+    align-items: start !important;
+
+    margin: 0 0 4px !important;
+  }
+
+
+  .engineering-top-left {
+    min-width: 0 !important;
+  }
+
+
+  .engineering-specimen-top {
+    width: 82px !important;
+    min-width: 82px !important;
+    max-width: 82px !important;
+
+    height: 78px !important;
+    max-height: 78px !important;
+
+    position: relative !important;
+
+    top: 0 !important;
+
+    margin: 0 0 0 auto !important;
+    padding: 0 !important;
+
+    overflow: hidden !important;
+
+    align-self: start !important;
+  }
+
+
+  /*
+     Scale whole specimen uniformly.
+     Do not squeeze only the width, which previously produced
+     ugly vertical/wrapped specimen text.
+  */
+
+  .engineering-specimen-top > * {
+    width: 164px !important;
+    min-width: 164px !important;
+    max-width: 164px !important;
+
+    transform: scale(0.5) !important;
+    transform-origin: top right !important;
+
+    margin: 0 !important;
+  }
+
+
+  .engineering-specimen-top img,
+  .engineering-specimen-top svg,
+  .engineering-specimen-top canvas {
+    display: block !important;
+
+    max-width: 100% !important;
+    height: auto !important;
+  }
+}
+
+
+/* ============================================================
+   DESKTOP/TABLET SPECIMEN ALSO SMALLER, BUT READABLE
+   ============================================================ */
+
+@media (min-width: 769px) {
+
+  .engineering-top-layout {
+    grid-template-columns: minmax(0, 1fr) 135px !important;
+
+    gap: 7px !important;
+
+    margin-bottom: 5px !important;
+  }
+
+  .engineering-specimen-top {
+    width: 135px !important;
+    min-width: 135px !important;
+    max-width: 135px !important;
+
+    margin-left: auto !important;
+
+    overflow: hidden !important;
+  }
+}
+
+
+/* ============================================================
+   BUILDMITRA — 6 BOQ COMPACT RESPONSIVE UX
+   ============================================================ */
+
+
+/* ------------------------------------------------------------
+   CONSOLIDATED BOQ SUMMARY BOXES
+   ------------------------------------------------------------ */
+
+.bm-boq-summary-scroll {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+
+  width: 100% !important;
+  max-width: 100% !important;
+
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: pan-x !important;
+
+  gap: 6px !important;
+
+  margin: 3px 0 7px !important;
+  padding: 3px 2px 9px !important;
+
+  scroll-snap-type: x proximity !important;
+
+  scrollbar-width: auto !important;
+}
+
+.bm-boq-summary-scroll > * {
+  flex: 0 0 145px !important;
+
+  width: 145px !important;
+  min-width: 145px !important;
+  max-width: 150px !important;
+
+  padding: 6px !important;
+
+  box-sizing: border-box !important;
+
+  scroll-snap-align: start !important;
+}
+
+.bm-boq-summary-scroll::-webkit-scrollbar {
+  height: 7px !important;
+}
+
+.bm-boq-summary-scroll::-webkit-scrollbar-track {
+  background: #e2e8f0 !important;
+  border-radius: 10px !important;
+}
+
+.bm-boq-summary-scroll::-webkit-scrollbar-thumb {
+  background: #64748b !important;
+  border-radius: 10px !important;
+}
+
+
+/* ------------------------------------------------------------
+   ITEM-WISE BOQ TABLE SCROLL
+   ------------------------------------------------------------ */
+
+.bm-boq-table-scroll {
+  display: block !important;
+
+  width: 100% !important;
+  max-width: 100% !important;
+
+  overflow-x: scroll !important;
+  overflow-y: hidden !important;
+
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: pan-x !important;
+  overscroll-behavior-x: contain !important;
+
+  margin: 2px 0 7px !important;
+  padding: 0 0 10px !important;
+
+  scrollbar-width: auto !important;
+  scrollbar-gutter: stable !important;
+}
+
+.bm-boq-table {
+  width: max-content !important;
+  min-width: 720px !important;
+  max-width: none !important;
+
+  table-layout: auto !important;
+
+  border-collapse: collapse !important;
+}
+
+.bm-boq-table th,
+.bm-boq-table td {
+  padding: 4px 6px !important;
+
+  font-size: 10px !important;
+  line-height: 1.15 !important;
+
+  white-space: nowrap !important;
+
+  box-sizing: border-box !important;
+}
+
+.bm-boq-table-scroll::-webkit-scrollbar {
+  display: block !important;
+  height: 9px !important;
+}
+
+.bm-boq-table-scroll::-webkit-scrollbar-track {
+  background: #e2e8f0 !important;
+  border-radius: 10px !important;
+}
+
+.bm-boq-table-scroll::-webkit-scrollbar-thumb {
+  background: #64748b !important;
+  border-radius: 10px !important;
+  border: 2px solid #e2e8f0 !important;
+}
+
+
+/* ============================================================
+   MOBILE
+   ============================================================ */
+
+@media (max-width: 768px) {
+
+  /* ----------------------------------------------------------
+     INPUTS
+     Up to 4 short fields per row where possible
+     ---------------------------------------------------------- */
+
+  .bm-boq-summary-scroll,
+  .bm-boq-table-scroll {
+    width: calc(100vw - 16px) !important;
+    max-width: calc(100vw - 16px) !important;
+  }
+
+
+  /* ----------------------------------------------------------
+     SUMMARY
+     ---------------------------------------------------------- */
+
+  .bm-boq-summary-scroll > * {
+    flex: 0 0 145px !important;
+
+    min-width: 145px !important;
+    width: 145px !important;
+  }
+
+
+  /* ----------------------------------------------------------
+     ITEM TABLE
+     ---------------------------------------------------------- */
+
+  .bm-boq-table {
+    min-width: 680px !important;
+    width: max-content !important;
+    max-width: none !important;
+  }
+
+  .bm-boq-table th,
+  .bm-boq-table td {
+    padding: 3px 4px !important;
+    font-size: 9.5px !important;
+  }
+
+
+  /* Give description useful width */
+  .bm-boq-table th:nth-child(2),
+  .bm-boq-table td:nth-child(2),
+  .bm-boq-table th:nth-child(3),
+  .bm-boq-table td:nth-child(3) {
+    min-width: 150px !important;
+    max-width: 210px !important;
+
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
+  }
+
+
+  /*
+     Keep body stationary.
+     Only BOQ summary/table areas move horizontally.
+  */
+
+  html,
+  body,
+  #__next {
+    width: 100% !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+}
+
+
+/* ============================================================
+   TABLET
+   ============================================================ */
+
+@media (min-width: 769px) and (max-width: 1024px) {
+
+  .bm-boq-table {
+    min-width: 850px !important;
+  }
+
+  .bm-boq-summary-scroll > * {
+    flex-basis: 155px !important;
+    min-width: 155px !important;
+  }
+}
+
+
+/* ============================================================
+   BUILDMITRA FINAL BOQ RESPONSIVE SYSTEM
+   Civil / Interior / Electrical / Plumbing / Painting /
+   Waterproofing / PEB
+   ============================================================ */
+
+
+/* ------------------------------------------------------------
+   INPUT FIELDS
+   ------------------------------------------------------------ */
+
+.bm-final-boq-input-grid,
+.bm-final-boq-page .bm-input-grid {
+
+  display: grid !important;
+
+  grid-template-columns:
+    repeat(auto-fit, minmax(90px, 1fr)) !important;
+
+  gap: 5px !important;
+
+  align-items: end !important;
+
+  width: 100% !important;
+  max-width: 100% !important;
+
+  margin: 0 0 6px !important;
+}
+
+
+.bm-final-boq-page .bm-input-group {
+
+  min-width: 0 !important;
+
+  margin: 0 !important;
+}
+
+
+.bm-final-boq-page input,
+.bm-final-boq-page select {
+
+  box-sizing: border-box !important;
+
+  min-width: 0 !important;
+
+  max-width: 100% !important;
+}
+
+
+/* ------------------------------------------------------------
+   CONSOLIDATED RESULT BOXES
+   ONE HORIZONTAL ROW
+   ------------------------------------------------------------ */
+
+.bm-final-boq-summary {
+
+  display: flex !important;
+
+  flex-direction: row !important;
+
+  flex-wrap: nowrap !important;
+
+  gap: 6px !important;
+
+  width: 100% !important;
+
+  max-width: 100% !important;
+
+  overflow-x: auto !important;
+
+  overflow-y: hidden !important;
+
+  -webkit-overflow-scrolling: touch !important;
+
+  touch-action: pan-x !important;
+
+  overscroll-behavior-x: contain !important;
+
+  padding: 3px 2px 9px !important;
+
+  margin: 3px 0 7px !important;
+
+  scrollbar-width: auto !important;
+}
+
+
+.bm-final-boq-summary > * {
+
+  flex: 0 0 145px !important;
+
+  width: 145px !important;
+
+  min-width: 145px !important;
+
+  max-width: 155px !important;
+
+  box-sizing: border-box !important;
+
+  padding: 6px !important;
+
+  margin: 0 !important;
+}
+
+
+.bm-final-boq-summary::-webkit-scrollbar {
+
+  height: 8px !important;
+}
+
+
+.bm-final-boq-summary::-webkit-scrollbar-track {
+
+  background: #e2e8f0 !important;
+
+  border-radius: 10px !important;
+}
+
+
+.bm-final-boq-summary::-webkit-scrollbar-thumb {
+
+  background: #64748b !important;
+
+  border-radius: 10px !important;
+}
+
+
+/* ------------------------------------------------------------
+   ITEM-WISE BOQ TABLE
+   ------------------------------------------------------------ */
+
+.bm-final-boq-table-scroll {
+
+  display: block !important;
+
+  width: 100% !important;
+
+  max-width: 100% !important;
+
+  overflow-x: scroll !important;
+
+  overflow-y: hidden !important;
+
+  -webkit-overflow-scrolling: touch !important;
+
+  touch-action: pan-x !important;
+
+  overscroll-behavior-x: contain !important;
+
+  padding: 0 0 10px !important;
+
+  margin: 2px 0 7px !important;
+
+  scrollbar-width: auto !important;
+
+  scrollbar-gutter: stable !important;
+}
+
+
+.bm-final-boq-table {
+
+  width: max-content !important;
+
+  min-width: 760px !important;
+
+  max-width: none !important;
+
+  table-layout: auto !important;
+
+  border-collapse: collapse !important;
+
+  margin: 0 !important;
+}
+
+
+.bm-final-boq-table th,
+.bm-final-boq-table td {
+
+  padding: 4px 6px !important;
+
+  font-size: 10px !important;
+
+  line-height: 1.15 !important;
+
+  white-space: nowrap !important;
+
+  box-sizing: border-box !important;
+}
+
+
+.bm-final-boq-table-scroll::-webkit-scrollbar {
+
+  display: block !important;
+
+  height: 9px !important;
+}
+
+
+.bm-final-boq-table-scroll::-webkit-scrollbar-track {
+
+  background: #e2e8f0 !important;
+
+  border-radius: 10px !important;
+}
+
+
+.bm-final-boq-table-scroll::-webkit-scrollbar-thumb {
+
+  background: #64748b !important;
+
+  border-radius: 10px !important;
+
+  border: 2px solid #e2e8f0 !important;
+}
+
+
+/* ============================================================
+   MOBILE
+   ============================================================ */
+
+@media (max-width: 768px) {
+
+
+  /* Inputs:
+     approx 3-4 short fields per row where practical */
+
+  .bm-final-boq-input-grid,
+  .bm-final-boq-page .bm-input-grid {
+
+    grid-template-columns:
+      repeat(auto-fit, minmax(78px, 1fr)) !important;
+
+    gap: 4px !important;
+  }
+
+
+  .bm-final-boq-page input,
+  .bm-final-boq-page select {
+
+    height: 31px !important;
+
+    padding: 3px 4px !important;
+
+    font-size: 10px !important;
+  }
+
+
+  .bm-final-boq-page label {
+
+    font-size: 9px !important;
+
+    line-height: 1.1 !important;
+
+    margin-bottom: 2px !important;
+  }
+
+
+  /* Summary boxes */
+
+  .bm-final-boq-summary {
+
+    width: calc(100vw - 16px) !important;
+
+    max-width: calc(100vw - 16px) !important;
+
+    overflow-x: scroll !important;
+
+    touch-action: pan-x !important;
+  }
+
+
+  .bm-final-boq-summary > * {
+
+    flex: 0 0 135px !important;
+
+    width: 135px !important;
+
+    min-width: 135px !important;
+
+    max-width: 135px !important;
+  }
+
+
+  /* Detailed BOQ table */
+
+  .bm-final-boq-table-scroll {
+
+    width: calc(100vw - 16px) !important;
+
+    max-width: calc(100vw - 16px) !important;
+
+    overflow-x: scroll !important;
+
+    touch-action: pan-x !important;
+  }
+
+
+  .bm-final-boq-table {
+
+    width: 720px !important;
+
+    min-width: 720px !important;
+
+    max-width: none !important;
+  }
+
+
+  .bm-final-boq-table th,
+  .bm-final-boq-table td {
+
+    padding: 3px 4px !important;
+
+    font-size: 9.5px !important;
+  }
+
+
+  /* Description needs usable width */
+
+  .bm-final-boq-table th:nth-child(2),
+  .bm-final-boq-table td:nth-child(2),
+
+  .bm-final-boq-table th:nth-child(3),
+  .bm-final-boq-table td:nth-child(3) {
+
+    min-width: 150px !important;
+
+    max-width: 210px !important;
+
+    white-space: normal !important;
+
+    overflow-wrap: anywhere !important;
+  }
+}
+
+
+/* ============================================================
+   TABLET
+   ============================================================ */
+
+@media (min-width: 769px) and (max-width: 1024px) {
+
+  .bm-final-boq-input-grid,
+  .bm-final-boq-page .bm-input-grid {
+
+    grid-template-columns:
+      repeat(auto-fit, minmax(115px, 1fr)) !important;
+  }
+
+  .bm-final-boq-table {
+
+    min-width: 850px !important;
+  }
+}
+
+
+/* ============================================================
+   BUILDMITRA — REAL ITEM-WISE BOQ HORIZONTAL SCROLL
+   Do not modify calculator quick results / BOQ summary strips.
+   ============================================================ */
+
+.bm-real-boq-scroll {
+  display: block !important;
+
+  width: 100% !important;
+  max-width: 100% !important;
+
+  overflow-x: scroll !important;
+  overflow-y: hidden !important;
+
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: pan-x !important;
+  overscroll-behavior-x: contain !important;
+
+  box-sizing: border-box !important;
+
+  margin: 3px 0 8px !important;
+  padding: 0 0 11px !important;
+
+  scrollbar-width: auto !important;
+  scrollbar-gutter: stable !important;
+}
+
+
+/*
+  CRITICAL:
+  table must actually be wider than the visible screen.
+  This is what was missing before.
+*/
+
+.bm-real-boq-scroll > .bm-real-boq-table {
+  width: 900px !important;
+  min-width: 900px !important;
+  max-width: none !important;
+
+  table-layout: auto !important;
+
+  border-collapse: collapse !important;
+
+  margin: 0 !important;
+}
+
+
+/* Never allow old CSS to shrink it back to 100% */
+
+.bm-real-boq-scroll table,
+.bm-real-boq-scroll thead,
+.bm-real-boq-scroll tbody {
+  max-width: none !important;
+}
+
+
+.bm-real-boq-table th,
+.bm-real-boq-table td {
+  white-space: nowrap !important;
+
+  padding: 4px 7px !important;
+
+  font-size: 10px !important;
+  line-height: 1.2 !important;
+
+  box-sizing: border-box !important;
+}
+
+
+/* Description gets more room */
+
+.bm-real-boq-table th:nth-child(2),
+.bm-real-boq-table td:nth-child(2),
+.bm-real-boq-table th:nth-child(3),
+.bm-real-boq-table td:nth-child(3) {
+  min-width: 180px !important;
+
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+
+
+/* ============================================================
+   REAL VISIBLE DRAG BAR
+   ============================================================ */
+
+.bm-real-boq-scroll::-webkit-scrollbar {
+  display: block !important;
+  height: 10px !important;
+}
+
+.bm-real-boq-scroll::-webkit-scrollbar-track {
+  background: #e2e8f0 !important;
+  border-radius: 10px !important;
+}
+
+.bm-real-boq-scroll::-webkit-scrollbar-thumb {
+  background: #475569 !important;
+  border-radius: 10px !important;
+  border: 2px solid #e2e8f0 !important;
+}
+
+.bm-real-boq-scroll::-webkit-scrollbar-thumb:active {
+  background: #1e293b !important;
+}
+
+
+/* ============================================================
+   MOBILE
+   ============================================================ */
+
+@media (max-width: 768px) {
+
+  .bm-real-boq-scroll {
+    width: calc(100vw - 14px) !important;
+    max-width: calc(100vw - 14px) !important;
+
+    overflow-x: scroll !important;
+    overflow-y: hidden !important;
+
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-x !important;
+
+    padding-bottom: 12px !important;
+  }
+
+
+  /*
+    Still intentionally wider than phone.
+    User can swipe/drag all the way to Amount/Total columns.
+  */
+
+  .bm-real-boq-scroll > .bm-real-boq-table {
+    width: 820px !important;
+    min-width: 820px !important;
+    max-width: none !important;
+  }
+
+
+  .bm-real-boq-table th,
+  .bm-real-boq-table td {
+    padding: 3px 5px !important;
+    font-size: 9.5px !important;
+  }
+}
+
+
+/* Tablet */
+
+@media (min-width: 769px) and (max-width: 1024px) {
+
+  .bm-real-boq-scroll > .bm-real-boq-table {
+    width: 980px !important;
+    min-width: 980px !important;
+  }
+}
+
+
+/* ============================================================
+   BUILDMITRA MARKETPLACE — MOBILE COMPACT SEARCH/FILTER FIELDS
+   Only marketplace search/filter area
+   ============================================================ */
+
+@media (max-width: 768px) {
+
+  .bm-marketplace-mobile-filters {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 4px !important;
+    padding: 5px !important;
+    margin: 0 0 5px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    align-items: end !important;
+  }
+
+  .bm-marketplace-mobile-filters > * {
+    min-width: 0 !important;
+    margin: 0 !important;
+  }
+
+  .bm-marketplace-mobile-filters label {
+    display: block !important;
+    font-size: 9px !important;
+    line-height: 1.05 !important;
+    margin-bottom: 2px !important;
+    font-weight: 700 !important;
+  }
+
+  .bm-marketplace-mobile-filters input,
+  .bm-marketplace-mobile-filters select {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    height: 30px !important;
+    padding: 3px 5px !important;
+    font-size: 10px !important;
+    line-height: 1 !important;
+    border-radius: 5px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Search box can use full row */
+  .bm-marketplace-mobile-filters input[type="search"],
+  .bm-marketplace-mobile-filters input[placeholder*="Search"],
+  .bm-marketplace-mobile-filters input[placeholder*="search"] {
+    grid-column: 1 / -1 !important;
+  }
+
+  /* Keep buttons compact */
+  .bm-marketplace-mobile-filters button {
+    min-height: 30px !important;
+    padding: 4px 7px !important;
+    font-size: 10px !important;
+    border-radius: 5px !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .bm-marketplace-mobile-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 3px !important;
+    padding: 4px !important;
+  }
+
+  .bm-marketplace-mobile-filters input,
+  .bm-marketplace-mobile-filters select {
+    height: 29px !important;
+    font-size: 9.5px !important;
+  }
+}
+
+
+/* ============================================================
+   BUILDMITRA — MOBILE DASHBOARD VERTICAL GAP COMPACTION
+   Header + tabs + first dashboard content
+   ============================================================ */
+
+@media (max-width: 768px) {
+
+  /* Remove unnecessary space around shared mobile navigation */
+  .bm-mobile-nav,
+  .bm-mobile-header,
+  .bm-dashboard-header {
+    margin-bottom: 0 !important;
+    padding-bottom: 2px !important;
+  }
+
+  /* Tabs must sit immediately below header */
+  .bm-tab-bar {
+    margin-top: 0 !important;
+    margin-bottom: 3px !important;
+    padding-top: 2px !important;
+    padding-bottom: 5px !important;
+    min-height: 34px !important;
+  }
+
+  /* Remove empty vertical space immediately after tabs */
+  .bm-tab-bar + * {
+    margin-top: 0 !important;
+  }
+
+  /* Compact dashboard page/container */
+  .bm-dashboard-content,
+  .dashboard-content,
+  .dashboard-container,
+  .dashboard-main,
+  .main-content {
+    padding-top: 4px !important;
+    margin-top: 0 !important;
+  }
+
+  /* Compact first section/card after navigation */
+  .bm-dashboard-content > :first-child,
+  .dashboard-content > :first-child,
+  .dashboard-container > :first-child,
+  .dashboard-main > :first-child {
+    margin-top: 0 !important;
+  }
+
+  /* General dashboard section spacing */
+  .bm-dashboard-content section,
+  .dashboard-content section {
+    margin-top: 4px !important;
+    margin-bottom: 6px !important;
+  }
+
+  /* Compact headings without making text too small */
+  .bm-dashboard-content h1,
+  .bm-dashboard-content h2,
+  .bm-dashboard-content h3,
+  .dashboard-content h1,
+  .dashboard-content h2,
+  .dashboard-content h3 {
+    margin-top: 3px !important;
+    margin-bottom: 4px !important;
+    line-height: 1.15 !important;
+  }
+
+  /* Avoid empty paragraph gaps */
+  .bm-dashboard-content p,
+  .dashboard-content p {
+    margin-top: 2px !important;
+    margin-bottom: 4px !important;
+  }
+}
+
+@media (max-width: 380px) {
+
+  .bm-tab-bar {
+    min-height: 32px !important;
+    margin-bottom: 2px !important;
+    padding-top: 1px !important;
+    padding-bottom: 4px !important;
+  }
+
+  .bm-dashboard-content,
+  .dashboard-content,
+  .dashboard-container,
+  .dashboard-main,
+  .main-content {
+    padding-top: 2px !important;
+  }
+}
+

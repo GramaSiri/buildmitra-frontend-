@@ -269,18 +269,18 @@ export default function Sidebar({ children, currentPath }: { children?: any; cur
     { name: "Roof Truss", path: "/roof-truss-calculator", icon: "🏠" },
     { name: "Pile Foundation", path: "/pile-foundation-calculator", icon: "⛏️" },
     { name: "Lintel", path: "/lintel-calculator", icon: "📏" },
-    { name: "Land Survey Calculator", path: "/plot-layout", icon: "🗺️" },
+    { name: "Land Survey Calculator", path: "/land-survey-calculator", icon: "🗺️" },
 
   ];
-
   // ---------------- BOQ ----------------
   const boqTabs = [
+    { name: "PEB Building BOQ", path: "/peb-building-boq", icon: "🏗️" },
     { name: "Waterproofing BOQ", path: "/boq-waterproofing", icon: "💧" },
     { name: "Civil BOQ", path: "/boq-civil", icon: "📄" },
     { name: "Interior BOQ", path: "/boq-interior", icon: "🪑" },
+    { name: "Electrical BOQ", path: "/boq-electrical", icon: "⚡" },
     { name: "Plumbing BOQ", path: "/boq-plumbing", icon: "🔧" },
     { name: "Painting BOQ", path: "/boq-painting", icon: "🎨" },
-    { name: "False Ceiling BOQ", path: "/boq-false-ceiling", icon: "⬇️" }
   ];
 
   // ---------------- OTHER MODULES ----------------
@@ -820,6 +820,7 @@ const handleMobileBack = () => {
     </div>
   );
 }
+
 
 
 

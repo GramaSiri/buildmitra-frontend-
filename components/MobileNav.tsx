@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useRouter } from "next/router";
 
 interface MobileNavProps {
   currentModule: string;
@@ -30,6 +31,7 @@ export default function MobileNav({
   title,
   subtitle
 }: MobileNavProps) {
+  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const currentModObj = MODULES.find((m) => m.id === currentModule) || {
@@ -42,7 +44,7 @@ export default function MobileNav({
   const handleModuleClick = (path: string) => {
     setMenuOpen(false);
     if (path && path !== "#") {
-      window.location.href = path;
+      router.push(path);
     }
   };
 
@@ -52,7 +54,7 @@ export default function MobileNav({
       onLogout();
     } else {
       if (confirm("Are you sure you want to logout?")) {
-        window.location.href = "/";
+        router.push("/");
       }
     }
   };

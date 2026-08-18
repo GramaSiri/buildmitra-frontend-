@@ -15,12 +15,12 @@ const styles: Record<string, React.CSSProperties> = {
   stepperCard: { backgroundColor: '#ffffff', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '18px', marginBottom: '18px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' },
   sectionHeader: { fontSize: '15px', fontWeight: '700', color: '#78350f', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '2px solid #fde68a', paddingBottom: '8px' },
 
-  grid4: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px', marginBottom: '14px' },
-  fieldGroup: { display: 'flex', flexDirection: 'column', gap: '4px' },
-  label: { fontSize: '11px', fontWeight: '700', color: '#334155', textTransform: 'uppercase', letterSpacing: '0.3px' },
-  input: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#fff', outline: 'none' },
+  grid4: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(82px, 1fr))', gap: '5px', alignItems: 'end', width: '100%', maxWidth: '100%', marginBottom: '5px' },
+  fieldGroup: { minWidth: 0, width: '100%', margin: 0, padding: 0 },
+  label: { display: 'block', fontSize: '10px', lineHeight: '1.1', fontWeight: '700', marginBottom: '2px', whiteSpace: 'normal' },
+  input: { width: '100%', minWidth: 0, maxWidth: '100%', height: '32px', padding: '3px 5px', fontSize: '12px', lineHeight: '1.1', textAlign: 'center', borderRadius: '5px', border: '1px solid #cbd5e1', boxSizing: 'border-box' },
   inputReadOnly: { backgroundColor: '#f1f5f9', fontWeight: '700', color: '#78350f' },
-  select: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', backgroundColor: '#fff', outline: 'none' },
+  select: { width: '100%', minWidth: 0, maxWidth: '100%', height: '32px', padding: '3px 4px', fontSize: '11px', lineHeight: '1.1', borderRadius: '5px', border: '1px solid #cbd5e1', boxSizing: 'border-box', overflow: 'hidden', textOverflow: 'ellipsis' },
 
   btnPrimary: { backgroundColor: '#78350f', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '800', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%' },
   btnSecondary: { backgroundColor: '#2563eb', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' },
@@ -323,7 +323,7 @@ export default function FalseCeilingBOQPage() {
           </div>
 
           {/* Metric Summary Grid */}
-          <div style={styles.summaryGrid}>
+          <div className="bm-boq-summary-scroll" style={styles.summaryGrid}>
             <div style={{ ...styles.metricCard, ...styles.metricMaroon }}>
               <span style={styles.metricTitle}>Grand Total Cost</span>
               <span style={styles.metricVal}>₹{formatNumber(boqResults.grandTotal / 100000, 2)} Lakhs</span>
@@ -362,8 +362,8 @@ export default function FalseCeilingBOQPage() {
           </div>
 
           {/* Itemized BOQ Table */}
-          <div style={styles.tableContainer}>
-            <table style={styles.table}>
+          <div className="bm-boq-table-scroll" style={styles.tableContainer}>
+            <table className="bm-boq-table" style={styles.table}>
               <thead>
                 <tr>
                   <th style={styles.th}>Sr.</th>

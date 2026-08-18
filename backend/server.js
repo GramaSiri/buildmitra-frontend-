@@ -1,4 +1,4 @@
-require('dotenv').config();
+try { require('dotenv').config(); } catch {}
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -162,20 +162,93 @@ app.post('/api/enquiry', async (req, res) => {
   }
 });
 
-app.get('/api/enquiry/code/:code', async (req, res) => {
+app.get('/api/enquiry/provider/:code', async (req, res) => {
   try {
-    const enquiry = await Enquiry.findOne({ enquiryCode: req.params.code });
-    if (!enquiry) return res.status(404).json({ success: false, message: 'Enquiry not found' });
-    res.json({ success: true, enquiry });
+    const code = req.params.code;
+    const enquiries = await Enquiry.find({
+      $or: [{ providerUserCode: code }, { providerPhone: code }]
+    }).sort({ createdAt: -1 });
+    res.json({ success: true, enquiries, data: enquiries });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-app.put('/api/enquiry/:id/quote', async (req, res) => {
+app.get('/api/enquiry/buyer/:code', async (req, res) => {
   try {
-    const enquiry = await Enquiry.findByIdAndUpdate(req.params.id, { ...req.body, status: 'Quoted' }, { new: true });
-    res.json({ success: true, enquiry });
+    const code = req.params.code;
+    const enquiries = await Enquiry.find({
+      $or: [{ buyerUserCode: code }, { buyerPhone: code }]
+    }).sort({ createdAt: -1 });
+    res.json({ success: true, enquiries, data: enquiries });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/enquiries', async (req, res) => {
+  try {
+    const enquiries = await Enquiry.find({}).sort({ createdAt: -1 }).limit(100);
+    res.json({ success: true, enquiries, data: enquiries });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ================= ADMIN MASTER ITEM MANAGEMENT APIs =================
+app.put('/api/admin/master-items/:code/rate', async (req, res) => {
+  try {
+    const { referenceRate, currentRate, rate } = req.body;
+    const newRate = Number(referenceRate || currentRate || rate || 0);
+    const code = req.params.code;
+    const Product = mongoose.models.Product || mongoose.model('Product');
+    const updated = await Product.findOneAndUpdate(
+      { $or: [{ masterItemCode: code }, { legacyCode: code }] },
+      { referenceRate: newRate, currentRate: newRate, price: newRate, updatedAt: new Date() },
+      { new: true }
+    );
+    res.json({ success: true, item: updated, message: `Master rate updated to ₹${newRate}` });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.put('/api/admin/master-items/:code/status', async (req, res) => {
+  try {
+    const { status, isActive } = req.body;
+    const code = req.params.code;
+    const Product = mongoose.models.Product || mongoose.model('Product');
+    const updated = await Product.findOneAndUpdate(
+      { $or: [{ masterItemCode: code }, { legacyCode: code }] },
+      { status: status || 'inactive', isActive: Boolean(isActive), updatedAt: new Date() },
+      { new: true }
+    );
+    res.json({ success: true, item: updated, message: `Master status set to ${status}` });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.delete('/api/admin/master-items/:code', async (req, res) => {
+  try {
+    const code = req.params.code;
+    const Enquiry = mongoose.models.Enquiry || mongoose.model('Enquiry');
+    const Product = mongoose.models.Product || mongoose.model('Product');
+
+    // Check if referenced in active enquiries
+    const isReferenced = await Enquiry.exists({ "items.masterItemCode": code });
+    if (isReferenced) {
+      // Soft-delete / deactivate to preserve historical workflow data
+      await Product.findOneAndUpdate(
+        { $or: [{ masterItemCode: code }, { legacyCode: code }] },
+        { status: 'inactive', isActive: false, updatedAt: new Date() }
+      );
+      return res.json({ success: true, action: "deactivated", message: `Item ${code} is referenced in historical enquiries. Safely marked inactive.` });
+    }
+
+    // Unreferenced safe delete
+    await Product.deleteOne({ $or: [{ masterItemCode: code }, { legacyCode: code }] });
+    res.json({ success: true, action: "deleted", message: `Unreferenced master item ${code} deleted.` });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

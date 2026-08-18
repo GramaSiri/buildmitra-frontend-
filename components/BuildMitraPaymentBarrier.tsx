@@ -73,6 +73,11 @@ function readCurrentUser(): any {
 function hasActiveSubscription(): boolean {
   if (typeof window === "undefined") return false;
 
+  // Check BETA test once-per-session unlock flag
+  if (sessionStorage.getItem("bm_beta_paid_session") === "true" || sessionStorage.getItem("bm_pay_per_use_unlocked") === "true") {
+    return true;
+  }
+
   const user = readCurrentUser();
   const role = String(user?.role || "").toLowerCase();
 

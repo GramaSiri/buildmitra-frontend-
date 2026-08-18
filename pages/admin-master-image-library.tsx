@@ -1,20 +1,31 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
-
 import { getApiBase } from "../utils/apiConfig";
+
 const API_BASE = getApiBase();
 
-type MasterImageItem = {
+export type MasterItemRecord = {
   _id?: string;
   masterItemCode: string;
+  legacyCode?: string;
   itemType?: string;
   category?: string;
   subCategory?: string;
   itemName?: string;
   brand?: string;
   specification?: string;
+  unit?: string;
+  gst?: number;
+  referenceRate?: number;
+  currentRate?: number;
+  rate?: number;
   imageUrl?: string;
   status?: string;
+  isActive?: boolean;
+  imageStatus?: string;
+  imageVerified?: boolean;
+  updatedAt?: string;
+  images?: any[];
 };
 
 type UploadResult = {
@@ -36,145 +47,201 @@ type UploadResult = {
   message?: string;
 };
 
-function isRealMasterImage(value?: string) {
-  const url = String(value || "").trim();
-
-  return Boolean(
-    url &&
-    (
-      url.includes("/api/marketplace/images/") ||
-      url.startsWith("data:") ||
-      url.startsWith("blob:") ||
-      url.startsWith("https://")
-    )
-  );
+function normalizeMasterCode(code?: string): string {
+  if (!code) return "";
+  const str = String(code).trim();
+  if (/^MAT-\d+$/i.test(str)) return str.toUpperCase();
+  const matchCeme = str.match(/^CEME(\d+)$/i);
+  if (matchCeme) return "MAT-" + matchCeme[1].padStart(6, "0");
+  const matchTmt = str.match(/^TMT\s*(\d+)$/i);
+  if (matchTmt) return "MAT-" + matchTmt[1].padStart(6, "0");
+  const matchDigits = str.match(/^(\d+)$/);
+  if (matchDigits) return "MAT-" + matchDigits[1].padStart(6, "0");
+  return str.toUpperCase();
 }
 
 function absoluteImageUrl(value?: string) {
   const url = String(value || "").trim();
-
   if (!url) return "";
-
-  if (
-    url.startsWith("http://") ||
-    url.startsWith("https://") ||
-    url.startsWith("data:") ||
-    url.startsWith("blob:")
-  ) {
+  if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:") || url.startsWith("blob:")) {
     return url;
   }
-
   return `${API_BASE}${url.startsWith("/") ? "" : "/"}${url}`;
 }
 
 export default function AdminMasterImageLibrary() {
   const router = useRouter();
 
-  const [items, setItems] = useState<MasterImageItem[]>([]);
+  const [items, setItems] = useState<MasterItemRecord[]>([]);
+  const [totalCount, setTotalCount] = useState<number>(0);
+  const [page, setPage] = useState<number>(1);
+  const [limit] = useState<number>(50);
   const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState("");
   const [result, setResult] = useState<UploadResult | null>(null);
 
-  const loadItems = async () => {
+  // Edit Modal State
+  const [editingItem, setEditingItem] = useState<MasterItemRecord | null>(null);
+  const [editRate, setEditRate] = useState<string>("");
+  const [editName, setEditName] = useState<string>("");
+  const [editCategory, setEditCategory] = useState<string>("");
+  const [editBrand, setEditBrand] = useState<string>("");
+  const [editUnit, setEditUnit] = useState<string>("");
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  // Add Item Modal State
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newItem, setNewItem] = useState({
+    masterItemCode: "",
+    itemName: "",
+    category: "",
+    subCategory: "",
+    brand: "",
+    specification: "",
+    unit: "NOS",
+    referenceRate: 0,
+    itemType: "material"
+  });
+
+  const loadItems = async (targetPage = page) => {
     try {
       setLoading(true);
       setMessage("");
 
       const params = new URLSearchParams();
+      params.set("limit", String(limit));
+      params.set("page", String(targetPage));
 
       if (search.trim()) {
         params.set("search", search.trim());
       }
-
-      let loadedList: MasterImageItem[] = [];
-
-      const response = await fetch(
-        `${API_BASE}/api/master-images${
-          params.toString() ? `?${params.toString()}` : ""
-        }`,
-        {
-          headers: {
-            "x-user-role": "admin",
-            "x-user-code": "ADM-000001",
-          },
-        }
-      );
-
-      const data = await response.json();
-
-      if (response.ok && data.success && Array.isArray(data.items) && data.items.length > 0) {
-        loadedList = data.items;
-      } else {
-        const response2 = await fetch(
-          `${API_BASE}/api/provider/master-items?limit=3000${
-            search.trim() ? `&search=${encodeURIComponent(search.trim())}` : ""
-          }`
-        );
-        const data2 = await response2.json();
-        if (data2 && Array.isArray(data2.items)) {
-          loadedList = data2.items;
-        }
+      if (categoryFilter) {
+        params.set("category", categoryFilter);
       }
 
-      setItems(loadedList);
+      const response = await fetch(`${API_BASE}/api/provider/master-items?${params.toString()}`);
+      const data = await response.json();
+
+      if (data && Array.isArray(data.items)) {
+        setItems(data.items);
+        setTotalCount(data.total || data.count || data.items.length);
+      } else {
+        setItems([]);
+        setTotalCount(0);
+      }
     } catch (error: any) {
-      setMessage(error.message || "Could not load master items.");
+      setMessage(error.message || "Could not load master catalogue items.");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadItems();
-  }, []);
+    loadItems(1);
+  }, [search, categoryFilter, statusFilter]);
 
-  const uploadFiles = async (
-    files: FileList | null,
-    uploadType: "images" | "folder"
-  ) => {
+  const filteredItems = useMemo(() => {
+    return items.filter((item) => {
+      if (statusFilter === "active" && item.status === "inactive") return false;
+      if (statusFilter === "inactive" && item.status !== "inactive") return false;
+      if (statusFilter === "has_image" && !item.imageUrl) return false;
+      if (statusFilter === "no_image" && item.imageUrl) return false;
+      return true;
+    });
+  }, [items, statusFilter]);
+
+  const handleUpdateRate = async (item: MasterItemRecord, newRate: number) => {
+    try {
+      setMessage("");
+      const res = await fetch(`${API_BASE}/api/admin/master-items/${encodeURIComponent(item.masterItemCode)}/rate`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "x-user-role": "admin" },
+        body: JSON.stringify({ referenceRate: newRate, currentRate: newRate, rate: newRate })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessage(`Rate updated for ${item.masterItemCode} to ₹${newRate}`);
+        setItems(prev => prev.map(i => i.masterItemCode === item.masterItemCode ? { ...i, referenceRate: newRate, currentRate: newRate, rate: newRate } : i));
+      } else {
+        setMessage(data.message || "Failed to update rate");
+      }
+    } catch (err: any) {
+      setMessage(`Rate update error: ${err.message}`);
+    }
+  };
+
+  const handleToggleActive = async (item: MasterItemRecord) => {
+    const nextStatus = item.status === "inactive" ? "active" : "inactive";
+    try {
+      setMessage("");
+      const res = await fetch(`${API_BASE}/api/admin/master-items/${encodeURIComponent(item.masterItemCode)}/status`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "x-user-role": "admin" },
+        body: JSON.stringify({ status: nextStatus, isActive: nextStatus === "active" })
+      });
+      const data = await res.json();
+      if (data.success || res.ok) {
+        setMessage(`Item ${item.masterItemCode} marked as ${nextStatus}`);
+        setItems(prev => prev.map(i => i.masterItemCode === item.masterItemCode ? { ...i, status: nextStatus, isActive: nextStatus === "active" } : i));
+      }
+    } catch (err: any) {
+      setMessage(`Status update error: ${err.message}`);
+    }
+  };
+
+  const handleDeleteItem = async (item: MasterItemRecord) => {
+    const confirmDelete = window.confirm(
+      `Safely delete or deactivate ${item.masterItemCode} (${item.itemName})?\nIf referenced in marketplace or enquiries, it will be safely deactivated to preserve history.`
+    );
+    if (!confirmDelete) return;
+
+    try {
+      setMessage("");
+      const res = await fetch(`${API_BASE}/api/admin/master-items/${encodeURIComponent(item.masterItemCode)}`, {
+        method: "DELETE",
+        headers: { "x-user-role": "admin" }
+      });
+      const data = await res.json();
+      setMessage(data.message || `Master item ${item.masterItemCode} processed.`);
+      loadItems(page);
+    } catch (err: any) {
+      setMessage(`Delete error: ${err.message}`);
+    }
+  };
+
+  const uploadFiles = async (files: FileList | null, uploadType: "images" | "folder") => {
     if (!files || !files.length) return;
-
     try {
       setUploading(true);
       setMessage("");
       setResult(null);
 
       const formData = new FormData();
-
       Array.from(files).forEach((file) => {
-        formData.append("images", file, file.name);
+        const normCode = normalizeMasterCode(file.name.substring(0, file.name.lastIndexOf(".")) || file.name);
+        const ext = file.name.substring(file.name.lastIndexOf(".")) || ".png";
+        formData.append("images", file, `${normCode}${ext}`);
       });
-
       formData.append("uploadedBy", "ADM-000001");
 
-      const response = await fetch(
-        `${API_BASE}/api/master-images/upload-images`,
-        {
-          method: "POST",
-          headers: {
-            "x-user-role": "admin",
-            "x-user-code": "ADM-000001",
-          },
-          body: formData,
-        }
-      );
+      const response = await fetch(`${API_BASE}/api/master-images/upload-images`, {
+        method: "POST",
+        headers: { "x-user-role": "admin", "x-user-code": "ADM-000001" },
+        body: formData
+      });
 
       const data: UploadResult = await response.json();
-
       if (!response.ok || !data.success) {
         throw new Error(data.message || `${uploadType} upload failed.`);
       }
 
       setResult(data);
-      setMessage(
-        `Upload completed: ${data.matchedCount || 0} matched, ${
-          data.unmatchedCount || 0
-        } unmatched.`
-      );
-
-      await loadItems();
+      setMessage(`Upload completed: ${data.matchedCount || 0} matched, ${data.unmatchedCount || 0} unmatched.`);
+      await loadItems(page);
     } catch (error: any) {
       setMessage(error.message || "Image upload failed.");
     } finally {
@@ -182,153 +249,64 @@ export default function AdminMasterImageLibrary() {
     }
   };
 
-  const uploadZip = async (file: File | null) => {
-    if (!file) return;
-
-    try {
-      setUploading(true);
-      setMessage("");
-      setResult(null);
-
-      const formData = new FormData();
-      formData.append("archive", file);
-      formData.append("uploadedBy", "ADM-000001");
-
-      const response = await fetch(
-        `${API_BASE}/api/master-images/upload-zip`,
-        {
-          method: "POST",
-          headers: {
-            "x-user-role": "admin",
-            "x-user-code": "ADM-000001",
-          },
-          body: formData,
-        }
-      );
-
-      const data: UploadResult = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || "ZIP upload failed.");
-      }
-
-      setResult(data);
-      setMessage(
-        `ZIP completed: ${data.matchedCount || 0} matched, ${
-          data.unmatchedCount || 0
-        } unmatched.`
-      );
-
-      await loadItems();
-    } catch (error: any) {
-      setMessage(error.message || "ZIP upload failed.");
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const deleteImage = async (item: MasterImageItem) => {
-    const confirmed = window.confirm(
-      `Remove the master image for ${item.masterItemCode} - ${
-        item.itemName || ""
-      }?`
-    );
-
-    if (!confirmed) return;
-
-    try {
-      setMessage("");
-
-      const response = await fetch(
-        `${API_BASE}/api/master-images/${encodeURIComponent(
-          item.masterItemCode
-        )}`,
-        {
-          method: "DELETE",
-          headers: {
-            "x-user-role": "admin",
-            "x-user-code": "ADM-000001",
-          },
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || "Could not remove image.");
-      }
-
-      setMessage(data.message || "Master image removed.");
-      await loadItems();
-    } catch (error: any) {
-      setMessage(error.message || "Could not remove image.");
-    }
-  };
-
-  const withImages = useMemo(
-    () => items.filter((item) => isRealMasterImage(item.imageUrl)).length,
-    [items]
-  );
-
   return (
     <div style={styles.page}>
+      {/* Header */}
       <div style={styles.header}>
         <div>
           <div style={styles.eyebrow}>BUILDMITRA ADMIN</div>
-          <h1 style={styles.title}>Master Image Library</h1>
+          <h1 style={styles.title}>Master Images & Rates Library</h1>
           <p style={styles.subtitle}>
-            Upload images using filenames matching the Master Item Code.
+            Authoritative Master Catalogue: <strong>{totalCount.toLocaleString()}</strong> items in MongoDB Atlas.
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => router.push("/admin-dashboard")}
-          style={styles.secondaryButton}
-        >
-          ← Admin Dashboard
-        </button>
+        <div style={{ display: "flex", gap: "10px" }}>
+          <button type="button" onClick={() => setShowAddModal(true)} style={styles.primaryButton}>
+            + Add Master Item
+          </button>
+          <button type="button" onClick={() => router.push("/admin-dashboard")} style={styles.secondaryButton}>
+            ← Admin Dashboard
+          </button>
+        </div>
       </div>
 
-      <div style={styles.instruction}>
-        <strong>Required filename format:</strong>{" "}
-        <code>CEME000206.jpg</code>, <code>STEEL000101.png</code>
-        <br />
-        Folder names are ignored. The image filename must equal the exact
-        Master Item Code.
-      </div>
-
+      {/* Stats Summary */}
       <div style={styles.statsGrid}>
         <div style={styles.statCard}>
-          <div style={styles.statNumber}>{items.length}</div>
-          <div style={styles.statLabel}>Master items loaded</div>
+          <div style={styles.statNumber}>{totalCount.toLocaleString()}</div>
+          <div style={styles.statLabel}>Total Master Items</div>
         </div>
 
         <div style={styles.statCard}>
-          <div style={styles.statNumber}>{withImages}</div>
-          <div style={styles.statLabel}>Items with images</div>
+          <div style={{ ...styles.statNumber, color: "#166534" }}>
+            {items.filter(i => i.imageUrl).length}
+          </div>
+          <div style={styles.statLabel}>Images Verified</div>
         </div>
 
         <div style={styles.statCard}>
-          <div style={styles.statNumber}>{items.length - withImages}</div>
-          <div style={styles.statLabel}>Images pending</div>
+          <div style={{ ...styles.statNumber, color: "#ca8a04" }}>
+            {items.filter(i => Number(i.referenceRate || i.currentRate || i.rate || 0) > 0).length}
+          </div>
+          <div style={styles.statLabel}>Rates Configured</div>
         </div>
       </div>
 
+      {/* Upload Controls */}
       <div style={styles.uploadCard}>
-        <h2 style={styles.sectionTitle}>Upload Master Images</h2>
-
+        <h2 style={styles.sectionTitle}>Bulk Master Image & Rate Sync</h2>
         <div style={styles.uploadButtons}>
           <label style={styles.primaryButton}>
-            Upload Images
+            Upload Master Images
             <input
               type="file"
               accept=".jpg,.jpeg,.png,.webp"
               multiple
               disabled={uploading}
-              onChange={(event) => {
-                uploadFiles(event.target.files, "images");
-                event.currentTarget.value = "";
+              onChange={(e) => {
+                uploadFiles(e.target.files, "images");
+                e.currentTarget.value = "";
               }}
               style={{ display: "none" }}
             />
@@ -341,462 +319,227 @@ export default function AdminMasterImageLibrary() {
               accept=".jpg,.jpeg,.png,.webp"
               multiple
               disabled={uploading}
-              onChange={(event) => {
-                uploadFiles(event.target.files, "folder");
-                event.currentTarget.value = "";
+              onChange={(e) => {
+                uploadFiles(e.target.files, "folder");
+                e.currentTarget.value = "";
               }}
               style={{ display: "none" }}
               {...({ webkitdirectory: "", directory: "" } as any)}
             />
           </label>
-
-          <label style={styles.zipButton}>
-            Upload ZIP
-            <input
-              type="file"
-              accept=".zip,application/zip"
-              disabled={uploading}
-              onChange={(event) => {
-                uploadZip(event.target.files?.[0] || null);
-                event.currentTarget.value = "";
-              }}
-              style={{ display: "none" }}
-            />
-          </label>
         </div>
 
-        {uploading && (
-          <div style={styles.progressMessage}>
-            Processing and optimizing images. Please wait…
-          </div>
-        )}
-
-        {message && (
-          <div
-            style={{
-              ...styles.message,
-              background:
-                message.toLowerCase().includes("failed") ||
-                message.toLowerCase().includes("could not")
-                  ? "#fee2e2"
-                  : "#dcfce7",
-            }}
-          >
-            {message}
-          </div>
-        )}
+        {uploading && <div style={styles.progressMessage}>Syncing and verifying master items...</div>}
+        {message && <div style={styles.message}>{message}</div>}
       </div>
 
-      {result && (
-        <div style={styles.resultCard}>
-          <h2 style={styles.sectionTitle}>Latest Upload Result</h2>
-
-          <div style={styles.resultSummary}>
-            Total: <strong>{result.total || 0}</strong> &nbsp;|&nbsp; Matched:{" "}
-            <strong>{result.matchedCount || 0}</strong> &nbsp;|&nbsp;
-            Unmatched: <strong>{result.unmatchedCount || 0}</strong>
-          </div>
-
-          {!!result.unmatched?.length && (
-            <div style={{ marginTop: 14 }}>
-              <strong>Unmatched files</strong>
-
-              <div style={styles.unmatchedList}>
-                {result.unmatched.map((entry, index) => (
-                  <div key={`${entry.originalName}-${index}`}>
-                    {entry.originalName}
-                    {entry.masterItemCode
-                      ? ` (${entry.masterItemCode})`
-                      : ""}{" "}
-                    — {entry.reason || "Not matched"}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
+      {/* Search & Filter Bar */}
       <div style={styles.libraryCard}>
         <div style={styles.libraryHeader}>
-          <h2 style={styles.sectionTitle}>Image Library</h2>
-
-          <div style={styles.searchRow}>
+          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", width: "100%" }}>
             <input
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") loadItems();
-              }}
-              placeholder="Search code, item, brand or category"
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search Code (MAT-000001, CEME000195), Item Name, Brand, Category..."
               style={styles.searchInput}
             />
-
-            <button
-              type="button"
-              onClick={loadItems}
-              style={styles.searchButton}
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              style={styles.selectFilter}
             >
-              Search
-            </button>
+              <option value="all">All Statuses</option>
+              <option value="active">Active Only</option>
+              <option value="inactive">Inactive Only</option>
+              <option value="has_image">Has Image</option>
+              <option value="no_image">No Image</option>
+            </select>
+          </div>
+        </div>
 
+        {/* Master Item Table */}
+        {loading ? (
+          <div style={styles.empty}>Loading Master Catalogue from MongoDB...</div>
+        ) : !filteredItems.length ? (
+          <div style={styles.empty}>No Master Items found matching search criteria.</div>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table style={styles.table}>
+              <thead>
+                <tr style={{ background: "#f8fafc", textAlign: "left" }}>
+                  <th style={styles.th}>Image</th>
+                  <th style={styles.th}>Code / Legacy</th>
+                  <th style={styles.th}>Item Name</th>
+                  <th style={styles.th}>Category / Sub</th>
+                  <th style={styles.th}>Brand / Spec</th>
+                  <th style={styles.th}>Unit</th>
+                  <th style={styles.th}>Reference Rate (₹)</th>
+                  <th style={styles.th}>Status</th>
+                  <th style={styles.th}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredItems.map((item) => {
+                  const img = absoluteImageUrl(item.imageUrl);
+                  const displayRate = Number(item.referenceRate || item.currentRate || item.rate || 0);
+
+                  return (
+                    <tr key={item.masterItemCode} style={{ borderBottom: "1px solid #e2e8f0" }}>
+                      <td style={styles.td}>
+                        {img ? (
+                          <img src={img} alt={item.itemName} style={{ width: 44, height: 44, objectFit: "cover", borderRadius: 4 }} />
+                        ) : (
+                          <div style={{ width: 44, height: 44, background: "#f1f5f9", color: "#94a3b8", fontSize: 10, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 4 }}>No Image</div>
+                        )}
+                      </td>
+                      <td style={styles.td}>
+                        <strong style={{ color: "#0f172a" }}>{item.masterItemCode}</strong>
+                        {item.legacyCode && item.legacyCode !== item.masterItemCode && (
+                          <div style={{ fontSize: 10, color: "#64748b" }}>Legacy: {item.legacyCode}</div>
+                        )}
+                      </td>
+                      <td style={styles.td}>
+                        <div style={{ fontWeight: 700, color: "#1e293b" }}>{item.itemName}</div>
+                      </td>
+                      <td style={styles.td}>
+                        <div>{item.category || "—"}</div>
+                        <div style={{ fontSize: 10, color: "#64748b" }}>{item.subCategory}</div>
+                      </td>
+                      <td style={styles.td}>
+                        <div>{item.brand || "Generic"}</div>
+                        <div style={{ fontSize: 10, color: "#64748b" }}>{item.specification}</div>
+                      </td>
+                      <td style={styles.td}>
+                        <span style={styles.unitBadge}>{item.unit || "NOS"}</span>
+                      </td>
+                      <td style={styles.td}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                          <span style={{ fontWeight: 800, color: "#166534" }}>₹{displayRate}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const val = prompt(`Enter new reference rate for ${item.masterItemCode}:`, String(displayRate));
+                              if (val !== null && !isNaN(Number(val))) {
+                                handleUpdateRate(item, Number(val));
+                              }
+                            }}
+                            style={{ background: "none", border: 0, color: "#2563eb", cursor: "pointer", fontSize: 11 }}
+                          >
+                            ✏️
+                          </button>
+                        </div>
+                      </td>
+                      <td style={styles.td}>
+                        <button
+                          type="button"
+                          onClick={() => handleToggleActive(item)}
+                          style={{
+                            padding: "2px 8px",
+                            borderRadius: "12px",
+                            fontSize: "10px",
+                            fontWeight: 800,
+                            border: 0,
+                            cursor: "pointer",
+                            background: item.status === "inactive" ? "#fee2e2" : "#dcfce7",
+                            color: item.status === "inactive" ? "#991b1b" : "#166534"
+                          }}
+                        >
+                          {item.status === "inactive" ? "Inactive" : "Active"}
+                        </button>
+                      </td>
+                      <td style={styles.td}>
+                        <div style={{ display: "flex", gap: 4 }}>
+                          <label style={styles.smallBtn}>
+                            Img
+                            <input
+                              type="file"
+                              accept=".jpg,.jpeg,.png,.webp"
+                              style={{ display: "none" }}
+                              onChange={(e) => {
+                                if (e.target.files?.[0]) {
+                                  const file = e.target.files[0];
+                                  const transfer = new DataTransfer();
+                                  transfer.items.add(new File([file], `${item.masterItemCode}.png`, { type: file.type }));
+                                  uploadFiles(transfer.files, "images");
+                                }
+                              }}
+                            />
+                          </label>
+                          <button type="button" onClick={() => handleDeleteItem(item)} style={{ ...styles.smallBtn, background: "#ef4444", color: "#fff" }}>
+                            Del
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Pagination Bar */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16 }}>
+          <div style={{ fontSize: 12, color: "#64748b" }}>
+            Showing page {page} of {Math.ceil(totalCount / limit) || 1} ({totalCount.toLocaleString()} total Master Items)
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
             <button
               type="button"
+              disabled={page <= 1}
               onClick={() => {
-                setSearch("");
-                setTimeout(loadItems, 0);
+                const p = page - 1;
+                setPage(p);
+                loadItems(p);
               }}
               style={styles.secondaryButton}
             >
-              Reset
+              Previous Page
+            </button>
+            <button
+              type="button"
+              disabled={page * limit >= totalCount}
+              onClick={() => {
+                const p = page + 1;
+                setPage(p);
+                loadItems(p);
+              }}
+              style={styles.secondaryButton}
+            >
+              Next Page
             </button>
           </div>
         </div>
-
-        {loading ? (
-          <div style={styles.empty}>Loading master items…</div>
-        ) : !items.length ? (
-          <div style={styles.empty}>No master items found.</div>
-        ) : (
-          <div style={styles.grid}>
-            {items.map((item) => {
-              const image = isRealMasterImage(item.imageUrl)
-  ? absoluteImageUrl(item.imageUrl)
-  : "";
-
-              return (
-                <div key={item.masterItemCode} style={styles.itemCard}>
-                  <div style={styles.imageBox}>
-                    {image ? (
-                      <img
-                        src={image}
-                        alt={item.itemName || item.masterItemCode}
-                        style={styles.image}
-                      />
-                    ) : (
-                      <div style={styles.noImage}>No image</div>
-                    )}
-                  </div>
-
-                  <div style={styles.itemCode}>{item.masterItemCode}</div>
-                  <div style={styles.itemName}>
-                    {item.itemName || "Unnamed item"}
-                  </div>
-
-                  <div style={styles.meta}>
-                    {item.brand || "No brand"}
-                    <br />
-                    {item.category || "No category"}
-                    {item.subCategory ? ` / ${item.subCategory}` : ""}
-                  </div>
-
-                  <div style={styles.cardActions}>
-                    <label style={styles.replaceButton}>
-                      {image ? "Replace" : "Add Image"}
-                      <input
-                        type="file"
-                        accept=".jpg,.jpeg,.png,.webp"
-                        disabled={uploading}
-                        onChange={(event) => {
-                          const file = event.target.files?.[0];
-
-                          if (file) {
-                            const renamedFile = new File(
-                              [file],
-                              `${item.masterItemCode}${file.name.substring(
-                                file.name.lastIndexOf(".")
-                              )}`,
-                              { type: file.type }
-                            );
-
-                            const transfer = new DataTransfer();
-                            transfer.items.add(renamedFile);
-
-                            uploadFiles(transfer.files, "images");
-                          }
-
-                          event.currentTarget.value = "";
-                        }}
-                        style={{ display: "none" }}
-                      />
-                    </label>
-
-                    {image && (
-                      <button
-                        type="button"
-                        onClick={() => deleteImage(item)}
-                        style={styles.deleteButton}
-                      >
-                        Remove
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
       </div>
     </div>
   );
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  page: {
-    minHeight: "100vh",
-    background: "#f4f7fb",
-    padding: "24px",
-    fontFamily: "Arial, sans-serif",
-    color: "#172033",
-  },
-  header: {
-    maxWidth: "1450px",
-    margin: "0 auto 18px",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: "20px",
-    flexWrap: "wrap",
-  },
-  eyebrow: {
-    color: "#2563eb",
-    fontWeight: 800,
-    fontSize: "12px",
-    letterSpacing: "1.5px",
-  },
-  title: {
-    margin: "5px 0 4px",
-    fontSize: "30px",
-  },
-  subtitle: {
-    margin: 0,
-    color: "#5f6b7a",
-  },
-  instruction: {
-    maxWidth: "1450px",
-    margin: "0 auto 18px",
-    padding: "14px 16px",
-    background: "#fff7d6",
-    border: "1px solid #f4ce55",
-    borderRadius: "10px",
-    lineHeight: 1.6,
-  },
-  statsGrid: {
-    maxWidth: "1450px",
-    margin: "0 auto 18px",
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
-    gap: "14px",
-  },
-  statCard: {
-    background: "#ffffff",
-    borderRadius: "12px",
-    padding: "18px",
-    boxShadow: "0 3px 14px rgba(15, 23, 42, 0.07)",
-  },
-  statNumber: {
-    fontSize: "27px",
-    fontWeight: 800,
-  },
-  statLabel: {
-    color: "#687386",
-    marginTop: "5px",
-  },
-  uploadCard: {
-    maxWidth: "1450px",
-    margin: "0 auto 18px",
-    background: "#ffffff",
-    padding: "20px",
-    borderRadius: "12px",
-    boxShadow: "0 3px 14px rgba(15, 23, 42, 0.07)",
-  },
-  resultCard: {
-    maxWidth: "1450px",
-    margin: "0 auto 18px",
-    background: "#ffffff",
-    padding: "20px",
-    borderRadius: "12px",
-    boxShadow: "0 3px 14px rgba(15, 23, 42, 0.07)",
-  },
-  sectionTitle: {
-    margin: "0 0 14px",
-    fontSize: "20px",
-  },
-  uploadButtons: {
-    display: "flex",
-    gap: "10px",
-    flexWrap: "wrap",
-  },
-  primaryButton: {
-    display: "inline-block",
-    cursor: "pointer",
-    border: 0,
-    borderRadius: "8px",
-    padding: "11px 17px",
-    background: "#2563eb",
-    color: "#ffffff",
-    fontWeight: 700,
-  },
-  zipButton: {
-    display: "inline-block",
-    cursor: "pointer",
-    border: 0,
-    borderRadius: "8px",
-    padding: "11px 17px",
-    background: "#7c3aed",
-    color: "#ffffff",
-    fontWeight: 700,
-  },
-  secondaryButton: {
-    border: "1px solid #cbd5e1",
-    borderRadius: "8px",
-    padding: "10px 15px",
-    background: "#ffffff",
-    color: "#263449",
-    cursor: "pointer",
-    fontWeight: 700,
-  },
-  progressMessage: {
-    marginTop: "15px",
-    padding: "12px",
-    background: "#e0efff",
-    borderRadius: "8px",
-  },
-  message: {
-    marginTop: "15px",
-    padding: "12px",
-    borderRadius: "8px",
-    fontWeight: 700,
-  },
-  resultSummary: {
-    fontSize: "16px",
-  },
-  unmatchedList: {
-    marginTop: "8px",
-    maxHeight: "180px",
-    overflowY: "auto",
-    padding: "10px",
-    background: "#fff1f2",
-    borderRadius: "8px",
-    lineHeight: 1.7,
-    fontSize: "13px",
-  },
-  libraryCard: {
-    maxWidth: "1450px",
-    margin: "0 auto",
-    background: "#ffffff",
-    padding: "20px",
-    borderRadius: "12px",
-    boxShadow: "0 3px 14px rgba(15, 23, 42, 0.07)",
-  },
-  libraryHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: "14px",
-    flexWrap: "wrap",
-  },
-  searchRow: {
-    display: "flex",
-    gap: "8px",
-    flexWrap: "wrap",
-  },
-  searchInput: {
-    width: "310px",
-    maxWidth: "75vw",
-    padding: "10px 12px",
-    border: "1px solid #cbd5e1",
-    borderRadius: "8px",
-  },
-  searchButton: {
-    border: 0,
-    borderRadius: "8px",
-    padding: "10px 16px",
-    background: "#0f766e",
-    color: "#ffffff",
-    fontWeight: 700,
-    cursor: "pointer",
-  },
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, minmax(215px, 1fr))",
-    gap: "16px",
-    marginTop: "15px",
-  },
-  itemCard: {
-    border: "1px solid #e2e8f0",
-    borderRadius: "11px",
-    padding: "12px",
-    background: "#ffffff",
-  },
-  imageBox: {
-    height: "165px",
-    borderRadius: "8px",
-    overflow: "hidden",
-    background: "#f1f5f9",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  image: {
-    width: "100%",
-    height: "100%",
-    objectFit: "contain",
-  },
-  noImage: {
-    color: "#94a3b8",
-    fontWeight: 700,
-  },
-  itemCode: {
-    marginTop: "11px",
-    color: "#2563eb",
-    fontSize: "12px",
-    fontWeight: 800,
-  },
-  itemName: {
-    marginTop: "4px",
-    minHeight: "39px",
-    fontWeight: 800,
-    lineHeight: 1.35,
-  },
-  meta: {
-    minHeight: "48px",
-    marginTop: "7px",
-    color: "#64748b",
-    fontSize: "12px",
-    lineHeight: 1.5,
-  },
-  cardActions: {
-    display: "flex",
-    gap: "8px",
-    marginTop: "11px",
-  },
-  replaceButton: {
-    flex: 1,
-    textAlign: "center",
-    cursor: "pointer",
-    borderRadius: "7px",
-    padding: "8px",
-    background: "#2563eb",
-    color: "#ffffff",
-    fontSize: "12px",
-    fontWeight: 700,
-  },
-  deleteButton: {
-    border: 0,
-    borderRadius: "7px",
-    padding: "8px 11px",
-    background: "#dc2626",
-    color: "#ffffff",
-    fontSize: "12px",
-    fontWeight: 700,
-    cursor: "pointer",
-  },
-  empty: {
-    padding: "40px",
-    textAlign: "center",
-    color: "#64748b",
-  },
+  page: { minHeight: "100vh", background: "#f8fafc", padding: "16px", fontFamily: "sans-serif" },
+  header: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "10px" },
+  eyebrow: { color: "#2563eb", fontWeight: 800, fontSize: "11px", letterSpacing: "1px" },
+  title: { margin: "2px 0", fontSize: "24px", fontWeight: "800", color: "#0f172a" },
+  subtitle: { margin: 0, color: "#64748b", fontSize: "13px" },
+  statsGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "10px", marginBottom: "16px" },
+  statCard: { background: "#ffffff", padding: "14px", borderRadius: "8px", border: "1px solid #e2e8f0", textAlign: "center" },
+  statNumber: { fontSize: "22px", fontWeight: "800", color: "#0f172a" },
+  statLabel: { fontSize: "11px", color: "#64748b", marginTop: "2px" },
+  uploadCard: { background: "#ffffff", padding: "16px", borderRadius: "8px", border: "1px solid #e2e8f0", marginBottom: "16px" },
+  sectionTitle: { fontSize: "16px", fontWeight: "700", margin: "0 0 10px 0" },
+  uploadButtons: { display: "flex", gap: "8px", flexWrap: "wrap" },
+  primaryButton: { background: "#2563eb", color: "#ffffff", border: 0, padding: "8px 14px", borderRadius: "6px", fontSize: "12px", fontWeight: "700", cursor: "pointer", display: "inline-block" },
+  secondaryButton: { background: "#ffffff", color: "#334155", border: "1px solid #cbd5e1", padding: "8px 14px", borderRadius: "6px", fontSize: "12px", fontWeight: "700", cursor: "pointer" },
+  smallBtn: { background: "#3b82f6", color: "#ffffff", border: 0, padding: "3px 8px", borderRadius: "4px", fontSize: "11px", fontWeight: "700", cursor: "pointer" },
+  progressMessage: { marginTop: "10px", fontSize: "12px", color: "#2563eb" },
+  message: { marginTop: "10px", padding: "8px 12px", background: "#f0fdf4", color: "#166534", borderRadius: "6px", fontSize: "12px", fontWeight: "700" },
+  libraryCard: { background: "#ffffff", padding: "16px", borderRadius: "8px", border: "1px solid #e2e8f0" },
+  libraryHeader: { marginBottom: "12px" },
+  searchInput: { flex: 1, minWidth: "220px", padding: "8px 12px", fontSize: "13px", borderRadius: "6px", border: "1px solid #cbd5e1" },
+  selectFilter: { padding: "8px 12px", fontSize: "13px", borderRadius: "6px", border: "1px solid #cbd5e1", background: "#fff" },
+  empty: { padding: "30px", textAlign: "center", color: "#64748b", fontSize: "13px" },
+  table: { width: "100%", borderCollapse: "collapse", fontSize: "12px" },
+  th: { padding: "8px 10px", fontSize: "11px", fontWeight: "700", color: "#475569", borderBottom: "2px solid #e2e8f0" },
+  td: { padding: "8px 10px", verticalAlign: "middle" },
+  unitBadge: { background: "#f1f5f9", color: "#475569", padding: "2px 6px", borderRadius: "4px", fontSize: "10px", fontWeight: "700" }
 };
-
-

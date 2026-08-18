@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import { useRates } from '../contexts/RateContext';
 import { usePaymentBarrier } from '../hooks/usePaymentBarrier';
 import MarketRateTrend from '../components/ui/MarketRateTrend';
+import CollapsibleSection from '../components/ui/CollapsibleSection';
 import { getMasterRate, syncApprovedRatesFromBackend } from "../utils/masterRates";
 import { downloadBuildMitraPDF } from "../utils/pdfExport";
 
@@ -36,7 +37,7 @@ const styles = {
   container: { width: '100%', maxWidth: '100%', margin: '0', padding: '4px 8px', boxSizing: 'border-box' },
   header: { maxWidth: '100%', margin: '0 0 8px 0', padding: '6px 10px', borderRadius: '6px' },
   backButton: { backgroundColor: 'rgba(255, 255, 255, 0.15)', border: 'none', color: 'white', fontSize: '20px', cursor: 'pointer', padding: '6px 12px', borderRadius: '6px' },
-  headerTitle: { margin: 0, fontSize: '20px', fontWeight: '800', flex: 1 },
+  headerTitle: { margin: 0, fontSize: '16px', lineHeight: '1.15', fontWeight: '800', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px' },
   sectionTitle: { backgroundColor: '#e2e8f0', color: '#1e293b', padding: '10px 14px', borderRadius: '8px', marginBottom: '14px', fontSize: '13px', fontWeight: '800', borderLeft: '4px solid #7f1d1d' },
   memberBar: { display: 'flex', flexWrap: 'nowrap', overflowX: 'auto', gap: '6px', padding: '4px 2px', marginBottom: '8px', WebkitOverflowScrolling: 'touch' },
   memberTab: (active: boolean) => ({
@@ -55,14 +56,14 @@ const styles = {
   }),
   grid: { display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '4px', marginBottom: '6px' },
   inputGroup: { marginBottom: '0px', minWidth: 0 },
-  label: { display: 'block', fontSize: '10px', fontWeight: '600', marginBottom: '2px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
-  input: { width: '100%', padding: '2px 4px', height: '30px', fontSize: '12px', textAlign: 'center', borderRadius: '4px', border: '1px solid #d1d5db', boxSizing: 'border-box' },
-  select: { width: '100%', padding: '2px 4px', height: '30px', fontSize: '11px', borderRadius: '4px', border: '1px solid #d1d5db', boxSizing: 'border-box' },
+  label: { display: 'block', fontSize: '10px', lineHeight: '1.1', fontWeight: '700', marginBottom: '2px', whiteSpace: 'normal' },
+  input: { width: '100%', minWidth: 0, maxWidth: '100%', height: '32px', padding: '3px 5px', fontSize: '12px', lineHeight: '1.1', textAlign: 'center', borderRadius: '5px', border: '1px solid #cbd5e1', boxSizing: 'border-box' },
+  select: { width: '100%', minWidth: 0, maxWidth: '100%', height: '32px', padding: '3px 4px', fontSize: '11px', lineHeight: '1.1', borderRadius: '5px', border: '1px solid #cbd5e1', boxSizing: 'border-box', overflow: 'hidden', textOverflow: 'ellipsis' },
   buttonRow: { display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '4px', marginBottom: '6px', width: '100%' },
   buttonGenerate: { backgroundColor: '#16a34a', color: '#fff', border: 'none', borderRadius: '4px', padding: '4px 6px', height: '32px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap' },
   buttonExport: { backgroundColor: '#2563eb', color: '#fff', border: 'none', borderRadius: '4px', padding: '4px 6px', height: '32px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap' },
   buttonWhatsapp: { backgroundColor: '#059669', color: '#fff', border: 'none', borderRadius: '4px', padding: '4px 6px', height: '32px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap' },
-  cardContainer: { display: "grid", gridAutoFlow: "column", gridAutoColumns: "minmax(0, 1fr)", gap: "4px", marginBottom: "6px", width: "100%", boxSizing: "border-box" },
+  cardContainer: { display: 'flex', flexDirection: 'row', flexWrap: 'nowrap', gap: '6px', width: '100%', maxWidth: '100%', overflowX: 'scroll', overflowY: 'hidden', WebkitOverflowScrolling: 'touch', touchAction: 'pan-x', overscrollBehaviorX: 'contain', scrollSnapType: 'x proximity', scrollbarWidth: 'thin', padding: '3px 2px 8px', margin: '3px 0 6px' },
   card: { padding: "3px 2px", borderRadius: "4px", textAlign: "center", minHeight: "0", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" },
   cardBlue: { backgroundColor: '#0284c7' },
   cardLightGreen: { backgroundColor: '#16a34a' },
@@ -412,12 +413,12 @@ export default function ConcretePage() {
 
       <MarketRateTrend />
       
-      <div style={styles.rateInfo}>
-        <div>💰 <b>Admin Rate (₹)s:</b> Cement ₹{cementRateRes.rate}/bag | Sand ₹{sandRateRes.rate}/CFT | 20mm Agg ₹{agg20RateRes.rate}/CFT | Water ₹{waterRateRes.rate}/Ltr</div>
+      <CollapsibleSection title="Rates & Assumptions" defaultOpen={false}>
+        <div>💰 <b>Admin Rates:</b> Cement ₹{cementRateRes.rate}/bag | Sand ₹{sandRateRes.rate}/CFT | 20mm Agg ₹{agg20RateRes.rate}/CFT | Water ₹{waterRateRes.rate}/Ltr</div>
         <div style={{ marginTop: '4px' }}>👷 <b>Labour Rates:</b> Concreting ₹{concretingLabourRes.rate}/CUM | Shuttering ₹{shutteringLabourRes.rate}/SQFT | Bar Bending ₹{barBendingLabourRes.rate}/KG</div>
-      </div>
+      </CollapsibleSection>
       
-      <div style={styles.sectionTitle}>🏗️ Select Structural Member Type</div>
+      <div style={styles.sectionTitle}>Member Type</div>
       <div style={styles.memberBar}>
         {MEMBER_TYPES.map(m => (
           <button key={m.id} onClick={() => setMemberType(m.id)} style={styles.memberTab(memberType === m.id)}>
@@ -593,8 +594,8 @@ export default function ConcretePage() {
             </div>
           </div>
           
-          <div style={styles.tableContainer}>
-            <table style={styles.table}>
+          <div className="bm-item-results-scroll" style={styles.tableContainer}>
+            <table className="bm-item-results-table" style={styles.table}>
               <thead>
                 <tr>
                   <th style={styles.th}>Description</th>
@@ -725,19 +726,23 @@ export default function ConcretePage() {
             </button>
           </div>
 
-          <div style={{ marginTop: '20px', padding: '16px', borderRadius: '10px', border: '1px solid #cbd5e1', backgroundColor: '#ffffff', fontSize: '11px', color: '#334155', lineHeight: '1.6' }}>
-            <b style={{ fontSize: '12px', color: '#7f1d1d' }}>📜 Applicable Standards & Engineering Basis:</b>
-            <div style={{ marginTop: '6px' }}>• <b>IS 456:2000:</b> Plain and Reinforced Concrete — Code of Practice</div>
-            <div>• <b>IS 10262:2019:</b> Concrete Mix Proportioning Guidelines (Dry Volume Factor = 1.54)</div>
-            <div>• <b>Water Cost Correction:</b> Water mix requirement calculated per liter (₹0.15/Ltr) preventing rate unit overflow</div>
-            <div>• <b>Labour Rates Standard:</b> Concreting (CUM), Formwork/Shuttering (SQFT Contact Area), Bar Bending (KG Rebar Weight)</div>
-            <div>• <b>⚠️ Structural Warning:</b> Calculations are for preliminary estimation. Formal structural designs require approval from a certified structural engineer.</div>
+          <div style={{ marginTop: '12px' }}>
+            <CollapsibleSection title="Advanced / Technical Details" defaultOpen={false}>
+              <b>📜 Applicable Standards & Engineering Basis:</b>
+              <div style={{ marginTop: '4px' }}>• <b>IS 456:2000:</b> Plain and Reinforced Concrete — Code of Practice</div>
+              <div>• <b>IS 10262:2019:</b> Concrete Mix Proportioning Guidelines (Dry Volume Factor = 1.54)</div>
+              <div>• <b>Water Cost Correction:</b> Water mix requirement calculated per liter (₹0.15/Ltr) preventing rate unit overflow</div>
+              <div>• <b>Labour Rates Standard:</b> Concreting (CUM), Formwork/Shuttering (SQFT Contact Area), Bar Bending (KG Rebar Weight)</div>
+              <div>• <b>⚠️ Structural Warning:</b> Calculations are for preliminary estimation. Formal structural designs require approval from a certified structural engineer.</div>
+            </CollapsibleSection>
           </div>
         </div>
       )}
     </div>
   );
 }
+
+
 
 
 

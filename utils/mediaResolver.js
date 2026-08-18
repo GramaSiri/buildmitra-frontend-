@@ -40,8 +40,9 @@ function resolveMediaUrl(imagePath) {
 
   const cleanPath = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
 
+  // Static Vercel CDN assets in /public (material-images, assets, images)
+  // Note: /uploads/ is dynamically stored on Render backend server, so it MUST resolve via getApiBase()!
   if (
-    cleanPath.startsWith("/uploads/") ||
     cleanPath.startsWith("/material-images/") ||
     cleanPath.startsWith("/assets/") ||
     cleanPath.startsWith("/images/") ||
@@ -52,7 +53,14 @@ function resolveMediaUrl(imagePath) {
   }
 
   const base = getApiBase();
-  return `${base}${cleanPath}`;
+  const fullUrl = `${base}${cleanPath}`;
+
+  if (cleanPath.startsWith("/uploads/")) {
+    const separator = fullUrl.includes("?") ? "&" : "?";
+    return `${fullUrl}${separator}cb=20260814_v2`;
+  }
+
+  return fullUrl;
 }
 
 module.exports = {

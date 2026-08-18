@@ -9,30 +9,58 @@ import {
   getStatusBadgeStyle,
   getFacingVastuColor,
 } from "../../utils/affiliate/inventoryEngine";
-import ProjectOnboardingModals from "./ProjectOnboardingModals";
-import { toggleUnitStatusHelper } from "./onboardingHandlers";
+import {
+  toggleUnitStatusHelper,
+  deleteProjectHelper,
+  deleteUnitHelper,
+} from "./onboardingHandlers";
+
+interface OnboardingPortalProps {
+  projects: RealEstateProject[];
+  onUpdateProjects: (updatedProjects: RealEstateProject[]) => void;
+  onOpenAddProject?: () => void;
+  onOpenAddUnit?: () => void;
+  onOpenAddMedia?: () => void;
+  selectedProjectId?: string;
+  setSelectedProjectId?: (id: string) => void;
+}
 
 export default function ProjectOnboardingPortal({
   projects,
   onUpdateProjects,
-}: {
-  projects: RealEstateProject[];
-  onUpdateProjects: (updatedProjects: RealEstateProject[]) => void;
-}) {
-  const defaultProjId = (projects && projects.length > 0) ? projects[0].id : "";
-  const [selectedProjectId, setSelectedProjectId] = useState(defaultProjId);
-  const [showAddProjectModal, setShowAddProjectModal] = useState(false);
-  const [showAddUnitModal, setShowAddUnitModal] = useState(false);
-  const [showAddMediaModal, setShowAddMediaModal] = useState(false);
-  const [previewMedia, setPreviewMedia] = useState(null);
+  onOpenAddProject,
+  onOpenAddUnit,
+  onOpenAddMedia,
+  selectedProjectId: externalProjId,
+  setSelectedProjectId: externalSetProjId,
+}: OnboardingPortalProps) {
+  const [internalProjId, setInternalProjId] = useState(
+    projects && projects.length > 0 ? projects[0].id : ""
+  );
+  const [previewMedia, setPreviewMedia] = useState<MediaDrawing | null>(null);
 
-  let selectedProject = projects[0];
-  for (let i = 0; i < projects.length; i++) {
-    if (projects[i].id === selectedProjectId) {
-      selectedProject = projects[i];
-      break;
+  const selectedProjectId = externalProjId !== undefined ? externalProjId : internalProjId;
+  const setSelectedProjectId = externalSetProjId || setInternalProjId;
+
+  let selectedProject = projects.find((p) => p.id === selectedProjectId) || projects[0] || null;
+
+  const handleDeleteProject = (projId: string, projName: string) => {
+    if (window.confirm(`Are you sure you want to delete project "${projName}"?`)) {
+      const updated = deleteProjectHelper(projId, projects);
+      onUpdateProjects(updated);
+      if (updated.length > 0) {
+        setSelectedProjectId(updated[0].id);
+      }
     }
-  }
+  };
+
+  const handleDeleteUnit = (unitId: string, unitNo: string) => {
+    if (!selectedProject) return;
+    if (window.confirm(`Are you sure you want to delete unit "${unitNo}"?`)) {
+      const updated = deleteUnitHelper(unitId, selectedProject, projects);
+      onUpdateProjects(updated);
+    }
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
@@ -67,7 +95,7 @@ export default function ProjectOnboardingPortal({
 
         <button
           type="button"
-          onClick={() => setShowAddProjectModal(true)}
+          onClick={() => (onOpenAddProject ? onOpenAddProject() : null)}
           style={{
             background: "linear-gradient(135deg, #ff7a00, #ea580c)",
             color: "#ffffff",
@@ -212,7 +240,7 @@ export default function ProjectOnboardingPortal({
               <div style={{ display: "flex", gap: "10px", marginTop: "6px" }}>
                 <button
                   type="button"
-                  onClick={() => setShowAddUnitModal(true)}
+                  onClick={() => (onOpenAddUnit ? onOpenAddUnit() : null)}
                   style={{
                     flex: 1,
                     background: "#0f172a",
@@ -229,7 +257,7 @@ export default function ProjectOnboardingPortal({
                 </button>
                 <button
                   type="button"
-                  onClick={() => setShowAddMediaModal(true)}
+                  onClick={() => (onOpenAddMedia ? onOpenAddMedia() : null)}
                   style={{
                     flex: 1,
                     background: "#2563eb",
@@ -405,7 +433,7 @@ export default function ProjectOnboardingPortal({
               </div>
               <button
                 type="button"
-                onClick={() => setShowAddMediaModal(true)}
+                onClick={() => (onOpenAddMedia ? onOpenAddMedia() : null)}
                 style={{
                   background: "#2563eb",
                   color: "#ffffff",
@@ -508,21 +536,6 @@ export default function ProjectOnboardingPortal({
         </React.Fragment>
       )}
 
-      {/* RENDER SEPARATE MODALS COMPONENT */}
-      <ProjectOnboardingModals
-        showAddProjectModal={showAddProjectModal}
-        setShowAddProjectModal={setShowAddProjectModal}
-        showAddUnitModal={showAddUnitModal}
-        setShowAddUnitModal={setShowAddUnitModal}
-        showAddMediaModal={showAddMediaModal}
-        setShowAddMediaModal={setShowAddMediaModal}
-        previewMedia={previewMedia}
-        setPreviewMedia={setPreviewMedia}
-        selectedProject={selectedProject}
-        projects={projects}
-        onUpdateProjects={onUpdateProjects}
-        setSelectedProjectId={setSelectedProjectId}
-      />
     </div>
   );
 }

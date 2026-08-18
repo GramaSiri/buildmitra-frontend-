@@ -250,6 +250,36 @@ export default function AdminDashboard() {
   const [realEstateListings, setRealEstateListings] = useState([]);
   const [marketplaceSearch, setMarketplaceSearch] = useState("");
   const [selectedListingCodes, setSelectedListingCodes] = useState({});
+
+  // Marketplace listing approval pagination - current page only
+  const MARKETPLACE_PAGE_SIZE = 50;
+  const [marketplaceListingPage, setMarketplaceListingPage] = useState(1);
+
+  const marketplaceListingTotalPages = Math.max(
+    1,
+    Math.ceil(marketplaceListings.length / MARKETPLACE_PAGE_SIZE)
+  );
+
+  const paginatedMarketplaceListings = marketplaceListings.slice(
+    (marketplaceListingPage - 1) * MARKETPLACE_PAGE_SIZE,
+    marketplaceListingPage * MARKETPLACE_PAGE_SIZE
+  );
+
+  const currentMarketplacePageAllSelected =
+    paginatedMarketplaceListings.length > 0 &&
+    paginatedMarketplaceListings.every(
+      (listing) => Boolean(selectedListingCodes[listing.listingCode])
+    );
+
+  const toggleMarketplaceCurrentPage = () => {
+    const next = { ...selectedListingCodes };
+
+    paginatedMarketplaceListings.forEach((listing) => {
+      next[listing.listingCode] = !currentMarketplacePageAllSelected;
+    });
+
+    setSelectedListingCodes(next);
+  };
   const [newItemRequests, setNewItemRequests] = useState([]);
   const [approvalMessage, setApprovalMessage] = useState("");
   const [projects, setProjects] = useState(() => loadLocalData("bm_admin_projects", []));
@@ -1866,7 +1896,90 @@ const rejectRealEstate = async (propertyCode) => {
           React.createElement("button", { key: status, onClick: () => setMarketplaceStatus(status), style: marketplaceStatus === status ? styles.buttonSuccess : styles.buttonInfo }, status.toUpperCase())
         ),
         React.createElement("input", { placeholder: "Search provider, item, category, city", value: marketplaceSearch, onChange: (e) => setMarketplaceSearch(e.target.value), style: { ...styles.input, width: "280px", marginBottom: 0 } }),
-        React.createElement("button", { onClick: () => bulkListingStatus("approved"), style: styles.buttonSuccess }, "Bulk Approve"),
+        React.createElement("button", {
+  onClick: toggleMarketplaceCurrentPage,
+  style: {
+    ...styles.buttonInfo,
+    marginRight: "8px",
+    marginBottom: "8px"
+  }
+},
+currentMarketplacePageAllSelected
+  ? `Deselect Page (${paginatedMarketplaceListings.length})`
+  : `Select Page (${paginatedMarketplaceListings.length})`
+),
+
+React.createElement("span", {
+  style: {
+    marginRight: "12px",
+    fontSize: "13px",
+    fontWeight: 600
+  }
+},
+`${Object.values(selectedListingCodes).filter(Boolean).length} selected`
+),
+/* Marketplace Approval Pagination Controls */
+React.createElement("button", {
+  type: "button",
+  disabled: marketplaceListingPage <= 1,
+  onClick: () =>
+    setMarketplaceListingPage((p) => Math.max(1, p - 1)),
+  style: {
+    ...styles.buttonInfo,
+    marginRight: "6px",
+    marginBottom: "8px",
+    opacity: marketplaceListingPage <= 1 ? 0.5 : 1
+  }
+}, "← Previous"),
+
+React.createElement("span", {
+  style: {
+    display: "inline-block",
+    marginRight: "8px",
+    marginBottom: "8px",
+    padding: "6px 8px",
+    fontSize: "13px",
+    fontWeight: 700
+  }
+},
+`Page ${marketplaceListingPage} of ${marketplaceListingTotalPages}`
+),
+
+React.createElement("span", {
+  style: {
+    display: "inline-block",
+    marginRight: "8px",
+    marginBottom: "8px",
+    fontSize: "12px",
+    color: "#666"
+  }
+},
+`Showing ${
+  marketplaceListings.length === 0
+    ? 0
+    : (marketplaceListingPage - 1) * MARKETPLACE_PAGE_SIZE + 1
+}–${Math.min(
+  marketplaceListingPage * MARKETPLACE_PAGE_SIZE,
+  marketplaceListings.length
+)} of ${marketplaceListings.length}`
+),
+
+React.createElement("button", {
+  type: "button",
+  disabled: marketplaceListingPage >= marketplaceListingTotalPages,
+  onClick: () =>
+    setMarketplaceListingPage((p) =>
+      Math.min(marketplaceListingTotalPages, p + 1)
+    ),
+  style: {
+    ...styles.buttonInfo,
+    marginRight: "10px",
+    marginBottom: "8px",
+    opacity:
+      marketplaceListingPage >= marketplaceListingTotalPages ? 0.5 : 1
+  }
+}, "Next →"),
+React.createElement("button", { onClick: () => bulkListingStatus("approved"), style: styles.buttonSuccess }, "Bulk Approve"),
         React.createElement("button", { onClick: () => bulkListingStatus("rejected"), style: styles.buttonDanger }, "Bulk Reject"),
         React.createElement("button", { onClick: loadDefaultMasterItems, style: styles.buttonWarning }, "Load Default Master Items")
       ),
@@ -1875,7 +1988,34 @@ const rejectRealEstate = async (propertyCode) => {
         React.createElement("table", { style: styles.table },
           React.createElement("thead", null,
             React.createElement("tr", null,
-              React.createElement("th", { style: styles.th }, "Select"),
+              React.createElement(
+  "th",
+  { style: styles.th },
+  React.createElement(
+    "label",
+    {
+      style: {
+        display: "flex",
+        alignItems: "center",
+        gap: "6px",
+        cursor: paginatedMarketplaceListings.length ? "pointer" : "default",
+        whiteSpace: "nowrap"
+      }
+    },
+    React.createElement("input", {
+      type: "checkbox",
+      checked: currentMarketplacePageAllSelected,
+      disabled: paginatedMarketplaceListings.length === 0,
+      onChange: toggleMarketplaceCurrentPage,
+      style: {
+        width: "18px",
+        height: "18px",
+        cursor: paginatedMarketplaceListings.length ? "pointer" : "default"
+      }
+    }),
+    `Select Page (${paginatedMarketplaceListings.length})`
+  )
+),
               React.createElement("th", { style: styles.th }, "Photo"),
               React.createElement("th", { style: styles.th }, "Listing"),
               React.createElement("th", { style: styles.th }, "Provider"),
@@ -1888,7 +2028,7 @@ const rejectRealEstate = async (propertyCode) => {
             )
           ),
           React.createElement("tbody", null,
-            marketplaceListings.map(listing =>
+            paginatedMarketplaceListings.map(listing =>
               React.createElement("tr", { key: listing._id || listing.listingCode },
                 React.createElement("td", { style: styles.td }, React.createElement("input", { type: "checkbox", checked: Boolean(selectedListingCodes[listing.listingCode]), onChange: (e) => setSelectedListingCodes({ ...selectedListingCodes, [listing.listingCode]: e.target.checked }) })),
                 React.createElement("td", { style: styles.td },
@@ -2336,4 +2476,7 @@ const rejectRealEstate = async (propertyCode) => {
     )
   );
 }
+
+
+
 

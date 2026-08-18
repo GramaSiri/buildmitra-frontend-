@@ -506,7 +506,7 @@ export default function WaterproofingCalculator() {
             01. Project & Treatment Inputs
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px", marginBottom: "12px" }}>
+          <div className="bm-final-boq-summary">
             <div className="bm-input-group">
               <label style={{ fontSize: "11px", fontWeight: 700, color: "#475569", display: "block", marginBottom: "4px" }}>Location / Area Type</label>
               <select value={location} onChange={(e) => setLocation(e.target.value)} style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1" }}>
@@ -595,7 +595,7 @@ export default function WaterproofingCalculator() {
         </div>
 
         {/* HIGH-IMPACT CONSOLIDATED STAT CARDS (COLOUR BOXES) */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: "12px", marginBottom: "16px" }}>
+        <div className="bm-final-boq-summary">
           {/* Card 1: Billable Area */}
           <div style={{ background: "linear-gradient(135deg, #ebf8ff 0%, #e6fffa 100%)", border: "2px solid #3182ce", borderRadius: "12px", padding: "14px", boxShadow: "0 4px 10px rgba(49,130,206,0.1)" }}>
             <span style={{ fontSize: "11px", fontWeight: 800, color: "#2c5282", textTransform: "uppercase", letterSpacing: "0.5px" }}>📐 BILLABLE AREA</span>
@@ -652,7 +652,7 @@ export default function WaterproofingCalculator() {
           </div>
 
           <div style={{ overflowX: "auto", marginBottom: "14px" }}>
-            <table style={{ width: "100%", fontSize: "12px", borderCollapse: "collapse" }}>
+            <div className="bm-real-boq-scroll"><table className="bm-final-boq-table bm-real-boq-table" style={{ width: "100%", fontSize: "12px", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ backgroundColor: "#f8fafc", textAlign: "left", borderBottom: "2px solid #e2e8f0" }}>
                   <th style={{ padding: "10px" }}>Material Item</th>
@@ -684,7 +684,7 @@ export default function WaterproofingCalculator() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           </div>
         </div>
 
@@ -718,6 +718,8 @@ export default function WaterproofingCalculator() {
     </div>
   );
 }
+
+
 
 
 

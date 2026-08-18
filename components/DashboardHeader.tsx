@@ -29,7 +29,7 @@ export default function DashboardHeader({
       boxShadow: "0 4px 12px rgba(0,0,0,0.1)"
     }}>
       <div>
-        <div style={{ fontSize: "11px", textTransform: "uppercase", tracking: "1px", color: "#38bdf8", fontWeight: "800", marginBottom: "4px" }}>
+        <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "1px", color: "#38bdf8", fontWeight: "800", marginBottom: "4px" }}>
           BuildMitra • {role}
         </div>
         <h1 style={{ margin: 0, fontSize: "22px", fontWeight: "800" }}>{title}</h1>

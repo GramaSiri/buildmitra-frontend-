@@ -9,8 +9,8 @@ import { getMasterRate, syncApprovedRatesFromBackend, MasterRateResult } from ".
 const styles: Record<string, React.CSSProperties> = {
   container: { width: '100%', maxWidth: '100%', margin: '0', padding: '4px 8px', boxSizing: 'border-box' },
   header: { maxWidth: '100%', margin: '0 0 8px 0', padding: '6px 10px', borderRadius: '6px' },
-  headerTitle: { margin: 0, fontSize: '20px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '10px' },
-  badge: { backgroundColor: '#a51d36', color: '#ffffff', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: '700' },
+  headerTitle: { margin: 0, fontSize: '16px', lineHeight: '1.15', fontWeight: '800', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px' },
+  badge: { padding: '2px 6px', borderRadius: '10px', fontSize: '9px', lineHeight: '1.1', fontWeight: '700' },
   backBtn: { backgroundColor: 'rgba(255,255,255,0.15)', border: 'none', color: 'white', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '600' },
 
   dropdowncard: { padding: "3px 2px", borderRadius: "4px", textAlign: "center", minHeight: "0", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" },
@@ -20,27 +20,27 @@ const styles: Record<string, React.CSSProperties> = {
   steppercard: { padding: "3px 2px", borderRadius: "4px", textAlign: "center", minHeight: "0", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" },
   sectionheader: { maxWidth: '100%', margin: '0 0 8px 0', padding: '6px 10px', borderRadius: '6px' },
 
-  grid3: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px', marginBottom: '14px' },
-  grid4: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '14px' },
+  grid3: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(78px, 1fr))', gap: '5px', alignItems: 'end', width: '100%', maxWidth: '100%', marginBottom: '5px' },
+  grid4: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(78px, 1fr))', gap: '5px', alignItems: 'end', width: '100%', maxWidth: '100%', marginBottom: '5px' },
 
-  fieldGroup: { display: 'flex', flexDirection: 'column', gap: '4px' },
-  label: { display: 'block', fontSize: '10px', fontWeight: '600', marginBottom: '2px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
-  input: { width: '100%', padding: '2px 4px', height: '30px', fontSize: '12px', textAlign: 'center', borderRadius: '4px', border: '1px solid #d1d5db', boxSizing: 'border-box' },
-  select: { width: '100%', padding: '2px 4px', height: '30px', fontSize: '11px', borderRadius: '4px', border: '1px solid #d1d5db', boxSizing: 'border-box' },
+  fieldGroup: { minWidth: 0, width: '100%', margin: 0, padding: 0 },
+  label: { display: 'block', fontSize: '10px', lineHeight: '1.1', fontWeight: '700', marginBottom: '2px', whiteSpace: 'normal' },
+  input: { width: '100%', minWidth: 0, maxWidth: '100%', height: '32px', padding: '3px 5px', fontSize: '12px', lineHeight: '1.1', textAlign: 'center', borderRadius: '5px', border: '1px solid #cbd5e1', boxSizing: 'border-box' },
+  select: { width: '100%', minWidth: 0, maxWidth: '100%', height: '32px', padding: '3px 4px', fontSize: '11px', lineHeight: '1.1', borderRadius: '5px', border: '1px solid #cbd5e1', boxSizing: 'border-box', overflow: 'hidden', textOverflow: 'ellipsis' },
 
   btnPrimary: { backgroundColor: '#800020', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '6px' },
   btnSecondary: { backgroundColor: '#2563eb', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' },
   btnSuccess: { backgroundColor: '#16a34a', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '700' },
   btnReset: { backgroundColor: '#64748b', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '600' },
 
-  summarygrid: { display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '4px', marginBottom: '6px' },
-  metriccard: { padding: "3px 2px", borderRadius: "4px", textAlign: "center", minHeight: "0", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" },
+  summaryGrid: { display: 'flex', flexDirection: 'row', flexWrap: 'nowrap', gap: '6px', width: '100%', maxWidth: '100%', overflowX: 'scroll', overflowY: 'hidden', WebkitOverflowScrolling: 'touch', touchAction: 'pan-x', overscrollBehaviorX: 'contain', scrollSnapType: 'x proximity', scrollbarWidth: 'thin', padding: '3px 2px 8px', margin: '3px 0 6px' },
+  metricCard: { flex: '0 0 138px', width: '138px', minWidth: '138px', maxWidth: '150px', minHeight: '68px', height: 'auto', padding: '6px', margin: 0, borderRadius: '7px', boxSizing: 'border-box', textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', overflow: 'hidden', scrollSnapAlign: 'start' },
   metricMaroon: { backgroundColor: '#800020' },
   metricTeal: { backgroundColor: '#0f766e' },
   metricGreen: { backgroundColor: '#16a34a' },
   metricOrange: { backgroundColor: '#ea580c' },
-  metricTitle: { fontSize: '11px', textTransform: 'uppercase', opacity: 0.9, fontWeight: '600' },
-  metricVal: { fontSize: '19px', fontWeight: '800', marginTop: '4px' },
+  metricTitle: { fontSize: '10px', lineHeight: '1.1', textTransform: 'uppercase', opacity: 0.95, fontWeight: '700', whiteSpace: 'normal', marginBottom: '2px' },
+  metricVal: { fontSize: '15px', lineHeight: '1.15', fontWeight: '800', marginTop: '2px', whiteSpace: 'normal', overflowWrap: 'anywhere' },
 
   tablecontainer: { width: '100%', maxWidth: '100%', margin: '0', padding: '4px 8px', boxSizing: 'border-box' },
   table: { width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', fontSize: '10px' },
@@ -307,24 +307,74 @@ export default function RoofTrussCalculator() {
       <style jsx>{`
         .engineering-top-layout {
           display: grid;
-          grid-template-columns: minmax(0, 1fr) 260px;
-          gap: 16px;
+          grid-template-columns: minmax(0, 1fr) 118px;
+          gap: 8px;
           align-items: start;
-          margin-bottom: 18px;
+          margin-bottom: 6px;
         }
         .engineering-top-left { min-width: 0; overflow: hidden; }
         .engineering-specimen-top {
-          width: 260px;
+          width: 150px;
           position: sticky;
           top: 12px;
           align-self: start;
           z-index: 2;
         }
         @media (max-width: 900px) {
-          .engineering-top-layout { grid-template-columns: 1fr; }
+          .engineering-top-layout {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) 118px !important;
+            gap: 5px !important;
+            align-items: start !important;
+            margin-bottom: 5px !important;
+            position: relative !important;
+          }
+
+          .engineering-top-left {
+            min-width: 0 !important;
+            overflow: visible !important;
+          }
+
           .engineering-specimen-top {
-            width: 100%; max-width: 260px; position: static;
-            margin-left: auto; margin-right: auto;
+            width: 118px !important;
+            min-width: 118px !important;
+            max-width: 118px !important;
+
+            height: 125px !important;
+            max-height: 125px !important;
+
+            position: relative !important;
+            top: 0 !important;
+            right: 0 !important;
+
+            margin: 0 0 0 auto !important;
+            padding: 0 !important;
+
+            overflow: hidden !important;
+            align-self: start !important;
+          }
+
+          /*
+             Preserve specimen proportions but reduce its VERTICAL
+             footprint heavily. Scaling the complete component avoids
+             the ugly wrapped "3D ISOMETRIC" text seen previously.
+          */
+          .engineering-specimen-top > * {
+            width: 185% !important;
+            max-width: 185% !important;
+
+            transform: none !important;
+            transform-origin: top right !important;
+
+            margin-left: auto !important;
+            margin-right: 0 !important;
+          }
+
+          .engineering-specimen-top img,
+          .engineering-specimen-top svg,
+          .engineering-specimen-top canvas {
+            max-width: 100% !important;
+            height: auto !important;
           }
         }
       `}</style>
@@ -459,26 +509,25 @@ export default function RoofTrussCalculator() {
         </div>
 
         {/* BOQ Table */}
-        <div style={styles.tableContainer}>
-          <table style={styles.table}>
+        <div className="bm-item-results-scroll" style={styles.tableContainer}>
+          <table className="bm-item-results-table" style={styles.table}>
             <thead>
               <tr>
-                <th style={styles.th}>Master Code</th>
-                <th style={styles.th}>Category</th>
+                <th className="bm-mobile-hide-col" style={styles.th}>Master Code</th>
+                <th className="bm-mobile-hide-col" style={styles.th}>Category</th>
                 <th style={styles.th}>Item Description</th>
                 <th style={styles.th}>Unit</th>
-                <th style={styles.th}>Eng Qty</th>
+                <th className="bm-mobile-hide-col" style={styles.th}>Eng Qty</th>
                 <th style={styles.th}>Proc Qty</th>
-                <th style={styles.th}>Approved Rate</th>
+                <th className="bm-mobile-hide-col" style={styles.th}>Approved Rate</th>
                 <th style={styles.th}>Amount</th>
               </tr>
             </thead>
             <tbody>
               {calcResults.resultItems.map((item, idx) => (
                 <tr key={idx}>
-                  <td style={styles.td}><code>{item.code}</code></td>
-                  <td style={styles.td}>
-                    <span style={{
+                  <td className="bm-mobile-hide-col" style={styles.td}><code>{item.code}</code></td>
+                  <td className="bm-mobile-hide-col" style={styles.td}><span style={{
                       backgroundColor: item.category === 'Material' ? '#e0f2fe' : item.category === 'Labour' ? '#ffedd5' : '#f0fdf4',
                       color: item.category === 'Material' ? '#0369a1' : item.category === 'Labour' ? '#c2410c' : '#166534',
                       padding: '2px 6px',
@@ -491,10 +540,9 @@ export default function RoofTrussCalculator() {
                   </td>
                   <td style={styles.td}><strong>{item.description}</strong></td>
                   <td style={styles.td}>{item.unit}</td>
-                  <td style={styles.td}>{formatNumber(item.engQty)}</td>
+                  <td className="bm-mobile-hide-col" style={styles.td}>{formatNumber(item.engQty)}</td>
                   <td style={styles.td}><strong>{formatNumber(item.procQty)}</strong></td>
-                  <td style={styles.td}>
-                    {item.rateFound ? (
+                  <td className="bm-mobile-hide-col" style={styles.td}>{item.rateFound ? (
                       <span style={styles.rateTag}>{formatCurrency(item.rate)}</span>
                     ) : (
                       <span style={styles.rateTagWarn}>Rate Unavailable</span>
@@ -515,6 +563,12 @@ export default function RoofTrussCalculator() {
     </div>
   );
 }
+
+
+
+
+
+
 
 
 

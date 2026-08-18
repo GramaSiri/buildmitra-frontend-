@@ -16,14 +16,14 @@ const styles: Record<string, React.CSSProperties> = {
   stepperCard: { backgroundColor: '#ffffff', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '18px', marginBottom: '18px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' },
   sectionHeader: { fontSize: '15px', fontWeight: '700', color: '#800020', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '2px solid #fecdd3', paddingBottom: '8px' },
 
-  grid3: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px', marginBottom: '14px' },
-  grid4: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '14px' },
+  grid3: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(82px, 1fr))', gap: '5px', alignItems: 'end', width: '100%', maxWidth: '100%', marginBottom: '5px' },
+  grid4: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(82px, 1fr))', gap: '5px', alignItems: 'end', width: '100%', maxWidth: '100%', marginBottom: '5px' },
 
-  fieldGroup: { display: 'flex', flexDirection: 'column', gap: '4px' },
-  label: { fontSize: '11px', fontWeight: '700', color: '#334155', textTransform: 'uppercase', letterSpacing: '0.3px' },
-  input: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#fff', outline: 'none' },
+  fieldGroup: { minWidth: 0, width: '100%', margin: 0, padding: 0 },
+  label: { display: 'block', fontSize: '10px', lineHeight: '1.1', fontWeight: '700', marginBottom: '2px', whiteSpace: 'normal' },
+  input: { width: '100%', minWidth: 0, maxWidth: '100%', height: '32px', padding: '3px 5px', fontSize: '11px', lineHeight: '1.1', textAlign: 'center', borderRadius: '5px', border: '1px solid #cbd5e1', boxSizing: 'border-box' },
   inputReadOnly: { backgroundColor: '#f1f5f9', fontWeight: '700', color: '#800020' },
-  select: { width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', backgroundColor: '#fff', outline: 'none' },
+  select: { width: '100%', minWidth: 0, maxWidth: '100%', height: '32px', padding: '3px 4px', fontSize: '10px', lineHeight: '1.1', borderRadius: '5px', border: '1px solid #cbd5e1', boxSizing: 'border-box' },
   checkboxLabel: { display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: '700', color: '#334155', cursor: 'pointer' },
 
   btnPrimary: { backgroundColor: '#800020', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '800', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%' },
@@ -232,7 +232,7 @@ export default function CivilBOQPage() {
       { sr: 5, code: 'SRV-EXC-01', desc: `Backfilling in foundation pits & plinth using excavated soil with watering & ramming.`, uom: 'Cum', qty: backfillCum, baseMatRate: 40, labRate: 20 },
       { sr: 6, code: 'SRV-ATT-01', desc: `Anti-termite chemical soil treatment below floor slab & foundation zone.`, uom: 'Ltr', qty: antiTermiteLtr, baseMatRate: 15, labRate: 10 },
       { sr: 7, code: 'SRV-SHT-01', desc: `Centering & formwork shuttering rental for footings, columns, beams & slab RCC works.`, uom: 'Sft', qty: shutteringSft, baseMatRate: 35, labRate: 20 },
-      { sr: 8, code: 'MAT-STL-01', desc: `TMT Steel Rebar Fe 500D (${structure.steelKgPerSft} kg/sft BUA). Column: ${structure.column}, Beam: ${structure.beam}, Slab: ${structure.slab}.`, uom: 'Kgs', qty: steelKg, baseMatRate: steelRate.rate || 68, labRate: 12 },
+      { sr: 8, code: 'MAT-STL-01', desc: `TMT Steel Rebar Fe 500D (Preliminary Estimating Factor: ${structure.steelKgPerSft} kg/sft BUA; pending structural Bar Bending Schedule BBS). Column: ${structure.column}, Beam: ${structure.beam}, Slab: ${structure.slab}.`, uom: 'Kgs', qty: steelKg, baseMatRate: steelRate.rate || 68, labRate: 12 },
       { sr: 9, code: 'MAT-CEM-01', desc: `RCC M20/M25 structural concrete for footings, columns, beams, slabs, lintels, staircase & chajjas.`, uom: 'Cum', qty: rccTotalCum + lintelCum + staircaseCum + sunshadeCum, baseMatRate: 4800, labRate: 1000 },
       { sr: 10, code: 'MAT-BLK-06', desc: `Concrete block masonry. 6" external blocks (${sixInBlockNos} nos) + 4" internal blocks (${fourInBlockNos} nos). Openings deducted.`, uom: 'Nos', qty: totalBlockNos, baseMatRate: 42, labRate: 12 },
       { sr: 11, code: 'MAT-DOR-MN', desc: `Teakwood main door (${counts.mainDoors} nos) + Flush/WPC internal doors (${counts.internalDoors + counts.toiletDoors + counts.poojaDoors} nos).`, uom: 'Nos', qty: counts.totalDoors, baseMatRate: 5500, labRate: 800 },
@@ -350,7 +350,7 @@ export default function CivilBOQPage() {
   };
 
   return (
-    <div style={styles.container}>
+    <div className="bm-final-boq-page" style={styles.container}>
       {/* 1. Header */}
       <div style={styles.header}>
         <div>
@@ -374,7 +374,7 @@ export default function CivilBOQPage() {
           <span>📐 Plot & Structural Building Inputs</span>
         </div>
 
-        <div style={styles.grid4}>
+        <div className="bm-final-boq-input-grid" style={styles.grid4}>
           <div style={styles.fieldGroup}>
             <label style={styles.label}>Plot Length (Ft)</label>
             <input
@@ -451,7 +451,7 @@ export default function CivilBOQPage() {
         {/* Architectural & Finish Inputs */}
         <div style={{ backgroundColor: '#fff5f7', padding: '14px', borderRadius: '8px', marginBottom: '16px', border: '1px solid #fecdd3' }}>
           <div style={{ fontSize: '13px', fontWeight: '700', color: '#800020', marginBottom: '10px' }}>🏠 Architectural & Finish Profile Inputs</div>
-          <div style={styles.grid4}>
+          <div className="bm-final-boq-input-grid" style={styles.grid4}>
             <div style={styles.fieldGroup}>
               <label style={styles.label}>Construction Type</label>
               <select style={styles.select} value={constructionType} onChange={e => setConstructionType(e.target.value)}>
@@ -472,17 +472,17 @@ export default function CivilBOQPage() {
 
             <div style={styles.fieldGroup}>
               <label style={styles.label}>Bedrooms (Nos)</label>
-              <input type="number" style={styles.input} value={bedrooms} onChange={e => setBedrooms(parseFloat(e.target.value) || 0)} />
+              <input type="number" style={styles.input} value={bedrooms} onChange={e => setBedrooms(e.target.value === "" ? ("" as any) : parseFloat(e.target.value))} />
             </div>
 
             <div style={styles.fieldGroup}>
               <label style={styles.label}>Toilets (Nos)</label>
-              <input type="number" style={styles.input} value={toilets} onChange={e => setToilets(parseFloat(e.target.value) || 0)} />
+              <input type="number" style={styles.input} value={toilets} onChange={e => setToilets(e.target.value === "" ? ("" as any) : parseFloat(e.target.value))} />
             </div>
 
             <div style={styles.fieldGroup}>
               <label style={styles.label}>Kitchens (Nos)</label>
-              <input type="number" style={styles.input} value={kitchens} onChange={e => setKitchens(parseFloat(e.target.value) || 0)} />
+              <input type="number" style={styles.input} value={kitchens} onChange={e => setKitchens(e.target.value === "" ? ("" as any) : parseFloat(e.target.value))} />
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', paddingTop: '18px' }}>
@@ -520,7 +520,7 @@ export default function CivilBOQPage() {
           </div>
 
           {/* Metric Summary Grid */}
-          <div style={styles.summaryGrid}>
+          <div className="bm-boq-summary-scroll" style={styles.summaryGrid}>
             <div style={{ ...styles.metricCard, ...styles.metricMaroon }}>
               <span style={styles.metricTitle}>Cement Quantity</span>
               <span style={styles.metricVal}>{formatNumber(boqResults.cementQuantity, 1)} Bags</span>
@@ -561,7 +561,7 @@ export default function CivilBOQPage() {
 
           {/* Itemized BOQ Table */}
           <div style={styles.tableContainer} className="table-responsive table-container boq-table-view">
-            <table style={styles.table}>
+            <div className="bm-real-boq-scroll"><table className="bm-boq-table bm-final-boq-table bm-real-boq-table" style={styles.table}>
               <thead>
                 <tr>
                   <th style={styles.th}>Sr.</th>
@@ -592,7 +592,7 @@ export default function CivilBOQPage() {
                   <td style={{ padding: '12px', fontSize: '14px' }}>{formatCurrency(boqResults.grandTotal)}</td>
                 </tr>
               </tbody>
-            </table>
+            </table></div>
           </div>
 
           {/* Mobile BOQ Item Cards (< 640px) */}
@@ -633,3 +633,6 @@ export default function CivilBOQPage() {
     </div>
   );
 }
+
+
+

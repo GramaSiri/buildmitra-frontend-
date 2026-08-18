@@ -21,14 +21,14 @@ const styles: Record<string, React.CSSProperties> = {
   steppercard: { padding: "3px 2px", borderRadius: "4px", textAlign: "center", minHeight: "0", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" },
   sectionheader: { maxWidth: '100%', margin: '0 0 8px 0', padding: '6px 10px', borderRadius: '6px' },
 
-  grid2: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px', marginBottom: '14px' },
-  grid3: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px', marginBottom: '14px' },
-  grid4: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '14px' },
+  grid2: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(82px, 1fr))', gap: '5px', alignItems: 'end', width: '100%', maxWidth: '100%', marginBottom: '5px' },
+  grid3: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(82px, 1fr))', gap: '5px', alignItems: 'end', width: '100%', maxWidth: '100%', marginBottom: '5px' },
+  grid4: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(82px, 1fr))', gap: '5px', alignItems: 'end', width: '100%', maxWidth: '100%', marginBottom: '5px' },
 
-  fieldGroup: { display: 'flex', flexDirection: 'column', gap: '4px' },
-  label: { display: 'block', fontSize: '10px', fontWeight: '600', marginBottom: '2px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
-  input: { width: '100%', padding: '2px 4px', height: '30px', fontSize: '12px', textAlign: 'center', borderRadius: '4px', border: '1px solid #d1d5db', boxSizing: 'border-box' },
-  select: { width: '100%', padding: '2px 4px', height: '30px', fontSize: '11px', borderRadius: '4px', border: '1px solid #d1d5db', boxSizing: 'border-box' },
+  fieldGroup: { minWidth: 0, width: '100%', margin: 0, padding: 0 },
+  label: { display: 'block', fontSize: '10px', lineHeight: '1.1', fontWeight: '700', marginBottom: '2px', whiteSpace: 'normal' },
+  input: { width: '100%', minWidth: 0, maxWidth: '100%', height: '32px', padding: '3px 5px', fontSize: '12px', textAlign: 'center', borderRadius: '5px', border: '1px solid #cbd5e1', boxSizing: 'border-box' },
+  select: { width: '100%', minWidth: 0, maxWidth: '100%', height: '32px', padding: '3px 4px', fontSize: '11px', borderRadius: '5px', border: '1px solid #cbd5e1', boxSizing: 'border-box', overflow: 'hidden', textOverflow: 'ellipsis' },
 
   btnPrimary: { backgroundColor: '#0f766e', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '6px' },
   btnSecondary: { backgroundColor: '#2563eb', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' },
@@ -1092,7 +1092,7 @@ export default function FlooringCalculator() {
               </div>
             )}
 
-            <div style={styles.summaryGrid}>
+            <div className="bm-calc-results-scroll" style={styles.summaryGrid}>
               <div style={{ ...styles.metricCard, ...styles.metricTeal }}>
                 <span style={styles.metricTitle}>Total Area</span>
                 <span style={styles.metricVal}>{formatNumber(quickInputs.totalArea)} Sqft</span>
@@ -1112,8 +1112,8 @@ export default function FlooringCalculator() {
               </div>
             </div>
 
-            <div style={styles.tableContainer}>
-              <table style={styles.table}>
+            <div className="bm-item-results-scroll" style={styles.tableContainer}>
+              <table className="bm-item-results-table" style={styles.table}>
                 <thead>
                   <tr>
                     <th style={styles.th}>Master Code</th>
@@ -1238,8 +1238,8 @@ export default function FlooringCalculator() {
           </div>
 
           {/* Rooms Table */}
-          <div style={styles.tableContainer}>
-            <table style={styles.table}>
+          <div className="bm-item-results-scroll" style={styles.tableContainer}>
+            <table className="bm-item-results-table" style={styles.table}>
               <thead>
                 <tr>
                   <th style={styles.th}>Room</th>
@@ -1287,7 +1287,7 @@ export default function FlooringCalculator() {
               </div>
             )}
 
-            <div style={styles.summaryGrid}>
+            <div className="bm-calc-results-scroll" style={styles.summaryGrid}>
               <div style={{ ...styles.metricCard, ...styles.metricTeal }}>
                 <span style={styles.metricTitle}>Net Flooring Area</span>
                 <span style={styles.metricVal}>{formatNumber(detailedCalcResults.totalNetSqft)} Sqft</span>
@@ -1308,8 +1308,8 @@ export default function FlooringCalculator() {
             </div>
 
             {/* Detailed Itemized Results Table (Tiles + Cement + Adhesive + Sand + Grout + Spacers + Water + Labour) */}
-            <div style={styles.tableContainer}>
-              <table style={styles.table}>
+            <div className="bm-item-results-scroll" style={styles.tableContainer}>
+              <table className="bm-item-results-table" style={styles.table}>
                 <thead>
                   <tr>
                     <th style={styles.th}>Master Code</th>
@@ -1368,6 +1368,7 @@ export default function FlooringCalculator() {
     </div>
   );
 }
+
 
 
 

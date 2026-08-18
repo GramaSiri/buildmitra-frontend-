@@ -85,28 +85,111 @@ export default function Marketplace() {
     // Keep fields editable if saved login data is unavailable.
   }
 };
-  const addToCart = (item: any) => {
-    const exists = cart.some(
-      (x) =>
-        x.listingCode === item.listingCode &&
-        x.providerUserCode === item.providerUserCode
-    );
+  const getCartIdentity = (item: any) => {
+    // Every supplier listing must be treated as its own cart product.
+    // Prefer listing Mongo ID because it uniquely identifies the approved
+    // supplier-product listing. Fall back safely for older records.
+    return String(
+      item?._id ||
+      item?.listingCode ||
+      `${item?.providerUserCode || ""}::${item?.masterItemCode || ""}::${item?.itemName || ""}`
+    ).trim();
+  };
 
-    if (!exists) {
-      setCart((current) => [
+  const addToCart = (item: any) => {
+    const productKey = getCartIdentity(item);
+
+    setCart((current) => {
+      const existingIndex = current.findIndex(
+        (cartItem) => getCartIdentity(cartItem) === productKey
+      );
+
+      // Same product clicked again:
+      // increase quantity instead of creating duplicate row.
+      if (existingIndex >= 0) {
+        const next = [...current];
+
+        next[existingIndex] = {
+          ...next[existingIndex],
+          quantity: String(
+            (Number(next[existingIndex].quantity || 0) || 0) + 1
+          ),
+        };
+
+        return next;
+      }
+
+      // Different product:
+      // ALWAYS append it and preserve every existing cart item.
+      return [
         ...current,
         {
           ...item,
           quantity: "1",
           specification: "",
         },
-      ]);
-    }
+      ];
+    });
 
     loadCartBuyerDetails();
+
+    // Zepto behaviour:
+    // every ADD opens the SAME cart containing all previous items.
     setShowCart(true);
   };
 
+  const getCartItemQty = (item: any) => {
+    const productKey = getCartIdentity(item);
+
+    const cartItem = cart.find(
+      (x) => getCartIdentity(x) === productKey
+    );
+
+    return cartItem
+      ? Number(cartItem.quantity || 0)
+      : 0;
+  };
+
+  const updateCartQty = (item: any, delta: number) => {
+    const productKey = getCartIdentity(item);
+
+    setCart((current) => {
+      const index = current.findIndex(
+        (x) => getCartIdentity(x) === productKey
+      );
+
+      if (index < 0) {
+        if (delta <= 0) return current;
+
+        return [
+          ...current,
+          {
+            ...item,
+            quantity: String(delta),
+            specification: "",
+          },
+        ];
+      }
+
+      const newQty =
+        (Number(current[index].quantity || 0) || 0) + delta;
+
+      if (newQty <= 0) {
+        return current.filter(
+          (_, currentIndex) => currentIndex !== index
+        );
+      }
+
+      const next = [...current];
+
+      next[index] = {
+        ...next[index],
+        quantity: String(newQty),
+      };
+
+      return next;
+    });
+  };
   const getItemRate = (item: any) => {
     const rawRate =
       item?.rate ??
@@ -128,6 +211,22 @@ export default function Marketplace() {
     0
   );
 
+  const normalizedCartPhone = String(
+    cartEnquiry.buyerPhone || ""
+  )
+    .replace(/\D/g, "")
+    .slice(-10);
+
+  const cartReadyToSend =
+    cart.length > 0 &&
+    normalizedCartPhone.length === 10 &&
+    String(cartEnquiry.location || "").trim().length > 0 &&
+    /^\d{6}$/.test(
+      String(cartEnquiry.pincode || "").trim()
+    ) &&
+    cart.every(
+      (item) => Number(item.quantity || 0) > 0
+    );
   const sendWhatsApp = (item: any) => {
     sendEnquiry(item);
   };
@@ -171,14 +270,9 @@ export default function Marketplace() {
       return;
     }
 
-    if (
-      !cartEnquiry.buyerName ||
-      !cartEnquiry.buyerPhone ||
-      !cartEnquiry.location ||
-      !cartEnquiry.pincode
-    ) {
+    if (!cartReadyToSend) {
       alert(
-        "Please fill name, phone, delivery location and pincode."
+        "Enter valid contact number, delivery address, 6-digit PIN code and quantity."
       );
       return;
     }
@@ -526,7 +620,7 @@ ${enquiry.buyerPhone}`;
 
       <MarketRateTrend />
 
-      <div style={styles.filters}>
+      <div className="bm-marketplace-mobile-filters" style={styles.filters}>
         <input style={styles.input} placeholder="Search item, provider, brand" value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} />
         <select style={styles.input} value={filters.itemType} onChange={(e) => setFilters({ ...filters, itemType: e.target.value })}>
           <option value="">All types</option>
@@ -574,44 +668,92 @@ ${enquiry.buyerPhone}`;
         <div style={styles.empty}>No approved listings found.</div>
       ) : (
         <div style={styles.grid} className="marketplace-grid">
-          {listings.map((item) => (
-            <div key={item._id || item.listingCode} style={styles.card} className="marketplace-card product-card">
-              {/* 1. Small Product Image Thumbnail (Aspect 1:1, 🔍 Zoom Badge) */}
-              <div className="product-image-container thumbnail-wrapper" style={{ width: "100%", height: 180, cursor: "pointer", position: "relative" }} onClick={() => sendEnquiry(item)}>
-                <MarketplaceProductImage item={item} />
+          {listings.map((item) => {
+            const qty = getCartItemQty(item);
+
+            return (
+              <div key={item._id || item.listingCode} style={styles.card} className="marketplace-card product-card">
+                {/* 1. Product Image Thumbnail */}
+                <div className="product-image-container thumbnail-wrapper" style={{ width: "100%", height: 180, position: "relative" }}>
+                  <MarketplaceProductImage item={item} />
+                </div>
+
+                {/* 2. Product Name */}
+                <h2 style={styles.item} className="product-title">
+                  {item.itemName}
+                </h2>
+
+                {/* 3. Supplier Name */}
+                <div className="supplier-name" style={{ fontSize: 11, color: "#64748b", fontWeight: 600, margin: "2px 0" }}>
+                  {formatSupplierName(item.providerName, 8)}
+                </div>
+
+                {/* 4. Rate / Unit */}
+                <div style={styles.price} className="product-price">
+                  ₹{Number(item.rate || 0).toLocaleString("en-IN")} <span style={styles.unit}>/ {item.unit || "unit"}</span>
+                </div>
+
+                {/* Hidden Metadata Elements */}
+                <div className="verified-badge" style={{ display: "none" }}>Verified BuildMitra Provider</div>
+                <div className="location-text" style={{ display: "none" }}>{item.providerCity || item.location}</div>
+
+                {/* 5. Zepto-Style Add to Cart Stepper */}
+                <div style={{ marginTop: 8, display: "flex", gap: 6, alignItems: "center" }}>
+                  {qty === 0 ? (
+                    <button
+                      type="button"
+                      style={styles.zeptoAddBtn}
+                      onClick={() => addToCart(item)}
+                    >
+                      ADD 🛒
+                    </button>
+                  ) : (
+                    <div style={styles.zeptoStepper}>
+                      <button
+                        type="button"
+                        style={styles.zeptoStepBtn}
+                        onClick={() => updateCartQty(item, -1)}
+                      >
+                        −
+                      </button>
+                      <span style={styles.zeptoQtyVal}>{qty}</span>
+                      <button
+                        type="button"
+                        style={styles.zeptoStepBtn}
+                        onClick={() => {
+                          updateCartQty(item, 1);
+                          loadCartBuyerDetails();
+                          setShowCart(true);
+                        }}
+                      >
+                        +
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
+            );
+          })}
+        </div>
+      )}
 
-              {/* 2. Product Name (Single clean title, max 2 lines) */}
-              <h2 style={styles.item} className="product-title" onClick={() => sendEnquiry(item)}>
-                {item.itemName}
-              </h2>
-
-              {/* 3. Supplier Name (Max 8 characters) */}
-              <div className="supplier-name" style={{ fontSize: 11, color: "#64748b", fontWeight: 600, margin: "2px 0" }}>
-                {formatSupplierName(item.providerName, 8)}
-              </div>
-
-              {/* 4. Rate / Unit */}
-              <div style={styles.price} className="product-price">
-                ₹{Number(item.rate || 0).toLocaleString("en-IN")} <span style={styles.unit}>/ {item.unit || "unit"}</span>
-              </div>
-
-              {/* Hidden Metadata Elements */}
-              <div className="verified-badge" style={{ display: "none" }}>Verified BuildMitra Provider</div>
-              <div className="location-text" style={{ display: "none" }}>{item.providerCity || item.location}</div>
-
-              {/* 5. Compact Full-Width Button */}
-              <div style={styles.actions} className="card-actions">
-                <button
-                  type="button"
-                  style={{ ...styles.profileBtn, width: "100%", textAlign: "center" }}
-                  onClick={() => sendEnquiry(item)}
-                >
-                  View Profile
-                </button>
+      {/* Zepto-Style Floating Bottom Cart Bar */}
+      {cart.length > 0 && !showCart && (
+        <div style={styles.floatingCartBar}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={styles.cartBadgeCount}>
+              🛒 {cart.reduce((sum, i) => sum + (Number(i.quantity) || 1), 0)} ITEMS
+            </div>
+            <div>
+              <div style={{ fontSize: 10, color: "#a7f3d0", textTransform: "uppercase", fontWeight: 700 }}>Estimated Total</div>
+              <div style={{ fontSize: 16, fontWeight: 900, color: "#ffffff" }}>
+                ₹{cartEstimatedTotal.toLocaleString("en-IN")}
               </div>
             </div>
-          ))}
+          </div>
+          <button style={styles.floatingCartBtn} onClick={() => setShowCart(true)}>
+            View Cart & Send Enquiries ➔
+          </button>
         </div>
       )}
       {showCart && (
@@ -784,6 +926,34 @@ ${enquiry.buyerPhone}`;
                                 })}
                               </div>
                             </div>
+
+                            {/* Item-level Special Specification Input */}
+                            <textarea
+                              style={{
+                                width: "100%",
+                                marginTop: 10,
+                                padding: "6px 10px",
+                                borderRadius: 6,
+                                border: "1px solid #cbd5e1",
+                                fontSize: 12,
+                                minHeight: 42,
+                                fontFamily: "inherit",
+                                boxSizing: "border-box",
+                                outline: "none"
+                              }}
+                              placeholder="Any special specification, size or notes..."
+                              value={cartItem.specification || ""}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setCart((current) =>
+                                  current.map((item, cartIndex) =>
+                                    cartIndex === index
+                                      ? { ...item, specification: val }
+                                      : item
+                                  )
+                                );
+                              }}
+                            />
                           </div>
 
                           <button
@@ -819,16 +989,37 @@ ${enquiry.buyerPhone}`;
                         </strong>
 
                         {cartEnquiry.buyerPhone && (
-                          <div style={{ marginTop: 3 }}>
-                            {cartEnquiry.buyerPhone}
-                          </div>
+                          <input
+  type="tel"
+  inputMode="numeric"
+  maxLength={10}
+  required
+  value={cartEnquiry.buyerPhone}
+  placeholder="Contact number *"
+  onChange={(e) =>
+    setCartEnquiry({
+      ...cartEnquiry,
+      buyerPhone: e.target.value.replace(/\D/g, "").replace(/^91(?=\d{10}$)/, "").slice(-10),
+    })
+  }
+  style={{
+    width: "100%",
+    marginTop: 6,
+    boxSizing: "border-box",
+    padding: "10px 11px",
+    border: "1px solid #cbd5e1",
+    borderRadius: 8,
+    fontSize: 14,
+    background: "#ffffff",
+  }}
+/>
                         )}
                       </div>
                     </div>
 
                     <textarea
                       style={styles.cartAddressInput}
-                      placeholder="Enter delivery address / location"
+                      placeholder="Delivery address / location *" required
                       value={cartEnquiry.location}
                       onChange={(e) =>
                         setCartEnquiry({
@@ -842,7 +1033,7 @@ ${enquiry.buyerPhone}`;
                       style={styles.cartPincodeInput}
                       inputMode="numeric"
                       maxLength={6}
-                      placeholder="Delivery PIN code"
+                      placeholder="Delivery PIN code *" required
                       value={cartEnquiry.pincode}
                       onChange={(e) =>
                         setCartEnquiry({
@@ -913,7 +1104,12 @@ ${enquiry.buyerPhone}`;
 
                   <button
                     type="button"
-                    style={styles.cartSubmitButton}
+                    style={{
+                      ...styles.cartSubmitButton,
+                      opacity: cartReadyToSend ? 1 : 0.45,
+                      cursor: cartReadyToSend ? "pointer" : "not-allowed",
+                    }}
+                    disabled={!cartReadyToSend}
                     onClick={submitCartEnquiry}
                   >
                     Send Enquiry
@@ -1236,8 +1432,23 @@ cartAddButton: {
   fontWeight: 900,
   cursor: "pointer",
 },
-  grid: { maxWidth: "100%", margin: "0", padding: "0", display: "grid", gridTemplateColumns: typeof window !== "undefined" && window.innerWidth < 768 ? "repeat(4, 1fr)" : "repeat(auto-fit, minmax(260px, 1fr))", gap: typeof window !== "undefined" && window.innerWidth < 768 ? 4 : 16 },
-  card: { background: "#fff", borderRadius: 8, border: "1px solid #e5e7eb", overflow: "hidden", boxShadow: "0 2px 10px rgba(0,0,0,0.05)" },
+  grid: {
+  maxWidth: "100%",
+  margin: "0 auto",
+  padding: typeof window !== "undefined" && window.innerWidth < 768 ? "4px" : "0",
+  display: "grid",
+  gridTemplateColumns:
+    typeof window !== "undefined" && window.innerWidth < 768
+      ? "repeat(2, minmax(0, 1fr))"
+      : "repeat(auto-fit, minmax(260px, 1fr))",
+  gap:
+    typeof window !== "undefined" && window.innerWidth < 768
+      ? 8
+      : 16,
+  width: "100%",
+  overflow: "visible",
+},
+  card: { background: "#fff", minWidth: 0, width: "100%", display: "block", visibility: "visible", opacity: 1, borderRadius: 8, border: "1px solid #e5e7eb", overflow: "hidden", boxShadow: "0 2px 10px rgba(0,0,0,0.05)" },
   providerRow: { display: "flex", justifyContent: "space-between", gap: 12, padding: 14, borderBottom: "1px solid #eef0f4" },
   providerName: { fontSize: 17, fontWeight: 900 },
   verified: { fontSize: 12, color: "#138a4e", marginTop: 3 },
@@ -1577,7 +1788,96 @@ cartAddButton: {
     maxWidth: 520,
     boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
   },
+
+  zeptoAddBtn: {
+    minWidth: 82,
+    width: "auto",
+    whiteSpace: "nowrap",
+    flexShrink: 0,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    padding: "7px 16px",
+    borderRadius: 8,
+    border: "1px solid #16a34a",
+    background: "#f0fdf4",
+    color: "#16a34a",
+    fontWeight: 900,
+    fontSize: 13,
+    cursor: "pointer",
+    flex: 1,
+    textAlign: "center",
+  },
+  zeptoStepper: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    border: "1px solid #16a34a",
+    borderRadius: 8,
+    background: "#f0fdf4",
+    overflow: "hidden",
+    flex: 1,
+  },
+  zeptoStepBtn: {
+    padding: "6px 12px",
+    border: 0,
+    background: "#dcfce7",
+    color: "#15803d",
+    fontSize: 16,
+    fontWeight: 900,
+    cursor: "pointer",
+  },
+  zeptoQtyVal: {
+    padding: "0 8px",
+    fontSize: 14,
+    fontWeight: 900,
+    color: "#166534",
+  },
+  floatingCartBar: {
+    position: "fixed",
+    bottom: 16,
+    left: "50%",
+    transform: "translateX(-50%)",
+    width: "min(600px, 92vw)",
+    background: "#065f46",
+    borderRadius: 16,
+    padding: "12px 18px",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
+    zIndex: 999,
+  },
+  cartBadgeCount: {
+    background: "#047857",
+    color: "#ffffff",
+    padding: "6px 12px",
+    borderRadius: 20,
+    fontSize: 12,
+    fontWeight: 900,
+  },
+  floatingCartBtn: {
+    padding: "10px 18px",
+    borderRadius: 10,
+    border: 0,
+    background: "#10b981",
+    color: "#ffffff",
+    fontSize: 13,
+    fontWeight: 900,
+    cursor: "pointer",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+  },
 };
+
+
+
+
+
+
+
+
+
 
 
 

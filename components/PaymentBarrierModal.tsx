@@ -16,13 +16,14 @@ type Props = {
   itemDetails?: string;
 };
 
+export const IS_BETA_TESTING = true;
+
 export default function PaymentBarrierModal(props: Props) {
-  // CRITICAL FIX: Default to FALSE if open/isOpen is not explicitly true
   const isVisible = (props.open === true) || (props.isOpen === true);
   const handleClose = props.onCancel || props.onClose || (() => {});
   const handleSuccess = props.onConfirmPaid || props.onSuccess || (() => {});
 
-  const [selectedPlan, setSelectedPlan] = useState<string>("Single Unlock");
+  const [selectedPlan, setSelectedPlan] = useState<string>("Pay-Per-Use");
   const [transactionRef, setTransactionRef] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
 
@@ -32,10 +33,14 @@ export default function PaymentBarrierModal(props: Props) {
     setIsVerifying(true);
     setTimeout(() => {
       setIsVerifying(false);
-      alert(`Payment verified! ${selectedPlan} unlocked successfully.`);
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("bm_beta_paid_session", "true");
+        sessionStorage.setItem("bm_pay_per_use_unlocked", "true");
+      }
+      alert(`Payment verified! ${selectedPlan} (₹20 Pay-Per-Use / Subscription) unlocked successfully.`);
       handleSuccess(selectedPlan);
       handleClose();
-    }, 600);
+    }, 400);
   };
 
   return (
@@ -63,7 +68,7 @@ export default function PaymentBarrierModal(props: Props) {
           textAlign: "center",
           boxShadow: "0 24px 80px rgba(15, 23, 42, 0.35)",
           position: "relative",
-          maxHeight: "92vh",
+          maxHeight: "90dvh",
           overflowY: "auto",
           fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
         }}
@@ -89,9 +94,7 @@ export default function PaymentBarrierModal(props: Props) {
           ×
         </button>
 
-        {/* ============================================================ */}
-        {/* HEADER: LOGO PLACE HAS FIX QR CODE (ONLY 1 QR CODE PLACE)   */}
-        {/* ============================================================ */}
+        {/* HEADER */}
         <div
           style={{
             backgroundColor: "#800020",
@@ -105,7 +108,6 @@ export default function PaymentBarrierModal(props: Props) {
             gap: "8px"
           }}
         >
-          {/* LOGO POSITION NOW HOLDS THE PHONEPE PAYMENT QR CODE */}
           <div style={{ background: "white", padding: "4px", borderRadius: "8px", boxShadow: "0 2px 8px rgba(0,0,0,0.2)" }}>
             <img
               src="/qr-code.jpg"
@@ -116,19 +118,15 @@ export default function PaymentBarrierModal(props: Props) {
           </div>
           <div>
             <span style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "1px", opacity: 0.9, fontWeight: 700 }}>
-              💳 BuildMitra Subscription Required
+              💳 Premium Output Verification
             </span>
             <h3 style={{ margin: "2px 0 0", fontSize: "17px", fontWeight: "800" }}>
-              🔥 Subscribe BuildMitra & Save Lakhs!
+              Unlock Reports, DRG & BOQ Outputs
             </h3>
           </div>
         </div>
 
-        {/* SUBTITLE & PROMO BANNER */}
-        <p style={{ fontSize: "13px", fontWeight: "600", color: "#475569", margin: "0 0 10px" }}>
-          Scan PhonePe UPI QR Code to Pay
-        </p>
-
+        {/* PROMO BANNER */}
         <div
           style={{
             backgroundColor: "#f0fdf4",
@@ -142,17 +140,19 @@ export default function PaymentBarrierModal(props: Props) {
             fontWeight: "600"
           }}
         >
-          🚀 "Upscale & 10X Your Construction Business with BuildMitra Real-Time BOQ & Materials Suite!"
+          {props.amount && props.amount > 0 ? (
+            <span>📐 DRG Drawing Sheets Entitlement: <strong>₹25 / Sheet</strong> ({Math.ceil(props.amount / 25)} Sheet(s) × ₹25 = <strong>₹{props.amount} Total</strong>)</span>
+          ) : (
+            <span>🚀 Choose <strong>₹20 / ₹25 Pay-Per-Use</strong> for single report unlock or <strong>Monthly/Annual Subscription</strong> for unlimited access!</span>
+          )}
         </div>
 
-        {/* ============================================================ */}
-        {/* MAIN SCAN BOX AREA: QR PLACE HAS FIX BUILDMITRA LOGO         */}
-        {/* ============================================================ */}
+        {/* UPI PAYEE INFO */}
         <div
           style={{
             border: "2px dashed #800020",
             borderRadius: "12px",
-            padding: "14px",
+            padding: "12px",
             backgroundColor: "#fffef9",
             marginBottom: "14px",
             display: "flex",
@@ -160,16 +160,6 @@ export default function PaymentBarrierModal(props: Props) {
             alignItems: "center"
           }}
         >
-          {/* QR CODE PLACE HAS FIX BUILDMITRA LOGO */}
-          <div style={{ background: "white", padding: "8px 14px", borderRadius: "10px", border: "1px solid #e2e8f0", boxShadow: "0 2px 8px rgba(128,0,32,0.08)", marginBottom: "8px" }}>
-            <img
-              src="/logo.png"
-              onError={(e) => { (e.target as HTMLImageElement).src = "/images/buildmitra-official-logo.jpg"; }}
-              alt="BuildMitra Logo"
-              style={{ width: "150px", height: "auto", display: "block", objectFit: "contain" }}
-            />
-          </div>
-
           <div style={{ fontSize: "13px", fontWeight: "800", color: "#800020" }}>
             UPI ID: <span style={{ textDecoration: "underline" }}>9731888377@ybl</span>
           </div>
@@ -178,17 +168,17 @@ export default function PaymentBarrierModal(props: Props) {
           </div>
         </div>
 
-        {/* SUBSCRIPTION PLAN TIERS */}
+        {/* SUBSCRIPTION & PAY-PER-USE TIERS */}
         <div style={{ marginBottom: "14px" }}>
           <div style={{ fontSize: "11px", fontWeight: "700", color: "#64748b", textTransform: "uppercase", marginBottom: "6px" }}>
-            Select Plan Tier
+            Select Access Option
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "6px" }}>
             {[
+              { id: "Pay-Per-Use", name: "Single Output", price: "₹20" },
               { id: "Basic", name: "Basic", price: "₹250/mo" },
               { id: "Pro", name: "Pro", price: "₹350/mo" },
-              { id: "Enterprise", name: "Enterprise", price: "₹450/mo" },
-              { id: "Single Unlock", name: "Single Unlock", price: "₹49" }
+              { id: "Annual", name: "Annual", price: "₹2500/yr" }
             ].map((plan) => {
               const isSelected = selectedPlan === plan.id;
               return (
@@ -206,7 +196,7 @@ export default function PaymentBarrierModal(props: Props) {
                     boxShadow: isSelected ? "0 4px 10px rgba(128,0,32,0.25)" : "none"
                   }}
                 >
-                  <div style={{ fontSize: "11px", fontWeight: "700" }}>{plan.name}</div>
+                  <div style={{ fontSize: "10px", fontWeight: "700" }}>{plan.name}</div>
                   <div style={{ fontSize: "11px", fontWeight: "800", marginTop: "2px" }}>{plan.price}</div>
                 </div>
               );
@@ -214,14 +204,14 @@ export default function PaymentBarrierModal(props: Props) {
           </div>
         </div>
 
-        {/* TRANSACTION REF INPUT */}
+        {/* UTR INPUT */}
         <div style={{ textAlign: "left", marginBottom: "12px" }}>
           <label style={{ display: "block", fontSize: "11px", fontWeight: "600", color: "#475569", marginBottom: "4px" }}>
-            UPI Reference / UTR Number (Optional)
+            UPI Reference / UTR Number (Optional for Beta)
           </label>
           <input
             type="text"
-            placeholder="e.g. 9731888377@ybl transaction Ref"
+            placeholder="e.g. 9731888377 UTR number"
             value={transactionRef}
             onChange={(e) => setTransactionRef(e.target.value)}
             style={{
@@ -235,7 +225,7 @@ export default function PaymentBarrierModal(props: Props) {
           />
         </div>
 
-        {/* PRIMARY ACTION BUTTON (NO DUPLICATE QR CODES HERE) */}
+        {/* ACTION BUTTON */}
         <button
           onClick={handlePaymentSubmit}
           disabled={isVerifying}
@@ -252,10 +242,10 @@ export default function PaymentBarrierModal(props: Props) {
             cursor: "pointer"
           }}
         >
-          {isVerifying ? "Verifying..." : "✓ I Have Paid / Continue"}
+          {isVerifying ? "Verifying..." : "✓ I Have Paid / Continue (Beta)"}
         </button>
 
-        {/* SECONDARY LINK BUTTON */}
+        {/* SUBSCRIPTION LINK */}
         <button
           onClick={() => {
             handleClose();
@@ -273,13 +263,8 @@ export default function PaymentBarrierModal(props: Props) {
             marginBottom: "8px"
           }}
         >
-          View Subscription Plans →
+          View Full Subscription Plans →
         </button>
-
-        {/* FOOTER NOTE */}
-        <div style={{ fontSize: "10px", color: "#64748b", marginTop: "4px" }}>
-          Your inputs and generated report remain available.
-        </div>
       </div>
     </div>
   );

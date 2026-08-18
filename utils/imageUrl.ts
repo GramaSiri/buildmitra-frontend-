@@ -17,7 +17,7 @@ export function normalizeImageUrl(
   }
 
   const resolved = resolveMediaUrl(trimmed);
-  if (resolved === "/assets/placeholder-product.webp") return null;
+  if (resolved === "/assets/placeholder-product.webp" || resolved === "/assets/placeholder-product.svg") return null;
   return resolved;
 }
 

@@ -100,3 +100,25 @@ export function addMediaHelper(
 
   return { createdMedia, updatedProjects };
 }
+
+export function deleteProjectHelper(
+  projectId: string,
+  projects: RealEstateProject[]
+): RealEstateProject[] {
+  return projects.filter((p) => p.id !== projectId);
+}
+
+export function deleteUnitHelper(
+  unitId: string,
+  selectedProject: RealEstateProject,
+  projects: RealEstateProject[]
+): RealEstateProject[] {
+  return projects.map((p) => {
+    if (p.id === selectedProject.id) {
+      const updatedInventory = (p.inventory || []).filter((u) => u.id !== unitId);
+      return { ...p, inventory: updatedInventory, totalUnits: updatedInventory.length };
+    }
+    return p;
+  });
+}
+

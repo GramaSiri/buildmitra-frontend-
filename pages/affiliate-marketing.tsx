@@ -4,10 +4,12 @@ import ProjectCatalog from "../components/affiliate/ProjectCatalog";
 import ProjectOnboardingPortal from "../components/affiliate/ProjectOnboardingPortal";
 import InvoicingHub from "../components/affiliate/InvoicingHub";
 import AffiliateDashboard from "../components/affiliate/AffiliateDashboard";
+import ProjectOnboardingModals from "../components/affiliate/ProjectOnboardingModals";
 import {
   RealEstateProject,
   AffiliateBooking,
   CommissionInvoice,
+  MediaDrawing,
   getAffiliateProjects,
   saveAffiliateProjects,
   getAffiliateBookings,
@@ -26,12 +28,22 @@ export default function AffiliateMarketingPage() {
   const [invoices, setInvoices] = useState<CommissionInvoice[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
+  // Global Modals State
+  const [showAddProjectModal, setShowAddProjectModal] = useState(false);
+  const [showAddUnitModal, setShowAddUnitModal] = useState(false);
+  const [showAddMediaModal, setShowAddMediaModal] = useState(false);
+  const [previewMedia, setPreviewMedia] = useState<MediaDrawing | null>(null);
+  const [selectedProjectId, setSelectedProjectId] = useState<string>("");
+
   useEffect(() => {
     const loadedProjects = getAffiliateProjects();
     const loadedBookings = getAffiliateBookings();
     const loadedInvoices = getAffiliateInvoices();
 
     setProjects(loadedProjects);
+    if (loadedProjects && loadedProjects.length > 0) {
+      setSelectedProjectId(loadedProjects[0].id);
+    }
     setBookings(loadedBookings);
     setInvoices(loadedInvoices);
     setIsLoaded(true);
@@ -51,6 +63,8 @@ export default function AffiliateMarketingPage() {
     setInvoices(updated);
     saveAffiliateInvoices(updated);
   };
+
+  const selectedProject = projects.find((p) => p.id === selectedProjectId) || projects[0] || null;
 
   if (!isLoaded) {
     return (
@@ -106,8 +120,49 @@ export default function AffiliateMarketingPage() {
             </div>
           </div>
 
-          {/* TOP QUICK STAT BADGES */}
-          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+          {/* TOP PRIMARY ACTION BUTTONS & STAT BADGES */}
+          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "center" }}>
+            <button
+              type="button"
+              onClick={() => setShowAddProjectModal(true)}
+              style={{
+                background: "linear-gradient(135deg, #ff7a00, #ea580c)",
+                color: "#ffffff",
+                border: 0,
+                borderRadius: "10px",
+                padding: "10px 18px",
+                fontWeight: 800,
+                fontSize: "13px",
+                cursor: "pointer",
+                boxShadow: "0 4px 12px rgba(255,122,0,0.25)",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+              }}
+            >
+              🏢 + Onboard / Upload New Project
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowAddUnitModal(true)}
+              style={{
+                background: "#0f172a",
+                color: "#ffffff",
+                border: 0,
+                borderRadius: "10px",
+                padding: "10px 18px",
+                fontWeight: 800,
+                fontSize: "13px",
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+              }}
+            >
+              📐 + Add Property / Plot Unit
+            </button>
+
             <div
               style={{
                 background: "#f8fafc",
@@ -204,6 +259,11 @@ export default function AffiliateMarketingPage() {
             bookings={bookings}
             onUpdateProjects={handleUpdateProjects}
             onUpdateBookings={handleUpdateBookings}
+            onOpenAddProject={() => setShowAddProjectModal(true)}
+            onOpenAddUnit={(projId) => {
+              if (projId) setSelectedProjectId(projId);
+              setShowAddUnitModal(true);
+            }}
           />
         )}
 
@@ -211,6 +271,11 @@ export default function AffiliateMarketingPage() {
           <ProjectOnboardingPortal
             projects={projects}
             onUpdateProjects={handleUpdateProjects}
+            onOpenAddProject={() => setShowAddProjectModal(true)}
+            onOpenAddUnit={() => setShowAddUnitModal(true)}
+            onOpenAddMedia={() => setShowAddMediaModal(true)}
+            selectedProjectId={selectedProjectId}
+            setSelectedProjectId={setSelectedProjectId}
           />
         )}
 
@@ -230,7 +295,24 @@ export default function AffiliateMarketingPage() {
             invoices={invoices}
           />
         )}
+
+        {/* ONBOARDING & MODALS COMPONENT */}
+        <ProjectOnboardingModals
+          showAddProjectModal={showAddProjectModal}
+          setShowAddProjectModal={setShowAddProjectModal}
+          showAddUnitModal={showAddUnitModal}
+          setShowAddUnitModal={setShowAddUnitModal}
+          showAddMediaModal={showAddMediaModal}
+          setShowAddMediaModal={setShowAddMediaModal}
+          previewMedia={previewMedia}
+          setPreviewMedia={setPreviewMedia}
+          selectedProject={selectedProject}
+          projects={projects}
+          onUpdateProjects={handleUpdateProjects}
+          setSelectedProjectId={setSelectedProjectId}
+        />
       </div>
     </Sidebar>
   );
 }
+

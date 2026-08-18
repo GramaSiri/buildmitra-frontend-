@@ -80,6 +80,36 @@ export default function ProjectOnboardingModals({
     description: "",
   });
 
+  const handleHeroFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === "string") {
+          setNewProject((prev) => ({ ...prev, heroImage: reader.result as string }));
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleMediaFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === "string") {
+          setNewMedia((prev) => ({
+            ...prev,
+            fileUrl: reader.result as string,
+            fileType: file.type || "image/jpeg",
+          }));
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   function handleCreateProject(e: React.FormEvent) {
     e.preventDefault();
     if (!newProject.projectName || !newProject.builderName || !newProject.reraNumber) {
@@ -165,7 +195,7 @@ export default function ProjectOnboardingModals({
                 <input
                   required
                   style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1" }}
-                  placeholder="e.g. Prestige Estates Ltd"
+                  placeholder="e.g. BuildMitra Demo Projects"
                   value={newProject.builderName}
                   onChange={(e) => setNewProject({ ...newProject, builderName: e.target.value })}
                 />
@@ -186,7 +216,7 @@ export default function ProjectOnboardingModals({
                 <input
                   required
                   style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1" }}
-                  placeholder="e.g. Prestige Smart City"
+                  placeholder="e.g. Buildmitra Meadows"
                   value={newProject.projectName}
                   onChange={(e) => setNewProject({ ...newProject, projectName: e.target.value })}
                 />
@@ -196,7 +226,7 @@ export default function ProjectOnboardingModals({
                 <label style={{ fontSize: "12px", fontWeight: 700 }}>Project Code</label>
                 <input
                   style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1" }}
-                  placeholder="e.g. PRESTIGE-SMART-01"
+                  placeholder="e.g. BM-MEADOWS-01"
                   value={newProject.projectCode}
                   onChange={(e) => setNewProject({ ...newProject, projectCode: e.target.value })}
                 />
@@ -250,6 +280,42 @@ export default function ProjectOnboardingModals({
                     setNewProject({ ...newProject, defaultCommissionValue: Number(e.target.value) })
                   }
                 />
+              </div>
+
+              <div style={{ gridColumn: "1 / -1" }}>
+                <label style={{ fontSize: "12px", fontWeight: 700 }}>Project Description & Highlights</label>
+                <textarea
+                  style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1", minHeight: "60px", fontSize: "12px" }}
+                  placeholder="e.g. Premium RERA approved gated community layout with clubhouse & 40ft roads."
+                  value={newProject.description}
+                  onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
+                />
+              </div>
+
+              <div style={{ gridColumn: "1 / -1", background: "#f8fafc", padding: "12px", borderRadius: "8px", border: "1px dashed #cbd5e1" }}>
+                <label style={{ fontSize: "12px", fontWeight: 800, color: "#0f172a" }}>Project Showcase Photo / Image</label>
+                <div style={{ display: "flex", gap: "10px", marginTop: "6px", alignItems: "center" }}>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleHeroFileChange}
+                    style={{ fontSize: "12px", flex: 1 }}
+                  />
+                  <span style={{ fontSize: "11px", color: "#64748b" }}>OR Enter URL</span>
+                </div>
+                <input
+                  type="text"
+                  placeholder="https://..."
+                  value={newProject.heroImage}
+                  onChange={(e) => setNewProject({ ...newProject, heroImage: e.target.value })}
+                  style={{ width: "100%", padding: "6px", borderRadius: "6px", border: "1px solid #cbd5e1", marginTop: "6px", fontSize: "12px" }}
+                />
+                {newProject.heroImage && (
+                  <div style={{ marginTop: "8px", display: "flex", alignItems: "center", gap: "10px" }}>
+                    <img src={newProject.heroImage} alt="Preview" style={{ width: "60px", height: "40px", objectFit: "cover", borderRadius: "4px", border: "1px solid #cbd5e1" }} />
+                    <span style={{ fontSize: "11px", color: "#166534", fontWeight: 700 }}>✓ Image Loaded</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -500,15 +566,30 @@ export default function ProjectOnboardingModals({
                 </select>
               </div>
 
-              <div>
-                <label style={{ fontSize: "12px", fontWeight: 700 }}>Image / File URL *</label>
+              <div style={{ background: "#f8fafc", padding: "12px", borderRadius: "8px", border: "1px dashed #cbd5e1" }}>
+                <label style={{ fontSize: "12px", fontWeight: 800, color: "#0f172a" }}>CAD / Drawing File Upload *</label>
+                <div style={{ display: "flex", gap: "10px", marginTop: "6px", alignItems: "center" }}>
+                  <input
+                    type="file"
+                    accept="image/*,.pdf"
+                    onChange={handleMediaFileChange}
+                    style={{ fontSize: "12px", flex: 1 }}
+                  />
+                  <span style={{ fontSize: "11px", color: "#64748b" }}>OR Enter URL</span>
+                </div>
                 <input
                   required
-                  style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1" }}
+                  type="text"
                   placeholder="https://..."
                   value={newMedia.fileUrl}
                   onChange={(e) => setNewMedia({ ...newMedia, fileUrl: e.target.value })}
+                  style={{ width: "100%", padding: "6px", borderRadius: "6px", border: "1px solid #cbd5e1", marginTop: "6px", fontSize: "12px" }}
                 />
+                {newMedia.fileUrl && (
+                  <div style={{ marginTop: "8px", fontSize: "11px", color: "#166534", fontWeight: 700 }}>
+                    ✓ Drawing file ready ({newMedia.fileType || "URL"})
+                  </div>
+                )}
               </div>
 
               <div>

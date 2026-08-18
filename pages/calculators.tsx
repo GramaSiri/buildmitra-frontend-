@@ -23,6 +23,7 @@ const ALL_20_CALCULATORS: CalcItem[] = [
   { id: 'brick-work-calculator', name: 'Brickwork & AAC Blockwork', icon: '🧱', category: 'Masonry & Steel', unitBadge: 'Nos', description: 'Red bricks, AAC blocks, solid block count & mortar volume.' },
   { id: 'rcc-slab-calculator', name: 'RCC Slab & Beam', icon: '🏗️', category: 'Concrete & RCC', unitBadge: 'Cum', description: 'Slab thickness, main & distribution steel rebar weight.' },
   { id: 'rcc-steel-building-calculator', name: 'RCC + Steel + Blockwork', icon: '🏢', category: 'Concrete & RCC', unitBadge: 'Sft', description: 'Full building superstructure composite Mat. Cost (₹) breakdown.' },
+  { id: 'peb-building-boq', name: 'PEB Building BOQ & Cost Estimator', icon: '🏗️', category: 'Masonry & Steel', unitBadge: 'Sft', description: 'Complete Pre-Engineered Building BOQ, primary/secondary steel, galvalume sheeting, turbo ventilators, office/toilet/pantry fitouts & footings.' },
   { id: 'column-calculator', name: 'Column Estimator', icon: '📏', category: 'Structural Elements', unitBadge: 'Cum', description: 'Vertical rebar, lateral stirrup ties, Con. Vol.' },
   { id: 'beam-calculator', name: 'Beam Estimator', icon: '📐', category: 'Structural Elements', unitBadge: 'Cum', description: 'Top/bottom main bars, stirrups spacing, concrete.' },
   { id: 'footing-calculator', name: 'Footing Estimator', icon: '🔽', category: 'Structural Elements', unitBadge: 'Cum', description: 'Trapezoidal & isolated footing concrete & mesh steel.' },
@@ -173,5 +174,7 @@ export default function CalculatorsPage() {
     </>
   );
 }
+
+
 
 

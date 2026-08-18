@@ -1,882 +1,1557 @@
-import React, { useState, useEffect } from "react";
-import * as XLSX from 'xlsx';
+import React, { useState, useEffect, useMemo } from "react";
+import * as XLSX from "xlsx";
 import { logoutToLogin } from "../utils/session";
-import { themeTokens, PrimaryButton, SecondaryButton, Card, Badge, LoadingSpinner, EmptyState, BuildMitraHeader } from "../components/ui/DesignSystem";
-import MarketRateTrend from "../components/ui/MarketRateTrend";
+import { BuildMitraHeader } from "../components/ui/DesignSystem";
 import { getApiBase } from "../utils/apiConfig";
 
-const p = (obj: any) => obj;
+// Safe fetch wrapper that validates JSON response before parsing
+async function safeFetchJson(url: string, options?: RequestInit) {
+  const res = await fetch(url, options);
+  const contentType = res.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    const text = await res.text();
+    throw new Error(
+      `Server returned non-JSON response (Status ${res.status}). Please verify backend server is running.`
+    );
+  }
+  return await res.json();
+}
+
+// -----------------------------------------------------------------------------
+// CANONICAL ADMIN MASTER IMAGE SYNC
+// Supplier Dashboard must use the latest Admin Master Library image by
+// masterItemCode. One canonical image source; no duplicate supplier image DB.
+// -----------------------------------------------------------------------------
+
+let supplierMasterImagePromise: Promise<Record<string, string>> | null = null;
+
+function resolveSupplierImageUrl(value?: string): string {
+  const src = String(value || "").trim();
+
+  if (!src) return "";
+
+  if (
+    src.startsWith("http://") ||
+    src.startsWith("https://") ||
+    src.startsWith("data:") ||
+    src.startsWith("blob:")
+  ) {
+    return src;
+  }
+
+  if (src.startsWith("/api/")) {
+    const apiBase = getApiBase();
+    return `${apiBase}${src}`;
+  }
+
+  return src;
+}
+
+function loadSupplierMasterImageMap(): Promise<Record<string, string>> {
+
+  if (supplierMasterImagePromise) {
+    return supplierMasterImagePromise;
+  }
+
+  supplierMasterImagePromise = (async () => {
+
+    const map: Record<string, string> = {};
+    const apiBase = getApiBase();
+
+    let page = 1;
+
+    while (true) {
+
+      try {
+
+        const res = await fetch(
+          `${apiBase}/api/provider/master-items?page=${page}&limit=500`
+        );
+
+        if (!res.ok) break;
+
+        const data = await res.json();
+        const batch = Array.isArray(data?.items) ? data.items : [];
+
+        batch.forEach((item: any) => {
+
+          const code = String(
+            item?.masterItemCode ||
+            item?.masterCode ||
+            ""
+          ).trim().toUpperCase();
+
+          const image = String(
+            item?.imageUrl ||
+            item?.masterImageUrl ||
+            ""
+          ).trim();
+
+          if (code && image) {
+            map[code] = resolveSupplierImageUrl(image);
+          }
+        });
+
+        if (batch.length < 500) break;
+
+        page++;
+
+      } catch {
+        break;
+      }
+    }
+
+    return map;
+  })();
+
+  return supplierMasterImagePromise;
+}
+
+// Stable, non-blinking Product Thumbnail Component with fallback & error locking
+function ProductThumbnail({ src, alt, masterItemCode }: { src?: string; alt?: string; masterItemCode?: string }) {
+  const [imgSrc, setImgSrc] = useState(resolveSupplierImageUrl(src));
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+
+    let active = true;
+
+    setHasError(false);
+
+    const directImage = resolveSupplierImageUrl(src);
+
+    if (directImage) {
+      setImgSrc(directImage);
+    } else {
+      setImgSrc("");
+    }
+
+    const code = String(masterItemCode || "").trim().toUpperCase();
+
+    if (code) {
+
+      loadSupplierMasterImageMap().then((map) => {
+
+        if (!active) return;
+
+        const masterImage = map[code];
+
+        // Canonical Admin Master image always wins.
+        if (masterImage) {
+          setImgSrc(masterImage);
+          setHasError(false);
+        }
+      });
+    }
+
+    return () => {
+      active = false;
+    };
+
+  }, [src, masterItemCode]);
+
+  if (hasError || !imgSrc) {
+    return (
+      <div style={styles.placeholderThumb} title={alt || "Product Image"}>
+        📦
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={imgSrc}
+      alt={alt || "Product"}
+      style={styles.thumb}
+      onError={() => {
+        setHasError(true);
+      }}
+    />
+  );
+}
 
 export default function SupplierDashboard() {
-const API_BASE = getApiBase();
-const [userName, setUserName] = useState("Supplier");
-  const [userId, setUserId] = useState(null);
+  const [userName, setUserName] = useState("Supplier");
+  const [userCode, setUserCode] = useState("");
   const [isClient, setIsClient] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
-  const [showProductModal, setShowProductModal] = useState(false);
-  const [showOfferModal, setShowOfferModal] = useState(false);
-  const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
-  const [showQuoteModal, setShowQuoteModal] = useState(false);
-  const [selectedQuoteRequest, setSelectedQuoteRequest] = useState(null);
-  const [bulkFile, setBulkFile] = useState(null);
-  const [shopPhoto, setShopPhoto] = useState(null);
-  const [businessCard, setBusinessCard] = useState(null);
-  const [quoteResponse, setQuoteResponse] = useState({ price: "", deliveryDate: "", notes: "" });
-  const [pincode, setPincode] = useState("");
-  const [pincodeError, setPincodeError] = useState("");
-  const [showEditProductModal, setShowEditProductModal] = useState(false);
-  
-  const [newProduct, setNewProduct] = useState({
-    name: "", category: "", unit: "kg", price: "", stock: "", minOrder: "", description: ""
-  });
-  const [newOffer, setNewOffer] = useState({
-    offerName: "", productName: "", bulkQuantity: "", bulkValue: "", discount: "", 
-    freeDelivery: "No", buyGet: "", billDiscount: "", validFrom: "", validTo: ""
-  });
-  const [editProduct, setEditProduct] = useState({
-    id: "", name: "", category: "", unit: "", price: "", stock: "", minOrder: "", description: ""
-  });
+  const [loading, setLoading] = useState(true);
 
-  // Load user data on mount
+  // DB Data
+  const [listings, setListings] = useState<any[]>([]);
+  const [enquiries, setEnquiries] = useState<any[]>([]);
+  const [reportData, setReportData] = useState<any>(null);
+
+  // Reports Filter & View State
+  const [reportType, setReportType] = useState("full_statement"); // customer_wise, payment_pending, total_business, full_statement
+  const [savingReport, setSavingReport] = useState(false);
+
+  // Filters & Search State
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedBrand, setSelectedBrand] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+
+  // Modal State
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingItem, setEditingItem] = useState<any>(null);
+  const [editRate, setEditRate] = useState("");
+  const [editStock, setEditStock] = useState("");
+  const [editAvailability, setEditAvailability] = useState("In Stock");
+  const [editMinOrder, setEditMinOrder] = useState("1");
+  const [editDeliveryTime, setEditDeliveryTime] = useState("");
+  const [editRemarks, setEditRemarks] = useState("");
+  const [submittingEdit, setSubmittingEdit] = useState(false);
+
+  // Quote Modal State
+  const [showQuoteModal, setShowQuoteModal] = useState(false);
+  const [selectedEnquiry, setSelectedEnquiry] = useState<any>(null);
+  const [quotePrice, setQuotePrice] = useState("");
+  const [quoteNotes, setQuoteNotes] = useState("");
+  const [quoteDelivery, setQuoteDelivery] = useState("");
+
   useEffect(() => {
     setIsClient(true);
-    
-    const user = (sessionStorage.getItem("currentUser") || sessionStorage.getItem("currentUser")) || (sessionStorage.getItem("loggedInUser") || sessionStorage.getItem("loggedInUser")) || (sessionStorage.getItem("user") || sessionStorage.getItem("user"));
-    if (user) {
-      const userData = JSON.parse(user);
-      const resolvedUserCode =
-        userData.userCode ||
-        userData.uniqueCode ||
-        (sessionStorage.getItem("uniqueCode") || sessionStorage.getItem("uniqueCode")) ||
-        "";
+    const userStr =
+      sessionStorage.getItem("currentUser") ||
+      sessionStorage.getItem("loggedInUser") ||
+      sessionStorage.getItem("user");
 
-      const resolvedUserId =
-        resolvedUserCode ||
-        userData.userId ||
-        userData.id ||
-        userData._id ||
-        "";
+    if (userStr) {
+      try {
+        const u = JSON.parse(userStr);
+        const code = String(
+          u.userCode || u.uniqueCode || u.providerUserCode || u.userId || ""
+        ).toUpperCase();
 
-      const normalizedUser = {
-        ...userData,
-        userCode: resolvedUserCode,
-        uniqueCode: resolvedUserCode,
-        userId: resolvedUserId
-      };
+        setUserName(u.companyName || u.name || "Supplier");
+        setUserCode(code);
 
-      setUserName(userData.name || "Supplier");
-      setUserId(resolvedUserId);
-
-      console.log("✅ Supplier identity loaded:", {
-        userCode: resolvedUserCode,
-        userId: resolvedUserId,
-        mongoId: userData.id || userData._id || ""
-      });
-
-      loadUserData(resolvedUserId);
-      loadLiveQuoteRequests(normalizedUser);
+        if (code) {
+          fetchMyListings(code);
+          fetchMyEnquiries(code);
+          fetchMyReports(code);
+        } else {
+          setLoading(false);
+        }
+      } catch (e) {
+        console.error("Failed to parse user session", e);
+        setLoading(false);
+      }
+    } else {
+      setLoading(false);
     }
   }, []);
 
-  const mapMongoQuoteRequest = (e) => ({
-    id: e._id,
-    enquiryCode: e.enquiryCode,
-    date: e.createdAt ? e.createdAt.split("T")[0] : "",
-    customerName: e.buyerName || "",
-    customerMobile: e.buyerPhone || "",
-    itemName: e.itemName || e.itemType || "Material",
-    quantity: e.quantity || "",
-    location: e.location || "",
-    requirement: e.specification || e.message || "",
-    status: e.status || "Pending",
-    quotedPrice: e.quotedAmount || "",
-    notes: e.quoteMessage || ""
-  });
-
-  const loadLiveQuoteRequests = async (userData: any) => {
+  const fetchMyListings = async (code: string) => {
+    setLoading(true);
     try {
-      const providerUserCode = userData.userCode || userData.userId || userData.uniqueCode || "";
-      if (!providerUserCode) {
-        setQuoteRequests([]);
-        return;
-      }
-      let res = await fetch(
-        API_BASE + "/api/enquiry/provider/my?providerUserCode=" + encodeURIComponent(providerUserCode),
-        {
-          headers: {
-            "x-user-code": providerUserCode
-          }
-        }
-      );
-      let data = await res.json().catch(() => ({}));
-
-      if (!data.success) {
-        res = await fetch(
-          API_BASE + "/api/enquiry?providerUserCode=" + encodeURIComponent(providerUserCode),
-          {
-            headers: {
-              "x-user-code": providerUserCode
-            }
-          }
-        );
-        data = await res.json().catch(() => ({}));
-      }
-
+      const apiBase = getApiBase();
+      const data = await safeFetchJson(`${apiBase}/api/provider/my-listings/${encodeURIComponent(code)}`);
       if (data.success) {
-        setQuoteRequests((data.enquiries || []).map(mapMongoQuoteRequest));
-        setSupplierInfo((info: any) => ({ ...info, totalEnquiries: (data.enquiries || []).length }));
+        setListings(data.listings || []);
       }
     } catch (err) {
-      console.log("Supplier enquiries not loaded", err);
+      console.error("Failed to fetch supplier listings", err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const loadUserData = (uid) => {
-    // Load supplier info
-    const info = localStorage.getItem("supplierInfo_" + uid);
-    if (info) {
-      setSupplierInfo(JSON.parse(info));
-    }
-    
-    // Load products for this specific user
-    const savedProducts = localStorage.getItem("supplierProducts_" + uid);
-    if (savedProducts) {
-      setProducts(JSON.parse(savedProducts));
-      console.log("✅ Loaded products for user:", uid, JSON.parse(savedProducts).length);
-    } else {
-      setProducts([]);
-    }
-  };
-
-  // State
-  const [supplierInfo, setSupplierInfo] = useState({
-  // Existing
-  shopName: "",
-  ownerName: "",
-  shopPhotoUrl: null,
-  businessCardUrl: null,
-  gstNo: "",
-  address: "",
-  phone: "",
-  email: "",
-  since: new Date().getFullYear().toString(),
-  rating: 0,
-  totalOrdersCompleted: 0,
-  totalRevenue: 0,
-  activeOffers: 0,
-  totalProducts: 0,
-  totalEnquiries: 0,
-
-  // ===== Professional Company Profile =====
-  companyName: "",
-  companyLogo: "",
-  companyLetterhead: "",
-  companySeal: "",
-  digitalSignature: "",
-
-  panNo: "",
-  msmeNo: "",
-  tradeLicenseNo: "",
-  isoCertificateNo: "",
-
-  bankName: "",
-  accountName: "",
-  accountNumber: "",
-  ifscCode: "",
-  branchName: "",
-  upiId: "",
-  qrCode: "",
-
-  paymentTerms:
-    "100% payment before dispatch",
-
-  deliveryTerms:
-    "Delivery at site subject to road accessibility.",
-
-  warrantyPolicy:
-    "Manufacturer warranty applicable.",
-
-  replacementPolicy:
-    "Damaged materials must be reported within 24 hours of delivery.",
-
-  quotationValidity:
-    "7 Days",
-
-  standardTerms:
-`1. Prices are subject to GST.
-2. Freight extra unless mentioned.
-3. Material once sold cannot be returned.
-4. Subject to Bengaluru jurisdiction.`,
-
-  companyBrochure: "",
-  standardQuotation: "",
-  standardProposal: ""
-});
-
-  const [products, setProducts] = useState([]);
-  const [offers, setOffers] = useState([]);
-  const [orders, setOrders] = useState([]);
-  const [quoteRequests, setQuoteRequests] = useState([]);
-
-  // Save products with userId
-  useEffect(() => {
-    if (isClient && userId) {
-      localStorage.setItem("supplierProducts_" + userId, JSON.stringify(products));
-      // Also update supplierProducts for backward compatibility
-      localStorage.setItem("supplierProducts", JSON.stringify(products));
-    }
-  }, [products, isClient, userId]);
-
-  // Add Product - CRITICAL FIX: Store ownerName with EVERY product
-  const addProduct = () => {
-    if (!newProduct.name || !newProduct.price) {
-      alert("Please fill product name and price");
-      return;
-    }
-    
-    // Get current user info
-    const user =
-      JSON.parse((sessionStorage.getItem("currentUser") || sessionStorage.getItem("currentUser")) || "null") ||
-      JSON.parse((sessionStorage.getItem("loggedInUser") || sessionStorage.getItem("loggedInUser")) || "null") ||
-      JSON.parse((sessionStorage.getItem("user") || sessionStorage.getItem("user")) || "{}");
-    const supplierInfoData =
-      JSON.parse(localStorage.getItem("supplierInfo_" + (user.userCode || user.userId || user.id || user.phone || userId || "supplier")) || "{}");
-    
-    // CRITICAL: Get the correct owner name
-    const ownerName = supplierInfoData.shopName || user.name || "Supplier";
-    const ownerPhone = supplierInfoData.phone || user.phone || "";
-    
-    console.log("📝 Adding product with ownerName:", ownerName);
-    console.log("📝 User:", user);
-    
-    const product = {
-      id: Date.now(),
-      userId: user.userId,
-      ownerName: ownerName,  // CRITICAL: Store the name here
-      ownerPhone: ownerPhone,
-      shopName: ownerName,
-      businessName: ownerName,
-      name: newProduct.name,
-      category: newProduct.category || "Others",
-      unit: newProduct.unit || "piece",
-      price: parseFloat(newProduct.price) || 0,
-      stock: parseInt(newProduct.stock) || 0,
-      minOrder: parseInt(newProduct.minOrder) || 1,
-      description: newProduct.description || "",
-      rating: 0,
-      soldCount: 0,
-      status: "Active",
-      createdAt: new Date().toISOString()
-    };
-    
-    console.log("✅ Product created with ownerName:", product.ownerName);
-    
-    const updatedProducts = [...products, product];
-    setProducts(updatedProducts);
-    setSupplierInfo({ ...supplierInfo, totalProducts: updatedProducts.length });
-    
-    // Save immediately
-    localStorage.setItem("supplierProducts_" + user.userId, JSON.stringify(updatedProducts));
-    localStorage.setItem("supplierProducts", JSON.stringify(updatedProducts));
-    
-    setNewProduct({ name: "", category: "", unit: "kg", price: "", stock: "", minOrder: "", description: "" });
-    setShowProductModal(false);
-    alert("✅ Product added successfully!");
-  };
-
-  // Bulk Upload - CRITICAL FIX: Store ownerName with EVERY product
-  const handleBulkUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) {
-      alert("Please select a file to upload");
-      return;
-    }
-    
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      try {
-        const data = new Uint8Array(evt.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        const jsonData = XLSX.utils.sheet_to_json(firstSheet);
-        
-        // Get current user info
-        const user =
-      JSON.parse((sessionStorage.getItem("currentUser") || sessionStorage.getItem("currentUser")) || "null") ||
-      JSON.parse((sessionStorage.getItem("loggedInUser") || sessionStorage.getItem("loggedInUser")) || "null") ||
-      JSON.parse((sessionStorage.getItem("user") || sessionStorage.getItem("user")) || "{}");
-        const supplierInfoData =
-      JSON.parse(localStorage.getItem("supplierInfo_" + (user.userCode || user.userId || user.id || user.phone || userId || "supplier")) || "{}");
-        const ownerName = supplierInfoData.shopName || user.name || "Supplier";
-        const ownerPhone = supplierInfoData.phone || user.phone || "";
-        
-        console.log("📝 Bulk upload with ownerName:", ownerName);
-        
-        const newProducts = [];
-        for (let i = 0; i < jsonData.length; i++) {
-          const row = jsonData[i];
-          const productName = row["Product Name"] || row["ProductName"] || row["name"];
-          
-          if (productName) {
-            newProducts.push({
-              id: Date.now() + i,
-              userId: user.userId,
-              ownerName: ownerName,
-              ownerPhone: ownerPhone,
-              shopName: ownerName,
-              businessName: ownerName,
-              name: String(productName),
-              category: row["Category"] || row["category"] || "Others",
-              unit: row["Unit"] || row["unit"] || "piece",
-              price: Number(row["Price"] || row["price"]) || 0,
-              stock: Number(row["Stock"] || row["stock"]) || 0,
-              minOrder: Number(row["Min Order"] || row["minOrder"]) || 1,
-              description: row["Description"] || row["description"] || "",
-              rating: 0,
-              soldCount: 0,
-              status: "Active",
-              createdAt: new Date().toISOString()
-            });
-          }
-        }
-        
-        if (newProducts.length > 0) {
-          const updatedProducts = [...products, ...newProducts];
-          setProducts(updatedProducts);
-          setSupplierInfo({ ...supplierInfo, totalProducts: updatedProducts.length });
-          localStorage.setItem("supplierProducts_" + user.userId, JSON.stringify(updatedProducts));
-          localStorage.setItem("supplierProducts", JSON.stringify(updatedProducts));
-          alert(`✅ ${newProducts.length} products uploaded successfully!`);
-          setShowBulkUploadModal(false);
-          e.target.value = '';
-        } else {
-          alert("No valid products found.");
-        }
-      } catch (error) {
-        alert("Error reading file.");
+  const fetchMyEnquiries = async (code: string) => {
+    try {
+      const apiBase = getApiBase();
+      const data = await safeFetchJson(
+        `${apiBase}/api/enquiry/provider/my?providerUserCode=${encodeURIComponent(code)}`,
+        { headers: { "x-user-code": code } }
+      );
+      if (data.success) {
+        setEnquiries(data.enquiries || []);
       }
-    };
-    reader.readAsArrayBuffer(file);
-  };
-
-  // Delete Product
-  const deleteProduct = (productId, productName) => {
-    if(window.confirm(`Delete "${productName}"?`)) {
-      const updatedProducts = products.filter(p => p.id !== productId);
-      setProducts(updatedProducts);
-      setSupplierInfo({ ...supplierInfo, totalProducts: updatedProducts.length });
-      localStorage.setItem("supplierProducts_" + userId, JSON.stringify(updatedProducts));
-      localStorage.setItem("supplierProducts", JSON.stringify(updatedProducts));
-      alert("Product deleted!");
+    } catch (err) {
+      console.error("Failed to fetch supplier enquiries", err);
     }
   };
 
-  // Edit Product
-  const updateProduct = () => {
-    if (!editProduct.name || !editProduct.price) {
-      alert("Please fill product name and price");
+  const fetchMyReports = async (code: string) => {
+    try {
+      const apiBase = getApiBase();
+      const data = await safeFetchJson(`${apiBase}/api/provider/reports/${encodeURIComponent(code)}`);
+      if (data.success) {
+        setReportData(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch supplier reports", err);
+    }
+  };
+
+  // Metrics computation from REAL MongoDB data
+  const metrics = useMemo(() => {
+    const totalProducts = listings.length;
+    const approved = listings.filter((l) => l.status === "approved" || l.approvalStatus === "approved").length;
+    const pending = listings.filter((l) => l.status === "pending" || l.approvalStatus === "pending").length;
+    const rejected = listings.filter((l) => l.status === "rejected" || l.approvalStatus === "rejected").length;
+    const outOfStock = listings.filter(
+      (l) => l.availability === "Out of Stock" || Number(l.providerStock || 0) <= 0
+    ).length;
+
+    const totalEnquiries = enquiries.length;
+    const quotesPending = enquiries.filter((e) => e.status !== "Quoted" && e.status !== "Closed").length;
+    const quotesSent = enquiries.filter((e) => e.status === "Quoted").length;
+
+    return {
+      totalProducts,
+      approved,
+      pending,
+      rejected,
+      outOfStock,
+      totalEnquiries,
+      quotesPending,
+      quotesSent,
+    };
+  }, [listings, enquiries]);
+
+  // Unique Categories & Brands for filtering
+  const categories = useMemo(() => {
+    const set = new Set<string>();
+    listings.forEach((l) => l.category && set.add(l.category));
+    return Array.from(set);
+  }, [listings]);
+
+  const brands = useMemo(() => {
+    const set = new Set<string>();
+    listings.forEach((l) => l.brand && set.add(l.brand));
+    return Array.from(set);
+  }, [listings]);
+
+  // Category distribution for bar chart
+  const categoryStats = useMemo(() => {
+    const map: Record<string, number> = {};
+    listings.forEach((l) => {
+      const cat = l.category || "General";
+      map[cat] = (map[cat] || 0) + 1;
+    });
+    return Object.entries(map).map(([name, count]) => ({ name, count }));
+  }, [listings]);
+
+  // Filtered Products
+  const filteredListings = useMemo(() => {
+    return listings.filter((item) => {
+      const search = searchQuery.toLowerCase().trim();
+      if (search) {
+        const matchName = (item.itemName || "").toLowerCase().includes(search);
+        const matchCode = (item.masterItemCode || "").toLowerCase().includes(search);
+        const matchBrand = (item.brand || "").toLowerCase().includes(search);
+        const matchCategory = (item.category || "").toLowerCase().includes(search);
+        if (!matchName && !matchCode && !matchBrand && !matchCategory) return false;
+      }
+
+      if (selectedCategory !== "all" && item.category !== selectedCategory) return false;
+      if (selectedBrand !== "all" && item.brand !== selectedBrand) return false;
+
+      if (statusFilter === "approved" && item.status !== "approved") return false;
+      if (statusFilter === "pending" && item.status !== "pending") return false;
+      if (statusFilter === "rejected" && item.status !== "rejected") return false;
+      if (statusFilter === "outOfStock") {
+        if (item.availability !== "Out of Stock" && Number(item.providerStock || 0) > 0) return false;
+      }
+
+      return true;
+    });
+  }, [listings, searchQuery, selectedCategory, selectedBrand, statusFilter]);
+
+  // Toggle Availability (Immediate Stock Update)
+  const toggleAvailability = async (item: any) => {
+    const newAvail = item.availability === "Out of Stock" ? "In Stock" : "Out of Stock";
+    const newStock = newAvail === "Out of Stock" ? 0 : (item.providerStock > 0 ? item.providerStock : 100);
+
+    try {
+      const apiBase = getApiBase();
+      const data = await safeFetchJson(`${apiBase}/api/provider/listing/${item._id}/availability`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ availability: newAvail, stock: newStock }),
+      });
+      if (data.success) {
+        setListings((prev) =>
+          prev.map((l) => (l._id === item._id ? { ...l, availability: newAvail, providerStock: newStock } : l))
+        );
+      } else {
+        alert(data.message || "Failed to update availability");
+      }
+    } catch (e: any) {
+      alert(e.message || "Error updating availability");
+    }
+  };
+
+  // Open Edit Modal
+  const openEdit = (item: any) => {
+    setEditingItem(item);
+    setEditRate(String(item.proposedRate || item.rate || item.approvedRate || ""));
+    setEditStock(String(item.providerStock || 0));
+    setEditAvailability(item.availability || "In Stock");
+    setEditMinOrder(String(item.minOrderQty || 1));
+    setEditDeliveryTime(item.deliveryTime || "");
+    setEditRemarks(item.remarks || "");
+    setShowEditModal(true);
+  };
+
+  // Submit Rate & Commercial Edit (Preserves approvedRate, sets proposedRate + Pending)
+  const saveRateEdit = async () => {
+    if (!editingItem) return;
+    const rateNum = Number(editRate);
+    if (!rateNum || rateNum <= 0) {
+      alert("Please enter a valid rate greater than zero");
       return;
     }
-    
-    const updatedProducts = products.map(p => 
-      p.id === editProduct.id ? {
-        ...p,
-        name: editProduct.name,
-        category: editProduct.category,
-        unit: editProduct.unit,
-        price: parseFloat(editProduct.price),
-        stock: parseInt(editProduct.stock) || 0,
-        minOrder: parseInt(editProduct.minOrder) || 1,
-        description: editProduct.description
-      } : p
-    );
-    
-    setProducts(updatedProducts);
-    localStorage.setItem("supplierProducts_" + userId, JSON.stringify(updatedProducts));
-    localStorage.setItem("supplierProducts", JSON.stringify(updatedProducts));
-    setShowEditProductModal(false);
-    alert("Product updated successfully!");
-  };
 
-  // STYLES - Keep existing styles
-  const styles = {
-    container: { padding: "20px", backgroundColor: "#f0f2f5", minHeight: "100vh" },
-    header: { backgroundColor: "#1a5f7a", color: "white", padding: "16px 20px", borderRadius: "12px", marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" },
-    headerTitle: { margin: 0, fontSize: "20px" },
-    welcomeText: { fontSize: "14px", opacity: 0.9, marginTop: "4px" },
-    headerSub: { margin: "5px 0 0", fontSize: "12px", opacity: 0.9 },
-    tabContainer: { display: "flex", gap: "8px", marginBottom: "20px", borderBottom: "1px solid #ddd", flexWrap: "wrap", backgroundColor: "white", padding: "0 16px", borderRadius: "12px 12px 0 0" },
-    tab: { padding: "12px 20px", cursor: "pointer", borderBottom: "3px solid transparent", fontSize: "14px", fontWeight: "500" },
-    activeTab: { borderBottomColor: "#1a5f7a", color: "#1a5f7a" },
-    card: { backgroundColor: "white", borderRadius: "12px", padding: "20px", marginBottom: "20px", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" },
-    cardTitle: { fontSize: "18px", fontWeight: "bold", marginBottom: "16px", borderBottom: "2px solid #1a5f7a", paddingBottom: "10px" },
-    grid2: { display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: "20px", marginBottom: "20px" },
-    grid3: { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "20px", marginBottom: "20px" },
-    grid4: { display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "20px", marginBottom: "20px" },
-    button: { backgroundColor: "#1a5f7a", color: "white", padding: "10px 20px", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" },
-    buttonSuccess: { backgroundColor: "#28a745", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer" },
-    buttonInfo: { backgroundColor: "#17a2b8", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer" },
-    buttonWarning: { backgroundColor: "#ffc107", color: "#333", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer" },
-    buttonDanger: { backgroundColor: "#dc3545", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer" },
-    table: { width: "100%", borderCollapse: "collapse", fontSize: "13px", overflowX: "auto" },
-    th: { textAlign: "left", padding: "12px", borderBottom: "1px solid #ddd", backgroundColor: "#f8f9fa" },
-    td: { padding: "12px", borderBottom: "1px solid #eee" },
-    input: { width: "100%", padding: "10px", border: "1px solid #ddd", borderRadius: "8px", marginBottom: "12px" },
-    label: { display: "block", marginBottom: "6px", fontWeight: "600", fontSize: "12px", color: "#333" },
-    select: { width: "100%", padding: "10px", border: "1px solid #ddd", borderRadius: "8px", marginBottom: "12px" },
-    row2: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "16px" },
-    row3: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px", marginBottom: "16px" },
-    progressBar: { height: "8px", backgroundColor: "#e0e0e0", borderRadius: "4px", overflow: "hidden", marginTop: "8px" },
-    progressFill: { height: "100%", backgroundColor: "#10b981", borderRadius: "4px", transition: "width 0.3s" },
-    statValue: { fontSize: "28px", fontWeight: "bold", color: "#1a5f7a" },
-    statLabel: { fontSize: "12px", color: "#666", marginTop: "4px" },
-    modal: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 },
-    modalContent: { backgroundColor: "white", borderRadius: "16px", padding: "24px", width: "90%", maxWidth: "700px", maxHeight: "85vh", overflow: "auto" },
-    statusBadge: { padding: "4px 12px", borderRadius: "20px", fontSize: "11px", fontWeight: "500", display: "inline-block" },
-    shopPhotoContainer: { width: "100px", height: "100px", borderRadius: "12px", overflow: "hidden", backgroundColor: "#e0e0e0", display: "flex", alignItems: "center", justifyContent: "center", marginRight: "16px" },
-    shopPhoto: { width: "100%", height: "100%", objectFit: "cover" },
-    editIcon: { cursor: "pointer", color: "#1a5f7a", marginRight: "8px", fontSize: "18px" },
-    deleteIcon: { cursor: "pointer", color: "#dc3545", fontSize: "18px" }
-  };
+    setSubmittingEdit(true);
+    try {
+      const apiBase = getApiBase();
+      const targetId = editingItem._id || editingItem.id;
+      const endpoint = targetId
+        ? `${apiBase}/api/provider/listing/${targetId}`
+        : `${apiBase}/api/provider/listing`;
 
-  const tabs = [
-    { id: "overview", name: "Overview", icon: "📊" },
-    { id: "products", name: "Products", icon: "📦" },
-    { id: "offers", name: "Offers", icon: "🏷️" },
-    { id: "orders", name: "Orders", icon: "🛒" },
-    { id: "quotes", name: "Enquiries", icon: "💬" },
-    { id: "analytics", name: "Analytics", icon: "📈" }
-  ];
+      const data = await safeFetchJson(endpoint, {
+        method: targetId ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          providerUserCode: userCode,
+          providerName: userName || "Supplier",
+          masterItemCode: editingItem.masterItemCode,
+          proposedRate: rateNum,
+          rate: rateNum,
+          providerStock: Number(editStock || 0),
+          availability: editAvailability,
+          minOrderQty: Number(editMinOrder || 1),
+          deliveryTime: editDeliveryTime,
+          remarks: editRemarks,
+        }),
+      });
 
-  // Rest of the functions (handleShopPhotoUpload, handleBusinessCardUpload, etc.)
-  const handleShopPhotoUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setShopPhoto(url);
-      setSupplierInfo({ ...supplierInfo, shopPhotoUrl: url });
-      localStorage.setItem("supplierInfo_" + userId, JSON.stringify({ ...supplierInfo, shopPhotoUrl: url }));
-      alert("Shop photo uploaded!");
+      if (!data.success) {
+        alert(data.message || "Failed to save rate edit");
+        return;
+      }
+
+      alert("✅ Price edit submitted successfully! Existing approved rate remains active until Admin approves your new proposed rate.");
+      setShowEditModal(false);
+      fetchMyListings(userCode);
+    } catch (err: any) {
+      alert(err.message || "Error submitting rate edit");
+    } finally {
+      setSubmittingEdit(false);
     }
   };
 
-  const handleBusinessCardUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setBusinessCard(url);
-      setSupplierInfo({ ...supplierInfo, businessCardUrl: url });
-      localStorage.setItem("supplierInfo_" + userId, JSON.stringify({ ...supplierInfo, businessCardUrl: url }));
-      alert("Business card uploaded!");
-    }
-  };
-
-  const downloadBulkTemplate = () => {
-    const templateData = [
-      ["Product Name", "Category", "Unit", "Price", "Stock", "Min Order", "Description"],
-      ["UltraTech Cement", "Cement", "bag", "380", "5000", "100", "Best quality cement"]
-    ];
-    const ws = XLSX.utils.aoa_to_sheet(templateData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "ProductTemplate");
-    XLSX.writeFile(wb, "product_bulk_upload_template.xlsx");
-    alert("Template downloaded!");
-  };
-
-  const addOffer = () => {
-    if (!newOffer.offerName || !newOffer.discount) {
-      alert("Please fill offer name and discount");
+  // Submit Quote to Buyer Enquiry
+  const submitQuote = async () => {
+    if (!selectedEnquiry || !quotePrice) {
+      alert("Please enter quoted price");
       return;
     }
-    const offer = {
-      id: offers.length + 1,
-      ...newOffer,
-      discount: parseFloat(newOffer.discount),
-      status: "Active",
-      ordersReceived: 0
-    };
-    setOffers([...offers, offer]);
-    setSupplierInfo({ ...supplierInfo, activeOffers: supplierInfo.activeOffers + 1 });
-    localStorage.setItem("supplierOffers_" + userId, JSON.stringify([...offers, offer]));
-    setNewOffer({ offerName: "", productName: "", bulkQuantity: "", bulkValue: "", discount: "", freeDelivery: "No", buyGet: "", billDiscount: "", validFrom: "", validTo: "" });
-    setShowOfferModal(false);
-    alert("Offer created!");
-  };
 
-  const updateOrderStatus = (orderId, status) => {
-    const updatedOrders = orders.map(o => o.id === orderId ? { ...o, status } : o);
-    setOrders(updatedOrders);
-    localStorage.setItem("supplierOrders_" + userId, JSON.stringify(updatedOrders));
-    alert(`Order ${status}`);
-  };
-
-  const submitQuote = async (enquiryId) => {
-  const enquiryMongoId =
-    enquiryId ||
-    selectedQuoteRequest?.id ||
-    selectedQuoteRequest?._id ||
-    "";
-
-  if (!enquiryMongoId) {
-    alert("Enquiry ID is missing. Please refresh the dashboard.");
-    return;
-  }
-
-  if (!quoteResponse.price) {
-    alert("Please enter your price");
-    return;
-  }
-
-  try {
-    const res = await fetch(
-      API_BASE + "/api/enquiry/" + enquiryMongoId + "/quote",
-      {
+    try {
+      const apiBase = getApiBase();
+      const data = await safeFetchJson(`${apiBase}/api/enquiry/${selectedEnquiry._id}/quote`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          "x-user-code": userId
+          "x-user-code": userCode,
         },
         body: JSON.stringify({
-          quotedAmount: Number(quoteResponse.price),
-          quoteMessage:
-            quoteResponse.notes ||
-            "Please contact us for quotation details",
-          quoteValidityDate: quoteResponse.deliveryDate || "",
-          paymentTerms: "As mutually agreed",
-          gstIncluded: false,
-          transportCharges: 0
-        })
+          quotedAmount: Number(quotePrice),
+          quoteMessage: quoteNotes || "Official BuildMitra Supplier Quote",
+          quoteValidityDate: quoteDelivery || "",
+          paymentTerms: "100% Advance / Mutually agreed",
+        }),
+      });
+
+      if (data.success) {
+        alert("Quote submitted successfully!");
+        setShowQuoteModal(false);
+        fetchMyEnquiries(userCode);
+        fetchMyReports(userCode);
+      } else {
+        alert(data.message || "Could not submit quote");
       }
-    );
-
-    const data = await res.json().catch(() => ({}));
-
-    if (!res.ok || !data.success) {
-      alert(data.message || "Quote could not be sent");
-      return;
+    } catch (e: any) {
+      alert(e.message || "Quote submission failed");
     }
+  };
 
-    const savedEnquiry = data.enquiry || selectedQuoteRequest;
+  // Action: Print Current Report Statement
+  const printReport = () => {
+    window.print();
+  };
 
-    const cleanPhone = (phone) =>
-      String(phone || "")
-        .replace(/\D/g, "")
-        .replace(/^91/, "");
+  // Action: Export Report to Excel Spreadsheet
+  const exportReportExcel = () => {
+    if (!reportData) return alert("No report data available to export");
 
-    const buyerPhone = cleanPhone(
-      savedEnquiry.buyerPhone ||
-      selectedQuoteRequest?.buyerPhone
-    );
+    let exportRows: any[] = [];
+    let filename = "BuildMitra_Supplier_Report.xlsx";
 
-    const supplierName =
-      savedEnquiry.providerName ||
-      selectedQuoteRequest?.providerName ||
-      userName ||
-      "BuildMitra Supplier";
-
-    const quoteMessage =
-`🏗️ BUILDMITRA OFFICIAL QUOTATION
-
-Enquiry No: ${savedEnquiry.enquiryCode || selectedQuoteRequest?.enquiryCode || "-"}
-
-Supplier:
-${supplierName}
-
-Buyer:
-${savedEnquiry.buyerName || selectedQuoteRequest?.buyerName || "-"}
-
-Requirement:
-${savedEnquiry.itemName || selectedQuoteRequest?.itemName || "-"}
-Quantity: ${savedEnquiry.quantity || selectedQuoteRequest?.quantity || "-"} ${savedEnquiry.unit || selectedQuoteRequest?.unit || ""}
-Location: ${savedEnquiry.location || selectedQuoteRequest?.location || "-"}
-
-Quoted Amount:
-₹${quoteResponse.price}
-
-Delivery / Validity:
-${quoteResponse.deliveryDate || "As per availability"}
-
-Remarks:
-${quoteResponse.notes || "Please contact us for quotation details"}
-
-Thank you,
-BuildMitra Marketplace`;
-
-    const currentUser = JSON.parse(
-      (sessionStorage.getItem("currentUser") || sessionStorage.getItem("currentUser")) ||
-      (sessionStorage.getItem("loggedInUser") || sessionStorage.getItem("loggedInUser")) ||
-      (sessionStorage.getItem("user") || sessionStorage.getItem("user")) ||
-      "{}"
-    );
-
-    await loadLiveQuoteRequests(currentUser);
-
-    setShowQuoteModal(false);
-    setSelectedQuoteRequest(null);
-    setQuoteResponse({
-      price: "",
-      deliveryDate: "",
-      notes: ""
-    });
-
-    if (buyerPhone) {
-      window.open(
-        `https://wa.me/91${buyerPhone}?text=${encodeURIComponent(quoteMessage)}`,
-        "_blank"
-      );
-
-      alert("Quote saved in enquiry database. WhatsApp opened to buyer.");
+    if (reportType === "customer_wise") {
+      exportRows = (reportData.customerReport || []).map((c: any) => ({
+        "Customer Name": c.customerName,
+        "Phone": c.customerPhone,
+        "Location": c.location,
+        "Enquiries Count": c.enquiriesCount,
+        "Total Quoted Amount (₹)": c.totalQuotedAmount,
+        "Completed Amount (₹)": c.completedAmount,
+        "Pending Amount (₹)": c.pendingAmount,
+      }));
+      filename = `Supplier_Customer_Report_${userCode}.xlsx`;
+    } else if (reportType === "payment_pending") {
+      exportRows = (reportData.paymentPendingReport || []).map((p: any) => ({
+        "Enquiry Code": p.enquiryCode,
+        "Buyer Name": p.buyerName,
+        "Phone": p.buyerPhone,
+        "Item": p.itemName,
+        "Quantity": `${p.quantity} ${p.unit || ""}`,
+        "Quoted Amount (₹)": p.quotedAmount || 0,
+        "Status": p.status,
+        "Date": p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "",
+      }));
+      filename = `Supplier_Pending_Payments_${userCode}.xlsx`;
     } else {
-      alert("Quote saved, but buyer WhatsApp number is missing.");
+      exportRows = listings.map((l: any) => ({
+        "Master Code": l.masterItemCode,
+        "Item Name": l.itemName,
+        "Category": l.category,
+        "Brand": l.brand,
+        "Unit": l.unit,
+        "Approved Rate (₹)": l.approvedRate || (l.status === "approved" ? l.rate : "N/A"),
+        "Proposed Rate (₹)": l.proposedRate || "-",
+        "Stock": l.providerStock,
+        "Availability": l.availability,
+        "Status": l.status,
+      }));
+      filename = `Supplier_Statement_${userCode}.xlsx`;
     }
-  } catch (err) {
-    console.log("Supplier quote failed", err);
-    alert("Quote could not be sent. Please check the backend connection.");
-  }
-};
 
-  // Render functions
-  const renderOverview = () => {
-    const totalRevenue = orders.reduce((sum, o) => sum + (o.status === "Delivered" ? o.totalAmount : 0), 0);
-    const completedOrders = orders.filter(o => o.status === "Delivered").length;
-    
-    return React.createElement("div", null,
-      React.createElement("div", { style: styles.card },
-        React.createElement("div", { style: { display: "flex", alignItems: "center", flexWrap: "wrap", gap: "20px" } },
-          React.createElement("div", { style: styles.shopPhotoContainer },
-            supplierInfo.shopPhotoUrl ? React.createElement("img", { src: supplierInfo.shopPhotoUrl, alt: "Shop", style: styles.shopPhoto }) : React.createElement("div", { style: { textAlign: "center", fontSize: "40px" } }, "🏪")
-          ),
-          React.createElement("div", { style: { flex: 1 } },
-            React.createElement("h2", { style: { margin: "0 0 8px 0", color: "#1a5f7a" } }, supplierInfo.shopName || userName),
-            React.createElement("p", null, "👤 Owner: ", supplierInfo.ownerName || userName),
-            React.createElement("p", null, "📞 ", supplierInfo.phone || "Not set"),
-            React.createElement("p", null, "📍 ", supplierInfo.address || "Not set")
-          )
-        )
-      ),
-      React.createElement("div", { style: styles.grid4 },
-        React.createElement("div", { style: { ...styles.card, background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", color: "white" } },
-          React.createElement("div", { style: { fontSize: "28px", fontWeight: "bold" } }, "₹", (totalRevenue/100000).toFixed(2), "L"),
-          React.createElement("div", { style: { fontSize: "12px", opacity: 0.9 } }, "Revenue")
-        ),
-        React.createElement("div", { style: { ...styles.card, background: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)", color: "white" } },
-          React.createElement("div", { style: { fontSize: "28px", fontWeight: "bold" } }, completedOrders),
-          React.createElement("div", { style: { fontSize: "12px", opacity: 0.9 } }, "Orders Completed")
-        ),
-        React.createElement("div", { style: { ...styles.card, background: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)", color: "white" } },
-          React.createElement("div", { style: { fontSize: "28px", fontWeight: "bold" } }, supplierInfo.totalEnquiries || 0),
-          React.createElement("div", { style: { fontSize: "12px", opacity: 0.9 } }, "Enquiries")
-        ),
-        React.createElement("div", { style: { ...styles.card, background: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)", color: "white" } },
-          React.createElement("div", { style: { fontSize: "28px", fontWeight: "bold" } }, supplierInfo.activeOffers || 0),
-          React.createElement("div", { style: { fontSize: "12px", opacity: 0.9 } }, "Active Offers")
-        )
-      )
-    );
+    const ws = XLSX.utils.json_to_sheet(exportRows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Report");
+    XLSX.writeFile(wb, filename);
   };
 
-  const renderProducts = () => {
-    return React.createElement("div", null,
-      React.createElement("div", { style: { display: "flex", gap: "12px", marginBottom: "16px", flexWrap: "wrap" } },
-        React.createElement("button", { onClick: () => window.location.href = "/provider-select-items", style: styles.button }, "➕ Add / Select Items"),
-        React.createElement("button", { onClick: () => window.location.href = "/provider-select-items", style: styles.buttonInfo }, "📂 Bulk Add Rates"),
-        React.createElement("button", { onClick: () => window.location.href = "/provider-select-items", style: styles.buttonWarning }, "✏️ Edit My Rates")
-      ),
-      React.createElement("div", { style: styles.card },
-        React.createElement("div", { style: styles.cardTitle }, "📦 Product Catalog (", products.length, " products)"),
-        React.createElement("div", { style: { overflowX: "auto" } },
-          React.createElement("table", { style: styles.table },
-            React.createElement("thead", null,
-              React.createElement("tr", null,
-                React.createElement("th", { style: styles.th }, "#"),
-                React.createElement("th", { style: styles.th }, "Product"),
-                React.createElement("th", { style: styles.th }, "Category"),
-                React.createElement("th", { style: styles.th }, "Price"),
-                React.createElement("th", { style: styles.th }, "Stock"),
-                React.createElement("th", { style: styles.th }, "Actions")
-              )
-            ),
-            React.createElement("tbody", null,
-              products.map((p, idx) =>
-                React.createElement("tr", { key: p.id },
-                  React.createElement("td", { style: styles.td }, idx + 1),
-                  React.createElement("td", { style: styles.td }, React.createElement("strong", null, p.name)),
-                  React.createElement("td", { style: styles.td }, p.category),
-                  React.createElement("td", { style: styles.td }, "₹", p.price, "/", p.unit),
-                  React.createElement("td", { style: styles.td }, p.stock.toLocaleString()),
-                  React.createElement("td", { style: styles.td },
-                    React.createElement("span", { onClick: () => { setEditProduct(p); setShowEditProductModal(true); }, style: styles.editIcon }, "✏️"),
-                    React.createElement("span", { onClick: () => deleteProduct(p.id, p.name), style: styles.deleteIcon }, "🗑️")
-                  )
-                )
-              )
-            )
-          )
-        )
-      )
-    );
-  };
+  // Action: Save Statement Snapshot to MongoDB
+  const saveReportToDb = async () => {
+    setSavingReport(true);
+    try {
+      const apiBase = getApiBase();
+      const data = await safeFetchJson(`${apiBase}/api/provider/reports/${encodeURIComponent(userCode)}/save`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reportType,
+          title: `BuildMitra Statement - ${reportType.replace("_", " ").toUpperCase()}`,
+          totalBusinessDone: reportData?.summary?.totalBusinessDone || 0,
+          totalQuotedBusiness: reportData?.summary?.totalQuotedBusiness || 0,
+          pendingPayments: reportData?.summary?.pendingPayments || 0,
+          totalOrders: reportData?.summary?.totalEnquiries || 0,
+          customerCount: reportData?.summary?.totalCustomers || 0,
+          reportData: reportData?.customerReport || [],
+          notes: `Generated on ${new Date().toLocaleString()}`,
+        }),
+      });
 
-  const renderQuoteRequests = () => React.createElement("div", { style: styles.card },
-    React.createElement("div", { style: styles.cardTitle }, "Enquiries"),
-    React.createElement("div", { style: { overflowX: "auto" } },
-      React.createElement("table", { style: styles.table },
-        React.createElement("thead", null,
-          React.createElement("tr", null,
-            React.createElement("th", { style: styles.th }, "Date"),
-            React.createElement("th", { style: styles.th }, "Customer"),
-            React.createElement("th", { style: styles.th }, "Item"),
-            React.createElement("th", { style: styles.th }, "Quantity"),
-            React.createElement("th", { style: styles.th }, "Details"),
-            React.createElement("th", { style: styles.th }, "Status"),
-            React.createElement("th", { style: styles.th }, "Action")
-          )
-        ),
-        React.createElement("tbody", null,
-          quoteRequests.length === 0 ? React.createElement("tr", null,
-            React.createElement("td", { colSpan: 7, style: { ...styles.td, textAlign: "center" } }, "No live enquiries yet.")
-          ) : quoteRequests.map((q) =>
-            React.createElement("tr", { key: q.id },
-              React.createElement("td", { style: styles.td }, q.date),
-              React.createElement("td", { style: styles.td }, q.customerName, React.createElement("br", null), React.createElement("span", { style: { fontSize: "10px" } }, q.customerMobile)),
-              React.createElement("td", { style: styles.td }, q.itemName),
-              React.createElement("td", { style: styles.td }, q.quantity),
-              React.createElement("td", { style: styles.td }, q.requirement || "-"),
-              React.createElement("td", { style: styles.td }, q.status),
-              React.createElement("td", { style: styles.td },
-                q.status !== "Quoted" && React.createElement("button", { onClick: () => { setSelectedQuoteRequest(q); setShowQuoteModal(true); }, style: styles.buttonSuccess }, "Send Quote")
-              )
-            )
-          )
-        )
-      )
-    )
-  );
-
-  const renderContent = () => {
-    switch(activeTab) {
-      case "overview": return renderOverview();
-      case "products": return renderProducts();
-      case "offers": return React.createElement("div", { style: styles.card }, React.createElement("div", { style: styles.cardTitle }, "Offers"), React.createElement("button", { onClick: () => setShowOfferModal(true), style: styles.button }, "+ Create Offer"));
-      case "orders": return React.createElement("div", { style: styles.card }, React.createElement("div", { style: styles.cardTitle }, "Orders"));
-      case "quotes": return renderQuoteRequests();
-      case "analytics": return React.createElement("div", { style: styles.card }, React.createElement("div", { style: styles.cardTitle }, "Analytics"));
-      default: return renderOverview();
+      if (data.success) {
+        alert("✅ Report statement saved permanently to MongoDB database!");
+        fetchMyReports(userCode);
+      } else {
+        alert(data.message || "Failed to save report to DB");
+      }
+    } catch (e: any) {
+      alert(e.message || "Error saving report snapshot to database");
+    } finally {
+      setSavingReport(false);
     }
   };
 
   if (!isClient) {
-    return React.createElement("div", { style: styles.container },
-      React.createElement("div", { style: styles.header },
-        React.createElement("h1", { style: styles.headerTitle }, "Loading...")
-      )
-    );
+    return <div style={{ padding: 20 }}>Loading Supplier Dashboard...</div>;
   }
 
-  return React.createElement("div", { style: styles.container },
-    React.createElement(BuildMitraHeader, {
-      moduleTitle: "Supplier Module",
-      pageTitle: "Supplier Dashboard",
-      subtitle: `Welcome, ${userName} | Manage products, offers, orders, and enquiries`,
-      showBackToDashboard: false
-    }),
-    React.createElement("div", { style: { display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "20px" } },
-      React.createElement("button", { onClick: () => setActiveTab("overview"), style: styles.buttonInfo }, "Dashboard"),
-      React.createElement("button", { onClick: () => window.location.href = "/provider-select-items", style: styles.buttonSuccess }, "Select Items & Rates"),
-      React.createElement("button", { onClick: () => window.location.href = "/marketplace", style: styles.buttonInfo }, "Marketplace"),
-      React.createElement("button", { onClick: () => setActiveTab("quotes"), style: styles.buttonSuccess }, "Enquiries"),
-      React.createElement("button", { onClick: logoutToLogin, style: { ...styles.buttonDanger } }, "🚪 Logout")
-    ),
-    React.createElement(MarketRateTrend, null),
-    React.createElement("div", { style: styles.tabContainer },
-      tabs.map(tab => React.createElement("div", { key: tab.id, onClick: () => setActiveTab(tab.id), style: { ...styles.tab, ...(activeTab === tab.id ? styles.activeTab : {}) } }, tab.icon, " ", tab.name))
-    ),
-    renderContent(),
-    
-    // Add Product Modal
-    showProductModal && React.createElement("div", { style: styles.modal, onClick: () => setShowProductModal(false) },
-      React.createElement("div", { style: styles.modalContent, onClick: (e) => e.stopPropagation() },
-        React.createElement("h2", null, "Add New Product"),
-        React.createElement("div", { style: styles.row2 },
-          React.createElement("input", { type: "text", placeholder: "Product Name", value: newProduct.name, onChange: (e) => setNewProduct({...newProduct, name: e.target.value}), style: styles.input }),
-          React.createElement("select", { value: newProduct.category, onChange: (e) => setNewProduct({...newProduct, category: e.target.value}), style: styles.select },
-            React.createElement("option", null, "Cement"), React.createElement("option", null, "Steel"), React.createElement("option", null, "Bricks")
-          )
-        ),
-        React.createElement("div", { style: styles.row3 },
-          React.createElement("input", { type: "number", placeholder: "Price (₹)", value: newProduct.price, onChange: (e) => setNewProduct({...newProduct, price: e.target.value}), style: styles.input }),
-          React.createElement("input", { type: "text", placeholder: "Unit", value: newProduct.unit, onChange: (e) => setNewProduct({...newProduct, unit: e.target.value}), style: styles.input }),
-          React.createElement("input", { type: "number", placeholder: "Stock", value: newProduct.stock, onChange: (e) => setNewProduct({...newProduct, stock: e.target.value}), style: styles.input })
-        ),
-        React.createElement("button", { onClick: addProduct, style: { ...styles.buttonSuccess, width: "100%" } }, "Add Product")
-      )
-    ),
-    
-    // Bulk Upload Modal
-    showBulkUploadModal && React.createElement("div", { style: styles.modal, onClick: () => setShowBulkUploadModal(false) },
-      React.createElement("div", { style: styles.modalContent, onClick: (e) => e.stopPropagation() },
-        React.createElement("h2", null, "Bulk Upload Products"),
-        React.createElement("button", { onClick: downloadBulkTemplate, style: styles.buttonInfo }, "📥 Download Template"),
-        React.createElement("input", { type: "file", accept: ".xlsx,.xls,.csv", onChange: handleBulkUpload, style: styles.input })
-      )
-    ),
-    
-    // Edit Product Modal
-    showEditProductModal && React.createElement("div", { style: styles.modal, onClick: () => setShowEditProductModal(false) },
-      React.createElement("div", { style: styles.modalContent, onClick: (e) => e.stopPropagation() },
-        React.createElement("h2", null, "Edit Product"),
-        React.createElement("div", { style: styles.row2 },
-          React.createElement("input", { type: "text", placeholder: "Product Name", value: editProduct.name, onChange: (e) => setEditProduct({...editProduct, name: e.target.value}), style: styles.input }),
-          React.createElement("select", { value: editProduct.category, onChange: (e) => setEditProduct({...editProduct, category: e.target.value}), style: styles.select },
-            React.createElement("option", null, "Cement"), React.createElement("option", null, "Steel"), React.createElement("option", null, "Bricks")
-          )
-        ),
-        React.createElement("div", { style: styles.row3 },
-          React.createElement("input", { type: "number", placeholder: "Price (₹)", value: editProduct.price, onChange: (e) => setEditProduct({...editProduct, price: e.target.value}), style: styles.input }),
-          React.createElement("input", { type: "text", placeholder: "Unit", value: editProduct.unit, onChange: (e) => setEditProduct({...editProduct, unit: e.target.value}), style: styles.input }),
-          React.createElement("input", { type: "number", placeholder: "Stock", value: editProduct.stock, onChange: (e) => setEditProduct({...editProduct, stock: e.target.value}), style: styles.input })
-        ),
-        React.createElement("button", { onClick: updateProduct, style: { ...styles.buttonSuccess, width: "100%" } }, "Update Product")
-      )
-    ),
-    
-    // Offer Modal
-    showOfferModal && React.createElement("div", { style: styles.modal, onClick: () => setShowOfferModal(false) },
-      React.createElement("div", { style: styles.modalContent, onClick: (e) => e.stopPropagation() },
-        React.createElement("h2", null, "Create Special Offer"),
-        React.createElement("div", null,
-          React.createElement("label", { style: styles.label }, "Offer Name *"),
-          React.createElement("input", { type: "text", placeholder: "e.g., Stock Clearance", value: newOffer.offerName, onChange: (e) => setNewOffer({...newOffer, offerName: e.target.value}), style: styles.input })
-        ),
-        React.createElement("div", null,
-          React.createElement("label", { style: styles.label }, "Discount (%) *"),
-          React.createElement("input", { type: "number", placeholder: "e.g., 10", value: newOffer.discount, onChange: (e) => setNewOffer({...newOffer, discount: e.target.value}), style: styles.input })
-        ),
-        React.createElement("button", { onClick: addOffer, style: { ...styles.buttonSuccess, width: "100%" } }, "Publish Offer")
-      )
-    ),
+  return (
+    <div style={styles.container} className="printable-container">
+      <BuildMitraHeader
+        moduleTitle="Supplier Module"
+        pageTitle="Supplier Dashboard, Inventory & Statements"
+        subtitle={`Welcome, ${userName} (${userCode || "Supplier"}) | Manage products, reports, enquiries & SAS statements`}
+        showBackToDashboard={false}
+      />
 
-    showQuoteModal && selectedQuoteRequest && React.createElement("div", { style: styles.modal, onClick: () => setShowQuoteModal(false) },
-      React.createElement("div", { style: styles.modalContent, onClick: (e) => e.stopPropagation() },
-        React.createElement("h2", null, "Send Quote"),
-        React.createElement("p", null, selectedQuoteRequest.itemName, " - ", selectedQuoteRequest.quantity),
-        React.createElement("input", { type: "number", placeholder: "Quoted Amount (₹)", value: quoteResponse.price, onChange: (e) => setQuoteResponse({...quoteResponse, price: e.target.value}), style: styles.input }),
-        React.createElement("input", { type: "date", value: quoteResponse.deliveryDate, onChange: (e) => setQuoteResponse({...quoteResponse, deliveryDate: e.target.value}), style: styles.input }),
-        React.createElement("textarea", { placeholder: "Message", value: quoteResponse.notes, onChange: (e) => setQuoteResponse({...quoteResponse, notes: e.target.value}), style: styles.input }),
-        React.createElement("button", { onClick: () => submitQuote(selectedQuoteRequest.id), style: { ...styles.buttonSuccess, width: "100%" } }, "Send Quote")
-      )
-    )
+      {/* Main Top Navigation / Action Bar */}
+      <div style={styles.actionStrip} className="no-print">
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button
+            onClick={() => setActiveTab("overview")}
+            style={{ ...styles.actionBtn, ...(activeTab === "overview" ? styles.actionBtnActive : {}) }}
+          >
+            📊 Dashboard
+          </button>
+          <button
+            onClick={() => setActiveTab("products")}
+            style={{ ...styles.actionBtn, ...(activeTab === "products" ? styles.actionBtnActive : {}) }}
+          >
+            📦 My Products ({listings.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("reports")}
+            style={{ ...styles.actionBtn, ...(activeTab === "reports" ? styles.actionBtnActive : {}) }}
+          >
+            📑 Reports & SAS Statements
+          </button>
+          <button
+            onClick={() => setActiveTab("enquiries")}
+            style={{ ...styles.actionBtn, ...(activeTab === "enquiries" ? styles.actionBtnActive : {}) }}
+          >
+            💬 Enquiries ({enquiries.length})
+          </button>
+          <button
+            onClick={() => (window.location.href = "/provider-select-items")}
+            style={styles.addBtn}
+          >
+            ➕ Select Active Items & Add Rates
+          </button>
+        </div>
+        <button onClick={logoutToLogin} style={styles.logoutBtn}>
+          🚪 Logout
+        </button>
+      </div>
+
+      {/* Overview Tab Content */}
+      {activeTab === "overview" && (
+        <div>
+          {/* Top Compact KPI Cards */}
+          <div style={styles.kpiGrid}>
+            <div
+              style={{ ...styles.kpiCard, borderLeft: "4px solid #1a5f7a" }}
+              onClick={() => { setActiveTab("products"); setStatusFilter("all"); }}
+            >
+              <div style={styles.kpiTitle}>My Products</div>
+              <div style={styles.kpiValue}>{metrics.totalProducts}</div>
+              <div style={styles.kpiSub}>Total catalogue listings</div>
+            </div>
+
+            <div
+              style={{ ...styles.kpiCard, borderLeft: "4px solid #10b981" }}
+              onClick={() => { setActiveTab("products"); setStatusFilter("approved"); }}
+            >
+              <div style={styles.kpiTitle}>Approved</div>
+              <div style={{ ...styles.kpiValue, color: "#10b981" }}>{metrics.approved}</div>
+              <div style={styles.kpiSub}>Live in Marketplace</div>
+            </div>
+
+            <div
+              style={{ ...styles.kpiCard, borderLeft: "4px solid #f59e0b" }}
+              onClick={() => { setActiveTab("products"); setStatusFilter("pending"); }}
+            >
+              <div style={styles.kpiTitle}>Pending Approval</div>
+              <div style={{ ...styles.kpiValue, color: "#f59e0b" }}>{metrics.pending}</div>
+              <div style={styles.kpiSub}>Proposed rate awaiting admin</div>
+            </div>
+
+            <div
+              style={{ ...styles.kpiCard, borderLeft: "4px solid #ef4444" }}
+              onClick={() => { setActiveTab("products"); setStatusFilter("outOfStock"); }}
+            >
+              <div style={styles.kpiTitle}>Out of Stock</div>
+              <div style={{ ...styles.kpiValue, color: "#ef4444" }}>{metrics.outOfStock}</div>
+              <div style={styles.kpiSub}>Immediate stock update required</div>
+            </div>
+
+            <div
+              style={{ ...styles.kpiCard, borderLeft: "4px solid #6366f1" }}
+              onClick={() => setActiveTab("reports")}
+            >
+              <div style={styles.kpiTitle}>Total Business Done</div>
+              <div style={{ ...styles.kpiValue, color: "#6366f1", fontSize: 20 }}>
+                ₹{reportData?.summary?.totalBusinessDone || 0}
+              </div>
+              <div style={styles.kpiSub}>Through BuildMitra orders</div>
+            </div>
+
+            <div
+              style={{ ...styles.kpiCard, borderLeft: "4px solid #8b5cf6" }}
+              onClick={() => setActiveTab("reports")}
+            >
+              <div style={styles.kpiTitle}>Payment Pending</div>
+              <div style={{ ...styles.kpiValue, color: "#8b5cf6", fontSize: 20 }}>
+                ₹{reportData?.summary?.pendingPayments || 0}
+              </div>
+              <div style={styles.kpiSub}>Pending quotes & terms</div>
+            </div>
+          </div>
+
+          {/* Graphical Widgets Section (Real DB Data) */}
+          <div style={styles.widgetGrid}>
+            {/* Widget 1: Product Status Distribution Donut/Ring */}
+            <div style={styles.widgetCard}>
+              <h3 style={styles.widgetTitle}>Product Approval Breakdown</h3>
+              {metrics.totalProducts === 0 ? (
+                <div style={styles.emptyText}>No products added yet. Click "Select Active Items" to add your catalog.</div>
+              ) : (
+                <div style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap", marginTop: 10 }}>
+                  <svg width="120" height="120" viewBox="0 0 42 42">
+                    <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#e5e7eb" strokeWidth="6" />
+                    <circle
+                      cx="21" cy="21" r="15.915" fill="transparent" stroke="#10b981" strokeWidth="6"
+                      strokeDasharray={`${(metrics.approved / metrics.totalProducts) * 100} ${100 - (metrics.approved / metrics.totalProducts) * 100}`}
+                      strokeDashoffset="25"
+                    />
+                    <circle
+                      cx="21" cy="21" r="15.915" fill="transparent" stroke="#f59e0b" strokeWidth="6"
+                      strokeDasharray={`${(metrics.pending / metrics.totalProducts) * 100} ${100 - (metrics.pending / metrics.totalProducts) * 100}`}
+                      strokeDashoffset={`${25 - (metrics.approved / metrics.totalProducts) * 100}`}
+                    />
+                  </svg>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13 }}>
+                    <div><span style={{ ...styles.dot, background: "#10b981" }}></span> Approved: <strong>{metrics.approved}</strong> ({Math.round((metrics.approved / (metrics.totalProducts || 1)) * 100)}%)</div>
+                    <div><span style={{ ...styles.dot, background: "#f59e0b" }}></span> Pending: <strong>{metrics.pending}</strong> ({Math.round((metrics.pending / (metrics.totalProducts || 1)) * 100)}%)</div>
+                    <div><span style={{ ...styles.dot, background: "#ef4444" }}></span> Rejected: <strong>{metrics.rejected}</strong> ({Math.round((metrics.rejected / (metrics.totalProducts || 1)) * 100)}%)</div>
+                    <div><span style={{ ...styles.dot, background: "#6b7280" }}></span> Out of Stock: <strong>{metrics.outOfStock}</strong></div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Widget 2: Enquiry → Quote Pipeline Graphic */}
+            <div style={styles.widgetCard}>
+              <h3 style={styles.widgetTitle}>Enquiry → Quote Pipeline</h3>
+              <div style={{ marginTop: 16 }}>
+                <div style={styles.pipelineRow}>
+                  <span>Total Enquiries Received</span>
+                  <strong>{metrics.totalEnquiries}</strong>
+                </div>
+                <div style={styles.barWrap}>
+                  <div style={{ ...styles.barFill, width: "100%", background: "#6366f1" }}></div>
+                </div>
+
+                <div style={{ ...styles.pipelineRow, marginTop: 12 }}>
+                  <span>Quotes Sent</span>
+                  <strong>{metrics.quotesSent} ({metrics.totalEnquiries ? Math.round((metrics.quotesSent / metrics.totalEnquiries) * 100) : 0}%)</strong>
+                </div>
+                <div style={styles.barWrap}>
+                  <div style={{ ...styles.barFill, width: `${metrics.totalEnquiries ? (metrics.quotesSent / metrics.totalEnquiries) * 100 : 0}%`, background: "#10b981" }}></div>
+                </div>
+
+                <div style={{ ...styles.pipelineRow, marginTop: 12 }}>
+                  <span>Pending Supplier Response</span>
+                  <strong>{metrics.quotesPending}</strong>
+                </div>
+                <div style={styles.barWrap}>
+                  <div style={{ ...styles.barFill, width: `${metrics.totalEnquiries ? (metrics.quotesPending / metrics.totalEnquiries) * 100 : 0}%`, background: "#f59e0b" }}></div>
+                </div>
+              </div>
+            </div>
+
+            {/* Widget 3: Category Count Bar Chart */}
+            <div style={styles.widgetCard}>
+              <h3 style={styles.widgetTitle}>Category Product Count</h3>
+              {categoryStats.length === 0 ? (
+                <div style={styles.emptyText}>No product categories found.</div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12 }}>
+                  {categoryStats.slice(0, 5).map((stat) => {
+                    const max = Math.max(...categoryStats.map((s) => s.count)) || 1;
+                    const pct = Math.round((stat.count / max) * 100);
+                    return (
+                      <div key={stat.name}>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 2 }}>
+                          <span>{stat.name}</span>
+                          <strong>{stat.count} items</strong>
+                        </div>
+                        <div style={styles.barWrap}>
+                          <div style={{ ...styles.barFill, width: `${pct}%`, background: "#1a5f7a" }}></div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Widget 4: Recent Activity Log */}
+            <div style={styles.widgetCard}>
+              <h3 style={styles.widgetTitle}>Recent Activity Timeline</h3>
+              {listings.length === 0 ? (
+                <div style={styles.emptyText}>No recent activity logged.</div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12, maxHeight: 180, overflowY: "auto" }}>
+                  {listings.slice(0, 6).map((item) => (
+                    <div key={item._id} style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 12 }}>
+                      <span style={{ fontSize: 14 }}>
+                        {item.status === "approved" ? "✅" : item.status === "pending" ? "⏳" : "⚠️"}
+                      </span>
+                      <div style={{ flex: 1 }}>
+                        <strong>{item.itemName}</strong> ({item.masterItemCode})
+                        <div style={{ color: "#666", fontSize: 11 }}>
+                          Proposed: ₹{item.proposedRate || item.rate} | Status: {item.status} | Updated: {item.updatedAt ? new Date(item.updatedAt).toLocaleDateString() : "Recently"}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reports & SAS Statements Tab */}
+      {activeTab === "reports" && (
+        <div style={{ marginTop: 24 }}>
+          {/* Action Bar for Reports */}
+          <div style={styles.filterBox} className="no-print">
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button
+                  onClick={() => setReportType("full_statement")}
+                  style={{ ...styles.chip, ...(reportType === "full_statement" ? styles.chipActive : {}) }}
+                >
+                  📑 Full SAS Statement
+                </button>
+                <button
+                  onClick={() => setReportType("customer_wise")}
+                  style={{ ...styles.chip, ...(reportType === "customer_wise" ? styles.chipActive : {}) }}
+                >
+                  👥 Customer-Wise Report
+                </button>
+                <button
+                  onClick={() => setReportType("payment_pending")}
+                  style={{ ...styles.chip, ...(reportType === "payment_pending" ? styles.chipActive : {}) }}
+                >
+                  💳 Payment Pending Report
+                </button>
+                <button
+                  onClick={() => setReportType("total_business")}
+                  style={{ ...styles.chip, ...(reportType === "total_business" ? styles.chipActive : {}) }}
+                >
+                  📊 BuildMitra Business Done
+                </button>
+              </div>
+
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={printReport} style={styles.actionBtn}>
+                  🖨️ Print / Save PDF
+                </button>
+                <button onClick={exportReportExcel} style={styles.actionBtn}>
+                  📥 Export Excel
+                </button>
+                <button onClick={saveReportToDb} disabled={savingReport} style={styles.addBtn}>
+                  {savingReport ? "Saving..." : "💾 Save Statement to DB"}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Printable SAS Statement Card */}
+          <div style={styles.reportPrintCard}>
+            <div style={styles.reportHeader}>
+              <div>
+                <h2 style={{ margin: 0, color: "#1a5f7a", fontSize: 22 }}>
+                  BUILDMITRA SUPPLIER BUSINESS STATEMENT
+                </h2>
+                <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>
+                  Supplier: <strong>{userName}</strong> ({userCode}) | Report Type: <strong>{reportType.toUpperCase()}</strong>
+                </div>
+              </div>
+              <div style={{ textAlign: "right", fontSize: 12, color: "#64748b" }}>
+                <div>Date Generated: <strong>{new Date().toLocaleDateString()}</strong></div>
+                <div>System: <strong>BuildMitra ERP / SAS Reporting</strong></div>
+              </div>
+            </div>
+
+            {/* Report Financial Summary Bar */}
+            <div style={styles.reportSummaryStrip}>
+              <div>
+                <div style={styles.summaryLabel}>Total Business Done</div>
+                <div style={{ ...styles.summaryVal, color: "#10b981" }}>₹{reportData?.summary?.totalBusinessDone || 0}</div>
+              </div>
+              <div>
+                <div style={styles.summaryLabel}>Quoted Business Pipeline</div>
+                <div style={{ ...styles.summaryVal, color: "#6366f1" }}>₹{reportData?.summary?.totalQuotedBusiness || 0}</div>
+              </div>
+              <div>
+                <div style={styles.summaryLabel}>Pending Payments / Quotes</div>
+                <div style={{ ...styles.summaryVal, color: "#f59e0b" }}>₹{reportData?.summary?.pendingPayments || 0}</div>
+              </div>
+              <div>
+                <div style={styles.summaryLabel}>Active Customers</div>
+                <div style={styles.summaryVal}>{reportData?.summary?.totalCustomers || 0}</div>
+              </div>
+              <div>
+                <div style={styles.summaryLabel}>Catalogue Products</div>
+                <div style={styles.summaryVal}>{reportData?.summary?.totalProducts || 0}</div>
+              </div>
+            </div>
+
+            {/* Customer-Wise Report View */}
+            {reportType === "customer_wise" && (
+              <table style={styles.table}>
+                <thead>
+                  <tr>
+                    <th style={styles.th}>Customer Name</th>
+                    <th style={styles.th}>Contact Phone</th>
+                    <th style={styles.th}>Location</th>
+                    <th style={styles.th}>Enquiries</th>
+                    <th style={styles.th}>Quoted Amount</th>
+                    <th style={styles.th}>Completed Business</th>
+                    <th style={styles.th}>Pending Business</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(reportData?.customerReport || []).length === 0 ? (
+                    <tr><td colSpan={7} style={{ ...styles.td, textAlign: "center" }}>No customer records found.</td></tr>
+                  ) : (
+                    (reportData?.customerReport || []).map((c: any, idx: number) => (
+                      <tr key={idx}>
+                        <td style={styles.td}><strong>{c.customerName}</strong></td>
+                        <td style={styles.td}>{c.customerPhone}</td>
+                        <td style={styles.td}>{c.location || "Bengaluru"}</td>
+                        <td style={styles.td}>{c.enquiriesCount}</td>
+                        <td style={styles.td}>₹{c.totalQuotedAmount}</td>
+                        <td style={styles.td}><strong style={{ color: "#10b981" }}>₹{c.completedAmount}</strong></td>
+                        <td style={styles.td}><strong style={{ color: "#f59e0b" }}>₹{c.pendingAmount}</strong></td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            )}
+
+            {/* Payment Pending Report View */}
+            {reportType === "payment_pending" && (
+              <table style={styles.table}>
+                <thead>
+                  <tr>
+                    <th style={styles.th}>Enquiry Code</th>
+                    <th style={styles.th}>Buyer Name & Phone</th>
+                    <th style={styles.th}>Item Requested</th>
+                    <th style={styles.th}>Quantity</th>
+                    <th style={styles.th}>Quoted Amount</th>
+                    <th style={styles.th}>Status</th>
+                    <th style={styles.th}>Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(reportData?.paymentPendingReport || []).length === 0 ? (
+                    <tr><td colSpan={7} style={{ ...styles.td, textAlign: "center" }}>No pending payments or open quotes.</td></tr>
+                  ) : (
+                    (reportData?.paymentPendingReport || []).map((p: any) => (
+                      <tr key={p._id}>
+                        <td style={styles.td}><strong>{p.enquiryCode}</strong></td>
+                        <td style={styles.td}>
+                          <strong>{p.buyerName}</strong>
+                          <div style={{ fontSize: 11, color: "#666" }}>{p.buyerPhone}</div>
+                        </td>
+                        <td style={styles.td}>{p.itemName}</td>
+                        <td style={styles.td}>{p.quantity} {p.unit}</td>
+                        <td style={styles.td}><strong style={{ color: "#f59e0b" }}>₹{p.quotedAmount || 0}</strong></td>
+                        <td style={styles.td}><span style={styles.statusBadge}>{p.status}</span></td>
+                        <td style={styles.td}>{p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "-"}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            )}
+
+            {/* Full Statement & Total Business Report View */}
+            {(reportType === "full_statement" || reportType === "total_business") && (
+              <div>
+                <h3 style={{ fontSize: 16, color: "#1e293b", margin: "16px 0 8px" }}>Enquiries & Quoted Transactions</h3>
+                <table style={styles.table}>
+                  <thead>
+                    <tr>
+                      <th style={styles.th}>Enquiry Code</th>
+                      <th style={styles.th}>Buyer Name</th>
+                      <th style={styles.th}>Item</th>
+                      <th style={styles.th}>Quantity</th>
+                      <th style={styles.th}>Quoted Amount</th>
+                      <th style={styles.th}>Status</th>
+                      <th style={styles.th}>Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {enquiries.length === 0 ? (
+                      <tr><td colSpan={7} style={{ ...styles.td, textAlign: "center" }}>No transaction records found.</td></tr>
+                    ) : (
+                      enquiries.map((e) => (
+                        <tr key={e._id}>
+                          <td style={styles.td}><strong>{e.enquiryCode}</strong></td>
+                          <td style={styles.td}>{e.buyerName} ({e.buyerPhone})</td>
+                          <td style={styles.td}>{e.itemName}</td>
+                          <td style={styles.td}>{e.quantity} {e.unit}</td>
+                          <td style={styles.td}><strong>₹{e.quotedAmount || 0}</strong></td>
+                          <td style={styles.td}><span style={styles.statusBadge}>{e.status}</span></td>
+                          <td style={styles.td}>{e.createdAt ? new Date(e.createdAt).toLocaleDateString() : "-"}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* My Products Tab Content */}
+      {(activeTab === "overview" || activeTab === "products") && (
+        <div style={{ marginTop: 24 }}>
+          {/* E-Commerce Filter Header & Search Bar */}
+          <div style={styles.filterBox} className="no-print">
+            <div style={styles.searchBarWrap}>
+              <input
+                type="text"
+                placeholder="Search by Product Name, Master Code, Brand..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={styles.searchInput}
+              />
+            </div>
+
+            <div style={styles.filterRow}>
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                style={styles.selectFilter}
+              >
+                <option value="all">All Categories</option>
+                {categories.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+
+              <select
+                value={selectedBrand}
+                onChange={(e) => setSelectedBrand(e.target.value)}
+                style={styles.selectFilter}
+              >
+                <option value="all">All Brands</option>
+                {brands.map((b) => (
+                  <option key={b} value={b}>{b}</option>
+                ))}
+              </select>
+
+              {/* Status Filter Chips */}
+              <div style={styles.chipWrap}>
+                <button
+                  onClick={() => setStatusFilter("all")}
+                  style={{ ...styles.chip, ...(statusFilter === "all" ? styles.chipActive : {}) }}
+                >
+                  All ({listings.length})
+                </button>
+                <button
+                  onClick={() => setStatusFilter("approved")}
+                  style={{ ...styles.chip, ...(statusFilter === "approved" ? styles.chipActive : {}) }}
+                >
+                  Approved ({metrics.approved})
+                </button>
+                <button
+                  onClick={() => setStatusFilter("pending")}
+                  style={{ ...styles.chip, ...(statusFilter === "pending" ? styles.chipActive : {}) }}
+                >
+                  Pending ({metrics.pending})
+                </button>
+                <button
+                  onClick={() => setStatusFilter("rejected")}
+                  style={{ ...styles.chip, ...(statusFilter === "rejected" ? styles.chipActive : {}) }}
+                >
+                  Rejected ({metrics.rejected})
+                </button>
+                <button
+                  onClick={() => setStatusFilter("outOfStock")}
+                  style={{ ...styles.chip, ...(statusFilter === "outOfStock" ? styles.chipActive : {}) }}
+                >
+                  Out of Stock ({metrics.outOfStock})
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Desktop Table & Mobile Card View */}
+          <div style={styles.tableCardWrap}>
+            {loading ? (
+              <div style={{ padding: 30, textAlign: "center" }}>Loading your permanent product catalogue...</div>
+            ) : filteredListings.length === 0 ? (
+              <div style={{ padding: 40, textAlign: "center", color: "#666" }}>
+                No products match the selected filters. Click <strong>"Select Active Items & Add Rates"</strong> to add products.
+              </div>
+            ) : (
+              <>
+                {/* Desktop Responsive Table View */}
+                <div style={styles.desktopTableWrap}>
+                  <table style={styles.table}>
+                    <thead>
+                      <tr>
+                        <th style={styles.th}>Product & Code</th>
+                        <th style={styles.th}>Spec & Brand</th>
+                        <th style={styles.th}>Unit</th>
+                        <th style={styles.th}>Approved Rate</th>
+                        <th style={styles.th}>Proposed Rate</th>
+                        <th style={styles.th}>Stock & Avail</th>
+                        <th style={styles.th}>Status</th>
+                        <th style={styles.th} className="no-print">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredListings.map((item) => {
+                        const isApproved = item.status === "approved" || item.approvalStatus === "approved";
+                        const isPending = item.status === "pending" || item.approvalStatus === "pending";
+
+                        return (
+                          <tr key={item._id}>
+                            {/* Product & Non-blinking Thumbnail */}
+                            <td style={styles.td}>
+                              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                                <ProductThumbnail src={item.imageUrl} alt={item.itemName} masterItemCode={item.masterItemCode} />
+                                <div>
+                                  <strong>{item.itemName}</strong>
+                                  <div style={styles.codeText}>{item.masterItemCode}</div>
+                                  <div style={styles.catText}>{item.category} {item.subCategory ? `/ ${item.subCategory}` : ""}</div>
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* Spec */}
+                            <td style={styles.td}>
+                              <div>{item.specification || "-"}</div>
+                              {item.brand && <span style={styles.brandBadge}>{item.brand}</span>}
+                            </td>
+
+                            {/* Unit */}
+                            <td style={styles.td}><strong>{item.unit || "NOS"}</strong></td>
+
+                            {/* Approved Rate (Live Rate) */}
+                            <td style={styles.td}>
+                              {item.approvedRate > 0 ? (
+                                <strong style={{ color: "#10b981", fontSize: 15 }}>₹{item.approvedRate}</strong>
+                              ) : isApproved ? (
+                                <strong style={{ color: "#10b981", fontSize: 15 }}>₹{item.rate}</strong>
+                              ) : (
+                                <span style={{ color: "#9ca3af", fontSize: 13 }}>Not Approved</span>
+                              )}
+                            </td>
+
+                            {/* Proposed Rate (Pending Approval) */}
+                            <td style={styles.td}>
+                              {item.proposedRate > 0 ? (
+                                <div>
+                                  <strong style={{ color: "#f59e0b", fontSize: 15 }}>₹{item.proposedRate}</strong>
+                                  {isPending && <div style={{ fontSize: 10, color: "#f59e0b" }}>Pending Approval</div>}
+                                </div>
+                              ) : (
+                                <span style={{ color: "#9ca3af" }}>-</span>
+                              )}
+                            </td>
+
+                            {/* Stock & Availability */}
+                            <td style={styles.td}>
+                              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                                <div>Stock: <strong>{item.providerStock || 0}</strong></div>
+                                <button
+                                  onClick={() => toggleAvailability(item)}
+                                  style={{
+                                    ...styles.availBtn,
+                                    background: item.availability === "Out of Stock" ? "#fee2e2" : "#d1fae5",
+                                    color: item.availability === "Out of Stock" ? "#dc2626" : "#047857",
+                                  }}
+                                  className="no-print"
+                                >
+                                  {item.availability || "In Stock"} (Click to Toggle)
+                                </button>
+                              </div>
+                            </td>
+
+                            {/* Status */}
+                            <td style={styles.td}>
+                              <span
+                                style={{
+                                  ...styles.statusBadge,
+                                  background: isApproved ? "#d1fae5" : isPending ? "#fef3c7" : "#fee2e2",
+                                  color: isApproved ? "#047857" : isPending ? "#b45309" : "#b91c1c",
+                                }}
+                              >
+                                {isApproved ? "Approved" : isPending ? "Pending Approval" : "Rejected"}
+                              </span>
+                            </td>
+
+                            {/* Actions */}
+                            <td style={styles.td} className="no-print">
+                              <button onClick={() => openEdit(item)} style={styles.editBtn}>
+                                ✏️ Edit Commercials
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile Compact Cards View (320px - 430px) */}
+                <div style={styles.mobileCardWrap}>
+                  {filteredListings.map((item) => {
+                    const isApproved = item.status === "approved" || item.approvalStatus === "approved";
+                    const isPending = item.status === "pending" || item.approvalStatus === "pending";
+
+                    return (
+                      <div key={item._id} style={styles.mobileCard}>
+                        <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 8 }}>
+                          <ProductThumbnail src={item.imageUrl} alt={item.itemName} masterItemCode={item.masterItemCode} />
+                          <div style={{ flex: 1 }}>
+                            <strong style={{ fontSize: 14 }}>{item.itemName}</strong>
+                            <div style={{ fontSize: 11, color: "#666" }}>{item.masterItemCode} | {item.category}</div>
+                          </div>
+                          <span
+                            style={{
+                              ...styles.statusBadge,
+                              background: isApproved ? "#d1fae5" : isPending ? "#fef3c7" : "#fee2e2",
+                              color: isApproved ? "#047857" : isPending ? "#b45309" : "#b91c1c",
+                            }}
+                          >
+                            {isApproved ? "Approved" : isPending ? "Pending" : "Rejected"}
+                          </span>
+                        </div>
+
+                        <div style={styles.mobileCardGrid}>
+                          <div>
+                            <div style={{ fontSize: 11, color: "#666" }}>Approved Rate</div>
+                            <div style={{ fontWeight: "bold", color: "#10b981" }}>
+                              {item.approvedRate > 0 ? `₹${item.approvedRate}` : isApproved ? `₹${item.rate}` : "N/A"}
+                            </div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 11, color: "#666" }}>Proposed Rate</div>
+                            <div style={{ fontWeight: "bold", color: "#f59e0b" }}>
+                              {item.proposedRate > 0 ? `₹${item.proposedRate}` : "-"}
+                            </div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 11, color: "#666" }}>Stock</div>
+                            <div>{item.providerStock || 0} {item.unit}</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 11, color: "#666" }}>Availability</div>
+                            <button
+                              onClick={() => toggleAvailability(item)}
+                              style={{
+                                padding: "2px 6px", borderRadius: 4, border: 0, fontSize: 10, fontWeight: "bold", cursor: "pointer",
+                                background: item.availability === "Out of Stock" ? "#fee2e2" : "#d1fae5",
+                                color: item.availability === "Out of Stock" ? "#dc2626" : "#047857"
+                              }}
+                            >
+                              {item.availability || "In Stock"}
+                            </button>
+                          </div>
+                        </div>
+
+                        <div style={{ marginTop: 10, display: "flex", justifyContent: "flex-end" }}>
+                          <button onClick={() => openEdit(item)} style={styles.editBtn}>
+                            ✏️ Edit Rate / Commercials
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Enquiries Tab */}
+      {activeTab === "enquiries" && (
+        <div style={{ marginTop: 24 }}>
+          <div style={styles.filterBox}>
+            <h3 style={{ margin: 0, fontSize: 18 }}>Buyer Enquiries & Quote Requests</h3>
+          </div>
+          <div style={styles.tableCardWrap}>
+            {enquiries.length === 0 ? (
+              <div style={{ padding: 30, textAlign: "center", color: "#666" }}>No active buyer enquiries received yet.</div>
+            ) : (
+              <table style={styles.table}>
+                <thead>
+                  <tr>
+                    <th style={styles.th}>Date</th>
+                    <th style={styles.th}>Buyer</th>
+                    <th style={styles.th}>Item Requested</th>
+                    <th style={styles.th}>Quantity & Location</th>
+                    <th style={styles.th}>Status</th>
+                    <th style={styles.th}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {enquiries.map((e) => (
+                    <tr key={e._id}>
+                      <td style={styles.td}>{e.createdAt ? new Date(e.createdAt).toLocaleDateString() : "-"}</td>
+                      <td style={styles.td}>
+                        <strong>{e.buyerName || "Buyer"}</strong>
+                        <div style={{ fontSize: 11, color: "#666" }}>{e.buyerPhone}</div>
+                      </td>
+                      <td style={styles.td}>
+                        <strong>{e.itemName || e.masterItemCode}</strong>
+                        <div style={{ fontSize: 11, color: "#666" }}>{e.specification}</div>
+                      </td>
+                      <td style={styles.td}>
+                        {e.quantity} {e.unit} | {e.location || "Bengaluru"}
+                      </td>
+                      <td style={styles.td}>
+                        <span style={{ ...styles.statusBadge, background: e.status === "Quoted" ? "#d1fae5" : "#fef3c7" }}>
+                          {e.status || "Pending"}
+                        </span>
+                      </td>
+                      <td style={styles.td}>
+                        {e.status !== "Quoted" && (
+                          <button
+                            onClick={() => {
+                              setSelectedEnquiry(e);
+                              setQuotePrice("");
+                              setShowQuoteModal(true);
+                            }}
+                            style={styles.addBtn}
+                          >
+                            Send Quote
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Edit Rate & Commercial Modal */}
+      {showEditModal && editingItem && (
+        <div style={styles.modalBackdrop} onClick={() => setShowEditModal(false)}>
+          <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <h2 style={{ marginTop: 0, color: "#1a5f7a", fontSize: 20 }}>Edit Supplier Rate & Commercials</h2>
+            <div style={{ fontSize: 13, color: "#666", marginBottom: 16 }}>
+              <strong>{editingItem.itemName}</strong> ({editingItem.masterItemCode})
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <div>
+                <label style={styles.label}>Proposed Rate (₹ per {editingItem.unit || "unit"}) *</label>
+                <input
+                  type="number"
+                  style={styles.modalInput}
+                  value={editRate}
+                  onChange={(e) => setEditRate(e.target.value)}
+                  placeholder="Enter new proposed rate"
+                />
+                <div style={{ fontSize: 11, color: "#666", marginTop: 4 }}>
+                  Current Approved Rate: <strong>₹{editingItem.approvedRate || editingItem.rate || "N/A"}</strong>
+                </div>
+              </div>
+
+              <div>
+                <label style={styles.label}>Stock Quantity</label>
+                <input
+                  type="number"
+                  style={styles.modalInput}
+                  value={editStock}
+                  onChange={(e) => setEditStock(e.target.value)}
+                  placeholder="e.g. 500"
+                />
+              </div>
+
+              <div>
+                <label style={styles.label}>Availability Status</label>
+                <select
+                  style={styles.modalInput}
+                  value={editAvailability}
+                  onChange={(e) => setEditAvailability(e.target.value)}
+                >
+                  <option value="In Stock">In Stock</option>
+                  <option value="Out of Stock">Out of Stock</option>
+                  <option value="Limited Stock">Limited Stock</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={styles.label}>Minimum Order Qty (MOQ)</label>
+                <input
+                  type="number"
+                  style={styles.modalInput}
+                  value={editMinOrder}
+                  onChange={(e) => setEditMinOrder(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label style={styles.label}>Delivery Lead Time</label>
+                <input
+                  type="text"
+                  style={styles.modalInput}
+                  value={editDeliveryTime}
+                  onChange={(e) => setEditDeliveryTime(e.target.value)}
+                  placeholder="e.g. 24-48 Hours"
+                />
+              </div>
+
+              <div>
+                <label style={styles.label}>Remarks / Transport Terms</label>
+                <input
+                  type="text"
+                  style={styles.modalInput}
+                  value={editRemarks}
+                  onChange={(e) => setEditRemarks(e.target.value)}
+                  placeholder="e.g. Free delivery on 100+ bags"
+                />
+              </div>
+            </div>
+
+            <div style={{ marginTop: 20, display: "flex", justifyContent: "flex-end", gap: 10 }}>
+              <button onClick={() => setShowEditModal(false)} style={styles.cancelBtn}>
+                Cancel
+              </button>
+              <button onClick={saveRateEdit} disabled={submittingEdit} style={styles.saveBtn}>
+                {submittingEdit ? "Submitting..." : "Submit Edit for Approval"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Quote Response Modal */}
+      {showQuoteModal && selectedEnquiry && (
+        <div style={styles.modalBackdrop} onClick={() => setShowQuoteModal(false)}>
+          <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <h2 style={{ marginTop: 0, color: "#1a5f7a" }}>Send Quote to Buyer</h2>
+            <div style={{ fontSize: 13, marginBottom: 14 }}>
+              Item: <strong>{selectedEnquiry.itemName}</strong> | Buyer: <strong>{selectedEnquiry.buyerName}</strong> ({selectedEnquiry.buyerPhone})
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div>
+                <label style={styles.label}>Quoted Rate (₹) *</label>
+                <input
+                  type="number"
+                  style={styles.modalInput}
+                  value={quotePrice}
+                  onChange={(e) => setQuotePrice(e.target.value)}
+                  placeholder="Enter total or unit price"
+                />
+              </div>
+
+              <div>
+                <label style={styles.label}>Delivery Date / Validity</label>
+                <input
+                  type="text"
+                  style={styles.modalInput}
+                  value={quoteDelivery}
+                  onChange={(e) => setQuoteDelivery(e.target.value)}
+                  placeholder="e.g. Tomorrow by 10 AM / Valid for 3 Days"
+                />
+              </div>
+
+              <div>
+                <label style={styles.label}>Quotation Message / Notes</label>
+                <textarea
+                  style={{ ...styles.modalInput, height: 70 }}
+                  value={quoteNotes}
+                  onChange={(e) => setQuoteNotes(e.target.value)}
+                  placeholder="Payment terms, transport included, etc."
+                />
+              </div>
+            </div>
+
+            <div style={{ marginTop: 20, display: "flex", justifyContent: "flex-end", gap: 10 }}>
+              <button onClick={() => setShowQuoteModal(false)} style={styles.cancelBtn}>
+                Cancel
+              </button>
+              <button onClick={submitQuote} style={styles.saveBtn}>
+                Submit Quote
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
+// Inline Styles & CSS Variables
+const styles: Record<string, React.CSSProperties> = {
+  container: { padding: 20, background: "#f8fafc", minHeight: "100vh", fontFamily: "Inter, Arial, sans-serif" },
+  actionStrip: { display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", marginBottom: 20, flexWrap: "wrap" },
+  actionBtn: { padding: "8px 16px", borderRadius: 8, border: "1px solid #cbd5e1", background: "#fff", color: "#334155", fontWeight: 600, cursor: "pointer" },
+  actionBtnActive: { background: "#1a5f7a", color: "#fff", borderColor: "#1a5f7a" },
+  addBtn: { padding: "8px 16px", borderRadius: 8, border: 0, background: "#10b981", color: "#fff", fontWeight: 700, cursor: "pointer" },
+  logoutBtn: { padding: "8px 14px", borderRadius: 8, border: 0, background: "#ef4444", color: "#fff", fontWeight: 600, cursor: "pointer" },
 
+  // KPI Grid
+  kpiGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 14, marginBottom: 24 },
+  kpiCard: { background: "#fff", borderRadius: 10, padding: 16, boxShadow: "0 1px 3px rgba(0,0,0,0.05)", cursor: "pointer" },
+  kpiTitle: { fontSize: 12, color: "#64748b", fontWeight: 600 },
+  kpiValue: { fontSize: 26, fontWeight: 800, color: "#0f172a", margin: "4px 0" },
+  kpiSub: { fontSize: 11, color: "#94a3b8" },
 
+  // Widgets Grid
+  widgetGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16, marginBottom: 24 },
+  widgetCard: { background: "#fff", borderRadius: 12, padding: 18, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" },
+  widgetTitle: { margin: 0, fontSize: 15, fontWeight: 700, color: "#1e293b", borderBottom: "1px solid #f1f5f9", paddingBottom: 8 },
+  emptyText: { fontSize: 13, color: "#94a3b8", marginTop: 14 },
+  dot: { display: "inline-block", width: 8, height: 8, borderRadius: "50%", marginRight: 6 },
+  pipelineRow: { display: "flex", justifyContent: "space-between", fontSize: 12, color: "#475569" },
+  barWrap: { height: 6, background: "#f1f5f9", borderRadius: 3, overflow: "hidden", marginTop: 4 },
+  barFill: { height: "100%", borderRadius: 3, transition: "width 0.3s" },
 
+  // Report Section
+  reportPrintCard: { background: "#fff", borderRadius: 12, padding: 24, boxShadow: "0 1px 3px rgba(0,0,0,0.05)", border: "1px solid #e2e8f0" },
+  reportHeader: { display: "flex", justifyContent: "space-between", gap: 20, borderBottom: "2px solid #1a5f7a", paddingBottom: 16, marginBottom: 16, flexWrap: "wrap" },
+  reportSummaryStrip: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12, background: "#f8fafc", padding: 14, borderRadius: 8, marginBottom: 20 },
+  summaryLabel: { fontSize: 11, color: "#64748b", fontWeight: 600 },
+  summaryVal: { fontSize: 18, fontWeight: 800, color: "#0f172a" },
 
+  // Filters
+  filterBox: { background: "#fff", borderRadius: 12, padding: 16, boxShadow: "0 1px 3px rgba(0,0,0,0.05)", marginBottom: 16 },
+  searchBarWrap: { marginBottom: 12 },
+  searchInput: { width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 14 },
+  filterRow: { display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" },
+  selectFilter: { padding: "8px 12px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 13, background: "#fff" },
+  chipWrap: { display: "flex", gap: 6, flexWrap: "wrap", marginLeft: "auto" },
+  chip: { padding: "6px 12px", borderRadius: 20, border: "1px solid #e2e8f0", background: "#f8fafc", color: "#475569", fontSize: 12, cursor: "pointer", fontWeight: 500 },
+  chipActive: { background: "#1a5f7a", color: "#fff", borderColor: "#1a5f7a", fontWeight: 700 },
 
+  // Table & Cards
+  tableCardWrap: { background: "#fff", borderRadius: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.05)", overflow: "hidden" },
+  desktopTableWrap: { overflowX: "auto" },
+  table: { width: "100%", borderCollapse: "collapse", fontSize: 13 },
+  th: { padding: "12px 14px", background: "#f1f5f9", textAlign: "left", color: "#334155", fontWeight: 700, borderBottom: "1px solid #e2e8f0" },
+  td: { padding: "12px 14px", borderBottom: "1px solid #f1f5f9", verticalAlign: "middle" },
+  thumb: { width: 40, height: 40, borderRadius: 6, objectFit: "cover", background: "#f1f5f9" },
+  placeholderThumb: { width: 40, height: 40, borderRadius: 6, background: "#e2e8f0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 },
+  codeText: { fontSize: 11, color: "#64748b", fontWeight: 600 },
+  catText: { fontSize: 11, color: "#94a3b8" },
+  brandBadge: { display: "inline-block", background: "#e0f2fe", color: "#0369a1", padding: "2px 6px", borderRadius: 4, fontSize: 10, fontWeight: 700 },
+  statusBadge: { display: "inline-block", padding: "4px 10px", borderRadius: 12, fontSize: 11, fontWeight: 700 },
+  availBtn: { border: 0, padding: "4px 8px", borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: "pointer" },
+  editBtn: { background: "#1a5f7a", color: "#fff", border: 0, padding: "6px 12px", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" },
 
+  // Mobile View
+  mobileCardWrap: { display: "none" },
+  mobileCard: { padding: 14, borderBottom: "1px solid #e2e8f0" },
+  mobileCardGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 8 },
 
-
-
-
+  // Modals
+  modalBackdrop: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(15,23,42,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 },
+  modalContent: { background: "#fff", borderRadius: 14, padding: 24, width: "100%", maxWidth: 640, maxHeight: "90vh", overflowY: "auto" },
+  label: { display: "block", fontSize: 12, fontWeight: 700, color: "#334155", marginBottom: 4 },
+  modalInput: { width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 13 },
+  cancelBtn: { padding: "8px 16px", borderRadius: 8, border: "1px solid #cbd5e1", background: "#fff", color: "#475569", fontWeight: 600, cursor: "pointer" },
+  saveBtn: { padding: "8px 16px", borderRadius: 8, border: 0, background: "#1a5f7a", color: "#fff", fontWeight: 700, cursor: "pointer" },
+};
 

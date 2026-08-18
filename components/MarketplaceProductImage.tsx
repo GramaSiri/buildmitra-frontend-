@@ -1,9 +1,9 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { resolveMediaUrl } from "../utils/mediaResolver";
 
-const FALLBACK_IMAGE = "/assets/placeholder-product.webp";
+const PLACEHOLDER_DEFAULT = "/master-images/category-default.svg";
 
-function getCandidateUrl(value: any): string {
+function rawImage(value: any): string {
   if (!value) return "";
 
   if (typeof value === "string") {
@@ -16,7 +16,6 @@ function getCandidateUrl(value: any): string {
       value.imageUrl ||
       value.imageURL ||
       value.imagePath ||
-      value.image_path ||
       value.path ||
       value.src ||
       ""
@@ -24,6 +23,16 @@ function getCandidateUrl(value: any): string {
   }
 
   return "";
+}
+
+function resolveApprovedImage(value: any): string {
+  const raw = rawImage(value);
+
+  if (!raw) return "";
+
+  // Centralized media resolver handles backend origin (/uploads/ and /api/)
+  // and static frontend CDN assets (/master-images/, /assets/, /images/)
+  return resolveMediaUrl(raw);
 }
 
 function getNormalizedMatCode(code: any): string | null {
@@ -39,113 +48,156 @@ function getNormalizedMatCode(code: any): string | null {
   return null;
 }
 
-function extractCandidates(item: any): string[] {
+function getCategorySvgPath(category?: string, subCategory?: string, itemName?: string): string {
+  const text = `${itemName || ""} ${subCategory || ""} ${category || ""}`.toLowerCase().trim();
+
+  if (text.includes("cpvc") || text.includes("upvc") || text.includes("pvc") || text.includes("plumbing") || text.includes("pipe")) {
+    return "/master-images/category-plumbing-cpvc.svg";
+  }
+  if (text.includes("tmt") || text.includes("steel") || text.includes("rebar") || text.includes("iron")) {
+    return "/master-images/category-tmt-bars.svg";
+  }
+  if (text.includes("sand") || text.includes("m-sand") || text.includes("p-sand") || text.includes("aggregate") || text.includes("jelly") || text.includes("gravel") || text.includes("bulk")) {
+    return "/master-images/category-bulk-material.svg";
+  }
+  if (text.includes("brick")) {
+    return "/master-images/category-bricks.svg";
+  }
+  if (text.includes("cement")) {
+    return "/master-images/category-cement.svg";
+  }
+  if (text.includes("concrete block") || text.includes("hollow block") || text.includes("solid block") || text.includes("aerocon") || text.includes("block")) {
+    return "/master-images/category-concrete-blocks.svg";
+  }
+  if (text.includes("adhesive") || text.includes("fevicol") || text.includes("araldite") || text.includes("resin")) {
+    return "/master-images/category-adhesive.svg";
+  }
+  if (text.includes("tile") || text.includes("flooring") || text.includes("granite") || text.includes("marble")) {
+    return "/master-images/category-tiles-flooring.svg";
+  }
+  if (text.includes("wire") || text.includes("cable") || text.includes("electrical") || text.includes("mcb") || text.includes("switch")) {
+    return "/master-images/category-electrical-wires.svg";
+  }
+  if (text.includes("paint") || text.includes("primer") || text.includes("putty")) {
+    return "/master-images/category-paints.svg";
+  }
+
+  return PLACEHOLDER_DEFAULT;
+}
+
+function getApprovedCandidates(item: any): string[] {
   const candidates: string[] = [];
 
   const add = (value: any) => {
-    const url = getCandidateUrl(value);
+    const src = resolveApprovedImage(value);
 
-    if (!url) return;
-
-    if (!candidates.includes(url)) {
-      candidates.push(url);
+    if (src && !candidates.includes(src)) {
+      candidates.push(src);
     }
   };
 
-  // 1. Authoritative DB imageUrl
-  add(item?.imageUrl);
+  /*
+    PERMANENT MARKETPLACE IMAGE RESOLUTION PRIORITY:
+    1. Uploaded file URL (/uploads/... or https://...) attached to listing
+    2. Master item code image (/master-images/MAT-XXXXXX.webp)
+    3. Category / Product specific SVG icon (/master-images/category-xxx.svg)
+    4. Default Category SVG icon (/master-images/category-default.svg)
+  */
 
-  // 2. Primary image from images[] array
+  // 1. Direct item imageUrl if valid
+  add(item?.imageUrl);
+  add(item?.masterImageUrl);
+
   if (Array.isArray(item?.images)) {
-    const primary = item.images.find(
+    const activeImages = item.images.filter(
       (img: any) =>
-        img?.isPrimary === true &&
-        img?.isActive !== false &&
-        img?.status !== "rejected"
+        img &&
+        img.status !== "rejected" &&
+        img.isActive !== false
+    );
+
+    const primary = activeImages.find(
+      (img: any) => img?.isPrimary === true
     );
 
     if (primary) add(primary);
-
-    item.images.forEach((img: any) => {
-      if (img?.isActive !== false && img?.status !== "rejected") {
-        add(img);
-      }
-    });
+    activeImages.forEach(add);
   }
 
-  // 3. Normalized master item code static CDN candidates (Vercel edge CDN instant 0ms load)
-  const normCode = getNormalizedMatCode(item?.masterItemCode || item?.masterCode || item?.itemCode || item?.code);
-  if (normCode) {
-    add(`/images/master-images/${normCode}.webp`);
-    add(`/uploads/master-materials/bulk-material/${normCode}.png`);
-    add(`/uploads/master-materials/bricks/${normCode}.png`);
-    add(`/uploads/master-materials/concrete-blocks/${normCode}.png`);
-    add(`/uploads/master-materials/electrical-wires/${normCode}.png`);
-    add(`/uploads/master-materials/plumbing-cpvc/${normCode}.png`);
-    add(`/uploads/master-materials/cement/${normCode}.png`);
-    add(`/uploads/master-materials/tmt-bars/${normCode}.png`);
-    add(`/uploads/master-materials/tiles-flooring/${normCode}.png`);
-  }
-
-  // 4. Legacy fields as fallback candidates
-  add(item?.image);
-  add(item?.imagePath);
-  add(item?.image_path);
-  add(item?.masterImageUrl);
-  add(item?.masterImage);
   add(item?.productImage);
-  add(item?.thumbnail);
+  add(item?.imagePath);
+  add(item?.image);
+
+  // 2. Master Item Code WebP image (e.g. /master-images/MAT-000001.webp)
+  const normCode = getNormalizedMatCode(
+    item?.masterItemCode || item?.masterCode || item?.itemCode || item?.code
+  );
+  if (normCode) {
+    const matPath = `/master-images/${normCode}.webp`;
+    if (!candidates.includes(matPath)) candidates.push(matPath);
+  }
+
+  // 3. Category / Product SVG icon
+  const categorySvg = getCategorySvgPath(item?.category, item?.subCategory, item?.itemName);
+  if (!candidates.includes(categorySvg)) {
+    candidates.push(categorySvg);
+  }
+
+  // 4. Default fallback SVG
+  if (!candidates.includes(PLACEHOLDER_DEFAULT)) {
+    candidates.push(PLACEHOLDER_DEFAULT);
+  }
 
   return candidates;
 }
 
 export default function MarketplaceProductImage({
   item,
-  alt
+  alt,
 }: {
   item: any;
   alt?: string;
 }) {
-  const listingId = String(item?._id || item?.listingCode || item?.id || "");
+  const listingIdentity = String(
+    item?.listingCode ||
+    item?._id ||
+    `${item?.providerUserCode || ""}-${item?.itemName || ""}`
+  );
 
   const candidates = useMemo(
-    () => extractCandidates(item),
-    [listingId]
+    () => getApprovedCandidates(item),
+    [
+      listingIdentity,
+      item?.imageUrl,
+      item?.masterImageUrl,
+      item?.category,
+      item?.subCategory,
+      item?.itemName
+    ]
   );
 
   const [index, setIndex] = useState(0);
-  const [useFallback, setUseFallback] = useState(false);
 
   useEffect(() => {
     setIndex(0);
-    setUseFallback(false);
-  }, [listingId]);
+  }, [listingIdentity]);
 
-  const raw =
-    !useFallback && candidates[index]
-      ? candidates[index]
-      : FALLBACK_IMAGE;
-
-  const src =
-    raw === FALLBACK_IMAGE
-      ? FALLBACK_IMAGE
-      : resolveMediaUrl(raw);
+  const src = candidates[index] || PLACEHOLDER_DEFAULT;
 
   const handleError = () => {
-    if (useFallback || raw === FALLBACK_IMAGE) {
-      return;
-    }
+    if (src === PLACEHOLDER_DEFAULT) return;
 
     if (index + 1 < candidates.length) {
       setIndex((current) => current + 1);
       return;
     }
 
-    setUseFallback(true);
+    setIndex(candidates.length - 1);
   };
 
   return (
     <img
+      key={`${listingIdentity}-${src}`}
       src={src}
       alt={
         alt ||
@@ -153,21 +205,20 @@ export default function MarketplaceProductImage({
         item?.productName ||
         "BuildMitra product"
       }
-      loading="lazy"
+      loading="eager"
       decoding="async"
       onError={handleError}
-      className="bm-marketplace-product-image object-cover"
+      className="bm-marketplace-product-image"
       style={{
         display: "block",
         visibility: "visible",
         opacity: 1,
         width: "100%",
         height: "100%",
-        minWidth: 0,
-        minHeight: 0,
         objectFit: "cover",
         objectPosition: "center",
-        border: 0
+        background: "#f8fafc",
+        border: 0,
       }}
     />
   );

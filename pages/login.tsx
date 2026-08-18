@@ -9,6 +9,7 @@ export default function LoginPage() {
 
   const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
   const [error, setError] = useState("");
@@ -51,7 +52,7 @@ export default function LoginPage() {
   ) => {
     event.preventDefault();
     if (!agreedToTerms) {
-      alert("Please agree to the BuildMitra Platform Terms & User Acknowledgement before login.");
+      alert("Please check 'I Agree' to accept the BuildMitra Terms & User Acknowledgement before logging in.");
       return;
     }
 
@@ -152,12 +153,10 @@ export default function LoginPage() {
         assignedProjects: sourceUser.assignedProjects || []
       };
 
-      // Clear previous stale session keys
       sessionStorage.clear();
       localStorage.removeItem("buildmitraUser");
       localStorage.removeItem("bm_pending_registration");
 
-      // SAVE ALL CONSISTENT SESSION KEYS
       sessionStorage.setItem("currentUser", JSON.stringify(user));
       sessionStorage.setItem("loggedInUser", JSON.stringify(user));
       sessionStorage.setItem("user", JSON.stringify(user));
@@ -174,7 +173,6 @@ export default function LoginPage() {
       sessionStorage.setItem("justLoggedIn", "true");
       localStorage.setItem("buildmitraUser", JSON.stringify(user));
 
-      // Create JWT session for auth.ts
       try {
         const { createJWTToken } = require("../utils/auth");
         createJWTToken({
@@ -185,15 +183,11 @@ export default function LoginPage() {
         });
       } catch {}
 
-      setSuccess(
-        `Login successful. Welcome ${
-          user.name || "to BuildMitra"
-        }.`
-      );
+      setSuccess(`Login successful. Welcome ${user.name || "to BuildMitra"}.`);
 
       setTimeout(() => {
         redirectToDashboard(effectiveRole);
-      }, 500);
+      }, 400);
     } catch (loginError: any) {
       console.error("Login error:", loginError);
       setError(
@@ -207,9 +201,9 @@ export default function LoginPage() {
 
   if (checkingSession) {
     return (
-      <main style={styles.page}>
+      <main style={styles.pageContainer}>
         <section style={styles.card}>
-          <div style={styles.logoIcon}>🏗️</div>
+          <img src="/logo.png" alt="BuildMitra Logo" style={{ height: "46px", width: "auto", margin: "0 auto 8px", display: "block" }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
           <div style={styles.loadingText}>Opening BuildMitra...</div>
         </section>
       </main>
@@ -217,428 +211,350 @@ export default function LoginPage() {
   }
 
   return (
-    <main style={styles.page}>
-      <section style={styles.card}>
-        <div style={styles.logoIcon}>🏗️</div>
-        <h1 style={styles.logo}>BuildMitra</h1>
-        <p style={styles.subtitle}>Build Smarter. Save Bigger.</p>
-
-        <div style={styles.tabs}>
-          
-                    {showTerms && (
-            <div
-              style={{
-                margin: "7px 0",
-                border: "1px solid #d9e1ea",
-                borderRadius: "9px",
-                background: "#f8fafc",
-                overflow: "hidden",
-              }}
-            >
-
-            
-
-            <div
-              style={{
-                borderTop: "1px solid #e5e7eb",
-                background: "#f8fafc",
-              }}
-            >
-            <div
-              style={{
-                padding: "10px 12px",
-                fontWeight: 800,
-                fontSize: "13px",
-                color: "#172033",
-                borderBottom: "1px solid #e5e7eb",
-                background: "#ffffff",
-              }}
-            >
-              BuildMitra – Platform Terms & User Acknowledgement
-            </div>
-
-            <div
-              style={{
-                maxHeight: "190px",
-                overflowY: "auto",
-                padding: "10px 12px",
-                fontSize: "11px",
-                lineHeight: 1.55,
-                color: "#475569",
-                textAlign: "left",
-              }}
-            >
-              <p>
-                BuildMitra is a technology and information platform designed to
-                connect buyers, property owners and other users with independent
-                sellers, suppliers, manufacturers, contractors, consultants,
-                service providers, labour providers, machinery providers,
-                real-estate owners/agents and other participating users.
-              </p>
-
-              <p>
-                <strong>1. Platform Role:</strong> BuildMitra primarily
-                facilitates discovery, communication, enquiries, quotations and
-                connections between users. Unless specifically stated otherwise
-                for a particular BuildMitra service, BuildMitra is not the
-                manufacturer, seller, contractor, employer, property owner,
-                broker, lender, guarantor or party to an independent transaction
-                concluded between users.
-              </p>
-
-              <p>
-                <strong>2. Independent Verification:</strong> Before placing an
-                order, making a payment, entering into an agreement or commencing
-                work, users must independently verify the identity and
-                credentials of the other party and verify quotations,
-                specifications, quantities, brands, quality, warranties,
-                licences, GST details, delivery terms, workmanship, property
-                ownership/title, approvals and other relevant documents or
-                information.
-              </p>
-
-              <p>
-                <strong>3. Payments:</strong> Users should exercise appropriate
-                care before transferring money or making cash, UPI, bank or
-                other direct payments to another user. Unless a payment is
-                expressly collected by BuildMitra through an authorised
-                BuildMitra payment facility, BuildMitra does not receive, hold
-                or control that user-to-user payment.
-              </p>
-
-              <p>
-                <strong>4. Materials & Products:</strong> BuildMitra does not
-                independently guarantee the quality, quantity, specification,
-                authenticity, suitability, availability or delivery of
-                materials/products supplied by independent sellers. Disputes
-                concerning wrong, defective, damaged, short-supplied, delayed or
-                rejected material should ordinarily be resolved between the
-                buyer and the responsible seller/supplier, subject to applicable
-                law and any rights available to the consumer.
-              </p>
-
-              <p>
-                <strong>5. Contractors & Services:</strong> Independent
-                contractors, consultants, labour providers, machinery providers
-                and other professionals remain responsible for their own
-                quotations, representations, personnel, safety, statutory
-                compliance, workmanship, schedules and contractual obligations.
-              </p>
-
-              <p>
-                <strong>6. Real Estate:</strong> Property advertisements and
-                information may be supplied by owners, agents or other users.
-                Users must independently verify ownership/title, encumbrances,
-                measurements, approvals, RERA applicability/registration where
-                required, taxes, documents and legal status before paying money
-                or entering into any property transaction. BuildMitra listing or
-                displaying a property does not by itself constitute legal
-                verification or approval of that property.
-              </p>
-
-              <p>
-                <strong>7. User-Generated Information:</strong> Sellers and
-                other users are responsible for the accuracy and legality of
-                information, photographs, documents, prices, specifications,
-                advertisements and representations they upload or communicate
-                through BuildMitra. BuildMitra may moderate, restrict, suspend
-                or remove content/accounts where reasonably necessary for
-                platform safety, legal compliance or prevention of misuse.
-              </p>
-
-              <p>
-                <strong>8. Fraud & Prohibited Conduct:</strong> Users must not
-                use BuildMitra for fraud, impersonation, cheating, misleading
-                advertisements, counterfeit or unlawful goods, forged
-                documents, manipulation, harassment, unauthorised access,
-                scraping/automated abuse, malicious activity or any activity
-                prohibited by applicable law. Suspected unlawful activity may
-                be restricted and may be reported or disclosed to competent
-                authorities where required or permitted by law.
-              </p>
-
-              <p>
-                <strong>9. Statutory Rights:</strong> Nothing in these terms is
-                intended to remove any statutory consumer right or other legal
-                right that cannot lawfully be excluded. BuildMitra's
-                responsibility, if any, remains subject to applicable law.
-              </p>
-
-              <p>
-                <strong>10. Privacy & Data:</strong> By using BuildMitra, users
-                acknowledge that information necessary for account operation,
-                enquiries, quotations, communication, security and platform
-                functionality may be processed in accordance with BuildMitra's
-                Privacy Policy and applicable data-protection law.
-              </p>
-
-              <p>
-                <strong>11. User Responsibility:</strong> Each user is
-                responsible for decisions made based on listings, quotations,
-                communications or information available through the platform and
-                should obtain appropriate technical, financial or legal advice
-                where the transaction requires it.
-              </p>
-
-              <p style={{ marginBottom: 0 }}>
-                <strong>12. Applicable Law:</strong> Use of BuildMitra is
-                subject to applicable laws and regulations in India, including
-                applicable consumer-protection, information-technology,
-                data-protection and other laws as amended from time to time.
-              </p>
-            </div>
+    <main style={styles.pageContainer}>
+      <div style={styles.contentWrapper}>
+        
+        {/* LIGHTWEIGHT PROMOTIONAL TEXT AREA (NO CARD, NO DUPLICATE LOGO) */}
+        <div style={styles.promoArea}>
+          <div style={styles.promoPill}>
+            One platform. Every construction need.
           </div>
-          
+
+          <div style={styles.promoGroup}>
+            <div style={styles.promoRole}>HOMEOWNER / BUYER</div>
+            <div style={styles.promoTitle}>Build smarter. <span style={{ color: "#16a34a" }}>Save lakhs.</span></div>
+            <div style={styles.promoDesc}>Your construction, in your pocket.</div>
+          </div>
+
+          <div style={styles.promoGroup}>
+            <div style={styles.promoRole}>SUPPLIERS</div>
+            <div style={styles.promoTitle}>Grow your reach.</div>
+            <div style={styles.promoDesc}>Connect with buyers. Scale your business.</div>
+          </div>
+
+          <div style={styles.promoGroup}>
+            <div style={styles.promoRole}>CONTRACTORS</div>
+            <div style={styles.promoTitle}>Build with confidence.</div>
+            <div style={styles.promoDesc}>Deliver quality projects with clarity and control.</div>
+          </div>
+        </div>
+
+        {/* SINGLE AUTHORITATIVE LOGIN CARD */}
+        <section style={styles.card}>
+          {/* SINGLE AUTHORITATIVE BRANDING */}
+          <div style={{ textAlign: "center", marginBottom: "16px" }}>
+            <img src="/logo.png" alt="BuildMitra Logo" style={{ height: "48px", width: "auto", margin: "0 auto 6px", display: "block" }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+            <h1 style={styles.logo}>BuildMitra</h1>
+            <p style={styles.subtitle}>Build Smarter. Save Bigger.</p>
+          </div>
+
+          <div style={styles.tabs}>
+            <button type="button" style={{ ...styles.tab, ...styles.activeTab }}>
+              Login
+            </button>
+            <button type="button" style={styles.tab} onClick={() => router.push("/register")}>
+              Register
+            </button>
+          </div>
+
+          {showTerms && (
+            <div style={{ margin: "10px 0", border: "1px solid #cbd5e1", borderRadius: "8px", background: "#f8fafc", overflow: "hidden" }}>
+              <div style={{ padding: "10px 12px", fontWeight: 800, fontSize: "12px", color: "#172033", borderBottom: "1px solid #e2e8f0", background: "#ffffff" }}>
+                BuildMitra – Platform Terms & User Acknowledgement
+              </div>
+              <div style={{ maxHeight: "160px", overflowY: "auto", padding: "10px", fontSize: "11px", lineHeight: 1.5, color: "#475569" }}>
+                <p style={{ margin: 0 }}>BuildMitra facilitates direct connections between buyers, suppliers, contractors and service providers. Users must independently verify credentials and quotations.</p>
+              </div>
             </div>
           )}
 
-          
-<button disabled={!agreedToTerms}
-            type="button"
-            style={{ ...styles.tab, ...styles.activeTab }}
-          >
-            Login
-          </button>
-          <button
-            type="button"
-            style={styles.tab}
-            onClick={() => router.push("/register")}
-          >
-            Register
-          </button>
-        </div>
+          {error && <div style={styles.error}>{error}</div>}
+          {success && <div style={styles.success}>{success}</div>}
 
-        <h2 style={styles.title}>Welcome Back</h2>
-        <p style={styles.description}>
-          Login using your registered mobile number or email.
-        </p>
+          <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", width: "100%" }}>
+            {/* ROW 1: Mobile Number or Email (Full Width Row) */}
+            <div style={{ display: "flex", flexDirection: "column", width: "100%", marginBottom: "14px" }}>
+              <label style={styles.label}>Mobile Number or Email</label>
+              <input
+                type="text"
+                value={loginId}
+                onChange={(e) => setLoginId(e.target.value)}
+                placeholder="e.g. 9900112233 or user@buildmitra.com"
+                style={styles.inputFull}
+                required
+              />
+            </div>
 
-        {error && <div style={styles.error}>{error}</div>}
-        {success && <div style={styles.success}>{success}</div>}
+            {/* ROW 2: Password + Eye Icon (Full Width Row directly below Row 1) */}
+            <div style={{ display: "flex", flexDirection: "column", width: "100%", marginBottom: "14px" }}>
+              <label style={styles.label}>Password</label>
+              <div style={{ position: "relative", width: "100%" }}>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  style={{ ...styles.inputFull, paddingRight: "40px" }}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: "absolute",
+                    right: "10px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    fontSize: "14px",
+                    padding: "4px"
+                  }}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? "🙈" : "👁️"}
+                </button>
+              </div>
+            </div>
 
-        <form onSubmit={handleLogin}>
-          <div style={styles.field}>
-            <label style={styles.label} className="label-compact">Mobile Number or Email</label>
-            <input className="input-compact" className="input-compact"
-              type="text"
-              value={loginId}
-              onChange={(e) => setLoginId(e.target.value)}
-              placeholder="e.g. 9900112233 or user@buildmitra.com"
-              style={styles.input}
-              required
-            />
-          </div>
+            {/* ROW 3: LOGIN BUTTON (Full Width Row directly below Row 2) */}
+            <div style={{ display: "flex", flexDirection: "column", width: "100%", marginBottom: "12px" }}>
+              <button
+                type="submit"
+                disabled={loading || !agreedToTerms}
+                style={{
+                  ...styles.submit,
+                  width: "100%",
+                  opacity: (!agreedToTerms || loading) ? 0.65 : 1,
+                  cursor: (!agreedToTerms || loading) ? "not-allowed" : "pointer"
+                }}
+              >
+                {loading ? "Logging in..." : "Login"}
+              </button>
+            </div>
+          </form>
 
-          <div style={styles.field}>
-            <label style={styles.label} className="label-compact">Password</label>
-            <input className="input-compact" className="input-compact"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
-              style={styles.input}
-              required
-            />
-          </div>
-
-          <button type="submit" disabled={loading} style={styles.submit}>
-            {loading ? "Logging in..." : "Login to Dashboard"}
-          </button>
-        </form>
-
-        <div style={styles.links}>
-          
-          <label
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "6px",
-              margin: "7px 0 5px",
-              fontSize: "12px",
-              color: "#475569",
-              cursor: "pointer",
-            }}
-          >
-            <input className="input-compact" className="input-compact"
-              type="checkbox"
-              checked={agreedToTerms}
-              onChange={(e) => setAgreedToTerms(e.target.checked)}
-              style={{
-                width: "14px",
-                height: "14px",
-                margin: 0,
-                cursor: "pointer",
-              }}
-            />
-
-            <span
-              onDoubleClick={(e) => {
-                e.preventDefault();
-                setShowTerms((current) => !current);
-              }}
-              title="Double-click to read Terms & Conditions"
-              style={{
-                fontWeight: 700,
-                cursor: "pointer",
-                userSelect: "none",
-              }}
+          {/* ROW 4: ACTION ROW — LEFT: Forgot Password? | RIGHT: □ I Agree */}
+          <div style={styles.actionRow}>
+            <button
+              type="button"
+              style={styles.linkButton}
+              onClick={() => router.push("/forgot-password")}
             >
-              I Agree
-            </span>
-          </label>
-<button
-            type="button"
-            style={styles.linkButton}
-            onClick={() => router.push("/forgot-password")}
-          >
-            Forgot Password?
-          </button>
-        </div>
-      </section>
+              Forgot Password?
+            </button>
+
+            <label style={styles.agreeLabel}>
+              <input
+                type="checkbox"
+                checked={agreedToTerms}
+                onChange={(e) => setAgreedToTerms(e.target.checked)}
+                style={{ width: "14px", height: "14px", cursor: "pointer", margin: 0 }}
+              />
+              <span
+                onDoubleClick={(e) => {
+                  e.preventDefault();
+                  setShowTerms((prev) => !prev);
+                }}
+                title="Double-click to read Terms & Conditions"
+                style={{ fontWeight: 800, color: "#800020", cursor: "pointer", userSelect: "none" }}
+              >
+                I Agree
+              </span>
+            </label>
+          </div>
+
+        </section>
+      </div>
     </main>
   );
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  page: {
+  pageContainer: {
     minHeight: "100vh",
-    background: "#f1f5f9",
+    background: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "20px 16px",
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+    boxSizing: "border-box"
+  },
+  contentWrapper: {
     display: "grid",
-    placeItems: "center",
-    padding: 16,
-    fontFamily: "Arial, sans-serif"
+    gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+    gap: "32px",
+    maxWidth: "840px",
+    width: "100%",
+    alignItems: "center"
+  },
+  promoArea: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "18px",
+    padding: "8px"
+  },
+  promoPill: {
+    display: "inline-block",
+    background: "#800020",
+    color: "#ffffff",
+    padding: "6px 14px",
+    borderRadius: "20px",
+    fontSize: "12px",
+    fontWeight: "800",
+    alignSelf: "flex-start",
+    letterSpacing: "0.4px"
+  },
+  promoGroup: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "2px"
+  },
+  promoRole: {
+    fontSize: "11px",
+    fontWeight: "800",
+    color: "#800020",
+    textTransform: "uppercase",
+    letterSpacing: "0.5px"
+  },
+  promoTitle: {
+    fontSize: "15px",
+    fontWeight: "800",
+    color: "#0f172a"
+  },
+  promoDesc: {
+    fontSize: "12px",
+    color: "#475569"
   },
   card: {
     width: "100%",
-    maxWidth: 440,
+    maxWidth: "420px",
     background: "#ffffff",
     borderRadius: 18,
-    padding: 28,
-    boxShadow: "0 10px 35px rgba(15,23,42,.10)",
-    boxSizing: "border-box"
-  },
-  logoIcon: {
-    fontSize: 42,
-    textAlign: "center",
-    marginBottom: 4
+    padding: "26px",
+    boxShadow: "0 10px 35px rgba(128,0,32,.08)",
+    border: "1px solid #e2e8f0",
+    boxSizing: "border-box",
+    margin: "0 auto"
   },
   logo: {
     textAlign: "center",
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: 900,
-    color: "#7f1d1d",
+    color: "#800020",
     margin: 0
   },
   subtitle: {
     textAlign: "center",
     color: "#64748b",
-    fontSize: 14,
-    margin: "4px 0 20px"
+    fontSize: 13,
+    margin: "2px 0 14px",
+    fontWeight: "600"
   },
   tabs: {
     display: "grid",
     gridTemplateColumns: "1fr 1fr",
-    gap: 8,
+    gap: 6,
     padding: 4,
-    background: "#e2e8f0",
+    background: "#f1f5f9",
     borderRadius: 10,
-    marginBottom: 20
+    marginBottom: 18
   },
   tab: {
     border: 0,
     background: "transparent",
-    padding: "10px 0",
+    padding: "8px 0",
     borderRadius: 8,
     cursor: "pointer",
     fontWeight: 700,
-    fontSize: 14,
+    fontSize: 13,
     color: "#64748b"
   },
   activeTab: {
-    background: "#ffffff",
-    color: "#0f172a",
-    boxShadow: "0 2px 6px rgba(0,0,0,.08)"
+    background: "#800020",
+    color: "#ffffff",
+    boxShadow: "0 2px 6px rgba(128,0,32,.2)"
   },
-  title: {
-    fontSize: 20,
-    fontWeight: 800,
-    margin: "0 0 4px",
-    color: "#0f172a"
-  },
-  description: {
-    color: "#64748b",
-    fontSize: 13,
-    margin: "0 0 16px"
-  },
-  field: {
-    marginBottom: 16
+  fieldFullWidth: {
+    marginBottom: 14,
+    width: "100%"
   },
   label: {
     display: "block",
     fontWeight: 700,
-    fontSize: 13,
-    marginBottom: 6,
+    fontSize: 12,
+    marginBottom: 5,
     color: "#334155"
   },
-  input: {
+  inputFull: {
     width: "100%",
     boxSizing: "border-box",
-    padding: "12px 14px",
+    padding: "11px 13px",
     border: "1px solid #cbd5e1",
-    borderRadius: 9,
-    fontSize: 15,
-    background: "#ffffff"
+    borderRadius: 8,
+    fontSize: 14,
+    background: "#ffffff",
+    outline: "none"
   },
   submit: {
     width: "100%",
-    padding: 14,
+    padding: 13,
     border: 0,
-    borderRadius: 10,
-    background: "#7f1d1d",
+    borderRadius: 8,
+    background: "#800020",
     color: "#ffffff",
     fontWeight: 800,
-    fontSize: 16,
+    fontSize: 15,
+    marginTop: 4
+  },
+  actionRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: "16px",
+    paddingTop: "12px",
+    borderTop: "1px solid #f1f5f9"
+  },
+  linkButton: {
+    border: 0,
+    background: "transparent",
+    color: "#2563eb",
+    fontWeight: 700,
+    fontSize: 12,
     cursor: "pointer",
-    marginTop: 8
+    padding: 0
+  },
+  agreeLabel: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "6px",
+    fontSize: "12px",
+    color: "#334155",
+    cursor: "pointer"
   },
   error: {
-    padding: 12,
+    padding: 10,
     background: "#fee2e2",
     color: "#991b1b",
-    borderRadius: 9,
-    fontSize: 13,
+    borderRadius: 8,
+    fontSize: 12,
     fontWeight: 700,
-    marginBottom: 16
+    marginBottom: 14
   },
   success: {
-    padding: 12,
+    padding: 10,
     background: "#dcfce7",
     color: "#166534",
-    borderRadius: 9,
-    fontSize: 13,
+    borderRadius: 8,
+    fontSize: 12,
     fontWeight: 700,
-    marginBottom: 16
+    marginBottom: 14
   },
   loadingText: {
     textAlign: "center",
     color: "#64748b",
     marginTop: 10
-  },
-  links: {
-    marginTop: 18,
-    textAlign: "center"
-  },
-  linkButton: {
-    border: 0,
-    background: "transparent",
-    color: "#0f766e",
-    fontWeight: 700,
-    fontSize: 13,
-    cursor: "pointer"
   }
 };
-
-
-
-

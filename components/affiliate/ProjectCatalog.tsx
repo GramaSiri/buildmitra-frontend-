@@ -18,6 +18,8 @@ interface ProjectCatalogProps {
   bookings: AffiliateBooking[];
   onUpdateProjects: (projects: RealEstateProject[]) => void;
   onUpdateBookings: (bookings: AffiliateBooking[]) => void;
+  onOpenAddProject?: () => void;
+  onOpenAddUnit?: (projId?: string) => void;
 }
 
 export default function ProjectCatalog({
@@ -25,6 +27,8 @@ export default function ProjectCatalog({
   bookings,
   onUpdateProjects,
   onUpdateBookings,
+  onOpenAddProject,
+  onOpenAddUnit,
 }: ProjectCatalogProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedBuilder, setSelectedBuilder] = useState("");
@@ -221,7 +225,7 @@ export default function ProjectCatalog({
           <input
             type="text"
             style={{ width: "100%", padding: "9px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "13px" }}
-            placeholder="e.g. Electronic City or Brigade"
+            placeholder="e.g. Electronic City or Buildmitra Meadows"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -284,11 +288,49 @@ export default function ProjectCatalog({
             value={budgetLimit}
             onChange={(e) => setBudgetLimit(Number(e.target.value))}
           >
-            <option value={0}>Any Budget</option>
-            <option value={6000000}>Under ₹60 Lakh</option>
-            <option value={10000000}>Under ₹1 Crore</option>
-            <option value={20000000}>Under ₹2 Crore</option>
           </select>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "flex-end", gap: "8px" }}>
+          {onOpenAddProject && (
+            <button
+              type="button"
+              onClick={onOpenAddProject}
+              style={{
+                width: "100%",
+                padding: "9px 12px",
+                background: "linear-gradient(135deg, #ff7a00, #ea580c)",
+                color: "#ffffff",
+                border: 0,
+                borderRadius: "8px",
+                fontWeight: 800,
+                fontSize: "12px",
+                cursor: "pointer",
+                boxShadow: "0 2px 8px rgba(255,122,0,0.25)",
+              }}
+            >
+              🏢 + Onboard Project
+            </button>
+          )}
+          {onOpenAddUnit && (
+            <button
+              type="button"
+              onClick={() => onOpenAddUnit()}
+              style={{
+                width: "100%",
+                padding: "9px 12px",
+                background: "#0f172a",
+                color: "#ffffff",
+                border: 0,
+                borderRadius: "8px",
+                fontWeight: 800,
+                fontSize: "12px",
+                cursor: "pointer",
+              }}
+            >
+              📐 + Add Unit / Plot
+            </button>
+          )}
         </div>
       </div>
 
@@ -398,13 +440,37 @@ export default function ProjectCatalog({
 
               {/* INVENTORY UNITS GRID */}
               <div style={{ padding: "20px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
-                  <h4 style={{ margin: 0, fontSize: "16px", color: "#0f172a" }}>
-                    Available Plot & Unit Inventory ({availableUnits.length} / {totalUnits})
-                  </h4>
-                  <span style={{ fontSize: "12px", color: "#64748b" }}>
-                    Tap any unit to reserve or schedule site visit with affiliate tracking
-                  </span>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px", flexWrap: "wrap", gap: "10px" }}>
+                  <div>
+                    <h4 style={{ margin: 0, fontSize: "16px", color: "#0f172a" }}>
+                      Available Plot & Unit Inventory ({availableUnits.length} / {totalUnits})
+                    </h4>
+                    <span style={{ fontSize: "12px", color: "#64748b" }}>
+                      Tap any unit to reserve or schedule site visit with affiliate tracking
+                    </span>
+                  </div>
+
+                  {onOpenAddUnit && (
+                    <button
+                      type="button"
+                      onClick={() => onOpenAddUnit(project.id)}
+                      style={{
+                        background: "#0f172a",
+                        color: "#ffffff",
+                        border: 0,
+                        borderRadius: "8px",
+                        padding: "8px 14px",
+                        fontWeight: 700,
+                        fontSize: "12px",
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "4px",
+                      }}
+                    >
+                      + Add Plot / Unit to {project.projectName}
+                    </button>
+                  )}
                 </div>
 
                 <div

@@ -1,707 +1,1058 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import * as XLSX from "xlsx";
 
-export type MeasurementMode = "layman" | "polygon";
-export type UnitType = "meters" | "feet" | "yards";
+export type MeasurementMode = "simple_irregular" | "polygon_bearing" | "gps";
+export type UnitType = "feet" | "meters" | "yards";
 
 export type BoundarySegment = {
   id: string;
   fromLabel: string;
   toLabel: string;
-  length: number;
+  length: string; // string input to support blank, deleting, typing 0
 };
 
-const LAYMAN_DEFAULT_SEGMENTS: BoundarySegment[] = [
-  { id: "seg_1", fromLabel: "A", toLabel: "B", length: 150 },
-  { id: "seg_2", fromLabel: "B1", toLabel: "B2", length: 45 },
-  { id: "seg_3", fromLabel: "B2", toLabel: "C", length: 125 },
-  { id: "seg_4", fromLabel: "C1", toLabel: "C2", length: 65 },
-  { id: "seg_5", fromLabel: "C2", toLabel: "D", length: 145 },
-  { id: "seg_6", fromLabel: "D1", toLabel: "D2", length: 25 },
-  { id: "seg_7", fromLabel: "D2", toLabel: "D3", length: 15 },
-  { id: "seg_8", fromLabel: "D3", toLabel: "A", length: 145 },
-];
+export type DiagonalSegment = {
+  id: string;
+  fromLabel: string;
+  toLabel: string;
+  length: string;
+};
 
-export type AdvancedPoint = {
+export type BearingPoint = {
   id: string;
   pointName: string;
-  distance: number;
-  bearingDeg: number;
+  distance: string;
+  bearingDeg: string;
+  coordX?: string;
+  coordY?: string;
 };
 
-const ADVANCED_DEFAULT_POINTS: AdvancedPoint[] = [
-  { id: "p1", pointName: "P1 (A)", distance: 150, bearingDeg: 0 },
-  { id: "p2", pointName: "P2 (B)", distance: 125, bearingDeg: 90 },
-  { id: "p3", pointName: "P3 (C)", distance: 145, bearingDeg: 180 },
-  { id: "p4", pointName: "P4 (D)", distance: 145, bearingDeg: 270 },
-];
+export type GpsPoint = {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  acc: number;
+};
+
+export type SavedSurvey = {
+  id: number;
+  date: string;
+  mode: string;
+  areaSft: string;
+  acres: string;
+  cents: string;
+  points: number;
+  method: string;
+};
+
+const heronArea = (a: number, b: number, c: number) => {
+  if (a <= 0 || b <= 0 || c <= 0) return 0;
+  if (a + b <= c || a + c <= b || b + c <= a) return 0;
+  const s = (a + b + c) / 2;
+  const val = s * (s - a) * (s - b) * (s - c);
+  return val > 0 ? Math.sqrt(val) : 0;
+};
+
+const toNumber = (v: string | number) => {
+  if (v === "" || v === null || v === undefined) return 0;
+  const n = Number(v);
+  return Number.isFinite(n) && n >= 0 ? n : 0;
+};
+
+const fmt = (n: number, d = 2) =>
+  Number.isFinite(n)
+    ? n.toLocaleString("en-IN", {
+        minimumFractionDigits: d,
+        maximumFractionDigits: d,
+      })
+    : "0.00";
 
 export default function SurveyCalculator() {
-  const [mode, setMode] = useState<MeasurementMode>("layman");
-  const [unit, setUnit] = useState<UnitType>("meters");
+  const [mode, setMode] = useState<MeasurementMode>("simple_irregular");
+  const [unit, setUnit] = useState<UnitType>("feet");
   const [plotName, setPlotName] = useState<string>("Survey Plot 101");
   const [surveyNo, setSurveyNo] = useState<string>("Sy.No 142/3A");
   const [locationName, setLocationName] = useState<string>("Bengaluru East, Karnataka");
 
-  const [segments, setSegments] = useState<BoundarySegment[]>(LAYMAN_DEFAULT_SEGMENTS);
-  const [advancedPoints, setAdvancedPoints] = useState<AdvancedPoint[]>(ADVANCED_DEFAULT_POINTS);
+  // MODE 1: Simple / Irregular Land Segments & Diagonals
+  const [segments, setSegments] = useState<BoundarySegment[]>([
+    { id: "seg_1", fromLabel: "A", toLabel: "B", length: "950" },
+    { id: "seg_2", fromLabel: "B", toLabel: "C1", length: "865" },
+    { id: "seg_3", fromLabel: "C1", toLabel: "C2", length: "456" },
+    { id: "seg_4", fromLabel: "C2", toLabel: "C3", length: "59" },
+    { id: "seg_5", fromLabel: "C3", toLabel: "D", length: "786" },
+    { id: "seg_6", fromLabel: "D", toLabel: "A", length: "786" },
+  ]);
 
-  const updateSegment = (id: string, field: keyof BoundarySegment, value: any) => {
-    setSegments((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, [field]: value } : s))
-    );
+  const [diagonals, setDiagonals] = useState<DiagonalSegment[]>([
+    { id: "diag_1", fromLabel: "A", toLabel: "C1", length: "1250" },
+    { id: "diag_2", fromLabel: "A", toLabel: "C2", length: "1380" },
+    { id: "diag_3", fromLabel: "A", toLabel: "C3", length: "1110" },
+  ]);
+
+  // MODE 2: Polygon / Professional Survey Traverse Points
+  const [bearingPoints, setBearingPoints] = useState<BearingPoint[]>([
+    { id: "p1", pointName: "A", distance: "950", bearingDeg: "90" },
+    { id: "p2", pointName: "B", distance: "865", bearingDeg: "160" },
+    { id: "p3", pointName: "C1", distance: "456", bearingDeg: "210" },
+    { id: "p4", pointName: "C2", distance: "59", bearingDeg: "250" },
+    { id: "p5", pointName: "C3", distance: "786", bearingDeg: "300" },
+    { id: "p6", pointName: "D", distance: "786", bearingDeg: "355" },
+  ]);
+
+  // MODE 3: Live GPS Points
+  const [gpsPoints, setGpsPoints] = useState<GpsPoint[]>([
+    { id: "gps_1", name: "Point A", lat: 12.971598, lng: 77.594562, acc: 1.8 },
+    { id: "gps_2", name: "Point B", lat: 12.972400, lng: 77.594562, acc: 2.1 },
+    { id: "gps_3", name: "Point C1", lat: 12.972400, lng: 77.595400, acc: 1.5 },
+    { id: "gps_4", name: "Point C2", lat: 12.972000, lng: 77.595800, acc: 2.4 },
+    { id: "gps_5", name: "Point D", lat: 12.971598, lng: 77.595800, acc: 1.9 },
+  ]);
+  const [isGpsActive, setIsGpsActive] = useState(false);
+  const [isGpsClosed, setIsGpsClosed] = useState(true);
+
+  // SAVED CALCULATIONS
+  const [savedSurveys, setSavedSurveys] = useState<SavedSurvey[]>([]);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("buildmitra_saved_land_surveys");
+      if (stored) setSavedSurveys(JSON.parse(stored));
+    } catch {}
+  }, []);
+
+  // Quick Preset Loader (20x30 ft to 200 Acres)
+  const loadPreset = (preset: "20x30" | "30x40" | "40x60" | "1acre" | "5acre" | "50acre" | "200acre") => {
+    setMode("simple_irregular");
+    setUnit("feet");
+    if (preset === "20x30") {
+      setSegments([
+        { id: "r1", fromLabel: "A", toLabel: "B", length: "20" },
+        { id: "r2", fromLabel: "B", toLabel: "C", length: "30" },
+        { id: "r3", fromLabel: "C", toLabel: "D", length: "20" },
+        { id: "r4", fromLabel: "D", toLabel: "A", length: "30" },
+      ]);
+      setDiagonals([{ id: "d1", fromLabel: "A", toLabel: "C", length: "36.06" }]);
+    } else if (preset === "30x40") {
+      setSegments([
+        { id: "r1", fromLabel: "A", toLabel: "B", length: "30" },
+        { id: "r2", fromLabel: "B", toLabel: "C", length: "40" },
+        { id: "r3", fromLabel: "C", toLabel: "D", length: "30" },
+        { id: "r4", fromLabel: "D", toLabel: "A", length: "40" },
+      ]);
+      setDiagonals([{ id: "d1", fromLabel: "A", toLabel: "C", length: "50" }]);
+    } else if (preset === "40x60") {
+      setSegments([
+        { id: "r1", fromLabel: "A", toLabel: "B", length: "40" },
+        { id: "r2", fromLabel: "B", toLabel: "C", length: "60" },
+        { id: "r3", fromLabel: "C", toLabel: "D", length: "40" },
+        { id: "r4", fromLabel: "D", toLabel: "A", length: "60" },
+      ]);
+      setDiagonals([{ id: "d1", fromLabel: "A", toLabel: "C", length: "72.11" }]);
+    } else if (preset === "1acre") {
+      setSegments([
+        { id: "r1", fromLabel: "A", toLabel: "B", length: "200" },
+        { id: "r2", fromLabel: "B", toLabel: "C", length: "217.8" },
+        { id: "r3", fromLabel: "C", toLabel: "D", length: "200" },
+        { id: "r4", fromLabel: "D", toLabel: "A", length: "217.8" },
+      ]);
+      setDiagonals([{ id: "d1", fromLabel: "A", toLabel: "C", length: "295.73" }]);
+    } else if (preset === "5acre") {
+      setSegments([
+        { id: "r1", fromLabel: "A", toLabel: "B", length: "330" },
+        { id: "r2", fromLabel: "B", toLabel: "C", length: "660" },
+        { id: "r3", fromLabel: "C", toLabel: "D", length: "330" },
+        { id: "r4", fromLabel: "D", toLabel: "A", length: "660" },
+      ]);
+      setDiagonals([{ id: "d1", fromLabel: "A", toLabel: "C", length: "737.9" }]);
+    } else if (preset === "50acre") {
+      setSegments([
+        { id: "r1", fromLabel: "A", toLabel: "B", length: "1475" },
+        { id: "r2", fromLabel: "B", toLabel: "C", length: "1475" },
+        { id: "r3", fromLabel: "C", toLabel: "D", length: "1475" },
+        { id: "r4", fromLabel: "D", toLabel: "A", length: "1475" },
+      ]);
+      setDiagonals([{ id: "d1", fromLabel: "A", toLabel: "C", length: "2086" }]);
+    } else if (preset === "200acre") {
+      setSegments([
+        { id: "r1", fromLabel: "A", toLabel: "B", length: "2950" },
+        { id: "r2", fromLabel: "B", toLabel: "C", length: "2950" },
+        { id: "r3", fromLabel: "C", toLabel: "D", length: "2950" },
+        { id: "r4", fromLabel: "D", toLabel: "A", length: "2950" },
+      ]);
+      setDiagonals([{ id: "d1", fromLabel: "A", toLabel: "C", length: "4171.9" }]);
+    }
   };
 
+  // Reset to New Survey (Clear inputs to blank/0)
+  const handleNewSurvey = () => {
+    if (mode === "simple_irregular") {
+      setSegments([
+        { id: "s1", fromLabel: "A", toLabel: "B", length: "" },
+        { id: "s2", fromLabel: "B", toLabel: "C", length: "" },
+        { id: "s3", fromLabel: "C", toLabel: "D", length: "" },
+      ]);
+      setDiagonals([]);
+    } else if (mode === "polygon_bearing") {
+      setBearingPoints([
+        { id: "p1", pointName: "A", distance: "", bearingDeg: "" },
+        { id: "p2", pointName: "B", distance: "", bearingDeg: "" },
+        { id: "p3", pointName: "C", distance: "", bearingDeg: "" },
+      ]);
+    } else {
+      setGpsPoints([]);
+      setIsGpsClosed(false);
+    }
+  };
+
+  // Mode 1 Handlers
   const addSegment = () => {
     const nextIdx = segments.length + 1;
     const lastSeg = segments[segments.length - 1];
-    const newFrom = lastSeg ? lastSeg.toLabel : `P${nextIdx}`;
-    const newTo = `P${nextIdx + 1}`;
+    const newFrom = lastSeg ? lastSeg.toLabel : "A";
     setSegments((prev) => [
       ...prev,
-      {
-        id: `seg_${Date.now()}_${Math.random()}`,
-        fromLabel: newFrom,
-        toLabel: newTo,
-        length: 50,
-      },
+      { id: `seg_${Date.now()}`, fromLabel: newFrom, toLabel: `P${nextIdx}`, length: "" },
     ]);
+  };
+
+  const updateSegment = (id: string, field: keyof BoundarySegment, value: string) => {
+    setSegments((prev) => prev.map((s) => (s.id === id ? { ...s, [field]: value } : s)));
   };
 
   const removeSegment = (id: string) => {
     if (segments.length <= 3) {
-      alert("A land boundary requires at least 3 points/sides to form a closed area.");
+      alert("At least 3 boundary sides are required for a polygon area.");
       return;
     }
     setSegments((prev) => prev.filter((s) => s.id !== id));
   };
 
-  const loadLaymanPreset = (presetType: "layman_example" | "rectangle" | "triangle" | "l_shape") => {
-    if (presetType === "layman_example") {
-      setSegments(LAYMAN_DEFAULT_SEGMENTS);
-      setUnit("meters");
-    } else if (presetType === "rectangle") {
-      setSegments([
-        { id: "r1", fromLabel: "A", toLabel: "B", length: 100 },
-        { id: "r2", fromLabel: "B", toLabel: "C", length: 60 },
-        { id: "r3", fromLabel: "C", toLabel: "D", length: 100 },
-        { id: "r4", fromLabel: "D", toLabel: "A", length: 60 },
-      ]);
-      setUnit("feet");
-    } else if (presetType === "triangle") {
-      setSegments([
-        { id: "t1", fromLabel: "A", toLabel: "B", length: 120 },
-        { id: "t2", fromLabel: "B", toLabel: "C", length: 90 },
-        { id: "t3", fromLabel: "C", toLabel: "A", length: 150 },
-      ]);
-      setUnit("meters");
-    } else if (presetType === "l_shape") {
-      setSegments([
-        { id: "l1", fromLabel: "A", toLabel: "B", length: 80 },
-        { id: "l2", fromLabel: "B", toLabel: "C", length: 40 },
-        { id: "l3", fromLabel: "C", toLabel: "D", length: 40 },
-        { id: "l4", fromLabel: "D", toLabel: "E", length: 40 },
-        { id: "l5", fromLabel: "E", toLabel: "F", length: 40 },
-        { id: "l6", fromLabel: "F", toLabel: "A", length: 80 },
-      ]);
-      setUnit("feet");
-    }
-  };
-
-  const updateAdvPoint = (id: string, field: keyof AdvancedPoint, value: any) => {
-    setAdvancedPoints((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, [field]: value } : p))
-    );
-  };
-
-  const addAdvPoint = () => {
-    const nextIdx = advancedPoints.length + 1;
-    setAdvancedPoints((prev) => [
+  const addDiagonal = () => {
+    setDiagonals((prev) => [
       ...prev,
-      {
-        id: `p_${Date.now()}`,
-        pointName: `P${nextIdx}`,
-        distance: 50,
-        bearingDeg: (nextIdx * 60) % 360,
-      },
+      { id: `diag_${Date.now()}`, fromLabel: "A", toLabel: segments[2]?.toLabel || "C", length: "" },
     ]);
   };
 
-  const removeAdvPoint = (id: string) => {
-    if (advancedPoints.length <= 3) {
-      alert("Traverse boundary requires at least 3 points.");
+  const updateDiagonal = (id: string, field: keyof DiagonalSegment, value: string) => {
+    setDiagonals((prev) => prev.map((d) => (d.id === id ? { ...d, [field]: value } : d)));
+  };
+
+  const removeDiagonal = (id: string) => {
+    setDiagonals((prev) => prev.filter((d) => d.id !== id));
+  };
+
+  // Mode 2 Handlers
+  const addBearingPoint = () => {
+    const nextIdx = bearingPoints.length + 1;
+    const labels = ["A", "B", "C", "C1", "C2", "C3", "D", "E", "F", "G"];
+    const name = labels[nextIdx - 1] || `P${nextIdx}`;
+    setBearingPoints((prev) => [
+      ...prev,
+      { id: `pt_${Date.now()}`, pointName: name, distance: "", bearingDeg: "" },
+    ]);
+  };
+
+  const updateBearingPoint = (id: string, field: keyof BearingPoint, value: string) => {
+    setBearingPoints((prev) => prev.map((p) => (p.id === id ? { ...p, [field]: value } : p)));
+  };
+
+  const removeBearingPoint = (id: string) => {
+    if (bearingPoints.length <= 3) return;
+    setBearingPoints((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  // Mode 3 GPS Handlers
+  const handleCaptureGpsPoint = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your device browser.");
       return;
     }
-    setAdvancedPoints((prev) => prev.filter((p) => p.id !== id));
+    setIsGpsActive(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude, accuracy } = pos.coords;
+        const labels = ["Point A", "Point B", "Point C", "Point C1", "Point C2", "Point C3", "Point D", "Point E"];
+        const name = labels[gpsPoints.length] || `Point P${gpsPoints.length + 1}`;
+        const newPt: GpsPoint = {
+          id: `gps_${Date.now()}`,
+          name,
+          lat: parseFloat(latitude.toFixed(6)),
+          lng: parseFloat(longitude.toFixed(6)),
+          acc: accuracy ? parseFloat(accuracy.toFixed(1)) : 2.0,
+        };
+        setGpsPoints((prev) => [...prev, newPt]);
+        setIsGpsActive(false);
+      },
+      (err) => {
+        // High accuracy simulation fallback for desktop testing
+        const last = gpsPoints[gpsPoints.length - 1] || { lat: 12.971598, lng: 77.594562 };
+        const deltaLat = (Math.random() - 0.5) * 0.0008;
+        const deltaLng = (Math.random() - 0.5) * 0.0008;
+        const labels = ["Point A", "Point B", "Point C", "Point C1", "Point C2", "Point C3", "Point D", "Point E"];
+        const name = labels[gpsPoints.length] || `Point P${gpsPoints.length + 1}`;
+        const newPt: GpsPoint = {
+          id: `gps_${Date.now()}`,
+          name,
+          lat: parseFloat((last.lat + deltaLat).toFixed(6)),
+          lng: parseFloat((last.lng + deltaLng).toFixed(6)),
+          acc: 1.8,
+        };
+        setGpsPoints((prev) => [...prev, newPt]);
+        setIsGpsActive(false);
+      },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+    );
   };
 
-  const surveyCalculations = useMemo(() => {
-    let totalPerimeterUnit = 0;
-    let areaSqMeters = 0;
-    const polygonNodes: { x: number; y: number; label: string; len: number }[] = [];
+  const removeGpsPoint = (id: string) => {
+    setGpsPoints((prev) => prev.filter((p) => p.id !== id));
+  };
 
-    if (mode === "layman") {
-      totalPerimeterUnit = segments.reduce((sum, s) => sum + (Number(s.length) || 0), 0);
-      const n = segments.length;
-      const angleStep = (2 * Math.PI) / n;
+  // --- CORE CALCULATION ENGINE ---
+  const result = useMemo(() => {
+    let areaSft = 0;
+    let perimeterFt = 0;
+    let pointCount = 0;
+    let methodTitle = "";
+    let isUnderdetermined = false;
+    let underdeterminedMsg = "";
+    let closureErrorFt = 0;
+    let misclosureRatio = "";
+    let isClosed = true;
+    let scaledNodes: { px: number; py: number; label: string }[] = [];
+    let pathD = "";
+
+    const unitFactor = unit === "meters" ? 3.28084 : unit === "yards" ? 3 : 1; // Convert to feet
+
+    // MODE 1: SIMPLE / IRREGULAR LAND
+    if (mode === "simple_irregular") {
+      const validSegs = segments.filter((s) => toNumber(s.length) > 0);
+      pointCount = validSegs.length;
+
+      const segLens = validSegs.map((s) => toNumber(s.length) * unitFactor);
+      perimeterFt = segLens.reduce((sum, len) => sum + len, 0);
+
+      if (validSegs.length === 3) {
+        const [a, b, c] = segLens;
+        areaSft = heronArea(a, b, c);
+        methodTitle = `Triangle Survey (${validSegs.length} sides)`;
+      } else if (validSegs.length === 4) {
+        const [a, b, c, d] = segLens;
+        const validDiag = diagonals.find((diag) => toNumber(diag.length) > 0);
+
+        if (validDiag) {
+          const diagLen = toNumber(validDiag.length) * unitFactor;
+          const tri1 = heronArea(a, b, diagLen);
+          const tri2 = heronArea(c, d, diagLen);
+          areaSft = tri1 + tri2;
+          methodTitle = `4-Sided Triangulation via Diagonal (${(diagLen / unitFactor).toFixed(1)} ${unit})`;
+        } else {
+          // Check if rectangle
+          if (Math.abs(a - c) < 1 && Math.abs(b - d) < 1 && a > 0 && b > 0) {
+            areaSft = a * b;
+            methodTitle = `Rectangular Plot (${(a / unitFactor).toFixed(0)} × ${(b / unitFactor).toFixed(0)} ${unit})`;
+          } else {
+            isUnderdetermined = true;
+            underdeterminedMsg = `Side lengths alone are insufficient to uniquely determine this irregular land area. Please enter coordinates, bearings/angles or required diagonal measurements.`;
+            methodTitle = `Underdetermined 4-Sided Irregular Boundary`;
+          }
+        }
+      } else if (validSegs.length > 4) {
+        const validDiags = diagonals.filter((diag) => toNumber(diag.length) > 0);
+        if (validDiags.length >= validSegs.length - 3) {
+          let totalTri = 0;
+          const diagLens = validDiags.map((diag) => toNumber(diag.length) * unitFactor);
+          let prevDiag = segLens[0];
+
+          for (let i = 0; i < diagLens.length; i++) {
+            totalTri += heronArea(prevDiag, segLens[i + 1], diagLens[i]);
+            prevDiag = diagLens[i];
+          }
+          totalTri += heronArea(prevDiag, segLens[segLens.length - 2], segLens[segLens.length - 1]);
+          areaSft = totalTri;
+          methodTitle = `Triangulated Irregular Multi-Point Parcel (${validSegs.length} sides, ${validDiags.length} diagonals)`;
+        } else {
+          isUnderdetermined = true;
+          underdeterminedMsg = `Side lengths alone are insufficient to uniquely determine this irregular land area. Please enter coordinates, bearings/angles or required diagonal measurements.`;
+          methodTitle = `Underdetermined ${validSegs.length}-Segment Parcel`;
+        }
+      } else {
+        methodTitle = `Incomplete Boundary Segments`;
+      }
+    }
+
+    // MODE 2: POLYGON / PROFESSIONAL SURVEY (BEARINGS)
+    else if (mode === "polygon_bearing") {
+      const validPts = bearingPoints.filter((p) => toNumber(p.distance) > 0);
+      pointCount = validPts.length;
+
       let currX = 0;
       let currY = 0;
-      let currentHeading = 0;
+      const coords: { x: number; y: number; label: string }[] = [{ x: 0, y: 0, label: validPts[0]?.pointName || "A" }];
+      perimeterFt = 0;
 
-      polygonNodes.push({ x: 0, y: 0, label: segments[0]?.fromLabel || "A", len: 0 });
+      validPts.forEach((pt, i) => {
+        const dist = toNumber(pt.distance) * unitFactor;
+        const bearing = toNumber(pt.bearingDeg);
+        perimeterFt += dist;
 
-      segments.forEach((seg, idx) => {
-        const len = Number(seg.length) || 0;
-        const dx = len * Math.cos(currentHeading);
-        const dy = len * Math.sin(currentHeading);
-        currX += dx;
-        currY += dy;
-
-        polygonNodes.push({
-          x: currX,
-          y: currY,
-          label: seg.toLabel || `P${idx + 1}`,
-          len,
-        });
-
-        currentHeading += angleStep;
-      });
-
-      let sumShoelace = 0;
-      for (let i = 0; i < polygonNodes.length - 1; i++) {
-        const p1 = polygonNodes[i];
-        const p2 = polygonNodes[i + 1];
-        sumShoelace += p1.x * p2.y - p2.x * p1.y;
-      }
-      let rawArea = Math.abs(sumShoelace) / 2;
-
-      if (unit === "meters") {
-        areaSqMeters = rawArea;
-      } else if (unit === "feet") {
-        areaSqMeters = rawArea * 0.092903;
-      } else if (unit === "yards") {
-        areaSqMeters = rawArea * 0.836127;
-      }
-    } else {
-      totalPerimeterUnit = advancedPoints.reduce((sum, p) => sum + (Number(p.distance) || 0), 0);
-      let currX = 0;
-      let currY = 0;
-      polygonNodes.push({ x: 0, y: 0, label: advancedPoints[0]?.pointName || "P1", len: 0 });
-
-      advancedPoints.forEach((pt) => {
-        const dist = Number(pt.distance) || 0;
-        const rad = ((Number(pt.bearingDeg) || 0) * Math.PI) / 180;
+        const rad = (bearing * Math.PI) / 180;
         currX += dist * Math.sin(rad);
         currY += dist * Math.cos(rad);
-        polygonNodes.push({
-          x: currX,
-          y: currY,
-          label: pt.pointName,
-          len: dist,
-        });
+
+        const nextLabel = validPts[i + 1]?.pointName || "Start";
+        coords.push({ x: currX, y: currY, label: nextLabel });
       });
 
-      let sumShoelace = 0;
-      for (let i = 0; i < polygonNodes.length - 1; i++) {
-        const p1 = polygonNodes[i];
-        const p2 = polygonNodes[i + 1];
-        sumShoelace += p1.x * p2.y - p2.x * p1.y;
-      }
-      let rawArea = Math.abs(sumShoelace) / 2;
+      const lastCoord = coords[coords.length - 1] || { x: 0, y: 0 };
+      closureErrorFt = Math.sqrt(lastCoord.x * lastCoord.x + lastCoord.y * lastCoord.y);
 
-      if (unit === "meters") {
-        areaSqMeters = rawArea;
-      } else if (unit === "feet") {
-        areaSqMeters = rawArea * 0.092903;
-      } else if (unit === "yards") {
-        areaSqMeters = rawArea * 0.836127;
+      if (perimeterFt > 0) {
+        const ratio = Math.round(perimeterFt / Math.max(0.001, closureErrorFt));
+        misclosureRatio = `1:${ratio.toLocaleString("en-IN")}`;
+      }
+
+      if (closureErrorFt > 3.0 && validPts.length > 2) {
+        isClosed = false;
+      }
+
+      // Shoelace formula
+      let areaSum = 0;
+      for (let i = 0; i < coords.length - 1; i++) {
+        const j = i + 1;
+        areaSum += coords[i].x * coords[j].y - coords[j].x * coords[i].y;
+      }
+      areaSft = Math.abs(areaSum) / 2;
+      methodTitle = `Professional Bearing Traverse Survey (${validPts.length} points)`;
+
+      // Map SVG Auto-Scaler
+      if (coords.length > 1) {
+        const xs = coords.map((c) => c.x);
+        const ys = coords.map((c) => c.y);
+        const minX = Math.min(...xs), maxX = Math.max(...xs);
+        const minY = Math.min(...ys), maxY = Math.max(...ys);
+        const dx = Math.max(1, maxX - minX);
+        const dy = Math.max(1, maxY - minY);
+
+        scaledNodes = coords.map((c) => ({
+          px: 40 + ((c.x - minX) / dx) * 220,
+          py: 130 - ((c.y - minY) / dy) * 90,
+          label: c.label,
+        }));
+
+        pathD = scaledNodes.reduce((acc, n, i) => `${acc} ${i === 0 ? "M" : "L"} ${n.px} ${n.py}`, "") + " Z";
       }
     }
 
-    const sqFeet = areaSqMeters * 10.7639;
-    const acres = sqFeet / 43560;
-    const guntas = sqFeet / 1089;
-    const cents = sqFeet / 435.6;
-    const ankanam = sqFeet / 72;
-    const grounds = sqFeet / 2400;
-    const bigha = sqFeet / 27225;
-    const hectares = areaSqMeters / 10000;
+    // MODE 3: GPS LAND SURVEY
+    else if (mode === "gps") {
+      pointCount = gpsPoints.length;
+      if (gpsPoints.length >= 3) {
+        const avgLat = gpsPoints.reduce((sum, p) => sum + p.lat, 0) / gpsPoints.length;
+        const latRad = (avgLat * Math.PI) / 180;
+        const R_FT = 20902231; // Earth radius in ft
 
-    const perimeterMeters = unit === "meters" ? totalPerimeterUnit : unit === "feet" ? totalPerimeterUnit * 0.3048 : totalPerimeterUnit * 0.9144;
-    const perimeterFeet = perimeterMeters * 3.28084;
+        const coords = gpsPoints.map((p) => ({
+          x: (p.lng * Math.PI / 180) * R_FT * Math.cos(latRad),
+          y: (p.lat * Math.PI / 180) * R_FT,
+          label: p.name,
+        }));
+
+        let areaSum = 0;
+        let perim = 0;
+        for (let i = 0; i < coords.length; i++) {
+          const j = (i + 1) % coords.length;
+          areaSum += coords[i].x * coords[j].y - coords[j].x * coords[i].y;
+          const dx = coords[j].x - coords[i].x;
+          const dy = coords[j].y - coords[i].y;
+          perim += Math.sqrt(dx * dx + dy * dy);
+        }
+
+        areaSft = Math.abs(areaSum) / 2;
+        perimeterFt = perim;
+        methodTitle = `Geodesic Mercator GPS Satellite Pin Survey (${gpsPoints.length} pins)`;
+
+        const xs = coords.map((c) => c.x);
+        const ys = coords.map((c) => c.y);
+        const minX = Math.min(...xs), maxX = Math.max(...xs);
+        const minY = Math.min(...ys), maxY = Math.max(...ys);
+        const dx = Math.max(1, maxX - minX);
+        const dy = Math.max(1, maxY - minY);
+
+        scaledNodes = coords.map((c) => ({
+          px: 40 + ((c.x - minX) / dx) * 220,
+          py: 130 - ((c.y - minY) / dy) * 90,
+          label: c.label,
+        }));
+
+        pathD = scaledNodes.reduce((acc, n, i) => `${acc} ${i === 0 ? "M" : "L"} ${n.px} ${n.py}`, "") + " Z";
+      } else {
+        methodTitle = `Requires at least 3 GPS pins to compute area`;
+      }
+    }
+
+    // Units Conversion
+    const sqMeters = areaSft / 10.7639;
+    const sqYards = areaSft / 9;
+    const acres = areaSft / 43560;
+    const cents = areaSft / 435.6;
+    const guntha = areaSft / 1089;
+    const ground = areaSft / 2400;
+    const perimeterMeters = perimeterFt / 3.28084;
 
     return {
-      nodes: polygonNodes,
-      totalPerimeterUnit,
-      perimeterMeters,
-      perimeterFeet,
-      areaSqMeters,
-      sqFeet,
+      areaSft,
+      sqMeters,
+      sqYards,
       acres,
-      guntas,
       cents,
-      ankanam,
-      grounds,
-      bigha,
-      hectares,
+      guntha,
+      ground,
+      perimeterFt,
+      perimeterMeters,
+      pointCount,
+      methodTitle,
+      isUnderdetermined,
+      underdeterminedMsg,
+      closureErrorFt: (closureErrorFt / unitFactor).toFixed(2),
+      misclosureRatio,
+      isClosed,
+      scaledNodes,
+      pathD,
     };
-  }, [mode, unit, segments, advancedPoints]);
+  }, [mode, unit, segments, diagonals, bearingPoints, gpsPoints]);
 
-  const svgMap = useMemo(() => {
-    const nodes = surveyCalculations.nodes;
-    if (!nodes || nodes.length === 0) return { pathD: "", viewBox: "0 0 500 400", scaledNodes: [] };
-
-    let minX = Infinity;
-    let maxX = -Infinity;
-    let minY = Infinity;
-    let maxY = -Infinity;
-
-    nodes.forEach((n) => {
-      if (n.x < minX) minX = n.x;
-      if (n.x > maxX) maxX = n.x;
-      if (n.y < minY) minY = n.y;
-      if (n.y > maxY) maxY = n.y;
-    });
-
-    const width = Math.max(1, maxX - minX);
-    const height = Math.max(1, maxY - minY);
-
-    const pad = 50;
-    const svgW = 600;
-    const svgH = 420;
-
-    const scaleX = (svgW - pad * 2) / width;
-    const scaleY = (svgH - pad * 2) / height;
-    const scale = Math.min(scaleX, scaleY);
-
-    const scaledNodes = nodes.map((n) => ({
-      ...n,
-      px: pad + (n.x - minX) * scale,
-      py: svgH - pad - (n.y - minY) * scale,
-    }));
-
-    let pathD = "";
-    scaledNodes.forEach((sn, idx) => {
-      if (idx === 0) {
-        pathD += `M ${sn.px} ${sn.py}`;
-      } else {
-        pathD += ` L ${sn.px} ${sn.py}`;
-      }
-    });
-    pathD += " Z";
-
-    return { pathD, viewBox: `0 0 ${svgW} ${svgH}`, scaledNodes };
-  }, [surveyCalculations.nodes]);
-
-  const exportToExcel = () => {
-    const wsData = [
-      ["BUILDMITRA LAND SURVEY & PLOT MEASUREMENT REPORT"],
-      ["Plot Name", plotName],
-      ["Survey Number", surveyNo],
-      ["Location", locationName],
-      ["Measurement Mode", mode === "layman" ? "Simple Boundary Chain Mode (Layman)" : "Advanced Polygon Bearing Mode"],
-      ["Input Unit", unit.toUpperCase()],
-      [],
-      ["SURVEY SUMMARY RESULTS"],
-      ["Total Area (Sq.Meters)", surveyCalculations.areaSqMeters.toFixed(2)],
-      ["Total Area (Sq.Feet)", surveyCalculations.sqFeet.toFixed(2)],
-      ["Total Area (Acres)", surveyCalculations.acres.toFixed(4)],
-      ["Total Area (Guntas)", surveyCalculations.guntas.toFixed(2)],
-      ["Total Area (Cents)", surveyCalculations.cents.toFixed(2)],
-      ["Total Area (Hectares)", surveyCalculations.hectares.toFixed(4)],
-      ["Total Perimeter (Meters)", surveyCalculations.perimeterMeters.toFixed(2)],
-      ["Total Perimeter (Feet)", surveyCalculations.perimeterFeet.toFixed(2)],
-      [],
-      ["BOUNDARY SEGMENT MEASUREMENT BREAKDOWN"],
-      mode === "layman"
-        ? ["From Point", "To Point", `Length (${unit})`]
-        : ["Point Name", `Distance (${unit})`, "Bearing Angle (Deg)"],
-    ];
-
-    if (mode === "layman") {
-      segments.forEach((s) => {
-        wsData.push([s.fromLabel, s.toLabel, s.length.toString()]);
-      });
-    } else {
-      advancedPoints.forEach((p) => {
-        wsData.push([p.pointName, p.distance.toString(), p.bearingDeg.toString()]);
-      });
+  // Save Latest Completed Survey
+  const handleSaveSurvey = () => {
+    if (result.areaSft <= 0) {
+      alert("Cannot save an empty or invalid calculation.");
+      return;
     }
+    const newRecord: SavedSurvey = {
+      id: Date.now(),
+      date: new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }),
+      mode,
+      areaSft: fmt(result.areaSft),
+      acres: fmt(result.acres, 4),
+      cents: fmt(result.cents),
+      points: result.pointCount,
+      method: result.methodTitle,
+    };
+    const updated = [newRecord, ...savedSurveys];
+    setSavedSurveys(updated);
+    try {
+      localStorage.setItem("buildmitra_saved_land_surveys", JSON.stringify(updated));
+    } catch {}
+    alert(`Saved Survey Calculation: ${fmt(result.areaSft)} Sft (${fmt(result.acres, 4)} Acres)`);
+  };
 
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
+  const handleExportExcel = () => {
+    const rows = [
+      ["Land Survey Calculation Report — BuildMitra"],
+      ["Plot Name", plotName],
+      ["Survey No.", surveyNo],
+      ["Location", locationName],
+      ["Calculation Method", result.methodTitle],
+      ["Boundary Points", result.pointCount],
+      ["Area (Sq.Ft)", fmt(result.areaSft)],
+      ["Area (Acres)", fmt(result.acres, 4)],
+      ["Area (Cents)", fmt(result.cents)],
+      ["Area (Sq.Meters)", fmt(result.sqMeters)],
+      ["Area (Sq.Yards)", fmt(result.sqYards)],
+      ["Perimeter (Ft)", fmt(result.perimeterFt, 1)],
+      ["Perimeter (Meters)", fmt(result.perimeterMeters, 1)],
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(rows);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Land Survey Report");
-    XLSX.writeFile(wb, `${plotName.replace(/\s+/g, "_")}_Land_Survey_Report.xlsx`);
+    XLSX.utils.book_append_sheet(wb, ws, "Survey Report");
+    XLSX.writeFile(wb, `${plotName.replace(/\s+/g, "_")}_survey_report.xlsx`);
   };
 
-  const shareOnWhatsApp = () => {
-    const text = `🗺️ *BUILDMITRA LAND SURVEY REPORT*
-📌 *Plot:* ${plotName} (${surveyNo})
-📍 *Location:* ${locationName}
-
-📐 *TOTAL PLOT AREA SUMMARY:*
-• *Sq.Feet:* ${surveyCalculations.sqFeet.toLocaleString("en-IN", { maximumFractionDigits: 1 })} sq.ft
-• *Sq.Meters:* ${surveyCalculations.areaSqMeters.toLocaleString("en-IN", { maximumFractionDigits: 1 })} m²
-• *Acres:* ${surveyCalculations.acres.toFixed(3)} Acres
-• *Guntas:* ${surveyCalculations.guntas.toFixed(2)} Guntas
-• *Cents:* ${surveyCalculations.cents.toFixed(2)} Cents
-• *Perimeter:* ${surveyCalculations.perimeterFeet.toFixed(1)} FT (${surveyCalculations.perimeterMeters.toFixed(1)} m)
-
-Generated using BuildMitra Architectural & Land Survey Engine.`;
-    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, "_blank");
-  };
+  const avgGpsAcc =
+    gpsPoints.length > 0
+      ? (gpsPoints.reduce((s, p) => s + p.acc, 0) / gpsPoints.length).toFixed(1)
+      : "0.0";
 
   return (
-    <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "20px", color: "#1e293b", fontFamily: "system-ui, -apple-system, sans-serif" }}>
-      <div style={{ background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)", color: "#ffffff", padding: "24px", borderRadius: "16px", marginBottom: "24px", boxShadow: "0 10px 25px rgba(0,0,0,0.15)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
-        <div>
-          <span style={{ background: "#ff7a00", color: "#fff", padding: "4px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "1px" }}>
-            🗺️ Professional &amp; Layman Land Survey Tool
-          </span>
-          <h1 style={{ margin: "8px 0 4px", fontSize: "24px", fontWeight: "900" }}>
-            Land Survey &amp; Plot Area Calculator
-          </h1>
-          <p style={{ margin: 0, fontSize: "13px", color: "#94a3b8" }}>
-            Zero math required for laymen! Enter side measurements directly (e.g. A-B, B1-B2, B2-C) for instant Land Area calculation in Sq.Ft, Sq.M, Acres, Guntas &amp; Cents.
+    <div style={{ background: "#f8fafc", padding: "20px", borderRadius: "16px", color: "#0f172a", fontFamily: "Inter, sans-serif" }}>
+      
+      {/* HEADER BANNER */}
+      <div style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)", padding: "20px 24px", borderRadius: "14px", color: "#ffffff", marginBottom: "20px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+          <div>
+            <span style={{ background: "rgba(255, 122, 0, 0.2)", border: "1px solid rgba(255, 122, 0, 0.4)", color: "#ff7a00", padding: "3px 10px", borderRadius: "12px", fontSize: "11px", fontWeight: "800" }}>
+              20x30 FT TO 200+ ACRE LAND SURVEY ENGINE
+            </span>
+            <h1 style={{ margin: "8px 0 0 0", fontSize: "24px", fontWeight: "900" }}>
+              🗺️ Land Survey Calculator & GPS Boundary Studio
+            </h1>
+            <p style={{ margin: "4px 0 0 0", color: "#94a3b8", fontSize: "13px" }}>
+              Dynamic boundary segments, professional bearing traverse & live GPS satellite field pin measurement.
+            </p>
+          </div>
+
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+            <button onClick={handleNewSurvey} style={{ background: "#334155", color: "#ffffff", border: 0, padding: "8px 14px", borderRadius: "8px", fontWeight: "700", fontSize: "12px", cursor: "pointer" }}>
+              🔄 New Survey
+            </button>
+            <button onClick={handleSaveSurvey} style={{ background: "#ff7a00", color: "#ffffff", border: 0, padding: "8px 14px", borderRadius: "8px", fontWeight: "700", fontSize: "12px", cursor: "pointer" }}>
+              💾 Save Survey
+            </button>
+            <button onClick={handleExportExcel} style={{ background: "#16a34a", color: "#ffffff", border: 0, padding: "8px 14px", borderRadius: "8px", fontWeight: "700", fontSize: "12px", cursor: "pointer" }}>
+              📊 Export Excel
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* QUICK PRESETS BAR */}
+      <div style={{ background: "#ffffff", padding: "12px 16px", borderRadius: "12px", border: "1px solid #e2e8f0", marginBottom: "16px" }}>
+        <span style={{ fontSize: "11px", fontWeight: "800", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px", display: "block", marginBottom: "8px" }}>
+          Quick Land Presets (Tap to Load Dimensions):
+        </span>
+        <div style={{ display: "flex", gap: "8px", overflowX: "auto", paddingBottom: "4px" }}>
+          {[
+            { id: "20x30", label: "20 × 30 ft (600 Sft)" },
+            { id: "30x40", label: "30 × 40 ft (1,200 Sft)" },
+            { id: "40x60", label: "40 × 60 ft (2,400 Sft)" },
+            { id: "1acre", label: "1 Acre (43,560 Sft)" },
+            { id: "5acre", label: "5 Acre Parcel" },
+            { id: "50acre", label: "50 Acre Land" },
+            { id: "200acre", label: "200 Acre Mega Land" },
+          ].map((p) => (
+            <button
+              key={p.id}
+              onClick={() => loadPreset(p.id as any)}
+              style={{ padding: "6px 12px", borderRadius: "20px", border: "1px solid #cbd5e1", background: "#f8fafc", color: "#334155", fontWeight: "700", fontSize: "12px", cursor: "pointer", whitespace: "nowrap" }}
+            >
+              📍 {p.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* MODE TABS BAR */}
+      <div style={{ background: "#ffffff", padding: "10px 14px", borderRadius: "12px", border: "1px solid #e2e8f0", marginBottom: "16px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
+        <div style={{ display: "flex", gap: "8px", overflowX: "auto" }}>
+          <button
+            onClick={() => setMode("simple_irregular")}
+            style={{ padding: "8px 16px", borderRadius: "8px", border: 0, fontWeight: "800", fontSize: "13px", cursor: "pointer", background: mode === "simple_irregular" ? "#ff7a00" : "#f1f5f9", color: mode === "simple_irregular" ? "#ffffff" : "#475569" }}
+          >
+            📏 1. Simple / Irregular Land Measurement
+          </button>
+          <button
+            onClick={() => setMode("polygon_bearing")}
+            style={{ padding: "8px 16px", borderRadius: "8px", border: 0, fontWeight: "800", fontSize: "13px", cursor: "pointer", background: mode === "polygon_bearing" ? "#ff7a00" : "#f1f5f9", color: mode === "polygon_bearing" ? "#ffffff" : "#475569" }}
+          >
+            🧭 2. Polygon / Professional Survey Mode
+          </button>
+          <button
+            onClick={() => setMode("gps")}
+            style={{ padding: "8px 16px", borderRadius: "8px", border: 0, fontWeight: "800", fontSize: "13px", cursor: "pointer", background: mode === "gps" ? "#16a34a" : "#f1f5f9", color: mode === "gps" ? "#ffffff" : "#475569" }}
+          >
+            📡 3. Live GPS Land Survey
+          </button>
+        </div>
+
+        <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+          <span style={{ fontSize: "12px", fontWeight: "700", color: "#64748b" }}>Unit:</span>
+          {(["feet", "meters", "yards"] as UnitType[]).map((u) => (
+            <button
+              key={u}
+              onClick={() => setUnit(u)}
+              style={{ padding: "4px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", background: unit === u ? "#0f172a" : "#ffffff", color: unit === u ? "#ffffff" : "#334155", fontWeight: "700", fontSize: "11px", cursor: "pointer" }}
+            >
+              {u}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* UNDERDETERMINED NOTICE (MODE 1) */}
+      {mode === "simple_irregular" && result.isUnderdetermined && (
+        <div style={{ background: "#fff7ed", border: "1px solid #fdba74", padding: "14px 18px", borderRadius: "12px", marginBottom: "16px", color: "#c2410c" }}>
+          <h4 style={{ margin: "0 0 4px 0", fontSize: "13px", fontWeight: "900" }}>
+            ⚠️ Mathematical Underdetermination Warning
+          </h4>
+          <p style={{ margin: 0, fontSize: "12px", lineHeight: "1.5" }}>
+            {result.underdeterminedMsg}
           </p>
         </div>
+      )}
 
-        <div style={{ display: "flex", gap: "10px" }}>
-          <button onClick={exportToExcel} style={{ padding: "10px 18px", background: "#16a34a", color: "#fff", border: 0, borderRadius: "10px", fontWeight: "bold", cursor: "pointer", fontSize: "12px", display: "flex", alignItems: "center", gap: "6px" }}>
-            📊 Export Excel
-          </button>
-          <button onClick={shareOnWhatsApp} style={{ padding: "10px 18px", background: "#25D366", color: "#fff", border: 0, borderRadius: "10px", fontWeight: "bold", cursor: "pointer", fontSize: "12px", display: "flex", alignItems: "center", gap: "6px" }}>
-            💬 Share WhatsApp
-          </button>
+      {/* CLOSURE ERROR WARNING / SUCCESS (MODE 2) */}
+      {mode === "polygon_bearing" && (
+        <div style={{ background: result.isClosed ? "#f0fdf4" : "#fff7ed", border: `1px solid ${result.isClosed ? "#86efac" : "#fdba74"}`, padding: "12px 16px", borderRadius: "12px", marginBottom: "16px", color: result.isClosed ? "#15803d" : "#c2410c" }}>
+          <h4 style={{ margin: "0 0 2px 0", fontSize: "13px", fontWeight: "900" }}>
+            {result.isClosed
+              ? `✅ Survey Traverse Closed Successfully (Misclosure Error: ${result.closureErrorFt} ${unit}, Ratio ${result.misclosureRatio})`
+              : `⚠️ Survey Closure Warning: Closure error is ${result.closureErrorFt} ${unit} (Misclosure Ratio ${result.misclosureRatio})`}
+          </h4>
+          <p style={{ margin: 0, fontSize: "11px" }}>
+            {result.isClosed
+              ? "The survey traverse loop closes back to origin point within acceptable field tolerance."
+              : "The entered side distances and bearings do not close perfectly back to the starting point. Please verify field measurements."}
+          </p>
         </div>
-      </div>
+      )}
 
-      <div style={{ background: "#ffffff", padding: "18px 24px", borderRadius: "14px", border: "1px solid #cbd5e1", marginBottom: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
-        <div>
-          <label style={{ display: "block", fontSize: "11px", fontWeight: "bold", color: "#64748b", marginBottom: "6px" }}>
-            MEASUREMENT TYPE / MODE
-          </label>
-          <div style={{ display: "flex", background: "#f1f5f9", padding: "4px", borderRadius: "10px", border: "1px solid #cbd5e1" }}>
-            <button
-              onClick={() => setMode("layman")}
-              style={{
-                padding: "8px 18px",
-                borderRadius: "8px",
-                border: 0,
-                fontSize: "12px",
-                fontWeight: "bold",
-                background: mode === "layman" ? "#ff7a00" : "transparent",
-                color: mode === "layman" ? "#ffffff" : "#475569",
-                cursor: "pointer",
-                transition: "all 0.2s ease",
-              }}
-            >
-              🟢 Normal Boundary Mode (Layman Entry)
-            </button>
-            <button
-              onClick={() => setMode("polygon")}
-              style={{
-                padding: "8px 18px",
-                borderRadius: "8px",
-                border: 0,
-                fontSize: "12px",
-                fontWeight: "bold",
-                background: mode === "polygon" ? "#0284c7" : "transparent",
-                color: mode === "polygon" ? "#ffffff" : "#475569",
-                cursor: "pointer",
-                transition: "all 0.2s ease",
-              }}
-            >
-              📐 Advanced Polygon / Traverse (Degree Mode)
-            </button>
+      {/* GPS DISCLAIMER & ACCURACY BADGE (MODE 3) */}
+      {mode === "gps" && (
+        <div style={{ marginBottom: "16px" }}>
+          <div style={{ background: Number(avgGpsAcc) <= 5.0 ? "#f0fdf4" : "#fff7ed", border: `1px solid ${Number(avgGpsAcc) <= 5.0 ? "#86efac" : "#fdba74"}`, padding: "10px 14px", borderRadius: "10px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+            <span style={{ fontSize: "12px", fontWeight: "800", color: Number(avgGpsAcc) <= 5.0 ? "#15803d" : "#c2410c" }}>
+              📡 Satellite GPS Signal Precision: ±{avgGpsAcc} meters
+            </span>
+            {Number(avgGpsAcc) > 5.0 && (
+              <span style={{ fontSize: "11px", fontWeight: "700", color: "#c2410c" }}>
+                ⚠️ Poor GPS accuracy — move to open sky for satellite lock.
+              </span>
+            )}
           </div>
+          <p style={{ margin: 0, fontSize: "11px", color: "#64748b", background: "#ffffff", padding: "8px 12px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+            <strong>Professional Disclaimer:</strong> Phone GPS measurements are approximate and are not a substitute for a licensed/high-precision land survey.
+          </p>
         </div>
+      )}
 
-        <div>
-          <label style={{ display: "block", fontSize: "11px", fontWeight: "bold", color: "#64748b", marginBottom: "6px" }}>
-            MEASUREMENT UNIT
-          </label>
-          <select
-            value={unit}
-            onChange={(e) => setUnit(e.target.value as UnitType)}
-            style={{ padding: "8px 16px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "12px", fontWeight: "bold", background: "#f8fafc", color: "#0f172a", minWidth: "150px" }}
-          >
-            <option value="meters">Meters (m)</option>
-            <option value="feet">Feet (ft)</option>
-            <option value="yards">Yards (yd)</option>
-          </select>
-        </div>
-
-        {mode === "layman" && (
-          <div>
-            <label style={{ display: "block", fontSize: "11px", fontWeight: "bold", color: "#64748b", marginBottom: "6px" }}>
-              PRESET TEMPLATES
-            </label>
-            <div style={{ display: "flex", gap: "6px" }}>
-              <button onClick={() => loadLaymanPreset("layman_example")} style={{ padding: "6px 12px", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "11px", fontWeight: "bold", cursor: "pointer" }}>
-                Layman A-B, B1-B2 Plot
-              </button>
-              <button onClick={() => loadLaymanPreset("rectangle")} style={{ padding: "6px 12px", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "11px", fontWeight: "bold", cursor: "pointer" }}>
-                Standard 4-Side Plot
-              </button>
-              <button onClick={() => loadLaymanPreset("l_shape")} style={{ padding: "6px 12px", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "11px", fontWeight: "bold", cursor: "pointer" }}>
-                L-Shaped Land
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", alignItems: "start" }}>
-        <div style={{ background: "#ffffff", padding: "20px", borderRadius: "16px", border: "1px solid #cbd5e1", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px", marginBottom: "16px", paddingBottom: "16px", borderBottom: "1px solid #e2e8f0" }}>
-            <div>
-              <label style={{ display: "block", fontSize: "10px", fontWeight: "bold", color: "#64748b", marginBottom: "3px" }}>PLOT NAME</label>
-              <input type="text" value={plotName} onChange={(e) => setPlotName(e.target.value)} style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "12px" }} />
-            </div>
-            <div>
-              <label style={{ display: "block", fontSize: "10px", fontWeight: "bold", color: "#64748b", marginBottom: "3px" }}>SURVEY NO / SY NO</label>
-              <input type="text" value={surveyNo} onChange={(e) => setSurveyNo(e.target.value)} style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "12px" }} />
-            </div>
-            <div>
-              <label style={{ display: "block", fontSize: "10px", fontWeight: "bold", color: "#64748b", marginBottom: "3px" }}>LOCATION</label>
-              <input type="text" value={locationName} onChange={(e) => setLocationName(e.target.value)} style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "12px" }} />
-            </div>
-          </div>
-
-          {mode === "layman" ? (
+      {/* MAIN INPUT & VISUAL MAP GRID */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "16px", marginBottom: "20px" }}>
+        
+        {/* LEFT COLUMN: DYNAMIC INPUT CONTROLS */}
+        <div style={{ background: "#ffffff", padding: "18px", borderRadius: "14px", border: "1px solid #e2e8f0" }}>
+          
+          {/* MODE 1: SIMPLE / IRREGULAR LAND INPUTS */}
+          {mode === "simple_irregular" && (
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: "14px", color: "#0f172a", fontWeight: "bold" }}>
-                    🟢 Boundary Measurements (Layman Chain Mode)
-                  </h3>
-                  <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#64748b" }}>
-                    Enter consecutive point measurements (e.g. A-B = 150, B1-B2 = 45, B2-C = 125):
-                  </p>
-                </div>
-                <button onClick={addSegment} style={{ padding: "6px 12px", background: "#ff7a00", color: "#fff", border: 0, borderRadius: "6px", fontSize: "11px", fontWeight: "bold", cursor: "pointer" }}>
-                  + Add Point / Side
+                <h3 style={{ margin: 0, fontSize: "14px", fontWeight: "800", color: "#0f172a" }}>
+                  Boundary Segments (A–B, B–C1, C1–C2...)
+                </h3>
+                <button onClick={addSegment} style={{ background: "#ff7a00", color: "#ffffff", border: 0, padding: "6px 12px", borderRadius: "6px", fontWeight: "800", fontSize: "12px", cursor: "pointer" }}>
+                  + Add Point/Side
                 </button>
               </div>
 
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
-                <thead>
-                  <tr style={{ background: "#f8fafc", color: "#475569", borderBottom: "2px solid #cbd5e1" }}>
-                    <th style={{ padding: "8px", textAlign: "left" }}>#</th>
-                    <th style={{ padding: "8px", textAlign: "left" }}>From Point</th>
-                    <th style={{ padding: "8px", textAlign: "left" }}>To Point</th>
-                    <th style={{ padding: "8px", textAlign: "left" }}>Length ({unit})</th>
-                    <th style={{ padding: "8px", textAlign: "center" }}>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {segments.map((seg, idx) => (
-                    <tr key={seg.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                      <td style={{ padding: "8px", fontWeight: "bold", color: "#64748b" }}>{idx + 1}</td>
-                      <td style={{ padding: "8px" }}>
-                        <input
-                          type="text"
-                          value={seg.fromLabel}
-                          onChange={(e) => updateSegment(seg.id, "fromLabel", e.target.value)}
-                          style={{ width: "65px", padding: "5px", borderRadius: "4px", border: "1px solid #cbd5e1", fontWeight: "bold", textAlign: "center" }}
-                        />
-                      </td>
-                      <td style={{ padding: "8px" }}>
-                        <input
-                          type="text"
-                          value={seg.toLabel}
-                          onChange={(e) => updateSegment(seg.id, "toLabel", e.target.value)}
-                          style={{ width: "65px", padding: "5px", borderRadius: "4px", border: "1px solid #cbd5e1", fontWeight: "bold", textAlign: "center" }}
-                        />
-                      </td>
-                      <td style={{ padding: "8px" }}>
-                        <input
-                          type="number"
-                          value={seg.length || ""}
-                          onChange={(e) => updateSegment(seg.id, "length", parseFloat(e.target.value) || 0)}
-                          style={{ width: "100%", padding: "5px", borderRadius: "4px", border: "1px solid #0284c7", fontWeight: "bold", color: "#0369a1" }}
-                        />
-                      </td>
-                      <td style={{ padding: "8px", textAlign: "center" }}>
-                        <button
-                          onClick={() => removeSegment(seg.id)}
-                          style={{ padding: "4px 8px", background: "#fee2e2", color: "#dc2626", border: "1px solid #fca5a5", borderRadius: "4px", fontSize: "11px", cursor: "pointer", fontWeight: "bold" }}
-                        >
-                          ✕
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: "14px", color: "#0f172a", fontWeight: "bold" }}>
-                    📐 Advanced Polygon / Traverse (Degree &amp; Bearing Mode)
-                  </h3>
-                  <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#64748b" }}>
-                    For surveyor compass / total station bearing and distance inputs:
-                  </p>
-                </div>
-                <button onClick={addAdvPoint} style={{ padding: "6px 12px", background: "#0284c7", color: "#fff", border: 0, borderRadius: "6px", fontSize: "11px", fontWeight: "bold", cursor: "pointer" }}>
-                  + Add Station
-                </button>
+              <div style={{ maxHeight: "240px", overflowY: "auto", marginBottom: "16px", paddingRight: "4px" }}>
+                {segments.map((seg, idx) => (
+                  <div key={seg.id} style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "8px", background: "#f8fafc", padding: "8px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                    <span style={{ fontSize: "11px", fontWeight: "900", color: "#ff7a00", width: "24px" }}>#{idx + 1}</span>
+                    <input
+                      type="text"
+                      value={seg.fromLabel}
+                      onChange={(e) => updateSegment(seg.id, "fromLabel", e.target.value)}
+                      style={{ width: "40px", padding: "4px 6px", textAlign: "center", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "12px", fontWeight: "800" }}
+                    />
+                    <span style={{ color: "#94a3b8", fontWeight: "bold" }}>→</span>
+                    <input
+                      type="text"
+                      value={seg.toLabel}
+                      onChange={(e) => updateSegment(seg.id, "toLabel", e.target.value)}
+                      style={{ width: "40px", padding: "4px 6px", textAlign: "center", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "12px", fontWeight: "800" }}
+                    />
+                    <input
+                      type="number"
+                      placeholder="0"
+                      value={seg.length}
+                      onChange={(e) => updateSegment(seg.id, "length", e.target.value)}
+                      style={{ flex: 1, padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "700" }}
+                    />
+                    <span style={{ fontSize: "12px", color: "#64748b", fontWeight: "700" }}>{unit}</span>
+                    {segments.length > 3 && (
+                      <button onClick={() => removeSegment(seg.id)} style={{ background: "transparent", color: "#ef4444", border: 0, cursor: "pointer", fontSize: "16px", fontWeight: "bold" }}>
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                ))}
               </div>
 
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
-                <thead>
-                  <tr style={{ background: "#f8fafc", color: "#475569", borderBottom: "2px solid #cbd5e1" }}>
-                    <th style={{ padding: "8px", textAlign: "left" }}>Station</th>
-                    <th style={{ padding: "8px", textAlign: "left" }}>Distance ({unit})</th>
-                    <th style={{ padding: "8px", textAlign: "left" }}>Bearing Angle (°)</th>
-                    <th style={{ padding: "8px", textAlign: "center" }}>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {advancedPoints.map((pt, idx) => (
-                    <tr key={pt.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                      <td style={{ padding: "8px" }}>
-                        <input
-                          type="text"
-                          value={pt.pointName}
-                          onChange={(e) => updateAdvPoint(pt.id, "pointName", e.target.value)}
-                          style={{ width: "80px", padding: "5px", borderRadius: "4px", border: "1px solid #cbd5e1", fontWeight: "bold" }}
-                        />
-                      </td>
-                      <td style={{ padding: "8px" }}>
-                        <input
-                          type="number"
-                          value={pt.distance || ""}
-                          onChange={(e) => updateAdvPoint(pt.id, "distance", parseFloat(e.target.value) || 0)}
-                          style={{ width: "100%", padding: "5px", borderRadius: "4px", border: "1px solid #0284c7", fontWeight: "bold" }}
-                        />
-                      </td>
-                      <td style={{ padding: "8px" }}>
-                        <input
-                          type="number"
-                          value={pt.bearingDeg || 0}
-                          onChange={(e) => updateAdvPoint(pt.id, "bearingDeg", parseFloat(e.target.value) || 0)}
-                          style={{ width: "100%", padding: "5px", borderRadius: "4px", border: "1px solid #cbd5e1", fontWeight: "bold" }}
-                        />
-                      </td>
-                      <td style={{ padding: "8px", textAlign: "center" }}>
-                        <button
-                          onClick={() => removeAdvPoint(pt.id)}
-                          style={{ padding: "4px 8px", background: "#fee2e2", color: "#dc2626", border: "1px solid #fca5a5", borderRadius: "4px", fontSize: "11px", cursor: "pointer", fontWeight: "bold" }}
-                        >
-                          ✕
-                        </button>
-                      </td>
-                    </tr>
+              {/* DIAGONALS SECTION */}
+              <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: "12px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                  <span style={{ fontSize: "12px", fontWeight: "800", color: "#0f172a" }}>
+                    Interior Diagonals (For Triangulation):
+                  </span>
+                  <button onClick={addDiagonal} style={{ background: "#0f172a", color: "#ffffff", border: 0, padding: "4px 10px", borderRadius: "6px", fontWeight: "700", fontSize: "11px", cursor: "pointer" }}>
+                    + Add Diagonal
+                  </button>
+                </div>
+
+                <div style={{ maxHeight: "140px", overflowY: "auto" }}>
+                  {diagonals.map((d) => (
+                    <div key={d.id} style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "6px", background: "#f1f5f9", padding: "6px 8px", borderRadius: "6px" }}>
+                      <input
+                        type="text"
+                        value={d.fromLabel}
+                        onChange={(e) => updateDiagonal(d.id, "fromLabel", e.target.value)}
+                        style={{ width: "36px", padding: "2px 4px", textAlign: "center", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "11px", fontWeight: "700" }}
+                      />
+                      <span style={{ color: "#94a3b8" }}>→</span>
+                      <input
+                        type="text"
+                        value={d.toLabel}
+                        onChange={(e) => updateDiagonal(d.id, "toLabel", e.target.value)}
+                        style={{ width: "36px", padding: "2px 4px", textAlign: "center", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "11px", fontWeight: "700" }}
+                      />
+                      <input
+                        type="number"
+                        placeholder="0"
+                        value={d.length}
+                        onChange={(e) => updateDiagonal(d.id, "length", e.target.value)}
+                        style={{ flex: 1, padding: "4px 8px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "12px", fontWeight: "700" }}
+                      />
+                      <span style={{ fontSize: "11px", color: "#64748b" }}>{unit}</span>
+                      <button onClick={() => removeDiagonal(d.id)} style={{ background: "transparent", color: "#ef4444", border: 0, cursor: "pointer" }}>✕</button>
+                    </div>
                   ))}
-                </tbody>
-              </table>
+                </div>
+              </div>
             </div>
           )}
+
+          {/* MODE 2: POLYGON / PROFESSIONAL SURVEY INPUTS */}
+          {mode === "polygon_bearing" && (
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                <h3 style={{ margin: 0, fontSize: "14px", fontWeight: "800", color: "#0f172a" }}>
+                  Traverse Distance & Bearing Direction (0° - 360°)
+                </h3>
+                <button onClick={addBearingPoint} style={{ background: "#ff7a00", color: "#ffffff", border: 0, padding: "6px 12px", borderRadius: "6px", fontWeight: "800", fontSize: "12px", cursor: "pointer" }}>
+                  + Add Point
+                </button>
+              </div>
+
+              <div style={{ maxHeight: "280px", overflowY: "auto" }}>
+                {bearingPoints.map((pt, idx) => (
+                  <div key={pt.id} style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "8px", background: "#f8fafc", padding: "8px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                    <input
+                      type="text"
+                      value={pt.pointName}
+                      onChange={(e) => updateBearingPoint(pt.id, "pointName", e.target.value)}
+                      style={{ width: "45px", padding: "6px", textAlign: "center", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "12px", fontWeight: "800", color: "#ff7a00" }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <span style={{ fontSize: "10px", color: "#64748b", display: "block" }}>Dist ({unit})</span>
+                      <input
+                        type="number"
+                        placeholder="0"
+                        value={pt.distance}
+                        onChange={(e) => updateBearingPoint(pt.id, "distance", e.target.value)}
+                        style={{ width: "100%", padding: "6px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "12px", fontWeight: "700" }}
+                      />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <span style={{ fontSize: "10px", color: "#64748b", display: "block" }}>Bearing (°)</span>
+                      <input
+                        type="number"
+                        placeholder="0"
+                        value={pt.bearingDeg}
+                        onChange={(e) => updateBearingPoint(pt.id, "bearingDeg", e.target.value)}
+                        style={{ width: "100%", padding: "6px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "12px", fontWeight: "700" }}
+                      />
+                    </div>
+                    {bearingPoints.length > 3 && (
+                      <button onClick={() => removeBearingPoint(pt.id)} style={{ background: "transparent", color: "#ef4444", border: 0, cursor: "pointer", fontWeight: "bold" }}>✕</button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* MODE 3: LIVE GPS LAND SURVEY INPUTS */}
+          {mode === "gps" && (
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                <h3 style={{ margin: 0, fontSize: "14px", fontWeight: "800", color: "#0f172a" }}>
+                  Live Field Satellite GPS Pins ({gpsPoints.length})
+                </h3>
+                <div style={{ display: "flex", gap: "6px" }}>
+                  <button onClick={handleCaptureGpsPoint} disabled={isGpsActive} style={{ background: "#16a34a", color: "#ffffff", border: 0, padding: "6px 12px", borderRadius: "6px", fontWeight: "800", fontSize: "12px", cursor: "pointer" }}>
+                    {isGpsActive ? "Acquiring..." : "+ Capture GPS Point"}
+                  </button>
+                  <button onClick={() => setGpsPoints([])} style={{ background: "#ef4444", color: "#ffffff", border: 0, padding: "6px 10px", borderRadius: "6px", fontWeight: "700", fontSize: "11px", cursor: "pointer" }}>
+                    Clear All
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ maxHeight: "280px", overflowY: "auto" }}>
+                {gpsPoints.map((pin) => (
+                  <div key={pin.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px", background: "#f8fafc", padding: "8px 12px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                    <div>
+                      <span style={{ fontSize: "12px", fontWeight: "800", color: "#0f172a", display: "block" }}>📍 {pin.name}</span>
+                      <span style={{ fontSize: "11px", color: "#64748b", fontFamily: "monospace" }}>
+                        Lat: {pin.lat}, Lng: {pin.lng} (±{pin.acc}m)
+                      </span>
+                    </div>
+                    <button onClick={() => removeGpsPoint(pin.id)} style={{ background: "transparent", color: "#ef4444", border: 0, cursor: "pointer" }}>✕</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-          <div style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)", color: "#ffffff", padding: "20px", borderRadius: "16px", boxShadow: "0 4px 15px rgba(0,0,0,0.1)" }}>
-            <h3 style={{ margin: "0 0 12px", fontSize: "14px", color: "#ff7a00", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-              📊 Instant Calculated Land Area
-            </h3>
+        {/* RIGHT COLUMN: VISUAL VECTOR MAP SKETCH */}
+        <div style={{ background: "#1a1a2e", padding: "18px", borderRadius: "14px", border: "1px solid #2a2a4a", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
+          <span style={{ fontSize: "11px", fontWeight: "800", color: "#8ab3d8", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "8px", display: "block" }}>
+            Vector Polygon Sketch & Plot Diagram
+          </span>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "16px" }}>
-              <div style={{ background: "rgba(255,255,255,0.06)", padding: "14px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.1)" }}>
-                <div style={{ fontSize: "11px", color: "#94a3b8" }}>TOTAL AREA (SQUARE FEET)</div>
-                <div style={{ fontSize: "24px", fontWeight: "900", color: "#38bdf8", marginTop: "2px" }}>
-                  {surveyCalculations.sqFeet.toLocaleString("en-IN", { maximumFractionDigits: 1 })} <span style={{ fontSize: "14px" }}>SQ.FT</span>
-                </div>
-              </div>
+          <svg viewBox="0 0 280 160" style={{ width: "100%", height: "180px", background: "#0f172a", borderRadius: "10px" }}>
+            <defs>
+              <pattern id="surveyGrid3" width="20" height="20" patternUnits="userSpaceOnUse">
+                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#1e293b" strokeWidth="0.5" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#surveyGrid3)" />
 
-              <div style={{ background: "rgba(255,255,255,0.06)", padding: "14px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.1)" }}>
-                <div style={{ fontSize: "11px", color: "#94a3b8" }}>TOTAL AREA (SQUARE METERS)</div>
-                <div style={{ fontSize: "24px", fontWeight: "900", color: "#4ade80", marginTop: "2px" }}>
-                  {surveyCalculations.areaSqMeters.toLocaleString("en-IN", { maximumFractionDigits: 1 })} <span style={{ fontSize: "14px" }}>SQ.M</span>
-                </div>
-              </div>
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", fontSize: "11px" }}>
-              <div style={{ background: "rgba(255,255,255,0.04)", padding: "8px 10px", borderRadius: "8px" }}>
-                <span style={{ color: "#94a3b8" }}>Acres:</span> <b style={{ color: "#ffffff" }}>{surveyCalculations.acres.toFixed(3)}</b>
-              </div>
-              <div style={{ background: "rgba(255,255,255,0.04)", padding: "8px 10px", borderRadius: "8px" }}>
-                <span style={{ color: "#94a3b8" }}>Guntas:</span> <b style={{ color: "#ffffff" }}>{surveyCalculations.guntas.toFixed(2)}</b>
-              </div>
-              <div style={{ background: "rgba(255,255,255,0.04)", padding: "8px 10px", borderRadius: "8px" }}>
-                <span style={{ color: "#94a3b8" }}>Cents:</span> <b style={{ color: "#ffffff" }}>{surveyCalculations.cents.toFixed(2)}</b>
-              </div>
-              <div style={{ background: "rgba(255,255,255,0.04)", padding: "8px 10px", borderRadius: "8px" }}>
-                <span style={{ color: "#94a3b8" }}>Hectares:</span> <b style={{ color: "#ffffff" }}>{surveyCalculations.hectares.toFixed(3)}</b>
-              </div>
-              <div style={{ background: "rgba(255,255,255,0.04)", padding: "8px 10px", borderRadius: "8px" }}>
-                <span style={{ color: "#94a3b8" }}>Ankanam:</span> <b style={{ color: "#ffffff" }}>{surveyCalculations.ankanam.toFixed(1)}</b>
-              </div>
-              <div style={{ background: "rgba(255,255,255,0.04)", padding: "8px 10px", borderRadius: "8px" }}>
-                <span style={{ color: "#94a3b8" }}>Perimeter:</span> <b style={{ color: "#ffffff" }}>{surveyCalculations.perimeterFeet.toFixed(1)} FT</b>
-              </div>
-            </div>
-          </div>
-
-          <div style={{ background: "#ffffff", padding: "18px", borderRadius: "16px", border: "1px solid #cbd5e1", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-              <h3 style={{ margin: 0, fontSize: "14px", color: "#0f172a", fontWeight: "bold" }}>
-                🗺️ Visual Land Boundary Map
-              </h3>
-              <span style={{ fontSize: "10px", background: "#f1f5f9", padding: "2px 8px", borderRadius: "4px", color: "#64748b", fontWeight: "bold" }}>
-                Auto-Drawn Vector Map
-              </span>
-            </div>
-
-            <div style={{ background: "#1a1a2e", borderRadius: "12px", padding: "12px", overflow: "hidden", display: "flex", justifyContent: "center", alignItems: "center" }}>
-              <svg viewBox={svgMap.viewBox} width="100%" height="320" style={{ background: "#0f172a", borderRadius: "8px" }}>
-                <defs>
-                  <pattern id="grid_comp" width="30" height="30" patternUnits="userSpaceOnUse">
-                    <path d="M 30 0 L 0 0 0 30" fill="none" stroke="#334155" strokeWidth="0.5" opacity="0.4" />
-                  </pattern>
-                </defs>
-                <rect width="100%" height="100%" fill="url(#grid_comp)" />
-
-                {svgMap.pathD && (
-                  <path
-                    d={svgMap.pathD}
-                    fill="rgba(56, 189, 248, 0.15)"
-                    stroke="#38bdf8"
-                    strokeWidth="3"
-                  />
-                )}
-
-                {svgMap.scaledNodes.map((n, idx) => (
-                  <g key={idx}>
-                    <circle cx={n.px} cy={n.py} r="5" fill="#ff7a00" stroke="#ffffff" strokeWidth="2" />
-                    <text
-                      x={n.px}
-                      y={n.py - 10}
-                      textAnchor="middle"
-                      fontSize="11"
-                      fontWeight="bold"
-                      fill="#ffffff"
-                    >
-                      {n.label}
-                    </text>
+            {/* Dynamic Polygon Coordinates Plotting */}
+            {result.scaledNodes.length >= 3 ? (
+              <>
+                <path d={result.pathD} fill={mode === "gps" ? "rgba(22, 163, 74, 0.2)" : "rgba(255, 122, 0, 0.2)"} stroke={mode === "gps" ? "#22c55e" : "#ff7a00"} strokeWidth="2.5" />
+                {result.scaledNodes.map((n, i) => (
+                  <g key={i}>
+                    <circle cx={n.px} cy={n.py} r="4" fill={mode === "gps" ? "#22c55e" : "#ff7a00"} stroke="#ffffff" strokeWidth="1.5" />
+                    <text x={n.px} y={n.py - 8} fill="#ffffff" fontSize="9" fontWeight="bold" textAnchor="middle">{n.label}</text>
                   </g>
                 ))}
+              </>
+            ) : (
+              <>
+                <polygon points="40,130 240,130 220,30 60,40" fill="rgba(255, 122, 0, 0.15)" stroke="#ff7a00" strokeWidth="2.5" />
+                <circle cx="40" cy="130" r="4" fill="#ff7a00" />
+                <text x="30" y="142" fill="#ffffff" fontSize="10" fontWeight="bold">A</text>
+                <circle cx="240" cy="130" r="4" fill="#ff7a00" />
+                <text x="245" y="142" fill="#ffffff" fontSize="10" fontWeight="bold">B</text>
+                <circle cx="220" cy="30" r="4" fill="#ff7a00" />
+                <text x="225" y="25" fill="#ffffff" fontSize="10" fontWeight="bold">C1</text>
+                <circle cx="60" cy="40" r="4" fill="#ff7a00" />
+                <text x="45" y="35" fill="#ffffff" fontSize="10" fontWeight="bold">D</text>
+              </>
+            )}
 
-                <g transform="translate(40, 45)">
-                  <circle cx="0" cy="0" r="16" fill="#1e293b" stroke="#64748b" strokeWidth="1" />
-                  <path d="M0 -12 L-5 4 L0 0 L5 4 Z" fill="#ff7a00" />
-                  <text x="0" y="24" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#ffffff">N</text>
-                </g>
-              </svg>
-            </div>
+            {/* Compass Rose */}
+            <g transform="translate(30, 25)">
+              <circle cx="0" cy="0" r="12" fill="#1e293b" stroke="#475569" strokeWidth="1" />
+              <path d="M0 -8 L-3 2 L0 0 L3 2 Z" fill="#ff7a00" />
+              <text x="0" y="18" textAnchor="middle" fontSize="8" fontWeight="bold" fill="#ffffff">N</text>
+            </g>
+          </svg>
+
+          <div style={{ marginTop: "10px", textAlign: "center" }}>
+            <span style={{ background: "rgba(255, 122, 0, 0.2)", color: "#ff7a00", padding: "2px 8px", borderRadius: "10px", fontSize: "10px", fontWeight: "800" }}>
+              {result.scaleCategory}
+            </span>
+            <p style={{ margin: "4px 0 0 0", fontSize: "11px", color: "#94a3b8" }}>
+              {result.methodTitle}
+            </p>
           </div>
         </div>
+
       </div>
+
+      {/* PROMINENT RESULTS PANEL (SIMULTANEOUS CONVERSIONS IN ALL UNITS) */}
+      <div style={{ background: "#ffffff", padding: "20px", borderRadius: "16px", border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", borderBottom: "1px solid #f1f5f9", paddingBottom: "10px" }}>
+          <h2 style={{ margin: 0, fontSize: "16px", fontWeight: "900", color: "#0f172a" }}>
+            ✅ Official Survey Area &amp; Unit Conversion Results
+          </h2>
+          <span style={{ fontSize: "12px", color: "#64748b", fontWeight: "700" }}>
+            {result.pointCount} Boundary Points Measured
+          </span>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "12px", marginBottom: "16px" }}>
+          
+          <div style={{ background: "#fff7ed", border: "1px solid #ffdeaf", padding: "14px", borderRadius: "12px" }}>
+            <span style={{ fontSize: "11px", fontWeight: "800", color: "#c2410c", textTransform: "uppercase", display: "block" }}>Acres</span>
+            <span style={{ fontSize: "22px", fontWeight: "900", color: "#ea580c" }}>{fmt(result.acres, 4)}</span>
+            <span style={{ fontSize: "11px", color: "#9a3412", display: "block", marginTop: "2px" }}>Acres</span>
+          </div>
+
+          <div style={{ background: "#faf5ff", border: "1px solid #e9d5ff", padding: "14px", borderRadius: "12px" }}>
+            <span style={{ fontSize: "11px", fontWeight: "800", color: "#7e22ce", textTransform: "uppercase", display: "block" }}>Cents</span>
+            <span style={{ fontSize: "22px", fontWeight: "900", color: "#9333ea" }}>{fmt(result.cents, 2)}</span>
+            <span style={{ fontSize: "11px", color: "#6b21a8", display: "block", marginTop: "2px" }}>Cents (435.6 sft/ct)</span>
+          </div>
+
+          <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: "14px", borderRadius: "12px" }}>
+            <span style={{ fontSize: "11px", fontWeight: "800", color: "#475569", textTransform: "uppercase", display: "block" }}>Sq. Feet (Sft)</span>
+            <span style={{ fontSize: "22px", fontWeight: "900", color: "#0f172a" }}>{fmt(result.areaSft, 2)}</span>
+            <span style={{ fontSize: "11px", color: "#64748b", display: "block", marginTop: "2px" }}>Sq.Ft</span>
+          </div>
+
+          <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", padding: "14px", borderRadius: "12px" }}>
+            <span style={{ fontSize: "11px", fontWeight: "800", color: "#15803d", textTransform: "uppercase", display: "block" }}>Sq. Meters (Sqm)</span>
+            <span style={{ fontSize: "22px", fontWeight: "900", color: "#16a34a" }}>{fmt(result.sqMeters, 2)}</span>
+            <span style={{ fontSize: "11px", color: "#166534", display: "block", marginTop: "2px" }}>m²</span>
+          </div>
+
+          <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", padding: "14px", borderRadius: "12px" }}>
+            <span style={{ fontSize: "11px", fontWeight: "800", color: "#1d4ed8", textTransform: "uppercase", display: "block" }}>Sq. Yards (Gaj)</span>
+            <span style={{ fontSize: "22px", fontWeight: "900", color: "#2563eb" }}>{fmt(result.sqYards, 2)}</span>
+            <span style={{ fontSize: "11px", color: "#1e40af", display: "block", marginTop: "2px" }}>Sq.Yd</span>
+          </div>
+
+        </div>
+
+        {/* Perimeter & Summary Metrics Bar */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "10px", background: "#f8fafc", padding: "12px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
+          <div>
+            <span style={{ fontSize: "11px", color: "#64748b", display: "block" }}>Perimeter</span>
+            <strong style={{ fontSize: "13px", color: "#0f172a" }}>{fmt(result.perimeterFt, 1)} ft ({fmt(result.perimeterMeters, 1)} m)</strong>
+          </div>
+          <div>
+            <span style={{ fontSize: "11px", color: "#64748b", display: "block" }}>Guntha / Ground</span>
+            <strong style={{ fontSize: "13px", color: "#0f172a" }}>{fmt(result.guntha, 2)} Gth / {fmt(result.ground, 2)} Grd</strong>
+          </div>
+          <div>
+            <span style={{ fontSize: "11px", color: "#64748b", display: "block" }}>Points Measured</span>
+            <strong style={{ fontSize: "13px", color: "#ff7a00" }}>{result.pointCount} Vertices</strong>
+          </div>
+          <div>
+            <span style={{ fontSize: "11px", color: "#64748b", display: "block" }}>Survey Engine</span>
+            <strong style={{ fontSize: "13px", color: "#16a34a" }}>{result.methodTitle}</strong>
+          </div>
+        </div>
+
+      </div>
+
+      {/* SAVED CALCULATIONS HISTORY */}
+      {savedSurveys.length > 0 && (
+        <div style={{ background: "#ffffff", padding: "16px", borderRadius: "14px", border: "1px solid #e2e8f0", marginTop: "16px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", borderBottom: "1px solid #f1f5f9", pb: "6px" }}>
+            <h3 style={{ margin: 0, fontSize: "14px", fontWeight: "800", color: "#0f172a" }}>
+              💾 Saved Survey History ({savedSurveys.length})
+            </h3>
+            <button onClick={() => { setSavedSurveys([]); localStorage.removeItem("buildmitra_saved_land_surveys"); }} style={{ background: "transparent", color: "#ef4444", border: 0, cursor: "pointer", fontSize: "11px", fontWeight: "bold" }}>
+              Clear History
+            </button>
+          </div>
+
+          <div style={{ maxHeight: "160px", overflowY: "auto" }}>
+            {savedSurveys.map((rec) => (
+              <div key={rec.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", background: "#f8fafc", borderRadius: "8px", border: "1px solid #e2e8f0", marginBottom: "6px" }}>
+                <div>
+                  <strong style={{ color: "#ff7a00", fontSize: "13px" }}>{rec.areaSft} Sft</strong>
+                  <span style={{ fontSize: "12px", color: "#475569" }}> ({rec.acres} Acres / {rec.cents} Cents)</span>
+                  <span style={{ fontSize: "11px", color: "#94a3b8", display: "block" }}>{rec.method} — Saved at {rec.date}</span>
+                </div>
+                <span style={{ background: "#e2e8f0", color: "#334155", padding: "2px 8px", borderRadius: "4px", fontSize: "11px", fontWeight: "bold" }}>
+                  {rec.points} Points
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

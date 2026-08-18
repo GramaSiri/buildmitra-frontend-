@@ -643,7 +643,7 @@ export default function PEBBuildingBOQPage() {
       </Head>
 
       <Sidebar currentPath="/peb-building-boq">
-        <div style={styles.container}>
+        <div className="bm-final-boq-page" style={styles.container}>
           {/* Header */}
           <div style={styles.header}>
             <div>
@@ -663,7 +663,7 @@ export default function PEBBuildingBOQPage() {
             <div style={styles.sectionHeader}>
               <span>📐 Section A: Building Dimensions & Structure Specifications</span>
             </div>
-            <div style={styles.grid4}>
+            <div className="bm-final-boq-input-grid" style={styles.grid4}>
               <div style={styles.fieldGroup}>
                 <label style={styles.label}>Building Length (ft)</label>
                 <input type="number" value={lengthFt} onChange={(e) => setLengthFt(Number(e.target.value))} style={styles.input} min={20} />
@@ -719,7 +719,7 @@ export default function PEBBuildingBOQPage() {
             <div style={{ ...styles.sectionHeader, marginTop: '20px' }}>
               <span>🏗️ Section B: Crane, Mezzanine & Environmental Zones</span>
             </div>
-            <div style={styles.grid4}>
+            <div className="bm-final-boq-input-grid" style={styles.grid4}>
               <div style={styles.fieldGroup}>
                 <label style={styles.label}>EOT Crane Required</label>
                 <select value={craneRequired ? "yes" : "no"} onChange={(e) => setCraneRequired(e.target.value === "yes")} style={styles.select}>
@@ -776,7 +776,7 @@ export default function PEBBuildingBOQPage() {
             <div style={{ ...styles.sectionHeader, marginTop: '20px' }}>
               <span>🎨 Section C: Sheeting, Cladding, Insulation & Openings</span>
             </div>
-            <div style={styles.grid3}>
+            <div className="bm-final-boq-input-grid" style={styles.grid3}>
               <div style={styles.fieldGroup}>
                 <label style={styles.label}>Roof Sheeting Type</label>
                 <select value={roofSheeting} onChange={(e) => setRoofSheeting(e.target.value)} style={styles.select}>
@@ -837,7 +837,7 @@ export default function PEBBuildingBOQPage() {
             <div style={{ ...styles.sectionHeader, marginTop: '20px' }}>
               <span>💰 Section D: Master Unit Rates & Benchmark Pricing (₹)</span>
             </div>
-            <div style={styles.grid4}>
+            <div className="bm-final-boq-input-grid" style={styles.grid4}>
               <div style={styles.fieldGroup}>
                 <label style={styles.label}>Primary Steel Rate (₹/kg)</label>
                 <input type="number" value={ratePrimarySteel} onChange={(e) => setRatePrimarySteel(Number(e.target.value))} style={styles.input} />
@@ -879,7 +879,7 @@ export default function PEBBuildingBOQPage() {
           </div>
 
           {/* Metric Summary Cards */}
-          <div style={styles.summaryGrid}>
+          <div className="bm-final-boq-summary" style={styles.summaryGrid}>
             <div style={{ ...styles.metricCard, ...styles.metricMaroon }}>
               <span style={styles.metricTitle}>Total Steel Weight</span>
               <span style={styles.metricVal}>{steelTonnageBreakdown.totalTonnes} Tonnes</span>
@@ -926,7 +926,7 @@ export default function PEBBuildingBOQPage() {
           {/* Report Content Panels */}
           {activeReportTab === "material" && (
             <div style={styles.tableContainer}>
-              <table style={styles.table}>
+              <div className="bm-final-boq-table-scroll"><table className="bm-final-boq-table" style={styles.table}>
                 <thead>
                   <tr>
                     <th style={styles.th}>Master Code</th>
@@ -1053,13 +1053,13 @@ export default function PEBBuildingBOQPage() {
                     <td style={{ padding: '12px' }}>{formatCurrency(boqCalculations.totalMaterialCost)}</td>
                   </tr>
                 </tbody>
-              </table>
+              </table></div>
             </div>
           )}
 
           {activeReportTab === "labour" && (
             <div style={styles.tableContainer}>
-              <table style={styles.table}>
+              <div className="bm-final-boq-table-scroll"><table className="bm-final-boq-table" style={styles.table}>
                 <thead>
                   <tr>
                     <th style={styles.th}>Task Code</th>
@@ -1100,13 +1100,13 @@ export default function PEBBuildingBOQPage() {
                     <td style={{ padding: '12px' }}>{formatCurrency(boqCalculations.totalLabourErectionCost)}</td>
                   </tr>
                 </tbody>
-              </table>
+              </table></div>
             </div>
           )}
 
           {activeReportTab === "cost" && (
             <div style={styles.tableContainer}>
-              <table style={styles.table}>
+              <div className="bm-final-boq-table-scroll"><table className="bm-final-boq-table" style={styles.table}>
                 <thead>
                   <tr>
                     <th style={styles.th}>Cost Component</th>
@@ -1152,13 +1152,13 @@ export default function PEBBuildingBOQPage() {
                     <td style={{ padding: '12px' }}>100.0%</td>
                   </tr>
                 </tbody>
-              </table>
+              </table></div>
             </div>
           )}
 
           {activeReportTab === "quantity" && (
             <div style={styles.tableContainer}>
-              <table style={styles.table}>
+              <div className="bm-final-boq-table-scroll"><table className="bm-final-boq-table" style={styles.table}>
                 <thead>
                   <tr>
                     <th style={styles.th}>Material Category</th>
@@ -1205,13 +1205,13 @@ export default function PEBBuildingBOQPage() {
                     <td style={styles.td}>{formatCurrency(boqCalculations.rebarCost)}</td>
                   </tr>
                 </tbody>
-              </table>
+              </table></div>
             </div>
           )}
 
           {activeReportTab === "steel" && (
             <div style={styles.tableContainer}>
-              <table style={styles.table}>
+              <div className="bm-final-boq-table-scroll"><table className="bm-final-boq-table" style={styles.table}>
                 <thead>
                   <tr>
                     <th style={styles.th}>Member Type</th>
@@ -1250,13 +1250,13 @@ export default function PEBBuildingBOQPage() {
                     <td style={{ padding: '12px' }}>{formatCurrency(boqCalculations.primaryCost + boqCalculations.secondaryCost + boqCalculations.bracingCost)}</td>
                   </tr>
                 </tbody>
-              </table>
+              </table></div>
             </div>
           )}
 
           {activeReportTab === "foundation" && (
             <div style={styles.tableContainer}>
-              <table style={styles.table}>
+              <div className="bm-final-boq-table-scroll"><table className="bm-final-boq-table" style={styles.table}>
                 <thead>
                   <tr>
                     <th style={styles.th}>Foundation Component</th>
@@ -1300,7 +1300,7 @@ export default function PEBBuildingBOQPage() {
                     <td style={{ padding: '12px' }}>{formatCurrency(boqCalculations.foundationTotalCost)}</td>
                   </tr>
                 </tbody>
-              </table>
+              </table></div>
             </div>
           )}
 
@@ -1316,7 +1316,7 @@ export default function PEBBuildingBOQPage() {
                   <div style={{ fontSize: '22px', fontWeight: '900' }}>{formatCurrency(boqCalculations.grandTotalCost)}</div>
                 </div>
               </div>
-              <table style={styles.table}>
+              <div className="bm-final-boq-table-scroll"><table className="bm-final-boq-table" style={styles.table}>
                 <thead>
                   <tr>
                     <th style={styles.th}>Sr.</th>
@@ -1495,7 +1495,7 @@ export default function PEBBuildingBOQPage() {
                     <td style={{ padding: '14px', fontSize: '16px' }}>{formatCurrency(boqCalculations.grandTotalCost)}</td>
                   </tr>
                 </tbody>
-              </table>
+              </table></div>
             </div>
           )}
         </div>
@@ -1503,3 +1503,4 @@ export default function PEBBuildingBOQPage() {
     </>
   );
 }
+
