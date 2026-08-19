@@ -1192,3 +1192,242 @@
   }
 }
 
+
+/* ==========================================================
+   BUILDMITRA PHASE1 MOBILE FOUNDATION 19-08-2026
+   Mobile only. Preserve desktop and engineering table data.
+   ========================================================== */
+
+@media (max-width: 768px) {
+
+  /* Never allow the complete application page to drift sideways */
+  html,
+  body,
+  #__next {
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
+
+  /*
+     Engineering / BOQ tables:
+     horizontal movement belongs INSIDE the table area,
+     never on the complete page.
+  */
+  .bm-table-scroll,
+  .bm-responsive-table,
+  .table-responsive,
+  [class*="tableWrapper"],
+  [class*="tableContainer"],
+  [class*="TableWrapper"],
+  [class*="TableContainer"] {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+  }
+
+  .bm-table-scroll table,
+  .bm-responsive-table table,
+  .table-responsive table,
+  [class*="tableWrapper"] table,
+  [class*="tableContainer"] table,
+  [class*="TableWrapper"] table,
+  [class*="TableContainer"] table {
+    width: max-content !important;
+    min-width: 680px !important;
+    max-width: none !important;
+    table-layout: auto !important;
+  }
+
+  /* Keep engineering headings readable — never vertical letters */
+  table th,
+  table td {
+    writing-mode: horizontal-tb !important;
+    text-orientation: mixed !important;
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+    white-space: nowrap;
+    vertical-align: middle !important;
+  }
+
+  table th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+
+  /*
+     Forms remain usable.
+     Do not force a tiny fixed width on number/text inputs.
+  */
+  input,
+  select,
+  textarea {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  input[type="number"],
+  input[type="text"],
+  input[type="tel"],
+  input[type="email"] {
+    min-width: 0 !important;
+  }
+
+  /* Prevent long button text becoming vertical */
+  button,
+  [role="button"] {
+    writing-mode: horizontal-tb !important;
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+  }
+
+  /*
+     Isometric / engineering visual:
+     existing rule already places it right.
+     Protect it from becoming large again.
+  */
+  [class*="isometric"],
+  [class*="Isometric"],
+  [class*="diagram"],
+  [class*="Diagram"],
+  [class*="calcImage"],
+  [class*="calculatorImage"],
+  [class*="engineeringImage"] {
+    width: 82px !important;
+    max-width: 22vw !important;
+    height: auto !important;
+    float: right !important;
+    object-fit: contain !important;
+  }
+
+  [class*="isometric"] img,
+  [class*="Isometric"] img,
+  [class*="diagram"] img,
+  [class*="Diagram"] img,
+  [class*="calcImage"] img,
+  [class*="calculatorImage"] img,
+  [class*="engineeringImage"] img {
+    width: 100% !important;
+    max-width: 82px !important;
+    height: auto !important;
+    object-fit: contain !important;
+  }
+}
+
+/* Extra protection for very small phones */
+@media (max-width: 380px) {
+
+  .bm-table-scroll table,
+  .bm-responsive-table table,
+  .table-responsive table,
+  [class*="tableWrapper"] table,
+  [class*="tableContainer"] table {
+    min-width: 640px !important;
+  }
+
+  [class*="isometric"],
+  [class*="Isometric"],
+  [class*="diagram"],
+  [class*="Diagram"],
+  [class*="calcImage"],
+  [class*="calculatorImage"],
+  [class*="engineeringImage"] {
+    width: 72px !important;
+    max-width: 21vw !important;
+  }
+}
+
+
+/* =========================================================
+   BUILDMITRA MARKETPLACE MOBILE CART 19-08-2026
+   Compact e-commerce mobile experience
+   ========================================================= */
+
+@media (max-width: 767px) {
+
+  /* Marketplace product cards */
+  body:has([class*="marketplace"]) {
+    overflow-x: hidden;
+  }
+
+  /* Keep product wording compact */
+  [class*="marketplace"] h2,
+  [class*="marketplace"] h3 {
+    line-height: 1.2 !important;
+  }
+
+  /* Cart / drawer overlays */
+  [style*="position: fixed"][style*="right: 0"][style*="bottom: 0"] {
+    max-width: 94vw !important;
+  }
+
+  /* Compact cart textareas */
+  textarea {
+    min-height: 52px;
+  }
+
+  /* Inputs remain touch-friendly but compact */
+  input,
+  select,
+  textarea {
+    font-size: 14px;
+  }
+
+  /* Compact quantity controls */
+  button {
+    min-height: unset;
+  }
+
+  /* Prevent cart/product names becoming vertical */
+  button,
+  input,
+  textarea,
+  select {
+    writing-mode: horizontal-tb !important;
+    word-break: normal !important;
+  }
+
+  /* Bottom floating e-commerce cart */
+  [style*="translateX(-50%)"][style*="position: fixed"] {
+    width: calc(100vw - 16px) !important;
+    max-width: 520px !important;
+    bottom: 8px !important;
+    border-radius: 12px !important;
+    padding: 8px 10px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Cart drawer scrolling */
+  [style*="overflow-y: auto"],
+  [style*='overflowY: "auto"'] {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+}
+
+@media (max-width: 420px) {
+
+  /* Preserve usable side breathing space */
+  [style*="position: fixed"][style*="right: 0"][style*="bottom: 0"] {
+    width: 94vw !important;
+    max-width: 94vw !important;
+  }
+
+  /* Product/cart typography */
+  [class*="cart"] {
+    line-height: 1.25;
+  }
+
+  /* Keep controls on one horizontal line where possible */
+  [class*="quantity"],
+  [class*="Quantity"] {
+    white-space: nowrap !important;
+  }
+}
+
+/* END BUILDMITRA MARKETPLACE MOBILE CART */
+

@@ -97,6 +97,8 @@ export default function Marketplace() {
   };
 
   const addToCart = (item: any) => {
+    // BUILDMITRA_KEEP_CART_OPEN
+    setShowCart(true);
     const productKey = getCartIdentity(item);
 
     setCart((current) => {
@@ -310,6 +312,10 @@ export default function Marketplace() {
 
     const cartGroupCode = `CART-${Date.now()}`;
 
+      // BUILDMITRA_CART_QUICK_REPLY_CODE
+      const cartReplyCode =
+        `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 14)}`;
+
     try {
       const createdEnquiries: any[] = [];
 
@@ -333,6 +339,8 @@ export default function Marketplace() {
             buyerPhone: cartEnquiry.buyerPhone,
 
             providerUserCode: item.providerUserCode,
+            batchCode: cartGroupCode,
+            quickReplyCode: cartReplyCode,
             providerName: item.providerName,
             providerPhone: item.providerPhone,
 
@@ -420,28 +428,35 @@ export default function Marketplace() {
 
           const itemLines = providerItems
             .map((item, index) => {
-              const replyQuoteLink =
-                `${PUBLIC_URL}/quick-quote?enquiryCode=${encodeURIComponent(
-                  item.enquiryCode || ""
-                )}`;
+              const qty = Number(item.quantity || 0);
+              const unit = String(item.unit || "").toUpperCase();
+              const rate = Math.round(
+                Number(
+                  item.listedRate ??
+                  item.uploadedRate ??
+                  item.providerRate ??
+                  item.rate ??
+                  0
+                )
+              );
 
-              return `${index + 1}. ${item.itemName}
-Quantity: ${item.quantity} ${item.unit || ""}
-Listed Rate: ₹${getItemRate(item).toLocaleString(
-                "en-IN"
-              )}${item.unit ? ` / ${item.unit}` : ""}
-Estimated Amount: ₹${getItemEstimate(
-                item
-              ).toLocaleString("en-IN", {
-                maximumFractionDigits: 2,
-              })}
-Specification: ${cartEnquiry.message || "-"}
-Enquiry Code: ${item.enquiryCode || "-"}
+              const amount = Math.round(
+                Number(
+                  item.estimatedAmount ??
+                  item.estimate ??
+                  qty * rate
+                )
+              );
 
-✅ Reply Quote:
-${replyQuoteLink}`;
+              const shortName = String(item.itemName || "")
+                .trim()
+                .split(/\s+/)
+                .slice(0, 9)
+                .join(" ");
+
+              return `${index + 1}. ${shortName} - ${qty} ${unit} - ₹${rate.toLocaleString("en-IN")}/- - Amt ₹${amount.toLocaleString("en-IN")}`;
             })
-            .join("\n\n------------------------------\n\n");
+            .join("\n");
 
           const providerEstimatedTotal =
             providerItems.reduce(
@@ -450,30 +465,25 @@ ${replyQuoteLink}`;
               0
             );
 
+          const replyQuoteLink =
+            `https://buildmitra-frontend.vercel.app/quick-batch-reply?batchCode=${encodeURIComponent(cartGroupCode)}&provider=${encodeURIComponent(provider.providerUserCode || "")}&code=${encodeURIComponent(cartReplyCode)}`;
+
           const whatsappMessage =
-`Hello ${provider.providerName || "Provider"},
+`🏗️ BUILDMITRA ENQUIRY
 
-🏗️ NEW BUILDMITRA GROUPED ENQUIRY
+Enquiry Ref: ${cartGroupCode}
 
-Customer: ${cartEnquiry.buyerName}
-Phone: ${cartEnquiry.buyerPhone}
-Delivery Location: ${cartEnquiry.location}
-Pincode: ${cartEnquiry.pincode}
+Buyer: ${cartEnquiry.buyerName} | ${cartEnquiry.buyerPhone}
+Delivery: ${cartEnquiry.location} - ${cartEnquiry.pincode}
 
 ${itemLines}
 
-Supplier Item Estimate:
-₹${providerEstimatedTotal.toLocaleString("en-IN", {
-  maximumFractionDigits: 2,
-})}
+Total Estimate Amount: ₹${Math.round(providerEstimatedTotal).toLocaleString("en-IN")}
 
-Common Specification:
-${cartEnquiry.message || "-"}
+Reply Quote:
+${replyQuoteLink}
 
-Cart Group:
-${cartGroupCode}
-
-Please send your final quotation with GST, delivery charges, loading/unloading, included items and extra charges.`;
+BuildMitra`;
 
           return {
             providerKey,
@@ -567,8 +577,6 @@ Please send your final quotation with GST, delivery charges, loading/unloading, 
       const phone = cleanPhone(selectedItem.providerPhone);
       const enquiryCode = data.enquiry?.enquiryCode || "";
       const PUBLIC_URL = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
-      const replyQuoteLink = `${PUBLIC_URL}/quick-quote?enquiryCode=${enquiryCode}`;
-      const rejectLink = `${PUBLIC_URL}/quick-quote?enquiryCode=${enquiryCode}&action=reject`;
 
       const whatsappMessage =
 `Hello ${selectedItem.providerName || "Supplier"},
@@ -588,11 +596,7 @@ Message: ${enquiry.message || "-"}
 
 Please send quotation with rate, delivery, included/excluded items and extra charges if any.
 
-✅ Reply Quote:
-${replyQuoteLink}
 
-❌ Reject Enquiry:
-${rejectLink}
 
 📞 Buyer Phone:
 ${enquiry.buyerPhone}`;
@@ -758,11 +762,10 @@ ${enquiry.buyerPhone}`;
       )}
       {showCart && (
         <div
-          style={styles.modalOverlay}
-          onClick={() => setShowCart(false)}
+          style={{ ...styles.modalOverlay, background: "transparent", pointerEvents: "none" }}
         >
           <div
-            style={styles.cartModalBox}
+            style={{ ...styles.cartModalBox, pointerEvents: "auto" }}
             onClick={(e) => e.stopPropagation()}
           >
             <div style={styles.cartHeader}>
@@ -857,7 +860,7 @@ ${enquiry.buyerPhone}`;
 
                           <div style={styles.cartProductDetails}>
                             <div style={styles.cartItemName}>
-                              {cartItem.itemName}
+                              {String(cartItem.itemName || "").trim().split(/\s+/).slice(0, 8).join(" ")}
                             </div>
 
                             <div style={styles.cartProvider}>
@@ -921,15 +924,14 @@ ${enquiry.buyerPhone}`;
                                 ₹
                                 {getItemEstimate(
                                   cartItem
-                                ).toLocaleString("en-IN", {
-                                  maximumFractionDigits: 2,
-                                })}
+                                ).toLocaleString("en-IN", { maximumFractionDigits: 0 })}
                               </div>
                             </div>
 
                             {/* Item-level Special Specification Input */}
                             <textarea
                               style={{
+                                display: "none",
                                 width: "100%",
                                 marginTop: 10,
                                 padding: "6px 10px",
@@ -1525,16 +1527,10 @@ cartAddButton: {
     background: "#f5f6f8",
   },
 
-  cartList: {
-    display: "grid",
-    gap: 10,
+  cartList: { display: "grid", gap: 5,
   },
 
-  cartItem: {
-    position: "relative",
-    display: "flex",
-    gap: 11,
-    padding: 12,
+  cartItem: { position: "relative", display: "flex", gap: 4, padding: "7px 5px",
     border: "1px solid #e5e7eb",
     borderRadius: 13,
     background: "#ffffff",
@@ -1542,93 +1538,103 @@ cartAddButton: {
   },
 
   cartProductIcon: {
-    width: 52,
-    height: 52,
-    minWidth: 52,
-    borderRadius: 11,
-    background: "#eef2ff",
-    color: "#155eef",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: 22,
-    fontWeight: 900,
+    display: "none",
   },
 
   cartProductDetails: {
     flex: 1,
     minWidth: 0,
+    width: "100%",
+    display: "grid",
+    gridTemplateColumns: "minmax(0,1fr) 92px 58px 76px",
+    columnGap: 5,
+    alignItems: "center",
   },
 
   cartItemName: {
-    paddingRight: 28,
-    fontWeight: 900,
-    fontSize: 14,
-    lineHeight: 1.35,
+    gridColumn: "1",
+    gridRow: "1",
+    minWidth: 0,
+    padding: 0,
+    fontWeight: 800,
+    fontSize: 11,
+    lineHeight: 1.15,
     color: "#111827",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
   },
 
   cartProvider: {
-    color: "#6b7280",
-    fontSize: 12,
-    marginTop: 3,
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
+    display: "none",
   },
 
   cartRate: {
-    color: "#111827",
-    fontSize: 13,
+    gridColumn: "3",
+    gridRow: "1",
+    margin: 0,
+    padding: 0,
+    fontSize: 11,
     fontWeight: 800,
-    marginTop: 7,
+    color: "#111827",
+    textAlign: "right",
+    whiteSpace: "nowrap",
   },
 
   cartItemBottom: {
-    marginTop: 10,
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 10,
+    display: "contents",
   },
 
   quantityControl: {
+    gridColumn: "2",
+    gridRow: "1",
     display: "flex",
     alignItems: "center",
+    justifyContent: "center",
+    gap: 1,
+    height: 26,
     border: "1px solid #16a34a",
-    borderRadius: 8,
+    borderRadius: 5,
     overflow: "hidden",
-    height: 34,
+    background: "#fff",
   },
 
   quantityButton: {
-    width: 32,
-    height: 34,
+    width: 20,
+    minWidth: 20,
+    height: 24,
+    padding: 0,
     border: 0,
-    background: "#ecfdf3",
+    background: "#ecfdf5",
     color: "#15803d",
-    fontSize: 20,
+    fontSize: 13,
     fontWeight: 900,
     cursor: "pointer",
   },
 
   quantityInput: {
-    width: 44,
-    height: 34,
+    width: 42,
+    minWidth: 42,
+    height: 24,
+    padding: "0 1px",
     border: 0,
-    borderLeft: "1px solid #bbf7d0",
-    borderRight: "1px solid #bbf7d0",
-    textAlign: "center",
     outline: "none",
-    fontWeight: 900,
+    textAlign: "center",
+    fontSize: 10,
+    fontWeight: 800,
+    background: "#fff",
     boxSizing: "border-box",
   },
 
   cartItemEstimate: {
-    fontSize: 15,
+    gridColumn: "4",
+    gridRow: "1",
+    margin: 0,
+    fontSize: 11,
     fontWeight: 900,
     color: "#111827",
     textAlign: "right",
+    whiteSpace: "nowrap",
   },
 
   cartDeleteButton: {
@@ -1869,6 +1875,11 @@ cartAddButton: {
     boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
   },
 };
+
+
+
+
+
 
 
 

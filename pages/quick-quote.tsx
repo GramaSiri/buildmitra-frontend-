@@ -18,21 +18,82 @@ export default function QuickQuotePage() {
   const [attachFile, setAttachFile] = useState<any>(null);
   const [attachFileName, setAttachFileName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [enquiryLoading, setEnquiryLoading] = useState(true);
+  const [enquiryError, setEnquiryError] = useState("");
   const [showLivePreview, setShowLivePreview] = useState(false);
 
   const cleanPhone = (phone: string) => String(phone || "").replace(/\D/g, "").replace(/^91/, "");
 
   useEffect(() => {
-    if (!enquiryCode) return;
-    fetch(`${API_BASE}/api/enquiry/code/${enquiryCode}`)
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.success) {
-          setEnquiry(d.enquiry);
-          if (d.enquiry?.uploadedRate) setRate(String(d.enquiry.uploadedRate));
+    if (!router.isReady) return;
+
+    const code = Array.isArray(enquiryCode)
+      ? String(enquiryCode[0] || "").trim()
+      : String(enquiryCode || "").trim();
+
+    if (!code) {
+      setEnquiry(null);
+      setEnquiryError("Enquiry code is missing.");
+      setEnquiryLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+
+    const timer = window.setTimeout(() => {
+      controller.abort();
+    }, 12000);
+
+    setEnquiryLoading(true);
+    setEnquiryError("");
+
+    fetch(
+      `${API_BASE}/api/enquiry/code/${encodeURIComponent(code)}`,
+      { signal: controller.signal }
+    )
+      .then(async (response) => {
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(
+            data?.message || `Unable to load enquiry (${response.status}).`
+          );
         }
+
+        if (!data?.success || !data?.enquiry) {
+          throw new Error(data?.message || "Enquiry not found.");
+        }
+
+        setEnquiry(data.enquiry);
+
+        if (data.enquiry?.uploadedRate) {
+          setRate(String(data.enquiry.uploadedRate));
+        }
+      })
+      .catch((error) => {
+        setEnquiry(null);
+
+        if (error?.name === "AbortError") {
+          setEnquiryError(
+            "Enquiry loading timed out. Please use Supplier Dashboard."
+          );
+        } else {
+          setEnquiryError(
+            error?.message ||
+            "Unable to load this enquiry. Please use Supplier Dashboard."
+          );
+        }
+      })
+      .finally(() => {
+        window.clearTimeout(timer);
+        setEnquiryLoading(false);
       });
-  }, [enquiryCode]);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [router.isReady, enquiryCode]);
 
   const rejectEnquiry = async () => {
     if (!enquiryCode) return;
@@ -173,7 +234,57 @@ Remarks: ${remarks}${attachmentInfo}
     alert("Quote saved cleanly! WhatsApp opened to buyer with official BuildMitra quotation.");
   };
 
-  if (!enquiry) return <div style={styles.page}>Loading enquiry...</div>;
+  if (enquiryLoading) {
+    return (
+      <div style={styles.page}>
+        <div style={{ maxWidth: 520, margin: "40px auto", padding: 20, textAlign: "center" }}>
+          Loading enquiry...
+        </div>
+      </div>
+    );
+  }
+
+  if (!enquiry) {
+    return (
+      <div style={styles.page}>
+        <div
+          style={{
+            maxWidth: 520,
+            margin: "40px auto",
+            padding: 22,
+            background: "#ffffff",
+            border: "1px solid #e5e7eb",
+            borderRadius: 12,
+            textAlign: "center",
+          }}
+        >
+          <h2 style={{ margin: "0 0 8px", color: "#111827" }}>
+            Enquiry unavailable
+          </h2>
+
+          <p style={{ margin: "0 0 16px", color: "#6b7280", lineHeight: 1.5 }}>
+            {enquiryError || "This enquiry could not be loaded."}
+          </p>
+
+          <button
+            type="button"
+            onClick={() => router.push("/supplier-dashboard")}
+            style={{
+              border: 0,
+              borderRadius: 9,
+              padding: "10px 16px",
+              background: "#16a34a",
+              color: "#ffffff",
+              fontWeight: 800,
+              cursor: "pointer",
+            }}
+          >
+            Back to Supplier Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const qtyNum = Number(enquiry.quantity) || 1;
   const rateNum = Number(rate) || Number(enquiry.uploadedRate) || 0;
@@ -290,5 +401,7 @@ const styles: Record<string, any> = {
   buttonInfo: { width: "100%", padding: 12, background: "#0284c7", color: "#fff", border: 0, borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: 14 },
   reject: { width: "100%", padding: 10, background: "#ef4444", color: "#fff", border: 0, borderRadius: 8, fontWeight: 700, marginTop: 12, cursor: "pointer", fontSize: 13 },
 };
+
+
 
 

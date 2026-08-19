@@ -210,6 +210,17 @@ export default function SupplierDashboard() {
   const [quoteNotes, setQuoteNotes] = useState("");
   const [quoteDelivery, setQuoteDelivery] = useState("");
 
+  // BUILDMITRA SUPPLIER CONSOLIDATED BATCH QUOTE 19-08-2026
+  const [selectedBatchItems, setSelectedBatchItems] = useState<any[]>([]);
+  const [batchQuoteItems, setBatchQuoteItems] = useState<Record<string, any>>({});
+  const [quoteGstPercent, setQuoteGstPercent] = useState("");
+  const [quoteTransport, setQuoteTransport] = useState("");
+  const [quoteLoadingCharge, setQuoteLoadingCharge] = useState("");
+  const [quoteUnloadingCharge, setQuoteUnloadingCharge] = useState("");
+  const [quoteDiscount, setQuoteDiscount] = useState("");
+  const [quotePaymentTerms, setQuotePaymentTerms] = useState("");
+  const [batchLinkOpened, setBatchLinkOpened] = useState(false);
+
   useEffect(() => {
     setIsClient(true);
     const userStr =
@@ -442,6 +453,334 @@ export default function SupplierDashboard() {
       alert(err.message || "Error submitting rate edit");
     } finally {
       setSubmittingEdit(false);
+    }
+  };
+
+  /*
+    Group marketplace enquiries supplier-side by batchCode.
+    Legacy enquiries without batchCode remain individual groups.
+  */
+  const groupedEnquiries = useMemo(() => {
+    const groups: Record<string, any[]> = {};
+
+    enquiries.forEach((e: any) => {
+      const key =
+        String(e.batchCode || "").trim() ||
+        String(e.enquiryCode || e._id || "");
+
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(e);
+    });
+
+    return Object.entries(groups)
+      .map(([groupKey, items]) => {
+        const first = items[0] || {};
+
+        return {
+          ...first,
+          _groupKey: groupKey,
+          _batchItems: items,
+          _batchCount: items.length,
+        };
+      })
+      .sort((a: any, b: any) => {
+        const ad = new Date(a.createdAt || 0).getTime();
+        const bd = new Date(b.createdAt || 0).getTime();
+        return bd - ad;
+      });
+  }, [enquiries]);
+
+  const openBatchQuote = (group: any) => {
+    const items = Array.isArray(group?._batchItems)
+      ? group._batchItems
+      : [group];
+
+    const initial: Record<string, any> = {};
+
+    items.forEach((item: any) => {
+      const key = String(item._id || item.enquiryCode);
+
+      initial[key] = {
+        rate: String(
+          item.uploadedRate ??
+          item.listedRate ??
+          item.providerRate ??
+          item.rate ??
+          ""
+        ),
+        availability: "Available",
+        remarks: "",
+      };
+    });
+
+    setSelectedEnquiry(group);
+    setSelectedBatchItems(items);
+    setBatchQuoteItems(initial);
+
+    setQuoteNotes("");
+    setQuoteDelivery("");
+    setQuoteGstPercent("");
+    setQuoteTransport("");
+    setQuoteLoadingCharge("");
+    setQuoteUnloadingCharge("");
+    setQuoteDiscount("");
+    setQuotePaymentTerms("");
+
+    setShowQuoteModal(true);
+  };
+
+
+  // BUILDMITRA_DIRECT_BATCH_QUOTE_LINK
+  useEffect(() => {
+    if (batchLinkOpened) return;
+    if (typeof window === "undefined") return;
+    if (!groupedEnquiries.length) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const batchCodeFromLink = String(
+      params.get("batchCode") || ""
+    ).trim();
+
+    const shouldOpen =
+      params.get("openQuote") === "1";
+
+    if (!batchCodeFromLink || !shouldOpen) return;
+
+    const group = groupedEnquiries.find(
+      (row: any) =>
+        String(row.batchCode || "").trim() === batchCodeFromLink
+    );
+
+    if (!group) return;
+
+    setBatchLinkOpened(true);
+    openBatchQuote(group);
+  }, [groupedEnquiries, batchLinkOpened]);
+  const submitBatchQuote = async () => {
+    // Open immediately from the supplier click.
+    // This prevents browsers/mobile from blocking WhatsApp
+    // after the asynchronous quote API request completes.
+    const buyerQuoteWindow =
+      typeof window !== "undefined"
+        ? window.open("about:blank", "buildmitra-buyer-quotation")
+        : null;
+    if (!selectedEnquiry || selectedBatchItems.length === 0) {
+      alert("No enquiry items selected.");
+      return;
+    }
+
+    const batchCode = String(selectedEnquiry.batchCode || "").trim();
+
+    /*
+      Old enquiries without batchCode retain the existing
+      single-enquiry quote behaviour.
+    */
+    if (!batchCode) {
+      if (selectedBatchItems.length === 1) {
+        const only = selectedBatchItems[0];
+        const key = String(only._id || only.enquiryCode);
+        const rate = Number(batchQuoteItems[key]?.rate || 0);
+
+        if (rate <= 0) {
+          alert("Please enter quoted rate.");
+          return;
+        }
+
+        try {
+          const apiBase = getApiBase();
+
+          const data = await safeFetchJson(
+            `${apiBase}/api/enquiry/${only._id}/quote`,
+            {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+                "x-user-code": userCode,
+              },
+              body: JSON.stringify({
+                quotedAmount: rate,
+                quoteMessage:
+                  quoteNotes || "Supplier quotation",
+                quoteValidityDate: quoteDelivery || "",
+                paymentTerms: quotePaymentTerms || "",
+                gstIncluded: Number(quoteGstPercent || 0) > 0,
+                transportCharges: Number(quoteTransport || 0),
+              }),
+            }
+          );
+
+          if (!data?.success) {
+            alert(data?.message || "Could not submit quote.");
+            return;
+          }
+
+          alert("Quote submitted successfully.");
+          setShowQuoteModal(false);
+          setSelectedBatchItems([]);
+          setBatchQuoteItems({});
+
+          fetchMyEnquiries(userCode);
+          fetchMyReports(userCode);
+        } catch (error: any) {
+          alert(error?.message || "Could not submit quote.");
+        }
+
+        return;
+      }
+
+      alert("This older enquiry has no batch code.");
+      return;
+    }
+
+    const invalid = selectedBatchItems.some((item: any) => {
+      const key = String(item._id || item.enquiryCode);
+      return Number(batchQuoteItems[key]?.rate || 0) <= 0;
+    });
+
+    if (invalid) {
+      alert("Enter a valid quoted rate for every item.");
+      return;
+    }
+
+    const items = selectedBatchItems.map((item: any) => {
+      const key = String(item._id || item.enquiryCode);
+      const q = batchQuoteItems[key] || {};
+
+      const quantity = Number(item.quantity || 0);
+      const rate = Number(q.rate || 0);
+
+      return {
+        enquiryId: item._id,
+        enquiryCode: item.enquiryCode,
+        itemName: item.itemName,
+        quantity,
+        unit: item.unit || "",
+        rate,
+        amount: quantity * rate,
+        availability: q.availability || "Available",
+        remarks: q.remarks || "",
+      };
+    });
+
+    const subtotal = items.reduce(
+      (sum: number, item: any) => sum + Number(item.amount || 0),
+      0
+    );
+
+    const gstAmount =
+      subtotal * (Number(quoteGstPercent || 0) / 100);
+
+    try {
+      const apiBase = getApiBase();
+
+      const data = await safeFetchJson(
+        `${apiBase}/api/enquiry/batch/${encodeURIComponent(batchCode)}/quote`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "x-user-code": userCode,
+          },
+          body: JSON.stringify({
+            items,
+            gstAmount,
+            gstIncluded: Number(quoteGstPercent || 0) > 0,
+            transportCharges: Number(quoteTransport || 0),
+            loadingCharges: Number(quoteLoadingCharge || 0),
+            unloadingCharges: Number(quoteUnloadingCharge || 0),
+            discount: Number(quoteDiscount || 0),
+            deliveryTime: quoteDelivery,
+            paymentTerms: quotePaymentTerms,
+            remarks: quoteNotes,
+          }),
+        }
+      );
+
+      if (!data?.success) {
+        alert(data?.message || "Could not submit consolidated quote.");
+        return;
+      }
+
+      const quoteLines = items
+        .map((item: any, index: number) => {
+          const shortName = String(item.itemName || "")
+            .trim()
+            .split(/\s+/)
+            .slice(0, 9)
+            .join(" ");
+
+          return `${index + 1}. ${shortName} - ${item.quantity} ${String(item.unit || "").toUpperCase()} - ₹${Math.round(item.rate).toLocaleString("en-IN")}/- - Amt ₹${Math.round(item.amount).toLocaleString("en-IN")}`;
+        })
+        .join("\n");
+
+      const buyerPhone = String(selectedEnquiry.buyerPhone || "")
+        .replace(/\D/g, "")
+        .replace(/^91/, "");
+
+      const buyerQuoteMessage =
+`🏗️ BUILDMITRA QUOTATION
+
+Enquiry Ref: ${batchCode}
+
+Supplier: ${selectedEnquiry.providerName || selectedEnquiry.assignedProviderName || "BuildMitra Supplier"}
+
+${quoteLines}
+
+Subtotal: ₹${Math.round(Number(data.subtotal || subtotal)).toLocaleString("en-IN")}
+GST: ₹${Math.round(Number(data.gstAmount || 0)).toLocaleString("en-IN")}
+Transport: ₹${Math.round(Number(data.transportCharges || 0)).toLocaleString("en-IN")}
+Loading: ₹${Math.round(Number(data.loadingCharges || 0)).toLocaleString("en-IN")}
+Unloading: ₹${Math.round(Number(data.unloadingCharges || 0)).toLocaleString("en-IN")}
+Discount: ₹${Math.round(Number(data.discount || 0)).toLocaleString("en-IN")}
+
+Grand Total: ₹${Math.round(Number(data.grandTotal || 0)).toLocaleString("en-IN")}
+
+Delivery: ${quoteDelivery || "-"}
+Payment Terms: ${quotePaymentTerms || "-"}
+Remarks: ${quoteNotes || "-"}
+
+BuildMitra`;
+
+      if (buyerPhone) {
+        const buyerWaUrl =
+          `https://wa.me/91${buyerPhone}?text=${encodeURIComponent(buyerQuoteMessage)}`;
+
+        if (buyerQuoteWindow && !buyerQuoteWindow.closed) {
+          buyerQuoteWindow.location.href = buyerWaUrl;
+        } else {
+          window.location.href = buyerWaUrl;
+        }
+      } else {
+        if (buyerQuoteWindow && !buyerQuoteWindow.closed) {
+          buyerQuoteWindow.close();
+        }
+
+        alert(
+          "Quote saved, but buyer mobile number is missing. WhatsApp could not be opened."
+        );
+      }
+
+      alert(
+        `Consolidated quote submitted for ${data.count || items.length} item(s). Buyer WhatsApp opened.`
+      );
+
+      setShowQuoteModal(false);
+      setSelectedEnquiry(null);
+      setSelectedBatchItems([]);
+      setBatchQuoteItems({});
+
+      fetchMyEnquiries(userCode);
+      fetchMyReports(userCode);
+
+    } catch (error: any) {
+      if (buyerQuoteWindow && !buyerQuoteWindow.closed) {
+        buyerQuoteWindow.close();
+      }
+
+      alert(
+        error?.message ||
+        "Could not submit consolidated supplier quote."
+      );
     }
   };
 
@@ -1290,7 +1629,7 @@ export default function SupplierDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {enquiries.map((e) => (
+                  {groupedEnquiries.map((e: any) => (
                     <tr key={e._id}>
                       <td style={styles.td}>{e.createdAt ? new Date(e.createdAt).toLocaleDateString() : "-"}</td>
                       <td style={styles.td}>
@@ -1298,11 +1637,26 @@ export default function SupplierDashboard() {
                         <div style={{ fontSize: 11, color: "#666" }}>{e.buyerPhone}</div>
                       </td>
                       <td style={styles.td}>
-                        <strong>{e.itemName || e.masterItemCode}</strong>
+                        <strong>
+  {e._batchCount > 1
+    ? `${e._batchCount} Items`
+    : (e.itemName || e.masterItemCode)}
+</strong>
+{e._batchCount > 1 && (
+  <div style={{ fontSize: 11, color: "#666", marginTop: 3 }}>
+    {e._batchItems
+      .slice(0, 3)
+      .map((x: any) => x.itemName)
+      .join(", ")}
+    {e._batchCount > 3 ? ` +${e._batchCount - 3} more` : ""}
+  </div>
+)}
                         <div style={{ fontSize: 11, color: "#666" }}>{e.specification}</div>
                       </td>
                       <td style={styles.td}>
-                        {e.quantity} {e.unit} | {e.location || "Bengaluru"}
+                        {e._batchCount > 1
+  ? `${e._batchCount} requested items | ${e.location || "Bengaluru"}`
+  : `${e.quantity} ${e.unit || ""} | ${e.location || "Bengaluru"}`}
                       </td>
                       <td style={styles.td}>
                         <span style={{ ...styles.statusBadge, background: e.status === "Quoted" ? "#d1fae5" : "#fef3c7" }}>
@@ -1312,14 +1666,10 @@ export default function SupplierDashboard() {
                       <td style={styles.td}>
                         {e.status !== "Quoted" && (
                           <button
-                            onClick={() => {
-                              setSelectedEnquiry(e);
-                              setQuotePrice("");
-                              setShowQuoteModal(true);
-                            }}
+                            onClick={() => openBatchQuote(e)}
                             style={styles.addBtn}
                           >
-                            Send Quote
+                            View & Quote
                           </button>
                         )}
                       </td>
@@ -1424,56 +1774,288 @@ export default function SupplierDashboard() {
           </div>
         </div>
       )}
-
       {/* Quote Response Modal */}
       {showQuoteModal && selectedEnquiry && (
-        <div style={styles.modalBackdrop} onClick={() => setShowQuoteModal(false)}>
-          <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-            <h2 style={{ marginTop: 0, color: "#1a5f7a" }}>Send Quote to Buyer</h2>
-            <div style={{ fontSize: 13, marginBottom: 14 }}>
-              Item: <strong>{selectedEnquiry.itemName}</strong> | Buyer: <strong>{selectedEnquiry.buyerName}</strong> ({selectedEnquiry.buyerPhone})
+        <div
+          style={styles.modalBackdrop}
+          onClick={() => setShowQuoteModal(false)}
+        >
+          <div
+            style={{
+              ...styles.modalContent,
+              width: "min(960px, 96vw)",
+              maxWidth: 960,
+              maxHeight: "92vh",
+              overflowY: "auto",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 style={{ marginTop: 0, color: "#1a5f7a" }}>
+              Consolidated Supplier Quote
+            </h2>
+
+            <div
+              style={{
+                fontSize: 13,
+                marginBottom: 12,
+                color: "#475569",
+              }}
+            >
+              Buyer: <strong>{selectedEnquiry.buyerName}</strong>
+              {" • "}
+              {selectedEnquiry.buyerPhone}
+              {" • "}
+              {selectedBatchItems.length} item
+              {selectedBatchItems.length === 1 ? "" : "s"}
+              {selectedEnquiry.batchCode
+                ? ` • Batch ${selectedEnquiry.batchCode}`
+                : ""}
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div
+              style={{
+                width: "100%",
+                overflowX: "auto",
+                WebkitOverflowScrolling: "touch",
+                border: "1px solid #e5e7eb",
+                borderRadius: 10,
+              }}
+            >
+              <table
+                style={{
+                  width: "100%",
+                  minWidth: 760,
+                  borderCollapse: "collapse",
+                }}
+              >
+                <thead>
+                  <tr>
+                    <th style={styles.th}>Item</th>
+                    <th style={styles.th}>Qty</th>
+                    <th style={styles.th}>Unit</th>
+                    <th style={styles.th}>Rate ₹</th>
+                    <th style={styles.th}>Availability</th>
+                    <th style={styles.th}>Amount ₹</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {selectedBatchItems.map((item: any) => {
+                    const key = String(item._id || item.enquiryCode);
+                    const q = batchQuoteItems[key] || {};
+                    const rate = Number(q.rate || 0);
+                    const amount =
+                      (Number(item.quantity || 0) || 0) * rate;
+
+                    return (
+                      <tr key={key}>
+                        <td style={styles.td}>
+                          <strong>{item.itemName}</strong>
+                          <div style={{ fontSize: 10, color: "#64748b" }}>
+                            {item.enquiryCode}
+                          </div>
+                        </td>
+
+                        <td style={styles.td}>{item.quantity}</td>
+                        <td style={styles.td}>{item.unit || "-"}</td>
+
+                        <td style={styles.td}>
+                          <input
+                            type="number"
+                            min="0"
+                            value={q.rate || ""}
+                            placeholder="Rate"
+                            style={{
+                              ...styles.modalInput,
+                              width: 105,
+                              minWidth: 90,
+                            }}
+                            onChange={(ev) =>
+                              setBatchQuoteItems((current) => ({
+                                ...current,
+                                [key]: {
+                                  ...current[key],
+                                  rate: ev.target.value,
+                                },
+                              }))
+                            }
+                          />
+                        </td>
+
+                        <td style={styles.td}>
+                          <select
+                            value={q.availability || "Available"}
+                            style={{
+                              ...styles.modalInput,
+                              width: 135,
+                            }}
+                            onChange={(ev) =>
+                              setBatchQuoteItems((current) => ({
+                                ...current,
+                                [key]: {
+                                  ...current[key],
+                                  availability: ev.target.value,
+                                },
+                              }))
+                            }
+                          >
+                            <option>Available</option>
+                            <option>Limited Stock</option>
+                            <option>Out of Stock</option>
+                            <option>On Order</option>
+                          </select>
+                        </td>
+
+                        <td style={styles.td}>
+                          <strong>
+                            ₹{amount.toLocaleString("en-IN", {
+                              maximumFractionDigits: 2,
+                            })}
+                          </strong>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns:
+                  "repeat(auto-fit, minmax(145px, 1fr))",
+                gap: 10,
+                marginTop: 14,
+              }}
+            >
               <div>
-                <label style={styles.label}>Quoted Rate (₹) *</label>
+                <label style={styles.label}>GST %</label>
                 <input
                   type="number"
+                  value={quoteGstPercent}
+                  onChange={(e) => setQuoteGstPercent(e.target.value)}
                   style={styles.modalInput}
-                  value={quotePrice}
-                  onChange={(e) => setQuotePrice(e.target.value)}
-                  placeholder="Enter total or unit price"
+                  placeholder="0"
                 />
               </div>
 
               <div>
-                <label style={styles.label}>Delivery Date / Validity</label>
+                <label style={styles.label}>Transport ₹</label>
                 <input
-                  type="text"
+                  type="number"
+                  value={quoteTransport}
+                  onChange={(e) => setQuoteTransport(e.target.value)}
                   style={styles.modalInput}
-                  value={quoteDelivery}
-                  onChange={(e) => setQuoteDelivery(e.target.value)}
-                  placeholder="e.g. Tomorrow by 10 AM / Valid for 3 Days"
+                  placeholder="0"
                 />
               </div>
 
               <div>
-                <label style={styles.label}>Quotation Message / Notes</label>
-                <textarea
-                  style={{ ...styles.modalInput, height: 70 }}
-                  value={quoteNotes}
-                  onChange={(e) => setQuoteNotes(e.target.value)}
-                  placeholder="Payment terms, transport included, etc."
+                <label style={styles.label}>Loading ₹</label>
+                <input
+                  type="number"
+                  value={quoteLoadingCharge}
+                  onChange={(e) => setQuoteLoadingCharge(e.target.value)}
+                  style={styles.modalInput}
+                  placeholder="0"
+                />
+              </div>
+
+              <div>
+                <label style={styles.label}>Unloading ₹</label>
+                <input
+                  type="number"
+                  value={quoteUnloadingCharge}
+                  onChange={(e) => setQuoteUnloadingCharge(e.target.value)}
+                  style={styles.modalInput}
+                  placeholder="0"
+                />
+              </div>
+
+              <div>
+                <label style={styles.label}>Discount ₹</label>
+                <input
+                  type="number"
+                  value={quoteDiscount}
+                  onChange={(e) => setQuoteDiscount(e.target.value)}
+                  style={styles.modalInput}
+                  placeholder="0"
                 />
               </div>
             </div>
 
-            <div style={{ marginTop: 20, display: "flex", justifyContent: "flex-end", gap: 10 }}>
-              <button onClick={() => setShowQuoteModal(false)} style={styles.cancelBtn}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns:
+                  "repeat(auto-fit, minmax(220px, 1fr))",
+                gap: 10,
+                marginTop: 12,
+              }}
+            >
+              <div>
+                <label style={styles.label}>Delivery</label>
+                <input
+                  value={quoteDelivery}
+                  onChange={(e) => setQuoteDelivery(e.target.value)}
+                  style={styles.modalInput}
+                  placeholder="Example: 2-3 days"
+                />
+              </div>
+
+              <div>
+                <label style={styles.label}>Payment Terms</label>
+                <input
+                  value={quotePaymentTerms}
+                  onChange={(e) => setQuotePaymentTerms(e.target.value)}
+                  style={styles.modalInput}
+                  placeholder="Advance / credit terms"
+                />
+              </div>
+            </div>
+
+            <div style={{ marginTop: 12 }}>
+              <label style={styles.label}>Common Remarks</label>
+              <textarea
+                value={quoteNotes}
+                onChange={(e) => setQuoteNotes(e.target.value)}
+                style={{
+                  ...styles.modalInput,
+                  width: "100%",
+                  minHeight: 70,
+                  boxSizing: "border-box",
+                }}
+                placeholder="Quotation remarks / exclusions"
+              />
+            </div>
+
+            <div
+              style={{
+                marginTop: 16,
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: 10,
+                position: "sticky",
+                bottom: 0,
+                background: "#fff",
+                paddingTop: 10,
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setShowQuoteModal(false)}
+                style={styles.cancelBtn}
+              >
                 Cancel
               </button>
-              <button onClick={submitQuote} style={styles.saveBtn}>
-                Submit Quote
+
+              <button
+                type="button"
+                onClick={submitBatchQuote}
+                style={styles.saveBtn}
+              >
+                Submit Consolidated Quote
               </button>
             </div>
           </div>
@@ -1554,4 +2136,9 @@ const styles: Record<string, React.CSSProperties> = {
   cancelBtn: { padding: "8px 16px", borderRadius: 8, border: "1px solid #cbd5e1", background: "#fff", color: "#475569", fontWeight: 600, cursor: "pointer" },
   saveBtn: { padding: "8px 16px", borderRadius: 8, border: 0, background: "#1a5f7a", color: "#fff", fontWeight: 700, cursor: "pointer" },
 };
+
+
+
+
+
 
