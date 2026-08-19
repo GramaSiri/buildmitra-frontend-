@@ -85,13 +85,28 @@ export default function QuickBatchReplyPage() {
           "Quotation created and saved. Opening buyer WhatsApp..."
         );
 
-        const url =
-          `https://wa.me/91${buyerPhone}` +
-          `?text=${encodeURIComponent(
-            data.whatsappMessage || ""
-          )}`;
+        const encodedMessage = encodeURIComponent(
+          data.whatsappMessage || ""
+        );
 
-        window.location.replace(url);
+        const isMobile =
+          /Android|iPhone|iPad|iPod/i.test(
+            navigator.userAgent
+          );
+
+        if (isMobile) {
+          // Open installed WhatsApp directly on mobile.
+          const whatsappAppUrl =
+            `whatsapp://send?phone=91${buyerPhone}&text=${encodedMessage}`;
+
+          window.location.href = whatsappAppUrl;
+        } else {
+          // Desktop / laptop fallback.
+          const whatsappWebUrl =
+            `https://wa.me/91${buyerPhone}?text=${encodedMessage}`;
+
+          window.location.href = whatsappWebUrl;
+        }
 
       } catch (e: any) {
         setError(
@@ -158,4 +173,5 @@ export default function QuickBatchReplyPage() {
     </div>
   );
 }
+
 
