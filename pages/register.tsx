@@ -239,7 +239,7 @@ if (!registrationSuccess) return;
 
   return (
     <main style={styles.page}>
-      <section style={styles.card}>
+      <section style={styles.card} className="bm-register-card">
         <div style={styles.logo}>🏗️ BuildMitra</div>
         <h1 style={styles.title}>Create Your Account</h1>
         <p style={styles.subtitle}>
@@ -391,7 +391,7 @@ if (!registrationSuccess) return;
             </button>
           </div>
 
-          <div style={styles.planGrid}>
+          <div style={styles.planGrid} className="bm-register-plan-scroll">
             {PLANS.map((plan) => {
               const selected = form.subscriptionPlan === plan.id;
               const amount =
@@ -487,6 +487,66 @@ if (!registrationSuccess) return;
         </button>
       </section>
 
+
+      <style jsx global>{`
+        /* BUILDMITRA_REGISTER_MOBILE_FIX */
+        @media (max-width: 768px) {
+
+          .bm-register-card {
+            width: calc(100vw - 16px) !important;
+            max-width: calc(100vw - 16px) !important;
+            margin: 8px auto !important;
+            padding: 12px !important;
+            box-sizing: border-box !important;
+            overflow: visible !important;
+          }
+
+          .bm-register-plan-scroll {
+            width: 100% !important;
+            max-width: 100% !important;
+            overflow-x: auto !important;
+            overflow-y: hidden !important;
+            -webkit-overflow-scrolling: touch !important;
+            display: flex !important;
+            gap: 8px !important;
+            padding-bottom: 8px !important;
+          }
+
+          .bm-register-plan-scroll > * {
+            min-width: 230px !important;
+            flex: 0 0 230px !important;
+            writing-mode: horizontal-tb !important;
+            word-break: normal !important;
+            overflow-wrap: normal !important;
+          }
+
+          .bm-register-plan-scroll *,
+          .bm-register-card button,
+          .bm-register-card label,
+          .bm-register-card p,
+          .bm-register-card span,
+          .bm-register-card strong,
+          .bm-register-card div {
+            writing-mode: horizontal-tb !important;
+            word-break: normal !important;
+            overflow-wrap: normal !important;
+          }
+
+          .bm-register-card input,
+          .bm-register-card select,
+          .bm-register-card textarea,
+          .bm-register-card button {
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+          }
+
+          .bm-register-card button {
+            min-height: 44px !important;
+            white-space: nowrap !important;
+          }
+        }
+      `}</style>
       {registrationSuccess && (
   <div style={styles.modalOverlay}>
     <div style={styles.successModal}>
@@ -864,4 +924,5 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 800
   }
 };
+
 
