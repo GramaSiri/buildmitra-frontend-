@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import { getApiBase } from "../utils/apiConfig";
 
@@ -85,11 +85,38 @@ const initialForm: RegisterForm = {
 };
 
 export default function RegisterPage() {
+  // BUILDMITRA_REGISTER_SCROLL_TOP
+  useEffect(() => {
+    setMessage("");
+    setIsError(false);
+    setHasSubmitted(false);
+
+    if (typeof window !== "undefined") {
+      window.history.scrollRestoration = "manual";
+
+      window.scrollTo(0, 0);
+
+      const t1 = window.setTimeout(() => {
+        window.scrollTo(0, 0);
+      }, 100);
+
+      const t2 = window.setTimeout(() => {
+        window.scrollTo(0, 0);
+      }, 500);
+
+      return () => {
+        window.clearTimeout(t1);
+        window.clearTimeout(t2);
+      };
+    }
+  }, []);
+
   const router = useRouter();
   const [form, setForm] = useState<RegisterForm>(initialForm);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
+  const [hasSubmitted, setHasSubmitted] = useState(false);
   const [registrationSuccess, setRegistrationSuccess] =
     useState<RegistrationSuccess | null>(null);
 
@@ -105,11 +132,20 @@ export default function RegisterPage() {
     event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = event.target;
-    setForm((current) => ({ ...current, [name]: value }));
+
+    setForm((current) => ({
+      ...current,
+      [name]: value
+    }));
+
+    if (hasSubmitted && message) {
+      setMessage("");
+      setIsError(false);
+    }
   };
 
-  const handleRegister = async (event: React.FormEvent) => {
-    event.preventDefault();
+  const handleRegister = async () => {
+    setHasSubmitted(true);
     setMessage("");
     setIsError(false);
 
@@ -120,6 +156,19 @@ export default function RegisterPage() {
     if (!cleanName) {
       setIsError(true);
       setMessage("Please enter your name.");
+
+      window.setTimeout(() => {
+        const el = document.querySelector(
+          'input[name="name"]'
+        ) as HTMLInputElement | null;
+
+        el?.focus();
+        el?.scrollIntoView({
+          behavior: "smooth",
+          block: "center"
+        });
+      }, 50);
+
       return;
     }
 
@@ -246,7 +295,7 @@ if (!registrationSuccess) return;
           One mobile number can be registered only once.
         </p>
 
-        <form onSubmit={handleRegister} autoComplete="off">
+        <form onSubmit={(event) => event.preventDefault()} autoComplete="off">
           <div style={styles.twoColumn}>
             <Field label="Name *">
               <input
@@ -456,12 +505,12 @@ if (!registrationSuccess) return;
             </strong>
           </div>
 
-          <div style={styles.notice}>
+          <div style={{ ...styles.notice, display: "none" }} className="bm-register-beta-notice">
             During beta testing, Admin can activate free access or extend the
             subscription period.
           </div>
 
-          {message && (
+          {hasSubmitted && message && (
             <div
               style={{
                 ...styles.message,
@@ -473,7 +522,12 @@ if (!registrationSuccess) return;
             </div>
           )}
 
-          <button type="submit" disabled={loading} style={styles.submit}>
+                    <button
+            type="button"
+            disabled={loading}
+            style={styles.submit}
+            onClick={handleRegister}
+          >
             {loading ? "Creating Account..." : "Continue Registration"}
           </button>
         </form>
@@ -490,6 +544,37 @@ if (!registrationSuccess) return;
 
       <style jsx global>{`
         /* BUILDMITRA_REGISTER_MOBILE_FIX */
+        /* BUILDMITRA_REGISTER_MOBILE_CLEAN_FINAL */
+        @media (max-width: 768px) {
+
+          /* Registration must open as a form, not a pricing matrix */
+          .bm-register-plan-scroll {
+            display: none !important;
+          }
+
+          /* Admin beta note is internal information; do not block mobile registration */
+          .bm-register-beta-notice {
+            display: none !important;
+          }
+
+          .bm-register-card {
+            overflow: visible !important;
+            min-height: auto !important;
+          }
+
+          .bm-register-card form {
+            display: block !important;
+            width: 100% !important;
+          }
+
+          .bm-register-card input,
+          .bm-register-card select,
+          .bm-register-card textarea {
+            display: block !important;
+            width: 100% !important;
+            min-width: 0 !important;
+          }
+        }
         @media (max-width: 768px) {
 
           .bm-register-card {
@@ -924,5 +1009,11 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 800
   }
 };
+
+
+
+
+
+
 
 
