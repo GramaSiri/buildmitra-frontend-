@@ -58,9 +58,14 @@ export default function QuickBatchReplyPage() {
           .catch(() => ({}));
 
         if (!response.ok || !data?.success) {
-          throw new Error(
+          const backendMessage =
             data?.message ||
-            "Could not create official quotation."
+            data?.error ||
+            data?.details ||
+            "No backend error message returned";
+
+          throw new Error(
+            `HTTP ${response.status}: ${backendMessage}`
           );
         }
 
@@ -153,3 +158,4 @@ export default function QuickBatchReplyPage() {
     </div>
   );
 }
+
