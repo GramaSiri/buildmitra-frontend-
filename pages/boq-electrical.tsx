@@ -447,7 +447,7 @@ export default function ElectricalBOQPage() {
         </div>
 
         {/* Structural Engine Rules Badge */}
-        <div style={styles.noteBox}>
+        <div className="bm-boq-mobile-technical-note" style={styles.noteBox}>
           💡 <strong>IS Electrical Engine Rules</strong>: 💡 Lighting: <strong>{lightingPoints}</strong> | 🌀 Fan: <strong>{fanPoints}</strong> | 🔌 Power: <strong>{powerPoints}</strong> | ❄️ AC: <strong>{acPoints}</strong> | 🔥 Geyser: <strong>{waterHeaterPoints}</strong> | 💨 Exhaust: <strong>{exhaustFanPoints}</strong> | Total Points: <strong>{totalPoints}</strong>
         </div>
 
@@ -543,6 +543,7 @@ export default function ElectricalBOQPage() {
     </div>
   );
 }
+
 
 
 

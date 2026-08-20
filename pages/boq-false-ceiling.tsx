@@ -221,7 +221,7 @@ export default function FalseCeilingBOQPage() {
           <span>📐 Ceiling Specifications & Dimensions</span>
         </div>
 
-        <div style={styles.grid4}>
+        <div className="bm-final-boq-input-grid" style={styles.grid4}>
           <div style={styles.fieldGroup}>
             <label style={styles.label}>Ceiling Type</label>
             <select style={styles.select} value={ceilingType} onChange={e => setCeilingType(e.target.value)}>
@@ -305,7 +305,7 @@ export default function FalseCeilingBOQPage() {
         </div>
 
         {/* Structural Engine Rules Badge */}
-        <div style={styles.noteBox}>
+        <div className="bm-boq-mobile-technical-note" style={styles.noteBox}>
           💡 <strong>IS False Ceiling Rules</strong>: Ceiling Area: <strong>{formatNumber(area)} Sft</strong> | Boards (8x4): <strong>{boardNos} sheets</strong> | Drywall Screws: <strong>{screwsBox} Box (1000 pcs/box)</strong> | Channels: Main & Furring GI 0.5mm Sections Calculated.
         </div>
 
@@ -401,3 +401,4 @@ export default function FalseCeilingBOQPage() {
     </div>
   );
 }
+

@@ -328,7 +328,7 @@ export default function PaintingBOQPage() {
         </div>
 
         {/* Structural Engine Rules Badge */}
-        <div style={styles.noteBox}>
+        <div className="bm-boq-mobile-technical-note" style={styles.noteBox}>
           💡 <strong>IS Painting Engine Rules</strong>: Total BUA: <strong>{formatNumber(totalBUA)} Sft</strong> | Net Paint Area: <strong>{formatNumber(netWallArea)} Sft</strong> | Wall Putty (2 Coats): <strong>{formatNumber(puttyKg, 1)} kg</strong> | Interior Paint: <strong>{formatNumber(interiorPaintLtr, 1)} Ltr</strong> | Exterior Paint: <strong>{formatNumber(exteriorPaintLtr, 1)} Ltr</strong>.
         </div>
 
@@ -424,5 +424,6 @@ export default function PaintingBOQPage() {
     </div>
   );
 }
+
 
 

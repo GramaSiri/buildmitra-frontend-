@@ -311,7 +311,7 @@ export default function PlumbingBOQPage() {
         </div>
 
         {/* Structural Engine Rules Badge */}
-        <div style={styles.noteBox}>
+        <div className="bm-boq-mobile-technical-note" style={styles.noteBox}>
           💡 <strong>IS Plumbing Engine Rules</strong>: Total Pipe Length: <strong>{formatNumber(boqResults.totalPipeLength, 1)} m</strong> | Toilets: <strong>{toilets}</strong> | Kitchens: <strong>{kitchens}</strong> | Water Supply Loops & Riser Lines Calculated Automatically.
         </div>
 
@@ -407,6 +407,7 @@ export default function PlumbingBOQPage() {
     </div>
   );
 }
+
 
 
 

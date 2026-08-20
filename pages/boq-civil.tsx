@@ -502,7 +502,7 @@ export default function CivilBOQPage() {
         </div>
 
         {/* Structural Engine Rules Badge */}
-        <div style={styles.noteBox}>
+        <div className="bm-boq-mobile-technical-note" style={styles.noteBox}>
           💡 <strong>IS Structural Calculation Rules</strong>: Boreholes: {boreholes} | Total Doors: {counts.totalDoors} | Windows: {counts.windows} | Ventilators: {counts.ventilators} | Electrical Points: {counts.electricalPoints} | Plumbing Points: {counts.plumbingPoints} | Footing: <strong>{structure.footing}</strong> | Column: <strong>{structure.column}</strong> | Beam: <strong>{structure.beam}</strong> | Slab: <strong>{structure.slab}</strong>
         </div>
 
@@ -633,6 +633,7 @@ export default function CivilBOQPage() {
     </div>
   );
 }
+
 
 
 
