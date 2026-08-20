@@ -1515,3 +1515,83 @@
     display: none !important;
   }
 }
+
+/* ==========================================================
+   BUILDMITRA_MARKETPLACE_MOBILE_FILTER_FINAL_20260820
+   ========================================================== */
+
+/* Desktop */
+.bm-marketplace-mobile-filters .bm-market-filter-row,
+.bm-marketplace-mobile-filters .bm-market-filter-search-row,
+.bm-marketplace-mobile-filters .bm-market-desktop-extra {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.bm-marketplace-mobile-filters .bm-market-desktop-extra {
+  display: contents;
+}
+
+
+/* MOBILE ONLY */
+@media (max-width: 767px) {
+
+  .bm-marketplace-mobile-filters {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 7px !important;
+    padding: 8px !important;
+    margin: 0 0 8px 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  /* ROW 1 — City + PIN */
+  .bm-market-filter-location {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.78fr) !important;
+    width: 100% !important;
+    gap: 7px !important;
+  }
+
+  /* ROW 2 — Min + Max + Newest */
+  .bm-market-filter-price {
+    display: grid !important;
+    grid-template-columns:
+      minmax(0, 0.8fr)
+      minmax(0, 0.8fr)
+      minmax(0, 1fr) !important;
+    width: 100% !important;
+    gap: 7px !important;
+  }
+
+  /* ROW 3 — Search */
+  .bm-market-filter-search-row {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  .bm-marketplace-mobile-filters input,
+  .bm-marketplace-mobile-filters select {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    height: 40px !important;
+    padding: 7px 8px !important;
+    margin: 0 !important;
+    font-size: 13px !important;
+    border-radius: 7px !important;
+    box-sizing: border-box !important;
+  }
+
+  .bm-market-search {
+    width: 100% !important;
+  }
+
+  /* Hide clutter on mobile */
+  .bm-market-desktop-extra {
+    display: none !important;
+  }
+}

@@ -625,31 +625,141 @@ ${enquiry.buyerPhone}`;
       <MarketRateTrend />
 
       <div className="bm-marketplace-mobile-filters" style={styles.filters}>
-        <input style={styles.input} placeholder="Search item, provider, brand" value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} />
-        <select style={styles.input} value={filters.itemType} onChange={(e) => setFilters({ ...filters, itemType: e.target.value })}>
-          <option value="">All types</option>
-          <option value="material">Material</option>
-          <option value="service">Contractor service</option>
-          <option value="labour">Labour</option>
-          <option value="machine">Machine</option>
-          <option value="vendor">Vendor product</option>
-        </select>
-        <input style={styles.input} placeholder="Category" value={filters.category} onChange={(e) => setFilters({ ...filters, category: e.target.value })} />
-        <input style={styles.input} placeholder="Subcategory" value={filters.subCategory} onChange={(e) => setFilters({ ...filters, subCategory: e.target.value })} />
-        <input style={styles.input} placeholder="Brand" value={filters.brand} onChange={(e) => setFilters({ ...filters, brand: e.target.value })} />
-        <input style={styles.input} placeholder="City" value={filters.city} onChange={(e) => setFilters({ ...filters, city: e.target.value })} />
-        <input style={styles.input} placeholder="Area" value={filters.area} onChange={(e) => setFilters({ ...filters, area: e.target.value })} />
-        <input style={styles.input} inputMode="numeric" maxLength={6} placeholder="PIN code" value={filters.pincode} onChange={(e) => setFilters({ ...filters, pincode: e.target.value.replace(/\D/g, "").slice(0, 6) })} />
-        <input style={styles.input} placeholder="Min price" value={filters.minPrice} onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })} />
-        <input style={styles.input} placeholder="Max price" value={filters.maxPrice} onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })} />
-        <select style={styles.input} value={filters.sort} onChange={(e) => setFilters({ ...filters, sort: e.target.value })}>
-          <option value="newest">Newest</option>
-          <option value="lowest">Lowest price</option>
-        </select>
-        <button style={styles.clear} onClick={() => setFilters({ search: "", itemType: "", category: "", subCategory: "", brand: "", city: "", area: "", pincode: "", minPrice: "", maxPrice: "", sort: "newest" })}>Clear</button>
-      </div>
 
-      <div style={styles.marketplaceTopRow}>
+        {/* MOBILE ROW 1 + DESKTOP NORMAL FILTERS */}
+        <div className="bm-market-filter-row bm-market-filter-location">
+          <input
+            className="bm-market-city"
+            style={styles.input}
+            placeholder="City"
+            value={filters.city}
+            onChange={(e) => setFilters({ ...filters, city: e.target.value })}
+          />
+
+          <input
+            className="bm-market-pin"
+            style={styles.input}
+            inputMode="numeric"
+            maxLength={6}
+            placeholder="PIN Code"
+            value={filters.pincode}
+            onChange={(e) =>
+              setFilters({
+                ...filters,
+                pincode: e.target.value.replace(/\D/g, "").slice(0, 6)
+              })
+            }
+          />
+        </div>
+
+        {/* MOBILE ROW 2 */}
+        <div className="bm-market-filter-row bm-market-filter-price">
+          <input
+            className="bm-market-min"
+            style={styles.input}
+            inputMode="numeric"
+            placeholder="Min ₹"
+            value={filters.minPrice}
+            onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })}
+          />
+
+          <input
+            className="bm-market-max"
+            style={styles.input}
+            inputMode="numeric"
+            placeholder="Max ₹"
+            value={filters.maxPrice}
+            onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
+          />
+
+          <select
+            className="bm-market-sort"
+            style={styles.input}
+            value={filters.sort}
+            onChange={(e) => setFilters({ ...filters, sort: e.target.value })}
+          >
+            <option value="newest">Newest</option>
+            <option value="lowest">Lowest</option>
+          </select>
+        </div>
+
+        {/* MOBILE ROW 3 */}
+        <div className="bm-market-filter-search-row">
+          <input
+            className="bm-market-search"
+            style={styles.input}
+            placeholder="Search material / product"
+            value={filters.search}
+            onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+          />
+        </div>
+
+        {/* DESKTOP-ONLY EXTRA FILTERS */}
+        <div className="bm-market-desktop-extra">
+          <select
+            style={styles.input}
+            value={filters.itemType}
+            onChange={(e) => setFilters({ ...filters, itemType: e.target.value })}
+          >
+            <option value="">All types</option>
+            <option value="material">Material</option>
+            <option value="service">Contractor service</option>
+            <option value="labour">Labour</option>
+            <option value="machine">Machine</option>
+            <option value="vendor">Vendor product</option>
+          </select>
+
+          <input
+            style={styles.input}
+            placeholder="Category"
+            value={filters.category}
+            onChange={(e) => setFilters({ ...filters, category: e.target.value })}
+          />
+
+          <input
+            style={styles.input}
+            placeholder="Subcategory"
+            value={filters.subCategory}
+            onChange={(e) => setFilters({ ...filters, subCategory: e.target.value })}
+          />
+
+          <input
+            style={styles.input}
+            placeholder="Brand"
+            value={filters.brand}
+            onChange={(e) => setFilters({ ...filters, brand: e.target.value })}
+          />
+
+          <input
+            style={styles.input}
+            placeholder="Area"
+            value={filters.area}
+            onChange={(e) => setFilters({ ...filters, area: e.target.value })}
+          />
+
+          <button
+            style={styles.clear}
+            onClick={() =>
+              setFilters({
+                search: "",
+                itemType: "",
+                category: "",
+                subCategory: "",
+                brand: "",
+                city: "",
+                area: "",
+                pincode: "",
+                minPrice: "",
+                maxPrice: "",
+                sort: "newest"
+              })
+            }
+          >
+            Clear
+          </button>
+        </div>
+      </div>
+<div style={styles.marketplaceTopRow}>
   <div style={styles.count}>
     Showing <strong>{listings.length}</strong> approved listings
   </div>
@@ -1875,6 +1985,8 @@ cartAddButton: {
     boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
   },
 };
+
+
 
 
 
