@@ -22,6 +22,8 @@ type RegistrationSuccess = {
 type RegisterForm = {
   name: string;
   companyName: string;
+  gstNo: string;
+  officePhone: string;
   email: string;
   phone: string;
   password: string;
@@ -72,6 +74,8 @@ const PLANS = [
 const initialForm: RegisterForm = {
   name: "",
   companyName: "",
+  gstNo: "",
+  officePhone: "",
   email: "",
   phone: "",
   password: "",
@@ -199,6 +203,8 @@ export default function RegisterPage() {
         body: JSON.stringify({
           name: cleanName,
           companyName: form.companyName.trim(),
+          gstNo: form.gstNo.trim().toUpperCase(),
+          officePhone: form.officePhone.replace(/\D/g, ""),
           email: form.email.trim(),
           phone: cleanPhone,
           password: form.password,
@@ -287,7 +293,7 @@ if (!registrationSuccess) return;
   };
 
   return (
-    <main style={styles.page}>
+    <main style={styles.page} className="bm-register-page">
       <section style={styles.card} className="bm-register-card">
         <div style={styles.logo}>🏗️ BuildMitra</div>
         <h1 style={styles.title}>Create Your Account</h1>
@@ -296,7 +302,7 @@ if (!registrationSuccess) return;
         </p>
 
         <form onSubmit={(event) => event.preventDefault()} autoComplete="off">
-          <div style={styles.twoColumn}>
+          <div style={styles.twoColumn} className="bm-register-fields-grid">
             <Field label="Name *">
               <input
                 name="name"
@@ -314,6 +320,33 @@ if (!registrationSuccess) return;
                 onChange={updateField}
                 placeholder="Optional"
                 style={styles.input} className="input-compact"
+              />
+            </Field>
+
+            <Field label="GST No.">
+              <input
+                name="gstNo"
+                value={form.gstNo}
+                onChange={updateField}
+                placeholder="GST No. (Optional)"
+                style={styles.input}
+                className="input-compact"
+                maxLength={15}
+                autoCapitalize="characters"
+              />
+            </Field>
+
+            <Field label="Office Phone No.">
+              <input
+                name="officePhone"
+                type="tel"
+                inputMode="tel"
+                value={form.officePhone}
+                onChange={updateField}
+                placeholder="Office Phone No. (Optional)"
+                style={styles.input}
+                className="input-compact"
+                maxLength={15}
               />
             </Field>
 
@@ -380,7 +413,7 @@ if (!registrationSuccess) return;
             />
           </Field>
 
-          <div style={styles.twoColumn}>
+          <div style={styles.twoColumn} className="bm-register-fields-grid">
             <Field label="City">
               <input
                 name="city"
@@ -1009,6 +1042,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 800
   }
 };
+
 
 
 
