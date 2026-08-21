@@ -1498,16 +1498,155 @@ const isReadOnly = false;
     React.createElement(BuildMitraHeader, {
       moduleTitle: "Buyer Module",
       pageTitle: "Buyer Dashboard",
-      subtitle: `Buyer Code: ${getLoggedInUser()?.uniqueCode || "Not assigned"} | ${getLoggedInUser()?.name || "Buyer"}`,
+      subtitle: `Welcome, ${getLoggedInUser()?.name || "Buyer"} · Buyer Code: ${getLoggedInUser()?.uniqueCode || "Not assigned"}`,
       showBackToDashboard: false
     }),
-    React.createElement("div", { style: { display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "20px" } },
-      React.createElement("button", { onClick: () => setActiveTab("dashboard"), style: styles.button }, "Dashboard"),
-      React.createElement("button", { onClick: () => window.location.href = "/marketplace", style: styles.buttonInfo }, "Marketplace"),
-      React.createElement("button", { onClick: () => setActiveTab("enquiries"), style: styles.buttonSuccess }, "Marketplace Enquiries & Quotes"),
-      React.createElement("button", { onClick: () => setActiveTab("quotations"), style: styles.buttonWarning }, "Project Quotations"),
-      React.createElement("button", { onClick: () => checkAndRun('calculator_export', 'buyer-dashboard', shareWhatsApp), style: styles.buttonSuccess }, "📱 Share Update"),
-      React.createElement("button", { onClick: logoutToLogin, style: { ...styles.button, backgroundColor: "#dc3545" } }, "🚪 Logout")
+    React.createElement("div", { style: {
+      display: "flex",
+      alignItems: "center",
+      gap: "6px",
+      flexWrap: "nowrap",
+      width: "100%",
+      marginBottom: "14px",
+      padding: "6px",
+      boxSizing: "border-box",
+      backgroundColor: "#fff",
+      border: "1px solid #e2e8f0",
+      borderRadius: "10px"
+    }},
+
+      React.createElement("button", {
+        onClick: () => setActiveTab("dashboard"),
+        style: {
+          ...styles.button,
+          flex: "1 1 0",
+          minWidth: 0,
+          padding: "8px 4px",
+          fontSize: "12px",
+          whiteSpace: "nowrap",
+          fontWeight: 800,
+          textAlign: "center",
+          borderRadius: "8px",
+          backgroundColor: activeTab === "dashboard" ? "#2563eb" : "#dbeafe",
+          color: activeTab === "dashboard" ? "#ffffff" : "#1e40af",
+        }
+      }, "Overview"),
+
+      React.createElement("button", {
+        onClick: () => setActiveTab("quotations"),
+        style: {
+          ...styles.button,
+          flex: "1 1 0",
+          minWidth: 0,
+          padding: "8px 4px",
+          fontSize: "12px",
+          whiteSpace: "nowrap",
+          fontWeight: 800,
+          textAlign: "center",
+          borderRadius: "8px",
+          backgroundColor: activeTab === "quotations" ? "#7c3aed" : "#ede9fe",
+          color: activeTab === "quotations" ? "#ffffff" : "#5b21b6",
+        }
+      }, "Quotes"),
+
+      React.createElement("button", {
+        onClick: () => setActiveTab("enquiries"),
+        style: {
+          ...styles.button,
+          flex: "1 1 0",
+          minWidth: 0,
+          padding: "8px 4px",
+          fontSize: "12px",
+          whiteSpace: "nowrap",
+          fontWeight: 800,
+          textAlign: "center",
+          borderRadius: "8px",
+          backgroundColor: activeTab === "enquiries" ? "#059669" : "#d1fae5",
+          color: activeTab === "enquiries" ? "#ffffff" : "#065f46",
+        }
+      }, "Enquiries"),
+
+      React.createElement("select", {
+        value: !["dashboard","quotations","enquiries"].includes(activeTab)
+          ? activeTab
+          : "",
+        onChange: (e) => {
+          const value = e.target.value;
+
+          if (!value) return;
+
+          if (value === "__marketplace") {
+            window.location.href = "/marketplace";
+            return;
+          }
+
+          if (value === "__share") {
+            checkAndRun(
+              "calculator_export",
+              "buyer-dashboard",
+              shareWhatsApp
+            );
+            return;
+          }
+
+          if (value === "__logout") {
+            logoutToLogin();
+            return;
+          }
+
+          setActiveTab(value);
+        },
+        style: {
+          flex: "1 1 0",
+          minWidth: 0,
+          height: "34px",
+          padding: "0 3px",
+          border: "1px solid #7dd3fc",
+          borderRadius: "7px",
+          backgroundColor: "#e0f2fe",
+          color: "#075985",
+          fontWeight: 800,
+          fontSize: "12px"
+        },
+        "aria-label": "More buyer dashboard sections"
+      },
+
+        React.createElement(
+          "option",
+          { value: "" },
+          "☰ More"
+        ),
+
+        visibleTabs
+          .filter(tab =>
+            !["dashboard","quotations","enquiries"].includes(tab.id)
+          )
+          .map(tab =>
+            React.createElement(
+              "option",
+              { key: tab.id, value: tab.id },
+              tab.name
+            )
+          ),
+
+        React.createElement(
+          "option",
+          { value: "__marketplace" },
+          "Marketplace"
+        ),
+
+        React.createElement(
+          "option",
+          { value: "__share" },
+          "Share Update"
+        ),
+
+        React.createElement(
+          "option",
+          { value: "__logout" },
+          "Logout"
+        )
+      )
     ),
     React.createElement("div", { style: styles.card },
       React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" } },
@@ -1527,9 +1666,6 @@ const isReadOnly = false;
       )
     ),
     React.createElement(MarketRateTrend, null),
-    React.createElement("div", { style: styles.tabContainer },
-      visibleTabs.map(tab => React.createElement("div", { key: tab.id, onClick: () => setActiveTab(tab.id), style: { ...styles.tab, ...(activeTab === tab.id ? styles.activeTab : {}) } }, tab.name))
-    ),
     renderContent(),
     
     // Modals

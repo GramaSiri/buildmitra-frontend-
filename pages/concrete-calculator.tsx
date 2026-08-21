@@ -444,6 +444,7 @@ export default function ConcretePage() {
       <div style={styles.sectionTitle}>📐 {MEMBER_TYPES.find(m => m.id === memberType)?.label} Dimensions & Mix Specifications</div>
       
       {/* MEMBER SPECIFIC INPUT FIELDS */}
+      <div className="bm-concrete-true-single-row">
       {memberType === 'custom' ? (
         <div style={styles.grid}>
           <div>
@@ -518,7 +519,7 @@ export default function ConcretePage() {
           </div>
         </div>
       ) : (
-        <div style={styles.grid}>
+        <div className="bm-concrete-dimension-grid" style={styles.grid}>
           <div>
             <label style={styles.label}>Length ({unit})</label>
             <input type="number" value={length} onChange={(e) => setLength((e.target.value === "" ? ("" as any) : parseFloat(e.target.value)))} style={styles.input} />
@@ -545,7 +546,7 @@ export default function ConcretePage() {
       )}
 
       {/* CONCRETE MIX SPECIFICATIONS */}
-      <div style={styles.grid}>
+      <div className="bm-concrete-mix-grid" style={styles.grid}>
         <div>
           <label style={styles.label}>Measurement Unit</label>
           <select value={unit} onChange={(e) => setUnit(e.target.value as any)} style={styles.select}>
@@ -571,6 +572,7 @@ export default function ConcretePage() {
           <input type="number" value={wastage} onChange={(e) => setWastage((e.target.value === "" ? ("" as any) : parseFloat(e.target.value)))} style={styles.input} />
         </div>
       </div>
+      </div> {/* BM-CONCRETE-TRUE-ROW-END */}
       
       <div style={styles.buttonRow}>
         <button onClick={handleGenerate} style={styles.buttonGenerate}>🔨 Calculate</button>
@@ -589,22 +591,22 @@ export default function ConcretePage() {
             <div style={{ ...styles.card, ...styles.cardBlue }}>
               <div>📦</div>
               <div>Con. Vol</div>
-              <div style={styles.cardValue}>{formatNumber(results.volumeCft)} CFT ({formatNumber(results.volumeCum)} m³)</div>
+              <div className="bm-concrete-result-value" style={styles.cardValue}>{formatNumber(results.volumeCft)} CFT ({formatNumber(results.volumeCum)} m³)</div>
             </div>
             <div style={{ ...styles.card, ...styles.cardLightGreen }}>
               <div>🪣</div>
               <div>{isRmc ? 'RMC Volume' : 'Cement (Bags)'}</div>
-              <div style={styles.cardValue}>{isRmc ? `${formatNumber(results.quantities.rmcVolumeCum)} m³` : `${formatNumber(results.quantities.cementBags)} bags`}</div>
+              <div className="bm-concrete-result-value" style={styles.cardValue}>{isRmc ? `${formatNumber(results.quantities.rmcVolumeCum)} m³` : `${formatNumber(results.quantities.cementBags)} bags`}</div>
             </div>
             <div style={{ ...styles.card, ...styles.cardLightOrange }}>
               <div>💰</div>
               <div>Tot. Mat (₹)</div>
-              <div style={styles.cardValue}>{formatCurrency(results.costs.materialTotal)}</div>
+              <div className="bm-concrete-result-value bm-concrete-material-total" style={styles.cardValue}>{formatCurrency(results.costs.materialTotal)}</div>
             </div>
             <div style={{ ...styles.card, ...styles.cardLightTeal }}>
               <div>💎</div>
               <div>Grand Total (₹)</div>
-              <div style={styles.cardValue}>{formatCurrency(results.costs.grandTotal)}</div>
+              <div className="bm-concrete-result-value bm-concrete-grand-total" style={styles.cardValue}>{formatCurrency(results.costs.grandTotal)}</div>
             </div>
           </div>
           

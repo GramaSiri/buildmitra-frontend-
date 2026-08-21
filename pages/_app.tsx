@@ -2,6 +2,7 @@ import React from "react";
 import BuildMitraPaymentBarrier from "../components/BuildMitraPaymentBarrier";
 import WaterproofingSidebarLink from "../components/WaterproofingSidebarLink";
 import MarketplaceMobileGridFix from "../components/MarketplaceMobileGridFix";
+import BuildMitraInputUX from "../components/BuildMitraInputUX";
 import { PaymentBarrierProvider } from "../hooks/usePaymentBarrier";
 import "../styles/globals.css";
 import Sidebar from "../components/Sidebar";
@@ -10,7 +11,7 @@ import ClientErrorBoundary from "../components/ClientErrorBoundary";
 
 import "../styles/buildmitra-adaptive-mobile.css";
 export default function App({ Component, pageProps }: any) {
-  const router = useRouter();
+const router = useRouter();
 
   const noSidebarPages = ["/login", "/", "/register", "/forgot-password"];
   const isQuickQuote = router.pathname === "/quick-quote";
@@ -20,6 +21,7 @@ export default function App({ Component, pageProps }: any) {
     <ClientErrorBoundary>
       <PaymentBarrierProvider>
         <MarketplaceMobileGridFix />
+        <BuildMitraInputUX />
         <WaterproofingSidebarLink />
         <BuildMitraPaymentBarrier>
           {isQuickQuote ? (
@@ -36,4 +38,6 @@ export default function App({ Component, pageProps }: any) {
     </ClientErrorBoundary>
   );
 }
+
+
 

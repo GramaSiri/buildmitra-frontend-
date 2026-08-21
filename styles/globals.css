@@ -3193,3 +3193,1612 @@ body,
   }
 }
 
+/* BUILDMITRA-DESKTOP-READABILITY-START
+   Global desktop readability layer.
+   Mobile rules remain controlled by buildmitra-adaptive-mobile.css.
+   SVG / technical drawing text intentionally excluded.
+*/
+
+@media screen and (min-width: 769px) {
+
+  html {
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    font-family:
+      Inter,
+      "Segoe UI",
+      Roboto,
+      Helvetica,
+      Arial,
+      sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+    font-weight: 400;
+    letter-spacing: 0.005em;
+  }
+
+  p,
+  label,
+  li,
+  dd,
+  dt {
+    font-size: 1rem;
+    line-height: 1.55;
+  }
+
+  input,
+  select,
+  textarea {
+    font-family: inherit;
+    font-size: 15.5px;
+    line-height: 1.4;
+    font-weight: 500;
+  }
+
+  button {
+    font-family: inherit;
+    font-size: 14.5px;
+    line-height: 1.3;
+    font-weight: 650;
+  }
+
+  table {
+    font-family: inherit;
+    font-size: 14.5px;
+    line-height: 1.45;
+  }
+
+  th {
+    font-size: 14.5px;
+    font-weight: 700;
+  }
+
+  td {
+    font-size: 14.5px;
+  }
+
+  h1 {
+    font-size: clamp(26px, 2vw, 32px);
+    line-height: 1.2;
+    font-weight: 750;
+    letter-spacing: -0.015em;
+  }
+
+  h2 {
+    font-size: clamp(22px, 1.7vw, 27px);
+    line-height: 1.25;
+    font-weight: 750;
+    letter-spacing: -0.01em;
+  }
+
+  h3 {
+    font-size: 19px;
+    line-height: 1.3;
+    font-weight: 700;
+  }
+
+  h4 {
+    font-size: 17px;
+    line-height: 1.35;
+    font-weight: 700;
+  }
+
+  h5,
+  h6 {
+    font-size: 16px;
+    line-height: 1.4;
+    font-weight: 650;
+  }
+
+  a {
+    font-weight: 550;
+  }
+
+  small {
+    font-size: 13.5px;
+    line-height: 1.4;
+  }
+
+  /* Better readability for placeholders without enlarging layouts. */
+  input::placeholder,
+  textarea::placeholder {
+    font-size: 14.5px;
+    opacity: 0.72;
+  }
+
+  /*
+     IMPORTANT:
+     Do not globally resize SVG text.
+     DRG / floor plans / charts / engineering drawings
+     must retain their own calibrated typography.
+  */
+
+  svg text {
+    font-size: inherit;
+  }
+}
+
+/* BUILDMITRA-DESKTOP-READABILITY-END */
+
+
+/* BUILDMITRA-APP-READABLE-TYPOGRAPHY-START
+   Application-wide readability standard.
+   Designed for dashboards, services, calculators, BOQs,
+   marketplace, forms and data tables.
+*/
+
+html,
+body {
+  font-family:
+    "Segoe UI Variable",
+    "Segoe UI",
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    Roboto,
+    Arial,
+    sans-serif !important;
+
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ==========================================================
+   STANDARD TEXT
+   ========================================================== */
+
+body,
+p,
+label,
+li,
+dt,
+dd,
+legend,
+summary {
+  font-size: 16px !important;
+  line-height: 1.55 !important;
+}
+
+/* Text commonly rendered inside spans */
+span {
+  line-height: 1.45;
+}
+
+/* ==========================================================
+   FORMS
+   ========================================================== */
+
+input,
+select,
+textarea,
+option {
+  font-family: inherit !important;
+  font-size: 16px !important;
+  line-height: 1.4 !important;
+  font-weight: 500 !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  font-size: 15px !important;
+}
+
+/* ==========================================================
+   BUTTONS / TABS / ACTIONS
+   ========================================================== */
+
+button,
+[role="button"],
+[role="tab"] {
+  font-family: inherit !important;
+  font-size: 15px !important;
+  line-height: 1.3 !important;
+  font-weight: 700 !important;
+}
+
+/* ==========================================================
+   TABLES / BOQ / RATES
+   ========================================================== */
+
+table,
+thead,
+tbody,
+tfoot,
+tr,
+td,
+th {
+  font-family: inherit !important;
+}
+
+td {
+  font-size: 15px !important;
+  line-height: 1.45 !important;
+}
+
+th {
+  font-size: 15px !important;
+  line-height: 1.4 !important;
+  font-weight: 750 !important;
+}
+
+/* ==========================================================
+   HEADINGS
+   ========================================================== */
+
+h1 {
+  font-size: 30px !important;
+  line-height: 1.2 !important;
+  font-weight: 800 !important;
+}
+
+h2 {
+  font-size: 25px !important;
+  line-height: 1.25 !important;
+  font-weight: 800 !important;
+}
+
+h3 {
+  font-size: 21px !important;
+  line-height: 1.3 !important;
+  font-weight: 750 !important;
+}
+
+h4 {
+  font-size: 18px !important;
+  line-height: 1.35 !important;
+  font-weight: 700 !important;
+}
+
+h5,
+h6 {
+  font-size: 16px !important;
+  line-height: 1.4 !important;
+  font-weight: 700 !important;
+}
+
+/* ==========================================================
+   FORCE OLD SMALL INLINE TEXT TO A READABLE LEVEL
+   This is what fixes old 10px / 11px / 12px / 13px inline styles.
+   ========================================================== */
+
+div[style*="font-size: 8px"],
+div[style*="font-size: 9px"],
+div[style*="font-size: 10px"],
+div[style*="font-size: 11px"],
+div[style*="font-size: 12px"],
+div[style*="font-size: 13px"],
+span[style*="font-size: 8px"],
+span[style*="font-size: 9px"],
+span[style*="font-size: 10px"],
+span[style*="font-size: 11px"],
+span[style*="font-size: 12px"],
+span[style*="font-size: 13px"],
+p[style*="font-size: 8px"],
+p[style*="font-size: 9px"],
+p[style*="font-size: 10px"],
+p[style*="font-size: 11px"],
+p[style*="font-size: 12px"],
+p[style*="font-size: 13px"] {
+  font-size: 15px !important;
+  line-height: 1.45 !important;
+}
+
+/* Older inline 14px text gets a small readability increase */
+div[style*="font-size: 14px"],
+span[style*="font-size: 14px"],
+p[style*="font-size: 14px"] {
+  font-size: 15.5px !important;
+}
+
+/* ==========================================================
+   LINKS / HELPER TEXT
+   ========================================================== */
+
+a {
+  font-family: inherit !important;
+  font-size: inherit;
+  font-weight: 600;
+}
+
+small {
+  font-size: 14px !important;
+  line-height: 1.4 !important;
+}
+
+/* ==========================================================
+   DESKTOP — slightly more comfortable
+   ========================================================== */
+
+@media screen and (min-width: 1024px) {
+
+  body,
+  p,
+  label,
+  li,
+  dt,
+  dd,
+  legend,
+  summary {
+    font-size: 16.5px !important;
+  }
+
+  input,
+  select,
+  textarea,
+  option {
+    font-size: 16px !important;
+  }
+
+  button,
+  [role="button"],
+  [role="tab"] {
+    font-size: 15.5px !important;
+  }
+
+  td,
+  th {
+    font-size: 15.5px !important;
+  }
+}
+
+/* ==========================================================
+   MOBILE — readable but still compact
+   ========================================================== */
+
+@media screen and (max-width: 768px) {
+
+  body,
+  p,
+  label,
+  li,
+  dt,
+  dd {
+    font-size: 15px !important;
+    line-height: 1.5 !important;
+  }
+
+  input,
+  select,
+  textarea,
+  option {
+    font-size: 16px !important;
+  }
+
+  button,
+  [role="button"],
+  [role="tab"] {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+  }
+
+  td,
+  th {
+    font-size: 14px !important;
+  }
+
+  h1 {
+    font-size: 24px !important;
+  }
+
+  h2 {
+    font-size: 21px !important;
+  }
+
+  h3 {
+    font-size: 18px !important;
+  }
+
+  h4 {
+    font-size: 16px !important;
+  }
+}
+
+/* ==========================================================
+   IMPORTANT PROTECTION:
+   Never force engineering SVG / DRG / chart drawing labels.
+   ========================================================== */
+
+svg text,
+svg tspan {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* BUILDMITRA-APP-READABLE-TYPOGRAPHY-END */
+
+
+/* BUILDMITRA-COMPACT-INPUT-RESULTS-START */
+
+/* ------------------------------------------------------------
+   USER INPUTS — COMPACT, CLEAN, ALIGNED
+   ------------------------------------------------------------ */
+
+input.bm-compact-number {
+  width: 9ch !important;
+  min-width: 86px !important;
+  max-width: 112px !important;
+  box-sizing: border-box !important;
+  text-align: center !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+}
+
+input.bm-compact-text {
+  width: 17ch !important;
+  min-width: 140px !important;
+  max-width: 190px !important;
+  box-sizing: border-box !important;
+}
+
+select.bm-compact-number-select {
+  width: 11ch !important;
+  min-width: 100px !important;
+  max-width: 135px !important;
+  box-sizing: border-box !important;
+}
+
+select.bm-compact-text-select {
+  width: 18ch !important;
+  min-width: 150px !important;
+  max-width: 230px !important;
+  box-sizing: border-box !important;
+}
+
+
+/* ------------------------------------------------------------
+   USER JUST CHANGED THIS FIELD
+   ------------------------------------------------------------ */
+
+input.bm-user-edited,
+select.bm-user-edited {
+  color: #c1121f !important;
+  font-weight: 800 !important;
+  background-color: #fff1f2 !important;
+  border-color: #dc2626 !important;
+  outline-color: #dc2626 !important;
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.10) !important;
+}
+
+
+/* ------------------------------------------------------------
+   RESULTS / OUTPUT / CALCULATED AREAS
+   ------------------------------------------------------------ */
+
+[class*="result" i],
+[class*="output" i],
+[class*="summary" i],
+[class*="calculation" i],
+[class*="estimate" i],
+[class*="boq" i] {
+  line-height: 1.5;
+}
+
+[class*="result" i] p,
+[class*="result" i] span,
+[class*="result" i] div,
+[class*="output" i] p,
+[class*="output" i] span,
+[class*="output" i] div,
+[class*="summary" i] p,
+[class*="summary" i] span,
+[class*="summary" i] div,
+[class*="calculation" i] p,
+[class*="calculation" i] span,
+[class*="estimate" i] p,
+[class*="estimate" i] span {
+  font-size: 16px !important;
+  line-height: 1.5 !important;
+}
+
+[class*="result" i] strong,
+[class*="output" i] strong,
+[class*="summary" i] strong,
+[class*="calculation" i] strong,
+[class*="estimate" i] strong {
+  font-size: 16.5px !important;
+  font-weight: 750 !important;
+}
+
+table td {
+  font-size: 15.5px !important;
+  line-height: 1.5 !important;
+}
+
+table th {
+  font-size: 15.5px !important;
+  font-weight: 750 !important;
+  line-height: 1.45 !important;
+}
+
+
+/* ------------------------------------------------------------
+   MOBILE
+   ------------------------------------------------------------ */
+
+@media screen and (max-width: 768px) {
+
+  input.bm-compact-number {
+    width: 8.5ch !important;
+    min-width: 78px !important;
+    max-width: 105px !important;
+  }
+
+  input.bm-compact-text {
+    width: 15ch !important;
+    min-width: 125px !important;
+    max-width: 170px !important;
+  }
+
+  select.bm-compact-number-select {
+    width: 10ch !important;
+    min-width: 90px !important;
+    max-width: 125px !important;
+  }
+
+  select.bm-compact-text-select {
+    width: 16ch !important;
+    min-width: 135px !important;
+    max-width: 190px !important;
+  }
+
+  [class*="result" i] p,
+  [class*="result" i] span,
+  [class*="output" i] p,
+  [class*="output" i] span,
+  [class*="summary" i] p,
+  [class*="summary" i] span {
+    font-size: 15px !important;
+  }
+
+  table td,
+  table th {
+    font-size: 14.5px !important;
+  }
+}
+
+/*
+   Engineering drawing text remains controlled by the drawing itself.
+*/
+svg text,
+svg tspan {
+  font-size: inherit;
+}
+
+/* BUILDMITRA-COMPACT-INPUT-RESULTS-END */
+
+
+/* BUILDMITRA-FINAL-FIELD-ALIGNMENT-START
+
+   BuildMitra global calculator/service/BOQ user-input standard.
+
+   NUMERIC FIELD:
+   same physical size everywhere.
+
+   TEXT/SELECT:
+   compact but readable.
+
+   RESULT TEXT:
+   comfortable readable size.
+
+*/
+
+/* ============================================================
+   FIELD WRAPPER
+   ============================================================ */
+
+.bm-field-shell {
+  box-sizing: border-box !important;
+}
+
+.bm-field-shell > label,
+.bm-field-shell label {
+  display: block !important;
+  margin: 0 0 5px 0 !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+}
+
+
+/* ============================================================
+   ALL USER NUMERIC INPUTS
+   Length / Width / Height / Depth / Thickness / Wastage /
+   Quantity etc. all get the SAME physical field width.
+   ============================================================ */
+
+input.bm-user-number-field,
+input.bm-compact-number {
+  width: 108px !important;
+  min-width: 108px !important;
+  max-width: 108px !important;
+
+  height: 40px !important;
+
+  padding: 6px 9px !important;
+
+  box-sizing: border-box !important;
+
+  text-align: center !important;
+
+  font-family:
+    "Segoe UI Variable",
+    "Segoe UI",
+    system-ui,
+    sans-serif !important;
+
+  font-size: 16px !important;
+  line-height: 1.2 !important;
+  font-weight: 650 !important;
+
+  border-radius: 7px !important;
+}
+
+
+/* ============================================================
+   SHORT USER TEXT INPUTS
+   ============================================================ */
+
+input.bm-compact-text {
+  width: 160px !important;
+  min-width: 160px !important;
+  max-width: 160px !important;
+
+  height: 40px !important;
+
+  padding: 6px 9px !important;
+
+  box-sizing: border-box !important;
+
+  font-size: 16px !important;
+  font-weight: 600 !important;
+
+  border-radius: 7px !important;
+}
+
+
+/* ============================================================
+   NUMERIC DROPDOWNS
+   ============================================================ */
+
+select.bm-compact-number-select {
+  width: 120px !important;
+  min-width: 120px !important;
+  max-width: 120px !important;
+
+  height: 40px !important;
+
+  padding: 5px 8px !important;
+
+  box-sizing: border-box !important;
+
+  font-size: 15px !important;
+  font-weight: 650 !important;
+
+  border-radius: 7px !important;
+}
+
+
+/* ============================================================
+   TEXT DROPDOWNS
+   Grade / Unit / Type / Category etc.
+   ============================================================ */
+
+select.bm-compact-text-select {
+  width: 190px !important;
+  min-width: 190px !important;
+  max-width: 190px !important;
+
+  height: 40px !important;
+
+  padding: 5px 8px !important;
+
+  box-sizing: border-box !important;
+
+  font-size: 15px !important;
+  font-weight: 650 !important;
+
+  border-radius: 7px !important;
+}
+
+
+/* ============================================================
+   REMOVE LARGE EMPTY SPACE AROUND FIELD WRAPPERS
+   ============================================================ */
+
+.bm-field-shell {
+  width: fit-content !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+
+/* ============================================================
+   COMMON FORM CONTAINERS
+   Make multiple user fields sit together neatly in rows.
+   Does not alter calculation logic.
+   ============================================================ */
+
+form:has(.bm-field-shell),
+[class*="form" i]:has(.bm-field-shell),
+[class*="input" i]:has(> .bm-field-shell),
+[class*="field" i]:has(> .bm-field-shell) {
+  column-gap: 12px;
+  row-gap: 12px;
+}
+
+
+/* ============================================================
+   EDITED INPUT
+   ============================================================ */
+
+input.bm-user-edited,
+select.bm-user-edited {
+  color: #c1121f !important;
+  font-weight: 800 !important;
+
+  background-color: #fff1f2 !important;
+
+  border-color: #dc2626 !important;
+
+  box-shadow:
+    0 0 0 2px rgba(220,38,38,.10) !important;
+}
+
+
+/* ============================================================
+   RESULT / OUTPUT AREA
+   ============================================================ */
+
+[class*="result" i],
+[class*="output" i],
+[class*="summary" i],
+[class*="calculation" i],
+[class*="estimate" i],
+[class*="total" i] {
+  font-family:
+    "Segoe UI Variable",
+    "Segoe UI",
+    system-ui,
+    sans-serif !important;
+
+  font-size: 16px !important;
+  line-height: 1.5 !important;
+}
+
+
+/* RESULT CHILD TEXT */
+
+[class*="result" i] p,
+[class*="result" i] span,
+[class*="result" i] div,
+
+[class*="output" i] p,
+[class*="output" i] span,
+[class*="output" i] div,
+
+[class*="summary" i] p,
+[class*="summary" i] span,
+[class*="summary" i] div,
+
+[class*="calculation" i] p,
+[class*="calculation" i] span,
+
+[class*="estimate" i] p,
+[class*="estimate" i] span {
+
+  font-size: 16px !important;
+  line-height: 1.5 !important;
+}
+
+
+/* RESULT EMPHASIS */
+
+[class*="result" i] strong,
+[class*="result" i] b,
+
+[class*="output" i] strong,
+[class*="output" i] b,
+
+[class*="summary" i] strong,
+[class*="summary" i] b,
+
+[class*="estimate" i] strong,
+[class*="estimate" i] b,
+
+[class*="total" i] strong,
+[class*="total" i] b {
+
+  font-size: 17px !important;
+  line-height: 1.4 !important;
+  font-weight: 800 !important;
+}
+
+
+/* ============================================================
+   BOQ / CALCULATOR TABLE RESULTS
+   ============================================================ */
+
+table {
+  font-size: 15.5px !important;
+}
+
+table th {
+  font-size: 15.5px !important;
+  line-height: 1.45 !important;
+  font-weight: 800 !important;
+}
+
+table td {
+  font-size: 15.5px !important;
+  line-height: 1.5 !important;
+}
+
+
+/* ============================================================
+   MOBILE
+   ============================================================ */
+
+@media screen and (max-width: 768px) {
+
+  /*
+     Numeric fields remain the same compact size.
+     This allows 2–3 fields per row where the parent grid permits.
+  */
+
+  input.bm-user-number-field,
+  input.bm-compact-number {
+    width: 96px !important;
+    min-width: 96px !important;
+    max-width: 96px !important;
+
+    height: 39px !important;
+
+    font-size: 15px !important;
+  }
+
+  input.bm-compact-text {
+    width: 140px !important;
+    min-width: 140px !important;
+    max-width: 140px !important;
+  }
+
+  select.bm-compact-number-select {
+    width: 108px !important;
+    min-width: 108px !important;
+    max-width: 108px !important;
+  }
+
+  select.bm-compact-text-select {
+    width: 160px !important;
+    min-width: 160px !important;
+    max-width: 160px !important;
+  }
+
+  .bm-field-shell {
+    margin: 0 !important;
+  }
+
+  [class*="result" i],
+  [class*="output" i],
+  [class*="summary" i],
+  [class*="calculation" i],
+  [class*="estimate" i] {
+    font-size: 15px !important;
+  }
+
+  [class*="result" i] strong,
+  [class*="output" i] strong,
+  [class*="summary" i] strong,
+  [class*="estimate" i] strong {
+    font-size: 16px !important;
+  }
+
+  table th,
+  table td {
+    font-size: 14.5px !important;
+  }
+}
+
+
+/* ============================================================
+   DRAWING PROTECTION
+   ============================================================ */
+
+svg text,
+svg tspan {
+  font-size: inherit;
+}
+
+/* BUILDMITRA-FINAL-FIELD-ALIGNMENT-END */
+
+
+/* BUILDMITRA-FINAL-COMPACT-FORM-RESULTS-START */
+
+
+/* ============================================================
+   1. DESKTOP USER FIELD ROW
+   ============================================================ */
+
+/*
+   Any direct container holding multiple BuildMitra input shells
+   becomes one compact horizontal row on desktop.
+*/
+
+@media screen and (min-width: 769px) {
+
+  div:has(> .bm-field-shell + .bm-field-shell),
+  section:has(> .bm-field-shell + .bm-field-shell),
+  form:has(> .bm-field-shell + .bm-field-shell) {
+
+    display: flex !important;
+
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+
+    align-items: flex-end !important;
+
+    justify-content: flex-start !important;
+
+    column-gap: 8px !important;
+    row-gap: 0 !important;
+
+    width: 100% !important;
+
+    margin: 0 !important;
+
+    overflow-x: auto;
+
+    padding-bottom: 4px;
+  }
+
+}
+
+
+/* ============================================================
+   2. ZERO UNNECESSARY FIELD GAPS
+   ============================================================ */
+
+.bm-field-shell {
+
+  flex: 0 0 auto !important;
+
+  width: auto !important;
+
+  min-width: 0 !important;
+
+  max-width: none !important;
+
+  margin: 0 !important;
+
+  padding: 0 !important;
+}
+
+.bm-field-shell > label,
+.bm-field-shell label {
+
+  margin: 0 0 4px 0 !important;
+
+  padding: 0 !important;
+
+  font-size: 15px !important;
+
+  line-height: 1.25 !important;
+
+  font-weight: 700 !important;
+
+  white-space: nowrap;
+}
+
+
+/* ============================================================
+   3. USER NUMERIC FIELDS
+   ============================================================ */
+
+input.bm-user-number-field,
+input.bm-compact-number {
+
+  width: 100px !important;
+
+  min-width: 100px !important;
+
+  max-width: 100px !important;
+
+  height: 39px !important;
+
+  margin: 0 !important;
+
+  padding: 5px 7px !important;
+
+  text-align: center !important;
+
+  box-sizing: border-box !important;
+
+  font-size: 16px !important;
+
+  font-weight: 650 !important;
+
+  line-height: 1.2 !important;
+}
+
+
+/* ============================================================
+   4. TEXT FIELD
+   ============================================================ */
+
+input.bm-compact-text {
+
+  width: 145px !important;
+
+  min-width: 145px !important;
+
+  max-width: 145px !important;
+
+  height: 39px !important;
+
+  margin: 0 !important;
+
+  padding: 5px 8px !important;
+
+  font-size: 15px !important;
+}
+
+
+/* ============================================================
+   5. DROPDOWNS
+   ============================================================ */
+
+select.bm-compact-number-select {
+
+  width: 112px !important;
+
+  min-width: 112px !important;
+
+  max-width: 112px !important;
+
+  height: 39px !important;
+
+  margin: 0 !important;
+
+  padding: 4px 6px !important;
+
+  font-size: 14.5px !important;
+}
+
+select.bm-compact-text-select {
+
+  width: 175px !important;
+
+  min-width: 175px !important;
+
+  max-width: 175px !important;
+
+  height: 39px !important;
+
+  margin: 0 !important;
+
+  padding: 4px 6px !important;
+
+  font-size: 14.5px !important;
+}
+
+
+/* ============================================================
+   6. USER EDITED FIELD
+   ============================================================ */
+
+input.bm-user-edited,
+select.bm-user-edited {
+
+  color: #c1121f !important;
+
+  font-weight: 800 !important;
+
+  background-color: #fff1f2 !important;
+
+  border-color: #dc2626 !important;
+
+  box-shadow:
+    0 0 0 2px rgba(220,38,38,.10) !important;
+}
+
+
+/* ============================================================
+   7. RESULT AREA — NORMAL READABILITY
+   ============================================================ */
+
+[class*="result" i],
+[class*="output" i],
+[class*="summary" i],
+[class*="calculation" i],
+[class*="estimate" i] {
+
+  font-family:
+    "Segoe UI Variable",
+    "Segoe UI",
+    system-ui,
+    sans-serif !important;
+
+  font-size: 16px !important;
+
+  line-height: 1.5 !important;
+}
+
+
+/* labels / descriptions */
+
+[class*="result" i] p,
+[class*="result" i] span,
+
+[class*="output" i] p,
+[class*="output" i] span,
+
+[class*="summary" i] p,
+[class*="summary" i] span,
+
+[class*="calculation" i] p,
+[class*="calculation" i] span,
+
+[class*="estimate" i] p,
+[class*="estimate" i] span {
+
+  font-size: 16px !important;
+
+  line-height: 1.5 !important;
+}
+
+
+/* ============================================================
+   8. RESULT VALUES
+   ============================================================ */
+
+[class*="result" i] strong,
+[class*="result" i] b,
+
+[class*="output" i] strong,
+[class*="output" i] b,
+
+[class*="summary" i] strong,
+[class*="summary" i] b,
+
+[class*="calculation" i] strong,
+[class*="calculation" i] b,
+
+[class*="estimate" i] strong,
+[class*="estimate" i] b {
+
+  font-size: 18px !important;
+
+  line-height: 1.35 !important;
+
+  font-weight: 800 !important;
+
+  color: #1e3a5f;
+}
+
+
+/* ============================================================
+   9. FRESHLY CALCULATED RESULT
+   ============================================================ */
+
+.bm-fresh-result,
+.bm-fresh-result strong,
+.bm-fresh-result b,
+.bm-fresh-result span {
+
+  color: #1565c0 !important;
+
+  font-weight: 800 !important;
+
+  transition:
+    color .25s ease,
+    background-color .25s ease;
+
+}
+
+.bm-fresh-result {
+
+  background-color: #eff6ff !important;
+
+  border-radius: 5px;
+
+  padding-left: 3px;
+
+  padding-right: 3px;
+}
+
+
+/* ============================================================
+   10. TOTAL / GRAND TOTAL HIERARCHY
+   ============================================================ */
+
+/*
+   Total containers should be stronger than ordinary calculated values.
+*/
+
+[class*="total" i] {
+
+  font-size: 18px !important;
+
+  line-height: 1.4 !important;
+
+  font-weight: 750 !important;
+}
+
+[class*="total" i] strong,
+[class*="total" i] b {
+
+  font-size: 20px !important;
+
+  line-height: 1.3 !important;
+
+  font-weight: 850 !important;
+
+  color: #0b4f8a !important;
+}
+
+
+/* ============================================================
+   11. RESULT / BOQ TABLE
+   ============================================================ */
+
+table {
+
+  font-family:
+    "Segoe UI Variable",
+    "Segoe UI",
+    system-ui,
+    sans-serif !important;
+}
+
+table th {
+
+  font-size: 16px !important;
+
+  line-height: 1.4 !important;
+
+  font-weight: 800 !important;
+}
+
+table td {
+
+  font-size: 16px !important;
+
+  line-height: 1.5 !important;
+}
+
+table td strong,
+table td b {
+
+  font-size: 16.5px !important;
+
+  font-weight: 750 !important;
+}
+
+
+/* ============================================================
+   12. MOBILE FIELD ALIGNMENT
+   ============================================================ */
+
+@media screen and (max-width: 768px) {
+
+  /*
+     On mobile don't force one 950px row.
+     Use a neat 2-column compact arrangement.
+  */
+
+  div:has(> .bm-field-shell + .bm-field-shell),
+  section:has(> .bm-field-shell + .bm-field-shell),
+  form:has(> .bm-field-shell + .bm-field-shell) {
+
+    display: grid !important;
+
+    grid-template-columns:
+      repeat(2, minmax(0, max-content)) !important;
+
+    justify-content: start !important;
+
+    align-items: end !important;
+
+    column-gap: 8px !important;
+
+    row-gap: 9px !important;
+
+    width: 100% !important;
+
+    margin: 0 !important;
+  }
+
+
+  input.bm-user-number-field,
+  input.bm-compact-number {
+
+    width: 92px !important;
+
+    min-width: 92px !important;
+
+    max-width: 92px !important;
+
+    height: 38px !important;
+
+    font-size: 15px !important;
+  }
+
+
+  input.bm-compact-text {
+
+    width: 135px !important;
+
+    min-width: 135px !important;
+
+    max-width: 135px !important;
+  }
+
+
+  select.bm-compact-number-select {
+
+    width: 105px !important;
+
+    min-width: 105px !important;
+
+    max-width: 105px !important;
+  }
+
+
+  select.bm-compact-text-select {
+
+    width: 158px !important;
+
+    min-width: 158px !important;
+
+    max-width: 158px !important;
+  }
+
+
+  .bm-field-shell > label,
+  .bm-field-shell label {
+
+    font-size: 14px !important;
+
+    white-space: normal;
+  }
+
+
+  [class*="result" i],
+  [class*="output" i],
+  [class*="summary" i],
+  [class*="calculation" i],
+  [class*="estimate" i] {
+
+    font-size: 15.5px !important;
+  }
+
+
+  [class*="result" i] strong,
+  [class*="output" i] strong,
+  [class*="summary" i] strong,
+  [class*="calculation" i] strong,
+  [class*="estimate" i] strong {
+
+    font-size: 17px !important;
+  }
+
+
+  [class*="total" i] strong,
+  [class*="total" i] b {
+
+    font-size: 18.5px !important;
+  }
+
+
+  table th,
+  table td {
+
+    font-size: 15px !important;
+  }
+
+}
+
+
+/* ============================================================
+   ENGINEERING DRAWING PROTECTION
+   ============================================================ */
+
+svg text,
+svg tspan {
+
+  font-size: inherit;
+}
+
+
+/* BUILDMITRA-FINAL-COMPACT-FORM-RESULTS-END */
+
+
+/* BUILDMITRA-CONCRETE-TRUE-SINGLE-ROW-START */
+
+
+/* ============================================================
+   DESKTOP
+   ONE REAL ROW:
+   Length | Width | Depth | Quantity | Unit | Grade | Wastage
+   ============================================================ */
+
+@media screen and (min-width: 769px) {
+
+  .bm-concrete-true-single-row {
+
+    display: flex !important;
+
+    flex-direction: row !important;
+
+    flex-wrap: nowrap !important;
+
+    align-items: flex-end !important;
+
+    justify-content: flex-start !important;
+
+    gap: 8px !important;
+
+    width: 100% !important;
+
+    max-width: 100% !important;
+
+    box-sizing: border-box !important;
+
+    margin: 0 !important;
+
+    padding: 0 0 6px 0 !important;
+
+    overflow-x: auto !important;
+  }
+
+
+  /*
+     The source still contains the original Dimension grid
+     and Mix grid, but they no longer create separate rows.
+
+     display:contents makes all their field children direct
+     visual children of the ONE parent flex row.
+  */
+
+  .bm-concrete-true-single-row
+  > .bm-concrete-dimension-grid,
+
+  .bm-concrete-true-single-row
+  > .bm-concrete-mix-grid,
+
+  .bm-concrete-true-single-row
+  > div[style] {
+
+    display: contents !important;
+  }
+
+
+  .bm-concrete-true-single-row
+  .bm-field-shell {
+
+    flex: 0 0 auto !important;
+
+    width: fit-content !important;
+
+    min-width: 0 !important;
+
+    max-width: none !important;
+
+    margin: 0 !important;
+
+    padding: 0 !important;
+  }
+
+
+  /* Numeric input — compact */
+
+  .bm-concrete-true-single-row
+  input.bm-user-number-field,
+
+  .bm-concrete-true-single-row
+  input.bm-compact-number {
+
+    width: 96px !important;
+
+    min-width: 96px !important;
+
+    max-width: 96px !important;
+
+    height: 39px !important;
+  }
+
+
+  /* Measurement Unit */
+
+  .bm-concrete-true-single-row
+  select.bm-compact-number-select {
+
+    width: 108px !important;
+
+    min-width: 108px !important;
+
+    max-width: 108px !important;
+  }
+
+
+  /* Grade / general dropdown */
+
+  .bm-concrete-true-single-row
+  select.bm-compact-text-select {
+
+    width: 165px !important;
+
+    min-width: 165px !important;
+
+    max-width: 165px !important;
+  }
+
+
+  .bm-concrete-true-single-row label {
+
+    margin-bottom: 4px !important;
+
+    font-size: 14.5px !important;
+
+    font-weight: 700 !important;
+
+    line-height: 1.2 !important;
+  }
+
+}
+
+
+/* ============================================================
+   MOBILE
+   Keep responsive two-column arrangement
+   ============================================================ */
+
+@media screen and (max-width: 768px) {
+
+  .bm-concrete-true-single-row {
+
+    display: grid !important;
+
+    grid-template-columns:
+      repeat(2, minmax(0, max-content)) !important;
+
+    justify-content: start !important;
+
+    align-items: end !important;
+
+    column-gap: 8px !important;
+
+    row-gap: 9px !important;
+
+    width: 100% !important;
+
+    margin: 0 !important;
+
+    padding: 0 !important;
+  }
+
+
+  .bm-concrete-true-single-row
+  > .bm-concrete-dimension-grid,
+
+  .bm-concrete-true-single-row
+  > .bm-concrete-mix-grid,
+
+  .bm-concrete-true-single-row
+  > div[style] {
+
+    display: contents !important;
+  }
+
+}
+
+
+/* BUILDMITRA-CONCRETE-TRUE-SINGLE-ROW-END */
+

@@ -4,7 +4,7 @@ import { clearBuildMitraSession, getBuildMitraUser } from "../utils/session";
 
 const styles = {
   sidebar: {
-    width: "280px",
+    width: "250px",
     background: "#1a1a2e",
     color: "#fff",
     height: "100vh",
@@ -113,12 +113,31 @@ const styles = {
   },
 
   badge: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+
     background: "#ff7a00",
     color: "#fff",
-    fontSize: "10px",
-    padding: "2px 8px",
-    borderRadius: "12px",
-    marginLeft: "8px"
+
+    fontSize: "8px",
+    lineHeight: "1",
+    fontWeight: 800,
+
+    padding: "1px 4px",
+    marginLeft: "4px",
+
+    height: "14px",
+    minWidth: "auto",
+
+    borderRadius: "7px",
+
+    whiteSpace: "nowrap",
+    wordBreak: "keep-all",
+    writingMode: "horizontal-tb",
+
+    flexShrink: 0,
+    verticalAlign: "middle"
   },
 
   logo: {
@@ -820,6 +839,7 @@ const handleMobileBack = () => {
     </div>
   );
 }
+
 
 
 
