@@ -37,6 +37,34 @@ const readArray = (key: string): any[] => {
   }
 };
 
+const CANONICAL_ALIAS_MAP: Record<string, string[]> = {
+  "MAT-CEM-01": ["cement", "opc 53", "opc cement", "ppc cement", "portland cement"],
+  "MAT-STL-01": ["tmt steel", "steel rebar", "fe 500d", "rebar", "reinforcement steel", "tmt bar", "tor steel"],
+  "MAT-MSND-01": ["m-sand", "m sand", "manufactured sand", "crushed sand", "plastering sand"],
+  "MAT-AGG-20": ["20mm aggregate", "20mm coarse aggregate", "coarse aggregate 20mm", "aggregate 20mm", "jelly 20mm"],
+  "MAT-AGG-12": ["12mm aggregate", "12mm coarse aggregate", "coarse aggregate 12mm", "aggregate 12mm", "jelly 12mm"],
+  "MAT-BRK-01": ["clay brick", "red brick", "modular brick", "brickwork brick", "table moulded brick"],
+  "MAT-BLK-01": ["concrete block", "solid block", "concrete solid block", "cement block", "6 inch block", "8 inch block"],
+  "MAT-AAC-01": ["aac block", "autoclaved aerated concrete", "siporex block", "lightweight block"],
+  "MAT-VIT-01": ["vitrified tile", "vitrified tiles", "600x600 tile", "floor tile", "body tile"],
+  "MAT-CER-01": ["ceramic tile", "ceramic tiles", "wall tile", "bathroom tile"],
+  "MAT-GRN-01": ["granite", "granite slab", "black granite", "granite flooring"],
+  "MAT-MRB-01": ["marble", "marble slab", "italian marble", "white marble"],
+  "MAT-ADH-01": ["tile adhesive", "kerakoll", "ferroke", "araldite", "adhesive 20kg"],
+  "MAT-GRT-01": ["tile grout", "epoxy grout", "cement grout"],
+  "MAT-PUT-01": ["wall putty", "putty", "birla white putty", "jk putty"],
+  "MAT-PRM-01": ["primer", "wall primer", "exterior primer", "interior primer"],
+  "MAT-PNT-01": ["emulsion paint", "paint", "acrylic paint", "wall paint", "interior paint"],
+  "MAT-PEB-PRM": ["primary steel", "peb primary steel", "built-up column", "tapered rafter"],
+  "MAT-PEB-SEC": ["secondary steel", "z purlin", "c purlin", "girt"],
+  "CIV-FND-CON": ["m25 concrete", "foundation concrete", "ready mix concrete", "footing concrete"],
+  "SRV-RCC-LAY": ["rcc casting labour", "concrete labour", "casting labour"],
+  "SRV-PLS-LAY": ["plastering labour", "plaster labour", "masonry plaster labour"],
+  "SRV-PNT-LAY": ["painting labour", "painter labour", "paint labour"],
+  "SRV-TIL-LAY": ["tile laying labour", "tiling labour", "tile mason"],
+  "SRV-BRK-LAY": ["brickwork labour", "masonry labour", "brick mason"]
+};
+
 export const getMasterRate = (
   keywords: string[],
   fallback: number = 0,
@@ -46,7 +74,14 @@ export const getMasterRate = (
     readArray(store).map((row) => ({ ...row, __store: store }))
   );
 
-  const cleanKeywords = keywords.map(k => String(k).trim().toLowerCase()).filter(Boolean);
+  let cleanKeywords = keywords.map(k => String(k).trim().toLowerCase()).filter(Boolean);
+
+  // Check canonical aliases and expand cleanKeywords with target master code
+  Object.entries(CANONICAL_ALIAS_MAP).forEach(([masterCode, aliases]) => {
+    if (cleanKeywords.some(k => aliases.some(alias => k.includes(alias) || alias.includes(k)))) {
+      cleanKeywords.push(masterCode.toLowerCase());
+    }
+  });
 
   // Priority 1: Exact Master Item Code match
   let found = rows.find((row) => {

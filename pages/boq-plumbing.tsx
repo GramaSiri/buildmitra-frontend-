@@ -1,56 +1,179 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import Head from 'next/head';
 import { useRouter } from 'next/router';
 import * as XLSX from 'xlsx';
 import { usePaymentBarrier } from '../hooks/usePaymentBarrier';
-import { getMasterRate, getCombinedBOQRate, syncApprovedRatesFromBackend } from '../utils/masterRates';
+import { downloadBuildMitraPDF } from '../utils/pdfExport';
+import { getMasterRate, syncApprovedRatesFromBackend, MasterRateResult } from '../utils/masterRates';
 import MarketRateTrend from '../components/ui/MarketRateTrend';
 
 const styles: Record<string, React.CSSProperties> = {
-  container: { maxWidth: '1200px', margin: '0 auto', padding: '16px', backgroundColor: '#f8fafc', minHeight: '100vh', boxSizing: 'border-box', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' },
-  header: { backgroundColor: '#0284c7', padding: '16px 20px', borderRadius: '10px', marginBottom: '16px', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 8px rgba(2,132,199,0.2)' },
-  headerTitle: { margin: 0, fontSize: '20px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '10px' },
-  badge: { backgroundColor: '#0369a1', color: '#ffffff', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: '700' },
-  backBtn: { backgroundColor: 'rgba(255,255,255,0.15)', border: 'none', color: 'white', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '600' },
-
-  stepperCard: { backgroundColor: '#ffffff', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '18px', marginBottom: '18px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' },
-  sectionHeader: { fontSize: '15px', fontWeight: '700', color: '#0284c7', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '2px solid #bae6fd', paddingBottom: '8px' },
-
-  grid4: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(82px, 1fr))', gap: '5px', alignItems: 'end', width: '100%', maxWidth: '100%', marginBottom: '5px' },
-  fieldGroup: { minWidth: 0, width: '100%', margin: 0, padding: 0 },
-  label: { display: 'block', fontSize: '10px', lineHeight: '1.1', fontWeight: '700', marginBottom: '2px', whiteSpace: 'normal' },
-  input: { width: '100%', minWidth: 0, maxWidth: '100%', height: '32px', padding: '3px 5px', fontSize: '11px', lineHeight: '1.1', textAlign: 'center', borderRadius: '5px', border: '1px solid #cbd5e1', boxSizing: 'border-box' },
-  inputReadOnly: { backgroundColor: '#f1f5f9', fontWeight: '700', color: '#0284c7' },
-
-  btnPrimary: { backgroundColor: '#0284c7', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '800', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%' },
-  btnSecondary: { backgroundColor: '#2563eb', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' },
-  btnSuccess: { backgroundColor: '#16a34a', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' },
-  btnReset: { backgroundColor: '#64748b', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '600' },
-
-  summaryGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '14px', marginBottom: '18px' },
-  metricCard: { padding: '14px', borderRadius: '8px', color: 'white', textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center' },
-  metricMaroon: { backgroundColor: '#0284c7' },
+  container: {
+    maxWidth: '1280px',
+    margin: '0 auto',
+    padding: '16px',
+    backgroundColor: '#f8fafc',
+    minHeight: '100vh',
+    boxSizing: 'border-box',
+    fontFamily: 'Segoe UI, -apple-system, BlinkMacSystemFont, Roboto, sans-serif'
+  },
+  header: {
+    backgroundColor: '#0284c7',
+    padding: '16px 20px',
+    borderRadius: '12px',
+    marginBottom: '16px',
+    color: 'white',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: '12px',
+    boxShadow: '0 4px 12px rgba(2,132,199,0.2)'
+  },
+  headerTitle: {
+    margin: 0,
+    fontSize: '22px',
+    fontWeight: '800',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px'
+  },
+  badge: {
+    backgroundColor: '#0369a1',
+    color: '#ffffff',
+    padding: '4px 10px',
+    borderRadius: '20px',
+    fontSize: '11px',
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px'
+  },
+  backBtn: {
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    border: 'none',
+    color: 'white',
+    padding: '8px 16px',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '13px',
+    fontWeight: '700',
+    transition: '0.2s'
+  },
+  card: {
+    backgroundColor: '#ffffff',
+    borderRadius: '12px',
+    border: '1px solid #e2e8f0',
+    padding: '18px',
+    marginBottom: '16px',
+    boxShadow: '0 2px 6px rgba(0,0,0,0.03)'
+  },
+  sectionHeader: {
+    fontSize: '16px',
+    fontWeight: '800',
+    color: '#0284c7',
+    marginBottom: '14px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    borderBottom: '2px solid #bae6fd',
+    paddingBottom: '8px'
+  },
+  gridCompact: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+    gap: '12px',
+    marginBottom: '12px'
+  },
+  fieldGroup: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px'
+  },
+  label: {
+    fontSize: '15px',
+    fontWeight: '700',
+    color: '#334155',
+    marginBottom: '2px'
+  },
+  input: {
+    width: '100%',
+    height: '38px',
+    padding: '8px 12px',
+    fontSize: '16px',
+    fontWeight: '600',
+    color: '#0f172a',
+    backgroundColor: '#ffffff',
+    border: '1px solid #cbd5e1',
+    borderRadius: '8px',
+    boxSizing: 'border-box',
+    outline: 'none'
+  },
+  inputModified: {
+    color: '#dc2626',
+    fontWeight: '800',
+    borderColor: '#fca5a5',
+    backgroundColor: '#fef2f2'
+  },
+  select: {
+    width: '100%',
+    height: '38px',
+    padding: '8px 12px',
+    fontSize: '16px',
+    fontWeight: '600',
+    color: '#0f172a',
+    backgroundColor: '#ffffff',
+    border: '1px solid #cbd5e1',
+    borderRadius: '8px',
+    boxSizing: 'border-box',
+    outline: 'none'
+  },
+  summaryGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+    gap: '12px',
+    marginBottom: '16px'
+  },
+  metricCard: {
+    padding: '16px',
+    borderRadius: '10px',
+    color: 'white',
+    textAlign: 'center',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    boxShadow: '0 4px 10px rgba(0,0,0,0.06)'
+  },
+  metricBlue: { backgroundColor: '#0284c7' },
   metricTeal: { backgroundColor: '#0f766e' },
   metricGreen: { backgroundColor: '#16a34a' },
   metricOrange: { backgroundColor: '#ea580c' },
-  metricTitle: { fontSize: '11px', textTransform: 'uppercase', opacity: 0.9, fontWeight: '600' },
-  metricVal: { fontSize: '19px', fontWeight: '800', marginTop: '4px' },
+  metricTitle: { fontSize: '12px', textTransform: 'uppercase', opacity: 0.9, fontWeight: '700', letterSpacing: '0.5px' },
+  metricVal: { fontSize: '18px', fontWeight: '800', marginTop: '6px' },
+  metricValGrand: { fontSize: '22px', fontWeight: '900', marginTop: '6px' },
 
-  tableContainer: { overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: '#fff', marginBottom: '18px' },
-  table: { width: '100%', borderCollapse: 'collapse', fontSize: '12px' },
-  th: { backgroundColor: '#0284c7', color: 'white', padding: '10px', textAlign: 'left', fontWeight: '700' },
-  td: { padding: '8px 10px', borderBottom: '1px solid #f1f5f9', color: '#334155' },
+  tableContainer: {
+    overflowX: 'auto',
+    WebkitOverflowScrolling: 'touch',
+    border: '1px solid #e2e8f0',
+    borderRadius: '10px',
+    backgroundColor: '#ffffff',
+    marginBottom: '16px'
+  },
+  table: { width: '100%', borderCollapse: 'collapse', fontSize: '15px' },
+  th: { backgroundColor: '#0284c7', color: 'white', padding: '10px 14px', textAlign: 'left', fontWeight: '700', fontSize: '15px' },
+  td: { padding: '10px 14px', borderBottom: '1px solid #f1f5f9', color: '#334155', fontSize: '15px' },
 
-  noteBox: { backgroundColor: '#f0f9ff', border: '1px solid #bae6fd', padding: '12px', borderRadius: '8px', fontSize: '12px', color: '#0369a1', marginBottom: '14px' }
+  btnPrimary: { backgroundColor: '#0284c7', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '8px', cursor: 'pointer', fontSize: '15px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '6px' },
+  btnSecondary: { backgroundColor: '#2563eb', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '8px', cursor: 'pointer', fontSize: '15px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '6px' },
+  btnSuccess: { backgroundColor: '#16a34a', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '8px', cursor: 'pointer', fontSize: '15px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '6px' },
+  btnReset: { backgroundColor: '#64748b', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '8px', cursor: 'pointer', fontSize: '15px', fontWeight: '700' },
+
+  warnBanner: { backgroundColor: '#fff1f2', border: '1px solid #fecdd3', color: '#9f1239', padding: '14px', borderRadius: '10px', fontSize: '14px', fontWeight: '600', marginBottom: '16px' }
 };
 
 const formatCurrency = (val: number | null | undefined): string => {
-  if (val === null || val === undefined || isNaN(val)) return "₹0.00";
+  if (val === null || val === undefined || isNaN(val) || val <= 0) return "Master Mapping Required / Approved Rate Unavailable";
   return `₹${val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-};
-
-const formatNumber = (val: number | null | undefined, decimals = 2): string => {
-  if (val === null || val === undefined || isNaN(val)) return "0";
-  return val.toLocaleString('en-IN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 };
 
 export default function PlumbingBOQPage() {
@@ -61,353 +184,318 @@ export default function PlumbingBOQPage() {
     syncApprovedRatesFromBackend();
   }, []);
 
-  // Building & Fixtures Inputs
   const [plotLength, setPlotLength] = useState(30);
   const [plotWidth, setPlotWidth] = useState(40);
-  const [floors, setFloors] = useState(3.5);
-  const [toilets, setToilets] = useState(5);
-  const [kitchens, setKitchens] = useState(1);
+  const [floors, setFloors] = useState(3);
+  const [toilets, setToilets] = useState(4);
 
-  const [generated, setGenerated] = useState(true);
+  const [isInputModified, setIsInputModified] = useState<boolean>(false);
+  const [isCalculatedBlue, setIsCalculatedBlue] = useState<boolean>(false);
 
-  // Derived Geometry & Pipe Length Engine
-  const plotArea = plotLength * plotWidth;
-  const setbackArea = plotArea * 0.10; // Auto 10% setback area
-  const footprintArea = Math.max(plotArea - setbackArea, 0);
-  const totalBUA = footprintArea * floors;
+  const handleInputChange = (setter: (val: any) => void, value: any) => {
+    setter(value);
+    setIsInputModified(true);
+  };
 
-  const floorCount = Math.max(1, Math.ceil(floors));
-  const floorHeightM = 3.0;
-  const wetPoints = toilets + kitchens;
-
-  const horizontalWaterPipe = (toilets * 12) + (kitchens * 10);
-  const verticalRiserPipe = wetPoints * floorCount * floorHeightM;
-  const totalPipeLength = horizontalWaterPipe + verticalRiserPipe;
-
-  // Admin Master Rates Lookup for all 28 Items
+  // Authoritative Admin Rate Master Lookups (0 fallback)
   const rates = useMemo(() => ({
-    plb01: getMasterRate(["PLB-01", "cpvc 15"], 35),
-    plb02: getMasterRate(["PLB-02", "cpvc 20"], 45),
-    plb03: getMasterRate(["PLB-03", "cpvc 25"], 60),
-    plb04: getMasterRate(["PLB-04", "upvc waste 110"], 120),
-    plb05: getMasterRate(["PLB-05", "upvc waste 75"], 80),
-    plb06: getMasterRate(["PLB-06", "upvc vent 50"], 55),
-    plb07: getMasterRate(["PLB-07", "cpvc elbow 15"], 15),
-    plb08: getMasterRate(["PLB-08", "cpvc elbow 20"], 20),
-    plb09: getMasterRate(["PLB-09", "cpvc tee 15"], 18),
-    plb10: getMasterRate(["PLB-10", "cpvc tee 20"], 25),
-    plb11: getMasterRate(["PLB-11", "gate valve 15"], 180),
-    plb12: getMasterRate(["PLB-12", "gate valve 20"], 250),
-    plb13: getMasterRate(["PLB-13", "stop cock 15"], 120),
-    plb14: getMasterRate(["PLB-14", "bib cock"], 250),
-    plb15: getMasterRate(["PLB-15", "pillar tap"], 300),
-    plb16: getMasterRate(["PLB-16", "angle valve"], 80),
-    plb17: getMasterRate(["PLB-17", "health faucet"], 350),
-    plb18: getMasterRate(["PLB-18", "western commode"], 3500),
-    plb19: getMasterRate(["PLB-19", "wash basin"], 1200),
-    plb20: getMasterRate(["PLB-20", "kitchen sink"], 2500),
-    plb21: getMasterRate(["PLB-21", "floor trap"], 150),
-    plb22: getMasterRate(["PLB-22", "nahani trap"], 120),
-    plb23: getMasterRate(["PLB-23", "grease trap"], 400),
-    plb24: getMasterRate(["PLB-24", "chamber cover"], 250),
-    plb25: getMasterRate(["PLB-25", "solvent cement"], 80),
-    plb26: getMasterRate(["PLB-26", "ptfe tape"], 15),
-    plb27: getMasterRate(["PLB-27", "clamps"], 20),
-    plb28: getMasterRate(["PLB-28", "testing commissioning"], 3000)
+    plb01: getMasterRate(["PLB-01", "cpvc 15"], 0),
+    plb02: getMasterRate(["PLB-02", "cpvc 20"], 0),
+    plb04: getMasterRate(["PLB-04", "upvc 110"], 0),
+    plb13: getMasterRate(["PLB-13", "water tank 1000"], 0),
+    plb22: getMasterRate(["PLB-22", "ewc commode"], 0),
+    plbLabour: getMasterRate(["SRV-PLM-LAY", "plumbing labour"], 0)
   }), []);
 
-  // Plumbing Calculation Engine
-  const boqResults = useMemo(() => {
+  const calculations = useMemo(() => {
+    const totalBUA = Math.round(plotLength * plotWidth * 0.9 * floors);
+    const pipeLengthM = Math.round((toilets * 18) + (floors * 12));
+    const fittingsQty = Math.round(toilets * 6);
+
     const items = [
-      { sr: 1, code: 'PLB-01', desc: 'CPVC Pipe 15mm (Water Supply Branch Lines)', uom: 'm', qty: totalPipeLength * 0.4, matRate: rates.plb01.rate || 35, labRate: 12 },
-      { sr: 2, code: 'PLB-02', desc: 'CPVC Pipe 20mm (Cold & Hot Supply Loop)', uom: 'm', qty: totalPipeLength * 0.35, matRate: rates.plb02.rate || 45, labRate: 14 },
-      { sr: 3, code: 'PLB-03', desc: 'CPVC Pipe 25mm (Vertical Riser Main)', uom: 'm', qty: totalPipeLength * 0.15, matRate: rates.plb03.rate || 60, labRate: 16 },
-      { sr: 4, code: 'PLB-04', desc: 'UPVC Soil & Waste Pipe 110mm (Main Stack)', uom: 'm', qty: toilets * 4 * floorCount, matRate: rates.plb04.rate || 120, labRate: 25 },
-      { sr: 5, code: 'PLB-05', desc: 'UPVC Waste Pipe 75mm (Wash Basin & Shower Drain)', uom: 'm', qty: totalPipeLength * 0.1, matRate: rates.plb05.rate || 80, labRate: 20 },
-      { sr: 6, code: 'PLB-06', desc: 'UPVC Vent Pipe 50mm (Cowl Pressure Vent)', uom: 'm', qty: toilets * 3 * floorCount, matRate: rates.plb06.rate || 55, labRate: 15 },
-      { sr: 7, code: 'PLB-07', desc: 'CPVC Elbow 15mm', uom: 'nos', qty: totalPipeLength * 0.15, matRate: rates.plb07.rate || 15, labRate: 8 },
-      { sr: 8, code: 'PLB-08', desc: 'CPVC Elbow 20mm', uom: 'nos', qty: totalPipeLength * 0.1, matRate: rates.plb08.rate || 20, labRate: 10 },
-      { sr: 9, code: 'PLB-09', desc: 'CPVC Tee 15mm', uom: 'nos', qty: totalPipeLength * 0.08, matRate: rates.plb09.rate || 18, labRate: 8 },
-      { sr: 10, code: 'PLB-10', desc: 'CPVC Tee 20mm', uom: 'nos', qty: totalPipeLength * 0.06, matRate: rates.plb10.rate || 25, labRate: 10 },
-      { sr: 11, code: 'PLB-11', desc: 'Gate Valve 15mm (Control Valve)', uom: 'nos', qty: Math.ceil(toilets + kitchens), matRate: rates.plb11.rate || 180, labRate: 30 },
-      { sr: 12, code: 'PLB-12', desc: 'Gate Valve 20mm (Main Riser Valve)', uom: 'nos', qty: Math.ceil(floorCount), matRate: rates.plb12.rate || 250, labRate: 40 },
-      { sr: 13, code: 'PLB-13', desc: 'Concealed Stop Cock 15mm', uom: 'nos', qty: Math.ceil(kitchens), matRate: rates.plb13.rate || 120, labRate: 25 },
-      { sr: 14, code: 'PLB-14', desc: 'Brass Bib Cock', uom: 'nos', qty: Math.ceil((toilets * 2) + kitchens), matRate: rates.plb14.rate || 250, labRate: 30 },
-      { sr: 15, code: 'PLB-15', desc: 'Pillar Tap for Wash Basin', uom: 'nos', qty: Math.ceil(kitchens), matRate: rates.plb15.rate || 300, labRate: 30 },
-      { sr: 16, code: 'PLB-16', desc: 'Angle Valve with Flange', uom: 'nos', qty: Math.ceil((toilets * 3) + (kitchens * 2)), matRate: rates.plb16.rate || 80, labRate: 20 },
-      { sr: 17, code: 'PLB-17', desc: 'Health Faucet with SS Hose', uom: 'nos', qty: Math.ceil(toilets), matRate: rates.plb17.rate || 350, labRate: 40 },
-      { sr: 18, code: 'PLB-18', desc: 'Western Commode (EWC Set)', uom: 'set', qty: Math.ceil(toilets), matRate: rates.plb18.rate || 3500, labRate: 400 },
-      { sr: 19, code: 'PLB-19', desc: 'Ceramic Wash Basin Set', uom: 'set', qty: Math.ceil(toilets), matRate: rates.plb19.rate || 1200, labRate: 250 },
-      { sr: 20, code: 'PLB-20', desc: 'SS Kitchen Sink Set', uom: 'set', qty: Math.ceil(kitchens), matRate: rates.plb20.rate || 2500, labRate: 350 },
-      { sr: 21, code: 'PLB-21', desc: 'PVC Floor Trap with SS Grating', uom: 'nos', qty: Math.ceil(toilets + kitchens), matRate: rates.plb21.rate || 150, labRate: 40 },
-      { sr: 22, code: 'PLB-22', desc: 'Multi-Inlet Nahani Trap', uom: 'nos', qty: Math.ceil(toilets), matRate: rates.plb22.rate || 120, labRate: 35 },
-      { sr: 23, code: 'PLB-23', desc: 'Kitchen Grease Interceptor Trap', uom: 'nos', qty: Math.ceil(kitchens), matRate: rates.plb23.rate || 400, labRate: 80 },
-      { sr: 24, code: 'PLB-24', desc: 'SFRC Chamber Cover', uom: 'nos', qty: Math.ceil(toilets + kitchens + floorCount), matRate: rates.plb24.rate || 250, labRate: 50 },
-      { sr: 25, code: 'PLB-25', desc: 'UPVC Solvent Cement Bottle', uom: 'bottle', qty: totalPipeLength * 0.01, matRate: rates.plb25.rate || 80, labRate: 0 },
-      { sr: 26, code: 'PLB-26', desc: 'PTFE Thread Seal Tape Roll', uom: 'roll', qty: totalPipeLength * 0.005, matRate: rates.plb26.rate || 15, labRate: 0 },
-      { sr: 27, code: 'PLB-27', desc: 'Galvanized Clamps & Hangers', uom: 'set', qty: totalPipeLength * 0.05, matRate: rates.plb27.rate || 20, labRate: 10 },
-      { sr: 28, code: 'PLB-28', desc: 'Hydraulic Pressure Testing & Commissioning', uom: 'lump', qty: 1, matRate: rates.plb28.rate || 3000, labRate: 1000 }
+      {
+        code: rates.plb01.itemCode || "PLB-01",
+        category: "Pipes & Supply Lines",
+        name: "CPVC Water Supply Pipe (15mm / 0.5 inch SDR 11)",
+        uom: "M",
+        qty: Math.round(pipeLengthM * 0.6),
+        rateObj: rates.plb01
+      },
+      {
+        code: rates.plb02.itemCode || "PLB-02",
+        category: "Pipes & Supply Lines",
+        name: "CPVC Main Line Pipe (20mm / 0.75 inch)",
+        uom: "M",
+        qty: Math.round(pipeLengthM * 0.4),
+        rateObj: rates.plb02
+      },
+      {
+        code: rates.plb04.itemCode || "PLB-04",
+        category: "Drainage & Soil Pipes",
+        name: "SWR UPVC Soil & Waste Pipe (110mm / 4 inch)",
+        uom: "M",
+        qty: Math.round(toilets * 10),
+        rateObj: rates.plb04
+      },
+      {
+        code: rates.plb13.itemCode || "PLB-13",
+        category: "Water Storage",
+        name: "HDPE Triple Layer Overhead Water Storage Tank (1000 Ltr)",
+        uom: "NOS",
+        qty: 1,
+        rateObj: rates.plb13
+      },
+      {
+        code: rates.plb22.itemCode || "PLB-22",
+        category: "Sanitary Fixtures",
+        name: "European Water Closet (EWC) Wall Hung Commode",
+        uom: "NOS",
+        qty: toilets,
+        rateObj: rates.plb22
+      },
+      {
+        code: rates.plbLabour.itemCode || "SRV-PLM-LAY",
+        category: "Labour Services",
+        name: "Turnkey Plumbing Fitting, Sanitary & Pipe Laying Labour",
+        uom: "SQFT",
+        qty: totalBUA,
+        rateObj: rates.plbLabour
+      }
     ];
 
-    const processedItems = items.map(i => {
-      const combined = getCombinedBOQRate(i.code, i.matRate, i.labRate);
-      const matRate = combined.materialRate;
-      const labRate = combined.labourRate;
-      const amount = i.qty * (matRate + labRate);
-      return { ...i, matRate, labRate, amount };
+    let totalMaterialCost = 0;
+    let totalLabourCost = 0;
+
+    const processedItems = items.map(it => {
+      const isFound = it.rateObj.found && Number(it.rateObj.rate) > 0;
+      const rateVal = isFound ? Number(it.rateObj.rate) : 0;
+      const amountVal = isFound ? it.qty * rateVal : 0;
+
+      if (it.category.includes("Labour")) {
+        totalLabourCost += amountVal;
+      } else {
+        totalMaterialCost += amountVal;
+      }
+
+      return {
+        ...it,
+        isFound,
+        rateVal,
+        amountVal
+      };
     });
 
-    const materialTotal = processedItems.reduce((sum, i) => sum + (i.qty * i.matRate), 0);
-    const labourTotal = processedItems.reduce((sum, i) => sum + (i.qty * i.labRate), 0);
-    const grandTotal = materialTotal + labourTotal;
-    const ratePerSft = totalBUA > 0 ? grandTotal / totalBUA : 0;
+    const grandTotalCost = totalMaterialCost + totalLabourCost;
+    const missingItems = processedItems.filter(it => !it.isFound);
 
     return {
+      totalBUA,
+      pipeLengthM,
+      toilets,
+      totalMaterialCost,
+      totalLabourCost,
+      grandTotalCost,
       items: processedItems,
-      materialTotal,
-      labourTotal,
-      grandTotal,
-      ratePerSft,
-      totalPipeLength
+      missingItems
     };
-  }, [plotLength, plotWidth, floors, toilets, kitchens, totalPipeLength, floorCount, totalBUA, rates]);
+  }, [plotLength, plotWidth, floors, toilets, rates]);
 
-  // Export Excel
+  const handleCalculate = () => {
+    setIsInputModified(false);
+    setIsCalculatedBlue(true);
+    setTimeout(() => setIsCalculatedBlue(false), 2000);
+  };
+
   const handleExportExcel = () => {
-    checkAndRun('boq_export', 'boq-plumbing', () => {
-      const data = boqResults.items.map((i: any) => ({
-        'Sr No': i.sr,
-        'Item Code': i.code,
-        'Description': i.desc,
-        'UOM': i.uom,
-        'Quantity': formatNumber(i.qty),
-        'Mat. Rate (₹)': formatCurrency(i.matRate),
-        'Lab. Rate (₹)': formatCurrency(i.labRate),
-        'Total Amount (₹)': formatCurrency(i.amount)
-      }));
+    checkAndRun("plumbing_boq_export", "PLM-BOQ", () => {
+      const data = [
+        ["BUILDMITRA PLUMBING & SANITARY BOQ REPORT"],
+        ["Generated Date", new Date().toLocaleDateString('en-IN')],
+        ["Built-up Area", `${calculations.totalBUA} Sq.ft`],
+        ["Toilets Count", toilets],
+        ["GRAND TOTAL ESTIMATED COST", formatCurrency(calculations.grandTotalCost)],
+        [],
+        ["ITEMIZED PLUMBING BOQ"],
+        ["Master Code", "Category", "Description", "Quantity", "UOM", "Approved Rate (₹)", "Total Amount (₹)"],
+        ...calculations.items.map(it => [
+          it.code,
+          it.category,
+          it.name,
+          it.qty,
+          it.uom,
+          it.isFound ? it.rateVal : "Master Mapping Required / Approved Rate Unavailable",
+          it.isFound ? it.amountVal : "—"
+        ])
+      ];
 
-      const ws = XLSX.utils.json_to_sheet(data);
+      const ws = XLSX.utils.aoa_to_sheet(data);
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Plumbing_BOQ');
-      XLSX.writeFile(wb, `BuildMitra_Plumbing_BOQ_${new Date().toISOString().split('T')[0]}.xlsx`);
+      XLSX.utils.book_append_sheet(wb, ws, "Plumbing_BOQ");
+      XLSX.writeFile(wb, `BuildMitra_Plumbing_BOQ_${Date.now()}.xlsx`);
     });
   };
 
-  // Share WhatsApp
-  const handleShareWhatsApp = () => {
-    checkAndRun('boq_export', 'boq-plumbing', () => {
-      const msg = `*BuildMitra Plumbing BOQ Estimate*%0A` +
-        `----------------------------------------%0A` +
-        `• *Plot Size*: ${plotLength}' x ${plotWidth}' (${plotArea} Sft) | *Floors*: ${floors}%0A` +
-        `• *Total BUA*: ${formatNumber(totalBUA)} Sft | *Toilets*: ${toilets} | *Kitchens*: ${kitchens}%0A` +
-        `• *Total Pipe Length*: ${formatNumber(boqResults.totalPipeLength, 1)} Meters%0A` +
-        `• *Material Total*: ${formatCurrency(boqResults.materialTotal)}%0A` +
-        `• *Labour Total*: ${formatCurrency(boqResults.labourTotal)}%0A` +
-        `• *GRAND TOTAL COST*: ${formatCurrency(boqResults.grandTotal)} (${formatCurrency(boqResults.ratePerSft)}/Sft)%0A%0A` +
-        `*Generated via BuildMitra Plumbing BOQ Engine*`;
-      window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
-    });
-  };
+  const handleExportPDF = () => {
+    checkAndRun("plumbing_boq_export", "PLM-BOQ", () => {
+      const headers = ["Master Code", "Category", "Description", "Qty", "UOM", "Rate (₹)", "Amount (₹)"];
+      const rows = calculations.items.map(it => [
+        it.code,
+        it.category,
+        it.name,
+        String(it.qty),
+        it.uom,
+        it.isFound ? formatCurrency(it.rateVal) : "Rate Pending Admin Update",
+        it.isFound ? formatCurrency(it.amountVal) : "—"
+      ]);
 
-  const handleReset = () => {
-    setPlotLength(30); setPlotWidth(40); setFloors(3.5); setToilets(5); setKitchens(1); setGenerated(false);
+      downloadBuildMitraPDF(
+        "BuildMitra – Plumbing & Sanitary BOQ Report",
+        [
+          ["Built-up Area:", `${calculations.totalBUA} Sq.ft`],
+          ["Toilets Count:", toilets],
+          ["GRAND TOTAL ESTIMATED COST:", formatCurrency(calculations.grandTotalCost)]
+        ],
+        headers,
+        rows,
+        `BuildMitra_Plumbing_BOQ_${Date.now()}.pdf`
+      );
+    });
   };
 
   return (
-    <div className="bm-final-boq-page" style={styles.container}>
-      {/* 1. Header */}
-      <div style={styles.header}>
-        <div>
-          <button style={styles.backBtn} onClick={() => router.push('/calculators')}>← Back to Calculators</button>
-        </div>
-        <h1 style={styles.headerTitle}>
-          🚰 Plumbing BOQ Calculator
-          <span style={styles.badge}>IS 2065 Water Supply & IS 1742 Drainage Engine</span>
-        </h1>
-        <div>
-          <span style={{ fontSize: '11px', color: '#bae6fd' }}>BuildMitra Professional Edition</span>
-        </div>
-      </div>
+    <>
+      <Head>
+        <title>Plumbing &amp; Sanitary BOQ Estimator | BuildMitra</title>
+      </Head>
 
-      {/* 2. Live Market Rate Ticker */}
-      <MarketRateTrend />
-
-      {/* 3. Building Details Inputs Form */}
-      <div style={styles.stepperCard}>
-        <div style={styles.sectionHeader}>
-          <span>📐 Building & Sanitary Fixture Details</span>
+      <div style={styles.container}>
+        {/* Header */}
+        <div style={styles.header}>
+          <div>
+            <span style={styles.badge}>MEP &amp; PLUMBING BOQ</span>
+            <h1 style={styles.headerTitle}>🚰 BuildMitra – Plumbing &amp; Sanitary BOQ</h1>
+          </div>
+          <button style={styles.backBtn} onClick={() => router.push("/contractor-dashboard")}>← Back to Dashboard</button>
         </div>
 
-        <div className="bm-final-boq-input-grid" style={styles.grid4}>
-          <div style={styles.fieldGroup}>
-            <label style={styles.label}>Plot Length (Ft)</label>
-            <input
-              type="number"
-              style={styles.input}
-              value={plotLength}
-              onChange={e => setPlotLength(parseFloat(e.target.value) || 0)}
-            />
-          </div>
+        <MarketRateTrend />
 
-          <div style={styles.fieldGroup}>
-            <label style={styles.label}>Plot Width (Ft)</label>
-            <input
-              type="number"
-              style={styles.input}
-              value={plotWidth}
-              onChange={e => setPlotWidth(parseFloat(e.target.value) || 0)}
-            />
-          </div>
-
-          <div style={styles.fieldGroup}>
-            <label style={styles.label}>Plot Area (Sft)</label>
-            <input
-              type="text"
-              readOnly
-              style={{ ...styles.input, ...styles.inputReadOnly }}
-              value={`${formatNumber(plotArea)} Sft`}
-            />
-          </div>
-
-          <div style={styles.fieldGroup}>
-            <label style={styles.label}>No. of Floors</label>
-            <input
-              type="number"
-              style={styles.input}
-              value={floors}
-              onChange={e => setFloors(parseFloat(e.target.value) || 1)}
-            />
-          </div>
-
-          <div style={styles.fieldGroup}>
-            <label style={styles.label}>Total Built-Up Area (Sft)</label>
-            <input
-              type="text"
-              readOnly
-              style={{ ...styles.input, ...styles.inputReadOnly }}
-              value={`${formatNumber(totalBUA)} Sft`}
-            />
-          </div>
-
-          <div style={styles.fieldGroup}>
-            <label style={styles.label}>No. of Toilets</label>
-            <input
-              type="number"
-              style={styles.input}
-              value={toilets}
-              onChange={e => setToilets(parseFloat(e.target.value) || 0)}
-            />
-          </div>
-
-          <div style={styles.fieldGroup}>
-            <label style={styles.label}>No. of Kitchens</label>
-            <input
-              type="number"
-              style={styles.input}
-              value={kitchens}
-              onChange={e => setKitchens(parseFloat(e.target.value) || 0)}
-            />
-          </div>
-        </div>
-
-        {/* Structural Engine Rules Badge */}
-        <div className="bm-boq-mobile-technical-note" style={styles.noteBox}>
-          💡 <strong>IS Plumbing Engine Rules</strong>: Total Pipe Length: <strong>{formatNumber(boqResults.totalPipeLength, 1)} m</strong> | Toilets: <strong>{toilets}</strong> | Kitchens: <strong>{kitchens}</strong> | Water Supply Loops & Riser Lines Calculated Automatically.
-        </div>
-
-        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '10px' }}>
-          <button style={styles.btnReset} onClick={handleReset}>🔄 Reset Form</button>
-          <button style={styles.btnPrimary} onClick={() => setGenerated(true)}>🔨 Generate Plumbing BOQ</button>
-        </div>
-      </div>
-
-      {/* 4. Detailed Results BOQ Cards & Table */}
-      {generated && (
-        <div style={styles.stepperCard}>
+        {/* Inputs */}
+        <div style={styles.card}>
           <div style={styles.sectionHeader}>
-            <span>📊 Plumbing BOQ Estimation Summary & Itemized BOQ</span>
+            <span>📐 Enter Plumbing &amp; Fixtures Parameters</span>
           </div>
 
-          {/* Metric Summary Grid */}
-          <div className="bm-boq-summary-scroll" style={styles.summaryGrid}>
-            <div style={{ ...styles.metricCard, ...styles.metricMaroon }}>
-              <span style={styles.metricTitle}>Grand Total Cost</span>
-              <span style={styles.metricVal}>₹{formatNumber(boqResults.grandTotal / 100000, 2)} Lakhs</span>
-              <span style={{ fontSize: '11px', opacity: 0.9 }}>{formatCurrency(boqResults.grandTotal)}</span>
+          <div style={styles.gridCompact}>
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Plot Length (ft)</label>
+              <input type="number" value={plotLength} onChange={(e) => handleInputChange(setPlotLength, Number(e.target.value))} style={{ ...styles.input, ...(isInputModified ? styles.inputModified : {}) }} />
             </div>
 
-            <div style={{ ...styles.metricCard, ...styles.metricOrange }}>
-              <span style={styles.metricTitle}>Total Pipe Length</span>
-              <span style={styles.metricVal}>{formatNumber(boqResults.totalPipeLength, 1)} m</span>
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Plot Width (ft)</label>
+              <input type="number" value={plotWidth} onChange={(e) => handleInputChange(setPlotWidth, Number(e.target.value))} style={{ ...styles.input, ...(isInputModified ? styles.inputModified : {}) }} />
             </div>
 
-            <div style={{ ...styles.metricCard, ...styles.metricTeal }}>
-              <span style={styles.metricTitle}>Sanitary Fixtures</span>
-              <span style={styles.metricVal}>{toilets} Sets</span>
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Floors Count</label>
+              <input type="number" value={floors} onChange={(e) => handleInputChange(setFloors, Number(e.target.value))} style={styles.input} />
             </div>
 
-            <div style={{ ...styles.metricCard, ...styles.metricTeal, backgroundColor: '#0284c7' }}>
-              <span style={styles.metricTitle}>Plumbing Labour Cost</span>
-              <span style={styles.metricVal}>₹{formatNumber(boqResults.labourTotal / 100000, 2)} Lakhs</span>
-              <span style={{ fontSize: '11px', opacity: 0.9 }}>{formatCurrency(boqResults.labourTotal)}</span>
-            </div>
-
-            <div style={{ ...styles.metricCard, ...styles.metricGreen }}>
-              <span style={styles.metricTitle}>Estimated Rate / Sft</span>
-              <span style={styles.metricVal}>{formatCurrency(boqResults.ratePerSft)} / Sft</span>
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Toilets Count</label>
+              <input type="number" value={toilets} onChange={(e) => handleInputChange(setToilets, Number(e.target.value))} style={styles.input} />
             </div>
           </div>
 
-          {/* BOQ Action Buttons */}
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}>
+          {/* Action Buttons */}
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '14px' }}>
+            <button style={styles.btnPrimary} onClick={handleCalculate}>⚡ Calculate Plumbing BOQ</button>
+            <button style={styles.btnReset} onClick={() => setPlotLength(30)}>🔄 Reset</button>
             <button style={styles.btnSecondary} onClick={handleExportExcel}>📊 Export Excel</button>
-            <button style={styles.btnSuccess} onClick={handleShareWhatsApp}>💬 WhatsApp Share</button>
-            <button style={{ backgroundColor: '#0284c7', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' }} onClick={() => alert('🛒 Plumbing BOQ Package sent to Vendor Marketplace RFQ!')}>🛒 Request Marketplace RFQ</button>
-            <button style={{ backgroundColor: '#0f766e', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' }} onClick={() => alert('📈 Applied Bengaluru Live Mandi Wholesale Rates to Plumbing BOQ!')}>📈 Sync Live Market Rates</button>
-            <button style={{ backgroundColor: '#475569', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' }} onClick={() => alert('💾 Saved Plumbing BOQ Revision 1.0 to Active Project!')}>💾 Save BOQ Revision</button>
-          </div>
-
-          {/* Itemized BOQ Table */}
-          <div className="bm-boq-table-scroll" style={styles.tableContainer}>
-            <div className="bm-real-boq-scroll"><table className="bm-boq-table bm-final-boq-table bm-real-boq-table" style={styles.table}>
-              <thead>
-                <tr>
-                  <th style={styles.th}>Sr.</th>
-                  <th style={styles.th}>Item Code</th>
-                  <th style={styles.th}>Item Description</th>
-                  <th style={styles.th}>UOM</th>
-                  <th style={styles.th}>Qty</th>
-                  <th style={styles.th}>Mat. Rate</th>
-                  <th style={styles.th}>Lab. Rate</th>
-                  <th style={styles.th}>Total (₹)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {boqResults.items.map((i: any, idx: number) => (
-                  <tr key={i.sr} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
-                    <td style={styles.td}><strong>{i.sr}</strong></td>
-                    <td style={styles.td}><code>{i.code}</code></td>
-                    <td style={styles.td}><strong>{i.desc}</strong></td>
-                    <td style={styles.td}>{i.uom}</td>
-                    <td style={styles.td}>{formatNumber(i.qty)}</td>
-                    <td style={styles.td}>{formatCurrency(i.matRate)}</td>
-                    <td style={styles.td}>{formatCurrency(i.labRate)}</td>
-                    <td style={styles.td}><strong>{formatCurrency(i.amount)}</strong></td>
-                  </tr>
-                ))}
-                <tr style={{ backgroundColor: '#0284c7', color: 'white', fontWeight: '800' }}>
-                  <td colSpan={7} style={{ padding: '12px', fontSize: '13px' }}>GRAND TOTAL ESTIMATED PLUMBING BOQ COST</td>
-                  <td style={{ padding: '12px', fontSize: '14px' }}>{formatCurrency(boqResults.grandTotal)}</td>
-                </tr>
-              </tbody>
-            </table></div>
+            <button style={styles.btnSuccess} onClick={handleExportPDF}>📄 Export PDF Report</button>
           </div>
         </div>
-      )}
-    </div>
+
+        {/* Result Metric Cards */}
+        <div style={styles.summaryGrid}>
+          <div style={{ ...styles.metricCard, ...styles.metricBlue }}>
+            <span style={styles.metricTitle}>Built-up Area</span>
+            <span style={{ ...styles.metricVal, color: isCalculatedBlue ? '#93c5fd' : '#ffffff' }}>{calculations.totalBUA.toLocaleString()} Sq.ft</span>
+          </div>
+          <div style={{ ...styles.metricCard, ...styles.metricTeal }}>
+            <span style={styles.metricTitle}>Total Pipe Length</span>
+            <span style={styles.metricVal}>{calculations.pipeLengthM} M</span>
+          </div>
+          <div style={{ ...styles.metricCard, ...styles.metricOrange }}>
+            <span style={styles.metricTitle}>Toilets Count</span>
+            <span style={styles.metricVal}>{toilets} Bathrooms</span>
+          </div>
+          <div style={{ ...styles.metricCard, ...styles.metricBlue }}>
+            <span style={styles.metricTitle}>Material Subtotal</span>
+            <span style={styles.metricVal}>{formatCurrency(calculations.totalMaterialCost)}</span>
+          </div>
+          <div style={{ ...styles.metricCard, ...styles.metricGreen }}>
+            <span style={styles.metricTitle}>GRAND ESTIMATED TOTAL</span>
+            <span style={{ ...styles.metricValGrand, color: isCalculatedBlue ? '#60a5fa' : '#ffffff' }}>{formatCurrency(calculations.grandTotalCost)}</span>
+          </div>
+        </div>
+
+        {/* Missing Master Rates Warning Banner */}
+        {calculations.missingItems.length > 0 && (
+          <div style={styles.warnBanner}>
+            ⚠️ <strong>Master Mapping Required / Approved Rate Unavailable ({calculations.missingItems.length} Line Items)</strong>
+            <ul style={{ margin: '6px 0 0 0', paddingLeft: '20px', fontSize: '13px' }}>
+              {calculations.missingItems.map(it => (
+                <li key={it.code}>
+                  <code>{it.code}</code>: {it.name} — Quantity: <strong>{it.qty.toLocaleString()} {it.uom}</strong> (Status: <em>Master Mapping Required</em>)
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Itemized BOQ Table */}
+        <div style={styles.tableContainer}>
+          <div style={{ padding: '12px 16px', backgroundColor: '#0284c7', color: 'white', fontWeight: '800', fontSize: '16px' }}>
+            📑 Itemized Plumbing &amp; Sanitary BOQ (Admin Master Linked)
+          </div>
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th style={styles.th}>Master Code</th>
+                <th style={styles.th}>Category</th>
+                <th style={styles.th}>Item Description</th>
+                <th style={styles.th}>Quantity</th>
+                <th style={styles.th}>UOM</th>
+                <th style={styles.th}>Approved Rate (₹)</th>
+                <th style={styles.th}>Total Amount (₹)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {calculations.items.map(it => (
+                <tr key={it.code}>
+                  <td style={styles.td}><code>{it.code}</code></td>
+                  <td style={styles.td}>{it.category}</td>
+                  <td style={styles.td}><strong>{it.name}</strong></td>
+                  <td style={styles.td}>{it.qty.toLocaleString()}</td>
+                  <td style={styles.td}>{it.uom}</td>
+                  <td style={styles.td}>
+                    {it.isFound ? formatCurrency(it.rateVal) : <span style={{ color: '#dc2626', fontWeight: '700' }}>Master Mapping Required / Approved Rate Unavailable</span>}
+                  </td>
+                  <td style={styles.td}>
+                    {it.isFound ? <strong>{formatCurrency(it.amountVal)}</strong> : <span style={{ color: '#94a3b8' }}>—</span>}
+                  </td>
+                </tr>
+              ))}
+              <tr style={{ backgroundColor: '#0284c7', color: 'white', fontWeight: '800' }}>
+                <td colSpan={6} style={{ padding: '12px 14px', fontSize: '16px' }}>GRAND TOTAL ESTIMATED COST</td>
+                <td style={{ padding: '12px 14px', fontSize: '18px' }}>{formatCurrency(calculations.grandTotalCost)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
   );
 }
-
-
-
-

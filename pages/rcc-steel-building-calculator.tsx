@@ -1,81 +1,180 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import Head from 'next/head';
 import * as XLSX from 'xlsx';
 import { useRouter } from 'next/router';
 import { usePaymentBarrier } from '../hooks/usePaymentBarrier';
 import MarketRateTrend from '../components/ui/MarketRateTrend';
-import EngineeringSpecimen from '../components/engineering/EngineeringSpecimen';
 import { getMasterRate, syncApprovedRatesFromBackend, MasterRateResult } from "../utils/masterRates";
+import { downloadBuildMitraPDF } from "../utils/pdfExport";
 
 const styles: Record<string, React.CSSProperties> = {
-  container: { width: '100%', maxWidth: '100%', margin: '0', padding: '4px 8px', boxSizing: 'border-box' },
-  header: { maxWidth: '100%', margin: '0 0 8px 0', padding: '6px 10px', borderRadius: '6px' },
-  headerTitle: { margin: 0, fontSize: '16px', lineHeight: '1.15', fontWeight: '800', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px' },
-  badge: { padding: '2px 6px', borderRadius: '10px', fontSize: '9px', lineHeight: '1.1', fontWeight: '700' },
-  backBtn: { backgroundColor: 'rgba(255,255,255,0.15)', border: 'none', color: 'white', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '600' },
-
-  dropdowncard: { padding: "3px 2px", borderRadius: "4px", textAlign: "center", minHeight: "0", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" },
-  dropdownlabel: { display: 'block', fontSize: '10px', fontWeight: '600', marginBottom: '2px', textAlign: 'center', whiteSpace: 'normal', overflow: 'hidden', textOverflow: 'ellipsis' },
-  modeselect: { width: '100%', padding: '2px 4px', height: '30px', fontSize: '11px', borderRadius: '4px', border: '1px solid #d1d5db', boxSizing: 'border-box' },
-
-  steppercard: { padding: "3px 2px", borderRadius: "4px", textAlign: "center", minHeight: "0", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" },
-  sectionheader: { maxWidth: '100%', margin: '0 0 8px 0', padding: '6px 10px', borderRadius: '6px' },
-
-  grid3: { display: 'grid', gridTemplateColumns: 'repeat(4, minmax(68px, 1fr))', gap: '5px', alignItems: 'end', width: '100%', maxWidth: '100%', marginBottom: '5px' },
-  grid4: { display: 'grid', gridTemplateColumns: 'repeat(4, minmax(68px, 1fr))', gap: '5px', alignItems: 'end', width: '100%', maxWidth: '100%', marginBottom: '5px' },
-
-  fieldGroup: { minWidth: 0, width: '100%', margin: 0, padding: 0 },
-  label: { display: 'block', fontSize: '10px', lineHeight: '1.1', fontWeight: '700', marginBottom: '2px', whiteSpace: 'normal' },
-  input: { width: '100%', minWidth: 0, maxWidth: '100%', height: '32px', padding: '3px 5px', fontSize: '12px', lineHeight: '1.1', textAlign: 'center', borderRadius: '5px', border: '1px solid #cbd5e1', boxSizing: 'border-box' },
-  select: { width: '100%', minWidth: 0, maxWidth: '100%', height: '32px', padding: '3px 4px', fontSize: '11px', lineHeight: '1.1', borderRadius: '5px', border: '1px solid #cbd5e1', boxSizing: 'border-box', overflow: 'hidden', textOverflow: 'ellipsis' },
-
-  btnPrimary: { backgroundColor: '#800020', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '6px' },
-  btnSecondary: { backgroundColor: '#2563eb', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' },
-  btnDanger: { backgroundColor: '#ef4444', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '11px', fontWeight: '600' },
-  btnSuccess: { backgroundColor: '#16a34a', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '700' },
-  btnReset: { backgroundColor: '#64748b', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '600' },
+  container: {
+    maxWidth: '1280px',
+    margin: '0 auto',
+    padding: '16px',
+    backgroundColor: '#f8fafc',
+    minHeight: '100vh',
+    boxSizing: 'border-box',
+    fontFamily: 'Segoe UI, -apple-system, BlinkMacSystemFont, Roboto, sans-serif'
+  },
+  header: {
+    backgroundColor: '#800020',
+    padding: '16px 20px',
+    borderRadius: '12px',
+    marginBottom: '16px',
+    color: 'white',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: '12px',
+    boxShadow: '0 4px 12px rgba(128,0,32,0.2)'
+  },
+  headerTitle: {
+    margin: 0,
+    fontSize: '22px',
+    fontWeight: '800',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px'
+  },
+  badge: {
+    backgroundColor: '#a51d36',
+    color: '#ffffff',
+    padding: '4px 10px',
+    borderRadius: '20px',
+    fontSize: '11px',
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px'
+  },
+  backBtn: {
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    border: 'none',
+    color: 'white',
+    padding: '8px 16px',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '13px',
+    fontWeight: '700',
+    transition: '0.2s'
+  },
+  card: {
+    backgroundColor: '#ffffff',
+    borderRadius: '12px',
+    border: '1px solid #e2e8f0',
+    padding: '18px',
+    marginBottom: '16px',
+    boxShadow: '0 2px 6px rgba(0,0,0,0.03)'
+  },
+  sectionHeader: {
+    fontSize: '16px',
+    fontWeight: '800',
+    color: '#800020',
+    marginBottom: '14px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    borderBottom: '2px solid #fecdd3',
+    paddingBottom: '8px'
+  },
+  gridCompact: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+    gap: '12px',
+    marginBottom: '12px'
+  },
+  fieldGroup: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px'
+  },
+  label: {
+    fontSize: '15px',
+    fontWeight: '700',
+    color: '#334155',
+    marginBottom: '2px'
+  },
+  input: {
+    width: '100%',
+    height: '38px',
+    padding: '8px 12px',
+    fontSize: '16px',
+    fontWeight: '600',
+    color: '#0f172a',
+    backgroundColor: '#ffffff',
+    border: '1px solid #cbd5e1',
+    borderRadius: '8px',
+    boxSizing: 'border-box',
+    outline: 'none'
+  },
+  inputModified: {
+    color: '#dc2626',
+    fontWeight: '800',
+    borderColor: '#fca5a5',
+    backgroundColor: '#fef2f2'
+  },
+  select: {
+    width: '100%',
+    height: '38px',
+    padding: '8px 12px',
+    fontSize: '16px',
+    fontWeight: '600',
+    color: '#0f172a',
+    backgroundColor: '#ffffff',
+    border: '1px solid #cbd5e1',
+    borderRadius: '8px',
+    boxSizing: 'border-box',
+    outline: 'none'
+  },
   summaryGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(5, minmax(112px, 1fr))',
-    gap: '5px',
-    width: '100%',
-    maxWidth: '100%',
-    overflowX: 'auto',
-    overflowY: 'hidden',
-    WebkitOverflowScrolling: 'touch',
-    touchAction: 'pan-x',
-    overscrollBehaviorX: 'contain',
-    scrollSnapType: 'x proximity',
-    padding: '3px 2px 7px',
-    margin: '3px 0 6px'
+    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+    gap: '12px',
+    marginBottom: '16px'
   },
-  metricCard: { flex: '0 0 112px', width: '112px', minwidth: '112px', maxWidth: '150px', minHeight: '68px', height: 'auto', padding: '6px', margin: 0, borderRadius: '7px', boxSizing: 'border-box', textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', overflow: 'hidden', scrollSnapAlign: 'start' },
+  metricCard: {
+    padding: '16px',
+    borderRadius: '10px',
+    color: 'white',
+    textAlign: 'center',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    boxShadow: '0 4px 10px rgba(0,0,0,0.06)'
+  },
   metricMaroon: { backgroundColor: '#800020' },
   metricTeal: { backgroundColor: '#0f766e' },
   metricGreen: { backgroundColor: '#16a34a' },
   metricOrange: { backgroundColor: '#ea580c' },
-  metricTitle: { fontSize: '10px', lineHeight: '1.1', textTransform: 'uppercase', opacity: 0.95, fontWeight: '700', whiteSpace: 'normal', marginBottom: '2px' },
-  metricVal: { fontSize: '15px', lineHeight: '1.15', fontWeight: '800', marginTop: '2px', whiteSpace: 'normal', overflowWrap: 'anywhere' },
+  metricBlue: { backgroundColor: '#2563eb' },
+  metricTitle: { fontSize: '12px', textTransform: 'uppercase', opacity: 0.9, fontWeight: '700', letterSpacing: '0.5px' },
+  metricVal: { fontSize: '18px', fontWeight: '800', marginTop: '6px' },
+  metricValGrand: { fontSize: '22px', fontWeight: '900', marginTop: '6px' },
 
-  tablecontainer: { width: '100%', maxWidth: '100%', margin: '0', padding: '4px 8px', boxSizing: 'border-box' },
-  table: { width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', fontSize: '10px' },
-  th: { padding: '3px 4px', fontSize: '10px', fontWeight: 'bold', backgroundColor: '#f1f5f9', textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal' },
-  td: { padding: '3px 4px', fontSize: '10px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal' },
+  tableContainer: {
+    overflowX: 'auto',
+    WebkitOverflowScrolling: 'touch',
+    border: '1px solid #e2e8f0',
+    borderRadius: '10px',
+    backgroundColor: '#ffffff',
+    marginBottom: '16px'
+  },
+  table: { width: '100%', borderCollapse: 'collapse', fontSize: '15px' },
+  th: { backgroundColor: '#800020', color: 'white', padding: '10px 14px', textAlign: 'left', fontWeight: '700', fontSize: '15px' },
+  td: { padding: '10px 14px', borderBottom: '1px solid #f1f5f9', color: '#334155', fontSize: '15px' },
 
-  rateTag: { backgroundColor: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', padding: '2px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: '700' },
-  rateTagWarn: { backgroundColor: '#fff7ed', color: '#c2410c', border: '1px solid #ffedd5', padding: '2px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: '700' },
+  btnPrimary: { backgroundColor: '#800020', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '8px', cursor: 'pointer', fontSize: '15px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '6px' },
+  btnSecondary: { backgroundColor: '#2563eb', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '8px', cursor: 'pointer', fontSize: '15px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '6px' },
+  btnSuccess: { backgroundColor: '#16a34a', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '8px', cursor: 'pointer', fontSize: '15px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '6px' },
+  btnReset: { backgroundColor: '#64748b', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '8px', cursor: 'pointer', fontSize: '15px', fontWeight: '700' },
 
-  warnBanner: { backgroundColor: '#fff7ed', border: '1px solid #fdba74', color: '#9a3412', padding: '12px', borderRadius: '8px', marginBottom: '16px', fontSize: '12px', fontWeight: '600' },
-  noteBox: { backgroundColor: '#fff5f7', border: '1px solid #fecdd3', padding: '12px', borderRadius: '8px', fontSize: '12px', color: '#800020', marginBottom: '14px' }
+  warnBanner: { backgroundColor: '#fff1f2', border: '1px solid #fecdd3', color: '#9f1239', padding: '14px', borderRadius: '10px', fontSize: '14px', fontWeight: '600', marginBottom: '16px' }
 };
 
 const formatCurrency = (val: number | null | undefined): string => {
-  if (val === null || val === undefined || isNaN(val)) return "Rate Unavailable in Admin Master";
+  if (val === null || val === undefined || isNaN(val) || val <= 0) return "Master Mapping Required / Approved Rate Unavailable";
   return `₹${val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-};
-
-const formatNumber = (val: number | null | undefined, decimals = 2): string => {
-  if (val === null || val === undefined || isNaN(val)) return "0";
-  return val.toLocaleString('en-IN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 };
 
 export default function FullBuildingCalculator() {
@@ -86,539 +185,375 @@ export default function FullBuildingCalculator() {
     syncApprovedRatesFromBackend();
   }, []);
 
-  // Mode: 'quick' vs 'turnkey'
-  const [calcMode, setCalcMode] = useState<'quick' | 'turnkey'>('quick');
+  const [plotLength, setPlotLength] = useState(30);
+  const [plotWidth, setPlotWidth] = useState(40);
+  const [floors, setFloors] = useState(2);
+  const [buaFactor, setBuaFactor] = useState(0.85);
+  const [floorHeight, setFloorHeight] = useState(10);
+  const [qualityGrade, setQualityGrade] = useState('Standard');
 
-  // BUILDING INPUTS
-  const initialInputs = {
-    plotLength: 30, // ft
-    plotWidth: 40,  // ft
-    floors: 2,      // floors
-    buaFactor: 0.85,// BUA Coverage Factor
-    floorHeight: 10,// ft
-    qualityGrade: 'Standard' // Basic, Standard, Premium
+  const [isInputModified, setIsInputModified] = useState<boolean>(false);
+  const [isCalculatedBlue, setIsCalculatedBlue] = useState<boolean>(false);
+
+  const handleInputChange = (setter: (val: any) => void, value: any) => {
+    setter(value);
+    setIsInputModified(true);
   };
-  const [inputs, setInputs] = useState(initialInputs);
 
-  // Admin Rate (₹)s Lookup
-  const cementRate = getMasterRate(["MAT-CEM-01", "cement", "opc 53", "opc"], 385);
-  const steelRate = getMasterRate(["MAT-STL-01", "tmt steel", "steel", "rebar"], 68);
-  const sandRate = getMasterRate(["MAT-MSND-01", "m-sand", "sand"], 46);
-  const ca20Rate = getMasterRate(["MAT-AGG-20", "20mm aggregate", "aggregate"], 40);
-  const ca12Rate = getMasterRate(["MAT-AGG-12", "12mm aggregate"], 42);
-  const block6Rate = getMasterRate(["MAT-BLK-01", "6 inch block", "concrete block 6"], 45);
-  const block4Rate = getMasterRate(["MAT-BRK-01", "clay brick", "4 inch block"], 7.50);
-  const waterRate = getMasterRate(["MAT-WTR-01", "construction water", "water"], 0.05);
+  // Authoritative Admin Rate Master Lookups (0 fallback)
+  const cementRate = getMasterRate(["MAT-CEM-01", "cement", "opc 53"], 0);
+  const steelRate = getMasterRate(["MAT-STL-01", "tmt steel", "steel rebar"], 0);
+  const sandRate = getMasterRate(["MAT-MSND-01", "m-sand", "sand"], 0);
+  const ca20Rate = getMasterRate(["MAT-AGG-20", "20mm aggregate"], 0);
+  const ca12Rate = getMasterRate(["MAT-AGG-12", "12mm aggregate"], 0);
+  const block6Rate = getMasterRate(["MAT-BLK-01", "concrete block 6"], 0);
+  const block4Rate = getMasterRate(["MAT-BRK-01", "clay brick"], 0);
+  const civilLabourRate = getMasterRate(["SRV-BLD-LAY", "civil building labour"], 0);
 
-  const tilesRate = getMasterRate(["MAT-TIL-01", "flooring tiles", "tiles"], 65);
-  const sanitaryRate = getMasterRate(["MAT-SAN-01", "sanitaryware", "cp fittings"], 18500);
-  const doorRate = getMasterRate(["MAT-DOR-01", "door shutter", "teak door"], 6500);
-  const windowRate = getMasterRate(["MAT-WIN-01", "upvc window", "window"], 3500);
-  const paintRate = getMasterRate(["MAT-PNT-01", "painting", "wall putty"], 16);
-  const railingsGateRate = getMasterRate(["MAT-RLG-01", "railings", "ms gate"], 45);
-  const compoundWallRate = getMasterRate(["MAT-CWD-01", "compound wall"], 350);
-  const wiringRate = getMasterRate(["MAT-ELE-01", "copper wiring", "electrical"], 65);
-  const ohtTankRate = getMasterRate(["MAT-OHT-01", "overhead tank", "oht"], 8500);
-  const ugSumpPumpRate = getMasterRate(["MAT-UGT-01", "sump tank", "pump set"], 45000);
-
-  const civilLabourRate = getMasterRate(["SRV-BLD-LAY", "civil labour", "building labour"], 240);
-  const turnkeyFinishingLabourRate = getMasterRate(["SRV-TRN-LAY", "turnkey finishing labour", "finishing labour"], 160);
-
-  const handleReset = () => setInputs(initialInputs);
-
-  // Consolidated Building Engine
   const calcResults = useMemo(() => {
-    const plotArea = inputs.plotLength * inputs.plotWidth;
-    const floorArea = plotArea * inputs.buaFactor;
-    const bua = floorArea * inputs.floors;
+    const plotArea = plotLength * plotWidth;
+    const floorArea = plotArea * buaFactor;
+    const bua = Math.round(floorArea * floors);
 
-    const gradeMultiplier = inputs.qualityGrade === 'Basic' ? 0.95 : inputs.qualityGrade === 'Premium' ? 1.15 : 1.0;
+    const gradeMultiplier = qualityGrade === 'Basic' ? 0.95 : qualityGrade === 'Premium' ? 1.15 : 1.0;
 
-    // 1. Civil Structure Core
-    const cementBags = bua * 0.40 * gradeMultiplier;
-    const concreteCum = cementBags / 7.5;
-    const concreteCft = concreteCum * 35.3147;
+    const cementBags = Math.ceil(bua * 0.40 * gradeMultiplier);
+    const concreteCum = Number((cementBags / 7.5).toFixed(2));
+    const steelKgPerSqft = (3.0 + Math.max(floors - 1, 0) * 0.10) * gradeMultiplier;
+    const totalSteelKg = Math.round(bua * steelKgPerSqft);
 
-    const steelKgPerSqft = (3.0 + Math.max(inputs.floors - 1, 0) * 0.10) * gradeMultiplier;
-    const totalSteelKg = bua * steelKgPerSqft;
+    const mSandCft = Math.round(cementBags * 1.98);
+    const ca20Cft = Math.round(cementBags * 2.38);
+    const ca12Cft = Math.round(cementBags * 1.58);
 
-    const mSandCft = cementBags * 1.98;
-    const ca20Cft = cementBags * 2.38;
-    const ca12Cft = cementBags * 1.58;
-
-    const perimeter = 2 * (inputs.plotLength + inputs.plotWidth);
-    const externalWallArea = perimeter * inputs.floorHeight * inputs.floors;
+    const perimeter = 2 * (plotLength + plotWidth);
+    const externalWallArea = perimeter * floorHeight * floors;
     const internalWallArea = bua * 1.15;
     const block6Nos = Math.ceil(externalWallArea / 0.89);
     const block4Nos = Math.ceil(internalWallArea / 0.89);
-    const waterLtr = cementBags * 25;
 
-    // 2. Turnkey Finishing Scope
-    const tilesSqft = bua * 1.20;
-    const bathroomSets = Math.ceil(inputs.floors * 2);
-    const doorSets = Math.ceil(inputs.floors * 4);
-    const windowNos = Math.ceil(inputs.floors * 4);
-    const paintAreaSqft = bua * 3.5;
-    const railingsGateSqft = bua;
-    const compoundWallSqft = perimeter * 6;
-    const wiringSqft = bua;
-    const ohtTankNos = Math.ceil(inputs.floors / 2);
-    const ugSumpPumpSets = 1;
-
-    // 3. Item Costs Calculation
-    const cementCost = cementBags * (cementRate.found ? cementRate.rate : 385);
-    const steelCost = totalSteelKg * (steelRate.found ? steelRate.rate : 68);
-    const sandCost = mSandCft * (sandRate.found ? sandRate.rate : 46);
-    const ca20Cost = ca20Cft * (ca20Rate.found ? ca20Rate.rate : 40);
-    const ca12Cost = ca12Cft * (ca12Rate.found ? ca12Rate.rate : 42);
-    const block6Cost = block6Nos * (block6Rate.found ? block6Rate.rate : 45);
-    const block4Cost = block4Nos * (block4Rate.found ? block4Rate.rate : 7.50);
-    const waterCost = waterLtr * (waterRate.found ? waterRate.rate : 0.05);
-
-    const tilesCost = tilesSqft * (tilesRate.found ? tilesRate.rate : 65);
-    const sanitaryCost = bathroomSets * (sanitaryRate.found ? sanitaryRate.rate : 18500);
-    const doorCost = doorSets * (doorRate.found ? doorRate.rate : 6500);
-    const windowCost = windowNos * (windowRate.found ? windowRate.rate : 3500);
-    const paintCost = paintAreaSqft * (paintRate.found ? paintRate.rate : 16);
-    const railingsGateCost = railingsGateSqft * (railingsGateRate.found ? railingsGateRate.rate : 45);
-    const compoundWallCost = compoundWallSqft * (compoundWallRate.found ? compoundWallRate.rate : 350);
-    const wiringCost = wiringSqft * (wiringRate.found ? wiringRate.rate : 65);
-    const ohtTankCost = ohtTankNos * (ohtTankRate.found ? ohtTankRate.rate : 8500);
-    const ugSumpPumpCost = ugSumpPumpSets * (ugSumpPumpRate.found ? ugSumpPumpRate.rate : 45000);
-
-    const civilLabourCost = bua * (civilLabourRate.found ? civilLabourRate.rate : 240);
-    const turnkeyLabourCost = bua * ((civilLabourRate.found ? civilLabourRate.rate : 240) + (turnkeyFinishingLabourRate.found ? turnkeyFinishingLabourRate.rate : 160));
-
-    // QUICK CIVIL SHELL CONSOLIDATION
-    const quickMatCost = cementCost + steelCost + sandCost + ca20Cost + ca12Cost + block6Cost + block4Cost + waterCost;
-    const quickGrandTotal = quickMatCost + civilLabourCost;
-    const quickRatePerSqft = bua > 0 ? quickGrandTotal / bua : 0;
-
-    // TURNKEY FULL FINISHED BUILDING CONSOLIDATION
-    const turnkeyMatCost = quickMatCost + tilesCost + sanitaryCost + doorCost + windowCost + paintCost + railingsGateCost + compoundWallCost + wiringCost + ohtTankCost + ugSumpPumpCost;
-    const turnkeyGrandTotal = turnkeyMatCost + turnkeyLabourCost;
-    const turnkeyRatePerSqft = bua > 0 ? turnkeyGrandTotal / bua : 0;
-
-    // Active Results depending on Selected Mode
-    const activeMatCost = calcMode === 'quick' ? quickMatCost : turnkeyMatCost;
-    const activeLabourCost = calcMode === 'quick' ? civilLabourCost : turnkeyLabourCost;
-    const activeGrandTotal = calcMode === 'quick' ? quickGrandTotal : turnkeyGrandTotal;
-    const activeRatePerSqft = calcMode === 'quick' ? quickRatePerSqft : turnkeyRatePerSqft;
-
-    const resultItems: any[] = [
-      { code: cementRate.itemCode || "MAT-CEM-01", category: "Material", description: `Cement OPC 53 Grade (Structure + Masonry + Plaster)`, unit: "BAG", engQty: cementBags, procQty: Math.ceil(cementBags), rate: cementRate.rate, rateFound: cementRate.found, amount: cementCost },
-      { code: steelRate.itemCode || "MAT-STL-01", category: "Material", description: `TMT Steel Rebar Fe 500D (Footings, Columns, Beams, Slabs)`, unit: "KG", engQty: totalSteelKg, procQty: Math.ceil(totalSteelKg), rate: steelRate.rate, rateFound: steelRate.found, amount: steelCost },
-      { code: sandRate.itemCode || "MAT-MSND-01", category: "Material", description: `M-Sand (Concrete, Mortar & Plastering)`, unit: "CFT", engQty: mSandCft, procQty: Math.ceil(mSandCft), rate: sandRate.rate, rateFound: sandRate.found, amount: sandCost },
-      { code: ca20Rate.itemCode || "MAT-AGG-20", category: "Material", description: `20mm Coarse Aggregate for Concrete`, unit: "CFT", engQty: ca20Cft, procQty: Math.ceil(ca20Cft), rate: ca20Rate.rate, rateFound: ca20Rate.found, amount: ca20Cost },
-      { code: ca12Rate.itemCode || "MAT-AGG-12", category: "Material", description: `12mm Coarse Aggregate for Concrete & Lintels`, unit: "CFT", engQty: ca12Cft, procQty: Math.ceil(ca12Cft), rate: ca12Rate.rate, rateFound: ca12Rate.found, amount: ca12Cost },
-      { code: block6Rate.itemCode || "MAT-BLK-01", category: "Material", description: `6" Concrete Solid Blocks (External Outer Walls)`, unit: "NOS", engQty: block6Nos, procQty: block6Nos, rate: block6Rate.rate, rateFound: block6Rate.found, amount: block6Cost },
-      { code: block4Rate.itemCode || "MAT-BRK-01", category: "Material", description: `4.5" Partition Bricks / Blocks (Internal Walls)`, unit: "NOS", engQty: block4Nos, procQty: block4Nos, rate: block4Rate.rate, rateFound: block4Rate.found, amount: block4Cost },
-      { code: waterRate.itemCode || "MAT-WTR-01", category: "Site Utility", description: `Construction Water Supply (Mixing & Curing)`, unit: "LTR", engQty: waterLtr, procQty: Math.ceil(waterLtr), rate: waterRate.rate, rateFound: waterRate.found, amount: waterCost }
+    const items = [
+      {
+        code: cementRate.itemCode || "MAT-CEM-01",
+        category: "Structural Materials",
+        name: `Cement (OPC 53 Grade - ${qualityGrade} Specification)`,
+        uom: "BAG",
+        qty: cementBags,
+        rateObj: cementRate
+      },
+      {
+        code: steelRate.itemCode || "MAT-STL-01",
+        category: "Reinforcement Steel",
+        name: "TMT Rebar Steel (Fe 500D Structural)",
+        uom: "KG",
+        qty: totalSteelKg,
+        rateObj: steelRate
+      },
+      {
+        code: sandRate.itemCode || "MAT-MSND-01",
+        category: "Aggregates",
+        name: "M-Sand (Manufactured Fine Aggregate)",
+        uom: "CFT",
+        qty: mSandCft,
+        rateObj: sandRate
+      },
+      {
+        code: ca20Rate.itemCode || "MAT-AGG-20",
+        category: "Aggregates",
+        name: "20mm Coarse Aggregate",
+        uom: "CFT",
+        qty: ca20Cft,
+        rateObj: ca20Rate
+      },
+      {
+        code: ca12Rate.itemCode || "MAT-AGG-12",
+        category: "Aggregates",
+        name: "12mm Coarse Aggregate",
+        uom: "CFT",
+        qty: ca12Cft,
+        rateObj: ca12Rate
+      },
+      {
+        code: block6Rate.itemCode || "MAT-BLK-01",
+        category: "Masonry Blocks",
+        name: "Concrete Solid Blocks (6 inch External Walls)",
+        uom: "NOS",
+        qty: block6Nos,
+        rateObj: block6Rate
+      },
+      {
+        code: block4Rate.itemCode || "MAT-BRK-01",
+        category: "Masonry Blocks",
+        name: "Clay Bricks / Partition Blocks (Internal Walls)",
+        uom: "NOS",
+        qty: block4Nos,
+        rateObj: block4Rate
+      },
+      {
+        code: civilLabourRate.itemCode || "SRV-BLD-LAY",
+        category: "Labour Services",
+        name: "RCC + Steel + Blockwork Composite Turnkey Labour",
+        uom: "SQFT",
+        qty: bua,
+        rateObj: civilLabourRate
+      }
     ];
 
-    if (calcMode === 'turnkey') {
-      resultItems.push(
-        { code: tilesRate.itemCode || "MAT-TIL-01", category: "Material", description: `Vitrified Flooring & Anti-skid Wall Tiles`, unit: "SQFT", engQty: tilesSqft, procQty: Math.ceil(tilesSqft), rate: tilesRate.rate, rateFound: tilesRate.found, amount: tilesCost },
-        { code: sanitaryRate.itemCode || "MAT-SAN-01", category: "Material", description: `Sanitaryware & CP Fittings Complete Bathroom Sets`, unit: "SET", engQty: bathroomSets, procQty: bathroomSets, rate: sanitaryRate.rate, rateFound: sanitaryRate.found, amount: sanitaryCost },
-        { code: doorRate.itemCode || "MAT-DOR-01", category: "Material", description: `Teak Main Door & Flush Door Shutters + Frame Polishing`, unit: "SET", engQty: doorSets, procQty: doorSets, rate: doorRate.rate, rateFound: doorRate.found, amount: doorCost },
-        { code: windowRate.itemCode || "MAT-WIN-01", category: "Material", description: `UPVC Sliding Windows & Sunshade Chajja Sets`, unit: "NOS", engQty: windowNos, procQty: windowNos, rate: windowRate.rate, rateFound: windowRate.found, amount: windowCost },
-        { code: paintRate.itemCode || "MAT-PNT-01", category: "Material", description: `Internal Putty & External Weatherproof Painting`, unit: "SQFT", engQty: paintAreaSqft, procQty: Math.ceil(paintAreaSqft), rate: paintRate.rate, rateFound: paintRate.found, amount: paintCost },
-        { code: railingsGateRate.itemCode || "MAT-RLG-01", category: "Material", description: `Staircase SS 304 Railings & Fabricated Main MS Gate`, unit: "SQFT", engQty: railingsGateSqft, procQty: Math.ceil(railingsGateSqft), rate: railingsGateRate.rate, rateFound: railingsGateRate.found, amount: railingsGateCost },
-        { code: compoundWallRate.itemCode || "MAT-CWD-01", category: "Material", description: `Perimeter Compound Wall Masonry & Plaster (6ft Height)`, unit: "SQFT", engQty: compoundWallSqft, procQty: Math.ceil(compoundWallSqft), rate: compoundWallRate.rate, rateFound: compoundWallRate.found, amount: compoundWallCost },
-        { code: wiringRate.itemCode || "MAT-ELE-01", category: "Material", description: `Concealed Fire-Resistant Copper Wiring & Modular Switches DB`, unit: "SQFT", engQty: wiringSqft, procQty: Math.ceil(wiringSqft), rate: wiringRate.rate, rateFound: wiringRate.found, amount: wiringCost },
-        { code: ohtTankRate.itemCode || "MAT-OHT-01", category: "Material", description: `Overhead Water Tank (1000L Triple Layer PVC)`, unit: "NOS", engQty: ohtTankNos, procQty: ohtTankNos, rate: ohtTankRate.rate, rateFound: ohtTankRate.found, amount: ohtTankCost },
-        { code: ugSumpPumpRate.itemCode || "MAT-UGT-01", category: "Material", description: `Underground Sump Tank (5000L) & Submersible Water Pump Set`, unit: "SET", engQty: ugSumpPumpSets, procQty: ugSumpPumpSets, rate: ugSumpPumpRate.rate, rateFound: ugSumpPumpRate.found, amount: ugSumpPumpCost },
-        { code: turnkeyFinishingLabourRate.itemCode || "SRV-TRN-LAY", category: "Labour", description: `Turnkey Full Building Finishing & Contracting Labour`, unit: "SQFT", engQty: bua, procQty: bua, rate: 400, rateFound: true, amount: turnkeyLabourCost }
-      );
-    } else {
-      resultItems.push({ code: civilLabourRate.itemCode || "SRV-BLD-LAY", category: "Labour", description: `Structure & Core Civil Construction Labour`, unit: "SQFT", engQty: bua, procQty: bua, rate: civilLabourRate.rate, rateFound: civilLabourRate.found, amount: civilLabourCost });
-    }
+    let totalMaterialCost = 0;
+    let totalLabourCost = 0;
+
+    const processedItems = items.map(it => {
+      const isFound = it.rateObj.found && Number(it.rateObj.rate) > 0;
+      const rateVal = isFound ? Number(it.rateObj.rate) : 0;
+      const amountVal = isFound ? it.qty * rateVal : 0;
+
+      if (it.category.includes("Labour")) {
+        totalLabourCost += amountVal;
+      } else {
+        totalMaterialCost += amountVal;
+      }
+
+      return {
+        ...it,
+        isFound,
+        rateVal,
+        amountVal
+      };
+    });
+
+    const grandTotalCost = totalMaterialCost + totalLabourCost;
+    const missingItems = processedItems.filter(it => !it.isFound);
 
     return {
       plotArea,
-      floorArea,
       bua,
-      concreteCum,
-      concreteCft,
       cementBags,
+      concreteCum,
       totalSteelKg,
-      mSandCft,
-      ca20Cft,
-      ca12Cft,
       block6Nos,
       block4Nos,
-      tilesSqft,
-      bathroomSets,
-      doorSets,
-      windowNos,
-      paintAreaSqft,
-      compoundWallSqft,
-      waterLtr,
-
-      quickGrandTotal,
-      quickRatePerSqft,
-      turnkeyGrandTotal,
-      turnkeyRatePerSqft,
-
-      activeMatCost,
-      activeLabourCost,
-      activeGrandTotal,
-      activeRatePerSqft,
-      resultItems
+      totalMaterialCost,
+      totalLabourCost,
+      grandTotalCost,
+      costPerSqft: bua > 0 ? grandTotalCost / bua : 0,
+      items: processedItems,
+      missingItems
     };
-  }, [inputs, calcMode, cementRate, steelRate, sandRate, ca20Rate, ca12Rate, block6Rate, block4Rate, waterRate, tilesRate, sanitaryRate, doorRate, windowRate, paintRate, railingsGateRate, compoundWallRate, wiringRate, ohtTankRate, ugSumpPumpRate, civilLabourRate, turnkeyFinishingLabourRate]);
+  }, [plotLength, plotWidth, floors, buaFactor, floorHeight, qualityGrade, cementRate, steelRate, sandRate, ca20Rate, ca12Rate, block6Rate, block4Rate, civilLabourRate]);
 
-  // Export Excel
+  const handleCalculate = () => {
+    setIsInputModified(false);
+    setIsCalculatedBlue(true);
+    setTimeout(() => setIsCalculatedBlue(false), 2000);
+  };
+
   const handleExportExcel = () => {
-    checkAndRun('calculator_export', 'rcc-steel-building-calculator', () => {
-      const items = calcResults.resultItems;
-      const data = items.map(item => ({
-        "Master Item Code": item.code,
-        "Category": item.category,
-        "Description": item.description,
-        "Unit": item.unit,
-        "Engineering Qty": item.engQty,
-        "Procurement Qty": item.procQty,
-        "Approved Rate (₹)": item.rateFound ? item.rate : "Rate Unavailable in Admin Master",
-        "Amount (₹)": item.rateFound ? item.amount : 0
-      }));
+    checkAndRun("rcc_steel_calc_export", "RCC-STEEL-CALC", () => {
+      const data = [
+        ["BUILDMITRA RCC + STEEL + BLOCKWORK COMPOSITE ESTIMATION REPORT"],
+        ["Generated Date", new Date().toLocaleDateString('en-IN')],
+        ["Plot Area", `${calcResults.plotArea} Sq.ft`],
+        ["Total Built-up Area", `${calcResults.bua} Sq.ft`],
+        ["Floors Count", floors],
+        ["Specification Grade", qualityGrade],
+        ["GRAND TOTAL ESTIMATED COST", formatCurrency(calcResults.grandTotalCost)],
+        [],
+        ["ITEMIZED COMPOSITE BUILDING BOQ"],
+        ["Master Code", "Category", "Description", "Quantity", "UOM", "Approved Rate (₹)", "Total Amount (₹)"],
+        ...calcResults.items.map(it => [
+          it.code,
+          it.category,
+          it.name,
+          it.qty,
+          it.uom,
+          it.isFound ? it.rateVal : "Master Mapping Required / Approved Rate Unavailable",
+          it.isFound ? it.amountVal : "—"
+        ])
+      ];
 
-      const ws = XLSX.utils.json_to_sheet(data);
+      const ws = XLSX.utils.aoa_to_sheet(data);
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Building_Estimation_Results");
-      XLSX.writeFile(wb, `BuildMitra_Building_Calculator_${calcMode}.xlsx`);
+      XLSX.utils.book_append_sheet(wb, ws, "Composite_BOQ");
+      XLSX.writeFile(wb, `BuildMitra_Composite_Building_BOQ_${Date.now()}.xlsx`);
     });
   };
 
-  // Share WhatsApp
-  const handleShareWhatsApp = () => {
-    checkAndRun('calculator_export', 'rcc-steel-building-calculator', () => {
-      const msg = `*BuildMitra Full Building Construction Estimate Report*%0A` +
-        `*Estimation Mode*: ${calcMode === 'quick' ? '⚡ Quick Civil Shell' : '🔑 Turnkey Full Finished Building'}%0A` +
-        `----------------------------------------%0A` +
-        `• *Total Built-Up Area (BUA)*: ${formatNumber(calcResults.bua)} Sqft (${inputs.floors} Floors)%0A` +
-        `• *Cement (50kg OPC 53)*: ${formatNumber(calcResults.cementBags)} Bags%0A` +
-        `• *TMT Steel Rebar (Fe 500D)*: ${formatNumber(calcResults.totalSteelKg)} kg%0A` +
-        `• *Masonry Blocks*: 6" Outer ${formatNumber(calcResults.block6Nos, 0)} Nos | 4.5" Partition ${formatNumber(calcResults.block4Nos, 0)} Nos%0A` +
-        `----------------------------------------%0A` +
-        `• *⚡ Quick Civil Shell Cost*: ${formatCurrency(calcResults.quickGrandTotal)} (${formatCurrency(calcResults.quickRatePerSqft)}/Sqft)%0A` +
-        `• *🔑 Turnkey Full Finished Cost*: ${formatCurrency(calcResults.turnkeyGrandTotal)} (${formatCurrency(calcResults.turnkeyRatePerSqft)}/Sqft)%0A%0A` +
-        `*Generated via BuildMitra Professional Estimator*`;
-      window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+  const handleExportPDF = () => {
+    checkAndRun("rcc_steel_calc_export", "RCC-STEEL-CALC", () => {
+      const headers = ["Master Code", "Category", "Description", "Qty", "UOM", "Rate (₹)", "Amount (₹)"];
+      const rows = calcResults.items.map(it => [
+        it.code,
+        it.category,
+        it.name,
+        String(it.qty),
+        it.uom,
+        it.isFound ? formatCurrency(it.rateVal) : "Rate Pending Admin Update",
+        it.isFound ? formatCurrency(it.amountVal) : "—"
+      ]);
+
+      downloadBuildMitraPDF(
+        "BuildMitra – RCC + Steel + Blockwork Composite Report",
+        [
+          ["Total Built-up Area:", `${calcResults.bua} Sq.ft`],
+          ["Concrete Volume:", `${calcResults.concreteCum} CUM`],
+          ["Steel Rebar Required:", `${calcResults.totalSteelKg} KG`],
+          ["GRAND TOTAL ESTIMATED COST:", formatCurrency(calcResults.grandTotalCost)]
+        ],
+        headers,
+        rows,
+        `BuildMitra_Composite_Building_BOQ_${Date.now()}.pdf`
+      );
     });
   };
 
   return (
-    <div style={styles.container}>
-            <div className="engineering-top-layout">
-        <div className="engineering-top-left">
-{/* 1. Header */}
-      <div style={styles.header}>
-        <div>
-          <button style={styles.backBtn} onClick={() => router.push('/calculators')}>← Back to Calculators</button>
-        </div>
-        <h1 style={styles.headerTitle}>
-          🏗️ Full Building Structural & Turnkey Finishes Calculator
-          <span className="bm-calc-mobile-technical-badge" style={styles.badge}>Civil Shell & Turnkey BOQ</span>
-        </h1>
-        <div>
-          <span style={{ fontSize: '11px', color: '#fecdd3' }}>BuildMitra Professional Edition</span>
-        </div>
-      </div>
+    <>
+      <Head>
+        <title>RCC + Steel + Blockwork Building Estimator | BuildMitra</title>
+      </Head>
 
-      {/* 2. Single Live Market Rate Ticker */}
-      <MarketRateTrend />
-
-      {/* 3. Estimation Method Dropdown Selector */}
-      <div style={styles.dropdownCard}>
-        <label style={styles.dropdownLabel}>Select Estimation Method</label>
-        <select
-          style={styles.modeSelect}
-          value={calcMode}
-          onChange={(e) => setCalcMode(e.target.value as 'quick' | 'turnkey')}
-        >
-          <option value="quick">⚡ Quick Civil Shell Calculation (Structure + Masonry + Plastering + Civil Labour)</option>
-          <option value="turnkey">🔑 Turnkey Full Finished Building Calculation (Complete Shell + Tiles + Sanitary + Doors + Painting + Gates + Wiring + Tanks)</option>
-        </select>
-      </div>
-        </div>
-        <div className="engineering-specimen-top">
-      <EngineeringSpecimen kind="steel-building" title="Dynamic RCC Building Specimen" material={calcMode} data={{ lengthFt: inputs.plotLength, widthFt: inputs.plotWidth, heightFt: inputs.floorHeight, type: calcMode }} />
-        </div>
-      </div>
-      <style jsx>{`
-        .engineering-top-layout {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) 118px;
-          gap: 8px;
-          align-items: start;
-          margin-bottom: 6px;
-        }
-        .engineering-top-left { min-width: 0; overflow: hidden; }
-        .engineering-specimen-top {
-          width: 150px;
-          position: sticky;
-          top: 12px;
-          align-self: start;
-          z-index: 2;
-        }
-        @media (max-width: 900px) {
-          .engineering-top-layout {
-            display: grid !important;
-            grid-template-columns: minmax(0, 1fr) 118px !important;
-            gap: 5px !important;
-            align-items: start !important;
-            margin-bottom: 5px !important;
-            position: relative !important;
-          }
-
-          .engineering-top-left {
-            min-width: 0 !important;
-            overflow: visible !important;
-          }
-
-          .engineering-specimen-top {
-            width: 118px !important;
-            min-width: 118px !important;
-            max-width: 118px !important;
-
-            height: 125px !important;
-            max-height: 125px !important;
-
-            position: relative !important;
-            top: 0 !important;
-            right: 0 !important;
-
-            margin: 0 0 0 auto !important;
-            padding: 0 !important;
-
-            overflow: hidden !important;
-            align-self: start !important;
-          }
-
-          /*
-             Preserve specimen proportions but reduce its VERTICAL
-             footprint heavily. Scaling the complete component avoids
-             the ugly wrapped "3D ISOMETRIC" text seen previously.
-          */
-          .engineering-specimen-top > * {
-            width: 185% !important;
-            max-width: 185% !important;
-
-            transform: none !important;
-            transform-origin: top right !important;
-
-            margin-left: auto !important;
-            margin-right: 0 !important;
-          }
-
-          .engineering-specimen-top img,
-          .engineering-specimen-top svg,
-          .engineering-specimen-top canvas {
-            max-width: 100% !important;
-            height: auto !important;
-          }
-        }
-      `}</style>
-
-      {/* Building Input Card */}
-      <div style={styles.stepperCard}>
-        <div style={styles.sectionHeader}>
-          <span>📐 Building Plot & Floor Dimensions</span>
+      <div style={styles.container}>
+        {/* Header */}
+        <div style={styles.header}>
+          <div>
+            <span style={styles.badge}>COMPOSITE STRUCTURAL ESTIMATOR</span>
+            <h1 style={styles.headerTitle}>🏢 BuildMitra – RCC + Steel + Blockwork Estimator</h1>
+          </div>
+          <button style={styles.backBtn} onClick={() => router.push("/contractor-dashboard")}>← Back to Dashboard</button>
         </div>
 
-        <div className="bm-calc-mobile-technical-note" style={styles.noteBox}>
-          💡 <strong>Consolidated Civil Engineering Benchmark</strong>: Enter Plot Dimensions & Floors. System calculates consolidated quantities for Structure, Masonry, Plaster, Doors/Windows, MEP, Plumbing, Electrical, Compound Wall, Tanks, and Turnkey Labour.
-        </div>
+        <MarketRateTrend />
 
-        <div style={styles.grid4}>
-          <div style={styles.fieldGroup}>
-            <label style={styles.label}>Plot Length (Ft)</label>
-            <input
-              type="number"
-              style={styles.input}
-              value={inputs.plotLength}
-              onChange={e => setInputs({ ...inputs, plotLength: parseFloat(e.target.value) || 0 })}
-            />
+        {/* Inputs */}
+        <div style={styles.card}>
+          <div style={styles.sectionHeader}>
+            <span>📐 Enter Plot &amp; Building Specifications</span>
           </div>
 
-          <div style={styles.fieldGroup}>
-            <label style={styles.label}>Plot Width (Ft)</label>
-            <input
-              type="number"
-              style={styles.input}
-              value={inputs.plotWidth}
-              onChange={e => setInputs({ ...inputs, plotWidth: parseFloat(e.target.value) || 0 })}
-            />
+          <div style={styles.gridCompact}>
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Plot Length (ft)</label>
+              <input type="number" value={plotLength} onChange={(e) => handleInputChange(setPlotLength, Number(e.target.value))} style={{ ...styles.input, ...(isInputModified ? styles.inputModified : {}) }} />
+            </div>
+
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Plot Width (ft)</label>
+              <input type="number" value={plotWidth} onChange={(e) => handleInputChange(setPlotWidth, Number(e.target.value))} style={{ ...styles.input, ...(isInputModified ? styles.inputModified : {}) }} />
+            </div>
+
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Floors Count</label>
+              <input type="number" value={floors} onChange={(e) => handleInputChange(setFloors, Number(e.target.value))} style={styles.input} />
+            </div>
+
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>BUA Coverage Factor</label>
+              <input type="number" step="0.05" value={buaFactor} onChange={(e) => handleInputChange(setBuaFactor, Number(e.target.value))} style={styles.input} />
+            </div>
+
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Floor Height (ft)</label>
+              <input type="number" value={floorHeight} onChange={(e) => handleInputChange(setFloorHeight, Number(e.target.value))} style={styles.input} />
+            </div>
+
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Quality Specification</label>
+              <select value={qualityGrade} onChange={(e) => handleInputChange(setQualityGrade, e.target.value)} style={styles.select}>
+                <option value="Basic">Basic Specification</option>
+                <option value="Standard">Standard Premium</option>
+                <option value="Premium">Ultra Luxury Premium</option>
+              </select>
+            </div>
           </div>
 
-          <div style={styles.fieldGroup}>
-            <label style={styles.label}>Number of Floors (Nos)</label>
-            <input
-              type="number"
-              style={styles.input}
-              value={inputs.floors}
-              onChange={e => setInputs({ ...inputs, floors: parseFloat(e.target.value) || 1 })}
-            />
-          </div>
-
-          <div style={styles.fieldGroup}>
-            <label style={styles.label}>BUA Factor (Coverage Ratio)</label>
-            <input
-              type="number"
-              step="0.01"
-              style={styles.input}
-              value={inputs.buaFactor}
-              onChange={e => setInputs({ ...inputs, buaFactor: parseFloat(e.target.value) || 0.85 })}
-            />
-          </div>
-
-          <div style={styles.fieldGroup}>
-            <label style={styles.label}>Floor Height (Ft)</label>
-            <input
-              type="number"
-              style={styles.input}
-              value={inputs.floorHeight}
-              onChange={e => setInputs({ ...inputs, floorHeight: parseFloat(e.target.value) || 10 })}
-            />
-          </div>
-
-          <div style={styles.fieldGroup}>
-            <label style={styles.label}>Quality Specification Grade</label>
-            <select
-              style={{ ...styles.select, fontWeight: '700' }}
-              value={inputs.qualityGrade}
-              onChange={e => setInputs({ ...inputs, qualityGrade: e.target.value })}
-            >
-              <option value="Standard">Standard Residential Construction</option>
-              <option value="Basic">Economy Basic Structure</option>
-              <option value="Premium">Premium Luxury Structure</option>
-            </select>
+          {/* Action Buttons */}
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '14px' }}>
+            <button style={styles.btnPrimary} onClick={handleCalculate}>⚡ Calculate Composite Building</button>
+            <button style={styles.btnReset} onClick={() => setPlotLength(30)}>🔄 Reset</button>
+            <button style={styles.btnSecondary} onClick={handleExportExcel}>📊 Export Excel</button>
+            <button style={styles.btnSuccess} onClick={handleExportPDF}>📄 Export PDF Report</button>
           </div>
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
-          <button style={styles.btnReset} onClick={handleReset}>🔄 Reset Building Form</button>
-        </div>
-      </div>
-
-      {/* Results Summary Cards */}
-      <div style={styles.stepperCard}>
-        <div style={styles.sectionHeader}>
-          <span>📊 Full Building Consolidated Results & Cost Comparisons</span>
-        </div>
-
-        {/* Dual Rate Summary Comparison */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '14px', marginBottom: '18px' }}>
-          <div style={{ backgroundColor: '#f0fdf4', border: '2px solid #bbf7d0', borderRadius: '10px', padding: '16px', color: '#166534' }}>
-            <div style={{ fontSize: '12px', fontWeight: '800', textTransform: 'uppercase' }}>⚡ Quick Civil Shell Estimate</div>
-            <div style={{ fontSize: '24px', fontWeight: '900', margin: '6px 0' }}>{formatCurrency(calcResults.quickGrandTotal)}</div>
-            <div style={{ fontSize: '13px', fontWeight: '700' }}>Rate: {formatCurrency(calcResults.quickRatePerSqft)} / Sqft</div>
-            <div style={{ fontSize: '11px', opacity: 0.85, marginTop: '4px' }}>(Structure + Masonry + Plaster + Civil Labour)</div>
-          </div>
-
-          <div style={{ backgroundColor: '#fff5f7', border: '2px solid #fecdd3', borderRadius: '10px', padding: '16px', color: '#800020' }}>
-            <div style={{ fontSize: '12px', fontWeight: '800', textTransform: 'uppercase' }}>🔑 Turnkey Full Finished Building</div>
-            <div style={{ fontSize: '24px', fontWeight: '900', margin: '6px 0' }}>{formatCurrency(calcResults.turnkeyGrandTotal)}</div>
-            <div style={{ fontSize: '13px', fontWeight: '700' }}>Rate: {formatCurrency(calcResults.turnkeyRatePerSqft)} / Sqft</div>
-            <div style={{ fontSize: '11px', opacity: 0.85, marginTop: '4px' }}>(Complete Shell + Tiles + Doors + Painting + Gates + Wiring + Tanks + Labour)</div>
-          </div>
-        </div>
-
-        {/* Metric Grid */}
+        {/* Result Metric Cards */}
         <div style={styles.summaryGrid}>
           <div style={{ ...styles.metricCard, ...styles.metricMaroon }}>
-            <span style={styles.metricTitle}>Built-Up Area (BUA)</span>
-            <span style={styles.metricVal}>{formatNumber(calcResults.bua)} Sqft</span>
+            <span style={styles.metricTitle}>Built-up Area</span>
+            <span style={{ ...styles.metricVal, color: isCalculatedBlue ? '#fecdd3' : '#ffffff' }}>{calcResults.bua.toLocaleString()} Sq.ft</span>
           </div>
           <div style={{ ...styles.metricCard, ...styles.metricTeal }}>
-            <span style={styles.metricTitle}>Cement & Steel</span>
-            <span style={styles.metricVal}>{formatNumber(calcResults.cementBags, 0)} Bags | {formatNumber(calcResults.totalSteelKg, 0)} kg</span>
+            <span style={styles.metricTitle}>Concrete Volume</span>
+            <span style={styles.metricVal}>{calcResults.concreteCum} CUM</span>
           </div>
           <div style={{ ...styles.metricCard, ...styles.metricOrange }}>
-            <span style={styles.metricTitle}>Masonry Blocks</span>
-            <span style={styles.metricVal}>{formatNumber(calcResults.block6Nos + calcResults.block4Nos, 0)} Nos</span>
+            <span style={styles.metricTitle}>Steel Rebar Required</span>
+            <span style={styles.metricVal}>{calcResults.totalSteelKg.toLocaleString()} KG</span>
+          </div>
+          <div style={{ ...styles.metricCard, ...styles.metricBlue }}>
+            <span style={styles.metricTitle}>Material Subtotal</span>
+            <span style={styles.metricVal}>{formatCurrency(calcResults.totalMaterialCost)}</span>
           </div>
           <div style={{ ...styles.metricCard, ...styles.metricGreen }}>
-            <span style={styles.metricTitle}>Active Mode Cost</span>
-            <span style={styles.metricVal}>{formatCurrency(calcResults.activeGrandTotal)}</span>
-            <span style={{ fontSize: '11px', opacity: 0.9 }}>({formatCurrency(calcResults.activeRatePerSqft)} / Sqft)</span>
+            <span style={styles.metricTitle}>GRAND ESTIMATED TOTAL</span>
+            <span style={{ ...styles.metricValGrand, color: isCalculatedBlue ? '#60a5fa' : '#ffffff' }}>{formatCurrency(calcResults.grandTotalCost)}</span>
           </div>
         </div>
 
-        {/* BOQ Table */}
-        <div className="bm-item-results-scroll" style={styles.tableContainer}>
-          <table className="bm-item-results-table" style={styles.table}>
+        {/* Missing Master Rates Warning Banner */}
+        {calcResults.missingItems.length > 0 && (
+          <div style={styles.warnBanner}>
+            ⚠️ <strong>Master Mapping Required / Approved Rate Unavailable ({calcResults.missingItems.length} Line Items)</strong>
+            <ul style={{ margin: '6px 0 0 0', paddingLeft: '20px', fontSize: '13px' }}>
+              {calcResults.missingItems.map(it => (
+                <li key={it.code}>
+                  <code>{it.code}</code>: {it.name} — Quantity: <strong>{it.qty.toLocaleString()} {it.uom}</strong> (Status: <em>Master Mapping Required</em>)
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Itemized BOQ Table */}
+        <div style={styles.tableContainer}>
+          <div style={{ padding: '12px 16px', backgroundColor: '#800020', color: 'white', fontWeight: '800', fontSize: '16px' }}>
+            📑 Itemized RCC + Steel + Blockwork Composite BOQ (Admin Master Linked)
+          </div>
+          <table style={styles.table}>
             <thead>
               <tr>
-                <th className="bm-mobile-hide-col" style={styles.th}>Master Code</th>
-                <th className="bm-mobile-hide-col" style={styles.th}>Category</th>
+                <th style={styles.th}>Master Code</th>
+                <th style={styles.th}>Category</th>
                 <th style={styles.th}>Item Description</th>
-                <th style={styles.th}>Unit</th>
-                <th className="bm-mobile-hide-col" style={styles.th}>Eng Qty</th>
-                <th style={styles.th}>Proc Qty</th>
-                <th className="bm-mobile-hide-col" style={styles.th}>Approved Rate</th>
-                <th style={styles.th}>Amount</th>
+                <th style={styles.th}>Quantity</th>
+                <th style={styles.th}>UOM</th>
+                <th style={styles.th}>Approved Rate (₹)</th>
+                <th style={styles.th}>Total Amount (₹)</th>
               </tr>
             </thead>
             <tbody>
-              {calcResults.resultItems.map((item, idx) => (
-                <tr key={idx}>
-                  <td className="bm-mobile-hide-col" style={styles.td}><code>{item.code}</code></td>
-                  <td className="bm-mobile-hide-col" style={styles.td}><span style={{
-                      backgroundColor: item.category === 'Material' ? '#e0f2fe' : item.category === 'Labour' ? '#ffedd5' : '#f0fdf4',
-                      color: item.category === 'Material' ? '#0369a1' : item.category === 'Labour' ? '#c2410c' : '#166534',
-                      padding: '2px 6px',
-                      borderRadius: '4px',
-                      fontWeight: '700',
-                      fontSize: '10px'
-                    }}>
-                      {item.category}
-                    </span>
+              {calcResults.items.map(it => (
+                <tr key={it.code}>
+                  <td style={styles.td}><code>{it.code}</code></td>
+                  <td style={styles.td}>{it.category}</td>
+                  <td style={styles.td}><strong>{it.name}</strong></td>
+                  <td style={styles.td}>{it.qty.toLocaleString()}</td>
+                  <td style={styles.td}>{it.uom}</td>
+                  <td style={styles.td}>
+                    {it.isFound ? formatCurrency(it.rateVal) : <span style={{ color: '#dc2626', fontWeight: '700' }}>Master Mapping Required / Approved Rate Unavailable</span>}
                   </td>
-                  <td style={styles.td}><strong>{item.description}</strong></td>
-                  <td style={styles.td}>{item.unit}</td>
-                  <td className="bm-mobile-hide-col" style={styles.td}>{formatNumber(item.engQty)}</td>
-                  <td style={styles.td}><strong>{formatNumber(item.procQty)}</strong></td>
-                  <td className="bm-mobile-hide-col" style={styles.td}>{item.rateFound ? (
-                      <span style={styles.rateTag}>{formatCurrency(item.rate)}</span>
-                    ) : (
-                      <span style={styles.rateTagWarn}>Rate Unavailable</span>
-                    )}
+                  <td style={styles.td}>
+                    {it.isFound ? <strong>{formatCurrency(it.amountVal)}</strong> : <span style={{ color: '#94a3b8' }}>—</span>}
                   </td>
-                  <td style={styles.td}><strong>{formatCurrency(item.amount)}</strong></td>
                 </tr>
               ))}
+              <tr style={{ backgroundColor: '#800020', color: 'white', fontWeight: '800' }}>
+                <td colSpan={6} style={{ padding: '12px 14px', fontSize: '16px' }}>GRAND TOTAL ESTIMATED COST</td>
+                <td style={{ padding: '12px 14px', fontSize: '18px' }}>{formatCurrency(calcResults.grandTotalCost)}</td>
+              </tr>
             </tbody>
           </table>
         </div>
-
-        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-          <button style={styles.btnSecondary} onClick={handleExportExcel}>📥 Export BOQ to Excel</button>
-          <button style={styles.btnSuccess} onClick={handleShareWhatsApp}>📲 Share Estimate on WhatsApp</button>
-        </div>
       </div>
-    </div>
+    </>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

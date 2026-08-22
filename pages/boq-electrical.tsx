@@ -1,62 +1,181 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import Head from 'next/head';
 import { useRouter } from 'next/router';
 import * as XLSX from 'xlsx';
 import { usePaymentBarrier } from '../hooks/usePaymentBarrier';
-import { getMasterRate, getCombinedBOQRate, syncApprovedRatesFromBackend } from '../utils/masterRates';
+import { downloadBuildMitraPDF } from '../utils/pdfExport';
+import { getMasterRate, syncApprovedRatesFromBackend, MasterRateResult } from '../utils/masterRates';
 import MarketRateTrend from '../components/ui/MarketRateTrend';
 
 const styles: Record<string, React.CSSProperties> = {
-  container: { maxWidth: '1200px', margin: '0 auto', padding: '16px', backgroundColor: '#f8fafc', minHeight: '100vh', boxSizing: 'border-box', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' },
-  header: { backgroundColor: '#d97706', padding: '16px 20px', borderRadius: '10px', marginBottom: '16px', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 8px rgba(217,119,6,0.2)' },
-  headerTitle: { margin: 0, fontSize: '20px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '10px' },
-  badge: { backgroundColor: '#b45309', color: '#ffffff', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: '700' },
-  backBtn: { backgroundColor: 'rgba(255,255,255,0.15)', border: 'none', color: 'white', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '600' },
-
-  stepperCard: { backgroundColor: '#ffffff', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '18px', marginBottom: '18px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' },
-  sectionHeader: { fontSize: '15px', fontWeight: '700', color: '#d97706', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '2px solid #fde68a', paddingBottom: '8px' },
-
-  grid4: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(82px, 1fr))', gap: '5px', alignItems: 'end', width: '100%', maxWidth: '100%', marginBottom: '5px' },
-  grid5: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(82px, 1fr))', gap: '5px', alignItems: 'end', width: '100%', maxWidth: '100%', marginBottom: '5px' },
-
-  fieldGroup: { minWidth: 0, width: '100%', margin: 0, padding: 0 },
-  label: { display: 'block', fontSize: '10px', lineHeight: '1.1', fontWeight: '700', marginBottom: '2px', whiteSpace: 'normal' },
-  input: { width: '100%', minWidth: 0, maxWidth: '100%', height: '32px', padding: '3px 5px', fontSize: '11px', lineHeight: '1.1', textAlign: 'center', borderRadius: '5px', border: '1px solid #cbd5e1', boxSizing: 'border-box' },
-  inputReadOnly: { backgroundColor: '#f1f5f9', fontWeight: '700', color: '#d97706' },
-  select: { width: '100%', minWidth: 0, maxWidth: '100%', height: '32px', padding: '3px 4px', fontSize: '10px', lineHeight: '1.1', borderRadius: '5px', border: '1px solid #cbd5e1', boxSizing: 'border-box' },
-
-  btnPrimary: { backgroundColor: '#d97706', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '800', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%' },
-  btnSecondary: { backgroundColor: '#2563eb', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' },
-  btnSuccess: { backgroundColor: '#16a34a', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' },
-  btnReset: { backgroundColor: '#64748b', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '600' },
-
-  summaryGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '14px', marginBottom: '18px' },
-  metricCard: { padding: '14px', borderRadius: '8px', color: 'white', textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center' },
-  metricMaroon: { backgroundColor: '#d97706' },
+  container: {
+    maxWidth: '1280px',
+    margin: '0 auto',
+    padding: '16px',
+    backgroundColor: '#f8fafc',
+    minHeight: '100vh',
+    boxSizing: 'border-box',
+    fontFamily: 'Segoe UI, -apple-system, BlinkMacSystemFont, Roboto, sans-serif'
+  },
+  header: {
+    backgroundColor: '#d97706',
+    padding: '16px 20px',
+    borderRadius: '12px',
+    marginBottom: '16px',
+    color: 'white',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: '12px',
+    boxShadow: '0 4px 12px rgba(217,119,6,0.2)'
+  },
+  headerTitle: {
+    margin: 0,
+    fontSize: '22px',
+    fontWeight: '800',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px'
+  },
+  badge: {
+    backgroundColor: '#b45309',
+    color: '#ffffff',
+    padding: '4px 10px',
+    borderRadius: '20px',
+    fontSize: '11px',
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px'
+  },
+  backBtn: {
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    border: 'none',
+    color: 'white',
+    padding: '8px 16px',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '13px',
+    fontWeight: '700',
+    transition: '0.2s'
+  },
+  card: {
+    backgroundColor: '#ffffff',
+    borderRadius: '12px',
+    border: '1px solid #e2e8f0',
+    padding: '18px',
+    marginBottom: '16px',
+    boxShadow: '0 2px 6px rgba(0,0,0,0.03)'
+  },
+  sectionHeader: {
+    fontSize: '16px',
+    fontWeight: '800',
+    color: '#d97706',
+    marginBottom: '14px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    borderBottom: '2px solid #fde68a',
+    paddingBottom: '8px'
+  },
+  gridCompact: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+    gap: '12px',
+    marginBottom: '12px'
+  },
+  fieldGroup: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px'
+  },
+  label: {
+    fontSize: '15px',
+    fontWeight: '700',
+    color: '#334155',
+    marginBottom: '2px'
+  },
+  input: {
+    width: '100%',
+    height: '38px',
+    padding: '8px 12px',
+    fontSize: '16px',
+    fontWeight: '600',
+    color: '#0f172a',
+    backgroundColor: '#ffffff',
+    border: '1px solid #cbd5e1',
+    borderRadius: '8px',
+    boxSizing: 'border-box',
+    outline: 'none'
+  },
+  inputModified: {
+    color: '#dc2626',
+    fontWeight: '800',
+    borderColor: '#fca5a5',
+    backgroundColor: '#fef2f2'
+  },
+  select: {
+    width: '100%',
+    height: '38px',
+    padding: '8px 12px',
+    fontSize: '16px',
+    fontWeight: '600',
+    color: '#0f172a',
+    backgroundColor: '#ffffff',
+    border: '1px solid #cbd5e1',
+    borderRadius: '8px',
+    boxSizing: 'border-box',
+    outline: 'none'
+  },
+  summaryGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+    gap: '12px',
+    marginBottom: '16px'
+  },
+  metricCard: {
+    padding: '16px',
+    borderRadius: '10px',
+    color: 'white',
+    textAlign: 'center',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    boxShadow: '0 4px 10px rgba(0,0,0,0.06)'
+  },
+  metricAmber: { backgroundColor: '#d97706' },
   metricTeal: { backgroundColor: '#0f766e' },
   metricGreen: { backgroundColor: '#16a34a' },
   metricOrange: { backgroundColor: '#ea580c' },
-  metricTitle: { fontSize: '11px', textTransform: 'uppercase', opacity: 0.9, fontWeight: '600' },
-  metricVal: { fontSize: '19px', fontWeight: '800', marginTop: '4px' },
+  metricBlue: { backgroundColor: '#2563eb' },
+  metricTitle: { fontSize: '12px', textTransform: 'uppercase', opacity: 0.9, fontWeight: '700', letterSpacing: '0.5px' },
+  metricVal: { fontSize: '18px', fontWeight: '800', marginTop: '6px' },
+  metricValGrand: { fontSize: '22px', fontWeight: '900', marginTop: '6px' },
 
-  tableContainer: { overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: '#fff', marginBottom: '18px' },
-  table: { width: '100%', borderCollapse: 'collapse', fontSize: '12px' },
-  th: { backgroundColor: '#d97706', color: 'white', padding: '10px', textAlign: 'left', fontWeight: '700' },
-  td: { padding: '8px 10px', borderBottom: '1px solid #f1f5f9', color: '#334155' },
+  tableContainer: {
+    overflowX: 'auto',
+    WebkitOverflowScrolling: 'touch',
+    border: '1px solid #e2e8f0',
+    borderRadius: '10px',
+    backgroundColor: '#ffffff',
+    marginBottom: '16px'
+  },
+  table: { width: '100%', borderCollapse: 'collapse', fontSize: '15px' },
+  th: { backgroundColor: '#d97706', color: 'white', padding: '10px 14px', textAlign: 'left', fontWeight: '700', fontSize: '15px' },
+  td: { padding: '10px 14px', borderBottom: '1px solid #f1f5f9', color: '#334155', fontSize: '15px' },
 
-  noteBox: { backgroundColor: '#fef3c7', border: '1px solid #fde68a', padding: '12px', borderRadius: '8px', fontSize: '12px', color: '#b45309', marginBottom: '14px' }
+  btnPrimary: { backgroundColor: '#d97706', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '8px', cursor: 'pointer', fontSize: '15px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '6px' },
+  btnSecondary: { backgroundColor: '#2563eb', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '8px', cursor: 'pointer', fontSize: '15px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '6px' },
+  btnSuccess: { backgroundColor: '#16a34a', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '8px', cursor: 'pointer', fontSize: '15px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '6px' },
+  btnReset: { backgroundColor: '#64748b', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '8px', cursor: 'pointer', fontSize: '15px', fontWeight: '700' },
+
+  warnBanner: { backgroundColor: '#fff1f2', border: '1px solid #fecdd3', color: '#9f1239', padding: '14px', borderRadius: '10px', fontSize: '14px', fontWeight: '600', marginBottom: '16px' }
 };
 
 const formatCurrency = (val: number | null | undefined): string => {
-  if (val === null || val === undefined || isNaN(val)) return "₹0.00";
+  if (val === null || val === undefined || isNaN(val) || val <= 0) return "Master Mapping Required / Approved Rate Unavailable";
   return `₹${val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
-
-const formatNumber = (val: number | null | undefined, decimals = 2): string => {
-  if (val === null || val === undefined || isNaN(val)) return "0";
-  return val.toLocaleString('en-IN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
-};
-
-const ceil = (n: any) => Math.ceil(Number(n || 0));
 
 export default function ElectricalBOQPage() {
   const router = useRouter();
@@ -66,484 +185,323 @@ export default function ElectricalBOQPage() {
     syncApprovedRatesFromBackend();
   }, []);
 
-  // Building & Room Details
   const [plotLength, setPlotLength] = useState(30);
   const [plotWidth, setPlotWidth] = useState(40);
-  const [floors, setFloors] = useState(3.5);
-  const [wiringType, setWiringType] = useState("Copper");
+  const [floors, setFloors] = useState(3);
+  const [bedrooms, setBedrooms] = useState(3);
 
-  const [bedrooms, setBedrooms] = useState(2);
-  const [guestBedrooms, setGuestBedrooms] = useState(1);
-  const [livingRooms, setLivingRooms] = useState(1);
-  const [kitchens, setKitchens] = useState(1);
-  const [toilets, setToilets] = useState(5);
-  const [studyRooms, setStudyRooms] = useState(1);
-  const [poojaRooms, setPoojaRooms] = useState(1);
+  const [isInputModified, setIsInputModified] = useState<boolean>(false);
+  const [isCalculatedBlue, setIsCalculatedBlue] = useState<boolean>(false);
 
-  const [acProvision, setAcProvision] = useState(4);
-  const [waterHeaterProvision, setWaterHeaterProvision] = useState(2);
-  const [exhaustFanProvision, setExhaustFanProvision] = useState(5);
-  const [motorProvision, setMotorProvision] = useState(1);
+  const handleInputChange = (setter: (val: any) => void, value: any) => {
+    setter(value);
+    setIsInputModified(true);
+  };
 
-  const [generated, setGenerated] = useState(true);
-
-  // Derived Geometry
-  const plotArea = plotLength * plotWidth;
-  const setbackArea = plotArea * 0.10; // Auto 10% setback area
-  const footprintArea = plotArea - setbackArea;
-  const totalBUA = footprintArea * floors;
-  const floorCount = Math.max(1, ceil(floors));
-
-  const totalBedrooms = bedrooms + guestBedrooms;
-
-  // Electrical Points Calculation Engine
-  const lightBedroom = totalBedrooms * 3;
-  const lightLiving = livingRooms * 5;
-  const lightKitchen = kitchens * 3;
-  const lightToilet = toilets * 2;
-  const lightStudy = studyRooms * 3;
-  const lightPooja = poojaRooms * 1;
-  const lightCommon = floorCount * 4;
-  const lightingPoints = ceil(lightBedroom + lightLiving + lightKitchen + lightToilet + lightStudy + lightPooja + lightCommon);
-
-  const fanPoints = ceil(totalBedrooms + livingRooms + studyRooms + poojaRooms);
-  const powerPoints = ceil((totalBedrooms * 3) + (livingRooms * 4) + (kitchens * 6) + (studyRooms * 3) + (poojaRooms * 1));
-  const acPoints = ceil(acProvision);
-  const waterHeaterPoints = ceil(waterHeaterProvision);
-  const exhaustFanPoints = ceil(exhaustFanProvision);
-  const motorPoints = ceil(motorProvision);
-
-  const totalPoints = ceil(lightingPoints + fanPoints + powerPoints + acPoints + waterHeaterPoints + exhaustFanPoints + motorPoints);
-
-  const lightingWire = lightingPoints * 9;
-  const fanWire = fanPoints * 10;
-  const powerWire = powerPoints * 14;
-  const acWire = acPoints * 22;
-  const geyserWire = waterHeaterPoints * 18;
-  const exhaustWire = exhaustFanPoints * 9;
-  const motorWire = motorPoints * 25;
-
-  const wire1_5mm = lightingWire + fanWire + exhaustWire;
-  const wire2_5mm = powerWire;
-  const wire4mm = acWire + geyserWire;
-  const wire6mm = Math.max(totalBUA * 0.25, floorCount * 35 + motorWire);
-  const totalWireLength = wire1_5mm + wire2_5mm + wire4mm + wire6mm;
-
-  const conduit20 = (wire1_5mm + wire2_5mm) * 0.65;
-  const conduit25 = (wire4mm + wire6mm) * 0.75;
-
-  // Admin Master Rates Lookup for all 27 Items
+  // Authoritative Admin Rate Master Lookups (0 fallback)
   const rates = useMemo(() => ({
-    elec01: getMasterRate(["ELEC-01", "conduit 20"], 25),
-    elec02: getMasterRate(["ELEC-02", "conduit 25"], 35),
-    elec03: getMasterRate(["ELEC-03", "wire 1.5"], 12),
-    elec04: getMasterRate(["ELEC-04", "wire 2.5"], 18),
-    elec05: getMasterRate(["ELEC-05", "wire 4.0"], 28),
-    elec06: getMasterRate(["ELEC-06", "wire 6.0"], 42),
-    elec07: getMasterRate(["ELEC-07", "modular switch"], 85),
-    elec08: getMasterRate(["ELEC-08", "switch plate"], 45),
-    elec09: getMasterRate(["ELEC-09", "led bulb"], 60),
-    elec10: getMasterRate(["ELEC-10", "led batten"], 180),
-    elec11: getMasterRate(["ELEC-11", "panel light"], 350),
-    elec12: getMasterRate(["ELEC-12", "ceiling fan"], 1800),
-    elec13: getMasterRate(["ELEC-13", "exhaust fan"], 1200),
-    elec14: getMasterRate(["ELEC-14", "water heater"], 4500),
-    elec15: getMasterRate(["ELEC-15", "ac unit"], 35000),
-    elec16: getMasterRate(["ELEC-16", "db 8 way"], 1200),
-    elec17: getMasterRate(["ELEC-17", "db 12 way"], 2500),
-    elec18: getMasterRate(["ELEC-18", "mcb 10a"], 180),
-    elec19: getMasterRate(["ELEC-19", "mcb 16a"], 220),
-    elec20: getMasterRate(["ELEC-20", "mcb dp 32a"], 350),
-    elec21: getMasterRate(["ELEC-21", "mcb dp 63a"], 650),
-    elec22: getMasterRate(["ELEC-22", "earthing plate"], 2500),
-    elec23: getMasterRate(["ELEC-23", "lightning arrester"], 3500),
-    elec24: getMasterRate(["ELEC-24", "ups inverter"], 12000),
-    elec25: getMasterRate(["ELEC-25", "battery"], 8000),
-    elec26: getMasterRate(["ELEC-26", "bus bar"], 5000),
-    elec27: getMasterRate(["ELEC-27", "electrical testing"], 3000)
+    elec01: getMasterRate(["ELEC-01", "conduit 20"], 0),
+    elec02: getMasterRate(["ELEC-02", "conduit 25"], 0),
+    elec03: getMasterRate(["ELEC-03", "wire 1.5"], 0),
+    elec04: getMasterRate(["ELEC-04", "wire 2.5"], 0),
+    elec05: getMasterRate(["ELEC-05", "wire 4.0"], 0),
+    elec06: getMasterRate(["ELEC-06", "wire 6.0"], 0),
+    elec07: getMasterRate(["ELEC-07", "modular switch"], 0),
+    elec16: getMasterRate(["ELEC-16", "db 8 way"], 0),
+    elec22: getMasterRate(["ELEC-22", "earthing plate"], 0)
   }), []);
 
-  // Electrical BOQ Calculation Engine
-  const boqResults = useMemo(() => {
-    const switchCount = ceil(totalPoints * 1.05);
-    const switchPlateCount = ceil(totalPoints / 3);
-    const lightFixtureCount = lightingPoints;
-    const fanCount = fanPoints;
-
-    const lightingCircuits = ceil(lightingPoints / 10);
-    const powerCircuits = ceil(powerPoints / 8);
-    const acCircuits = acPoints;
-    const geyserCircuits = waterHeaterPoints;
-    const motorCircuits = motorPoints;
-    const totalCircuits = lightingCircuits + powerCircuits + acCircuits + geyserCircuits + motorCircuits;
-
-    const db8Way = Math.max(1, ceil(totalCircuits / 8));
-    const db12Way = totalCircuits > 8 ? Math.max(1, ceil(totalCircuits / 12)) : 0;
-
-    const mcb6_10 = lightingCircuits + fanCount;
-    const mcb16 = powerCircuits + acCircuits + geyserCircuits + motorCircuits;
-    const mcbDp32 = Math.max(1, ceil(floorCount / 2));
-    const mcbDp63 = 1;
-
-    const earthingSets = totalBUA > 3000 ? 2 : 1;
-    const lightningArrester = floors >= 3 ? 1 : 0;
+  const calculations = useMemo(() => {
+    const totalBUA = Math.round(plotLength * plotWidth * 0.9 * floors);
+    const totalPoints = Math.round(totalBUA * 0.08); // 8 points / 100 sqft
+    const wireLengthM = Math.round(totalPoints * 12);
+    const conduitLengthM = Math.round(wireLengthM * 0.7);
 
     const items = [
-      { sr: 1, code: "ELEC-01", desc: "PVC Conduit Pipe 20mm ISI marked", uom: "m", qty: conduit20, matRate: rates.elec01.rate || 25, labRate: 8 },
-      { sr: 2, code: "ELEC-02", desc: "PVC Conduit Pipe 25mm ISI marked", uom: "m", qty: conduit25, matRate: rates.elec02.rate || 35, labRate: 10 },
-      { sr: 3, code: "ELEC-03", desc: "1.5 sqmm Copper FRLS Wire Lighting/Fan", uom: "m", qty: wire1_5mm, matRate: rates.elec03.rate || 12, labRate: 3 },
-      { sr: 4, code: "ELEC-04", desc: "2.5 sqmm Copper FRLS Wire Power", uom: "m", qty: wire2_5mm, matRate: rates.elec04.rate || 18, labRate: 4 },
-      { sr: 5, code: "ELEC-05", desc: "4 sqmm Copper FRLS Wire AC/Geyser", uom: "m", qty: wire4mm, matRate: rates.elec05.rate || 28, labRate: 5 },
-      { sr: 6, code: "ELEC-06", desc: "6 sqmm Copper FRLS Wire Main", uom: "m", qty: wire6mm, matRate: rates.elec06.rate || 42, labRate: 6 },
-      { sr: 7, code: "ELEC-07", desc: "Modular Switches", uom: "nos", qty: switchCount, matRate: rates.elec07.rate || 85, labRate: 15 },
-      { sr: 8, code: "ELEC-08", desc: "Modular Switch Plates", uom: "nos", qty: switchPlateCount, matRate: rates.elec08.rate || 45, labRate: 10 },
-      { sr: 9, code: "ELEC-09", desc: "LED Light Point / Bulb", uom: "nos", qty: lightFixtureCount, matRate: rates.elec09.rate || 60, labRate: 10 },
-      { sr: 10, code: "ELEC-10", desc: "LED Batten 20W", uom: "nos", qty: ceil(kitchens + studyRooms + poojaRooms), matRate: rates.elec10.rate || 180, labRate: 20 },
-      { sr: 11, code: "ELEC-11", desc: "LED Panel Light 12x12", uom: "nos", qty: ceil(livingRooms), matRate: rates.elec11.rate || 350, labRate: 30 },
-      { sr: 12, code: "ELEC-12", desc: "Ceiling Fan", uom: "nos", qty: fanCount, matRate: rates.elec12.rate || 1800, labRate: 150 },
-      { sr: 13, code: "ELEC-13", desc: "Exhaust Fan 6 inch", uom: "nos", qty: exhaustFanPoints, matRate: rates.elec13.rate || 1200, labRate: 100 },
-      { sr: 14, code: "ELEC-14", desc: "Water Heater 25L", uom: "nos", qty: waterHeaterPoints, matRate: rates.elec14.rate || 4500, labRate: 300 },
-      { sr: 15, code: "ELEC-15", desc: "AC Unit 1.5 Ton", uom: "nos", qty: acPoints, matRate: rates.elec15.rate || 35000, labRate: 1500 },
-      { sr: 16, code: "ELEC-16", desc: "Distribution Board 8 Way", uom: "nos", qty: db8Way, matRate: rates.elec16.rate || 1200, labRate: 200 },
-      { sr: 17, code: "ELEC-17", desc: "Distribution Board 12 Way", uom: "nos", qty: db12Way, matRate: rates.elec17.rate || 2500, labRate: 300 },
-      { sr: 18, code: "ELEC-18", desc: "MCB SP 6A/10A", uom: "nos", qty: mcb6_10, matRate: rates.elec18.rate || 180, labRate: 30 },
-      { sr: 19, code: "ELEC-19", desc: "MCB SP 16A", uom: "nos", qty: mcb16, matRate: rates.elec19.rate || 220, labRate: 30 },
-      { sr: 20, code: "ELEC-20", desc: "MCB DP 32A", uom: "nos", qty: mcbDp32, matRate: rates.elec20.rate || 350, labRate: 50 },
-      { sr: 21, code: "ELEC-21", desc: "MCB DP 63A Main", uom: "nos", qty: mcbDp63, matRate: rates.elec21.rate || 650, labRate: 75 },
-      { sr: 22, code: "ELEC-22", desc: "Earthing Plate Type", uom: "set", qty: earthingSets, matRate: rates.elec22.rate || 2500, labRate: 500 },
-      { sr: 23, code: "ELEC-23", desc: "Lightning Arrester", uom: "set", qty: lightningArrester, matRate: rates.elec23.rate || 3500, labRate: 600 },
-      { sr: 24, code: "ELEC-24", desc: "UPS/Inverter 3kVA", uom: "set", qty: 1, matRate: rates.elec24.rate || 12000, labRate: 800 },
-      { sr: 25, code: "ELEC-25", desc: "Battery 150Ah", uom: "nos", qty: 2, matRate: rates.elec25.rate || 8000, labRate: 400 },
-      { sr: 26, code: "ELEC-26", desc: "Bus Bar / Wiring Accessories", uom: "lump", qty: 1, matRate: rates.elec26.rate || 5000, labRate: 500 },
-      { sr: 27, code: "ELEC-27", desc: "Electrical Testing & Commissioning", uom: "lump", qty: 1, matRate: rates.elec27.rate || 3000, labRate: 1000 }
+      {
+        code: rates.elec01.itemCode || "ELEC-01",
+        category: "Conduits & Enclosures",
+        name: "20mm PVC Electrical Heavy Conduit",
+        uom: "M",
+        qty: conduitLengthM,
+        rateObj: rates.elec01
+      },
+      {
+        code: rates.elec03.itemCode || "ELEC-03",
+        category: "Copper Wires",
+        name: "1.5 sq.mm FR-LSH Copper Insulated Wire",
+        uom: "M",
+        qty: Math.round(wireLengthM * 0.6),
+        rateObj: rates.elec03
+      },
+      {
+        code: rates.elec04.itemCode || "ELEC-04",
+        category: "Copper Wires",
+        name: "2.5 sq.mm FR-LSH Power Copper Wire",
+        uom: "M",
+        qty: Math.round(wireLengthM * 0.4),
+        rateObj: rates.elec04
+      },
+      {
+        code: rates.elec07.itemCode || "ELEC-07",
+        category: "Switches & Sockets",
+        name: "6A / 16A Modular Switches & Socket Assemblies",
+        uom: "NOS",
+        qty: totalPoints,
+        rateObj: rates.elec07
+      },
+      {
+        code: rates.elec16.itemCode || "ELEC-16",
+        category: "Distribution & Protection",
+        name: "Main Distribution Board & MCB Breakers Set",
+        uom: "NOS",
+        qty: floors,
+        rateObj: rates.elec16
+      },
+      {
+        code: rates.elec22.itemCode || "ELEC-22",
+        category: "Earthing System",
+        name: "Copper Pipe Chemical Earthing Pit Complete",
+        uom: "NOS",
+        qty: 2,
+        rateObj: rates.elec22
+      }
     ];
 
-    const processedItems = items.map(i => {
-      const combined = getCombinedBOQRate(i.code, i.matRate, i.labRate);
-      const matRate = combined.materialRate;
-      const labRate = combined.labourRate;
-      const qtyVal = i.uom === "m" ? Number(i.qty || 0) : ceil(i.qty);
-      const amount = qtyVal * (matRate + labRate);
-      return { ...i, matRate, labRate, qty: qtyVal, amount };
+    let totalMaterialCost = 0;
+    let totalLabourCost = 0;
+
+    const processedItems = items.map(it => {
+      const isFound = it.rateObj.found && Number(it.rateObj.rate) > 0;
+      const rateVal = isFound ? Number(it.rateObj.rate) : 0;
+      const amountVal = isFound ? it.qty * rateVal : 0;
+
+      if (it.category.includes("Labour")) {
+        totalLabourCost += amountVal;
+      } else {
+        totalMaterialCost += amountVal;
+      }
+
+      return {
+        ...it,
+        isFound,
+        rateVal,
+        amountVal
+      };
     });
 
-    const materialTotal = processedItems.reduce((sum, i) => sum + (i.qty * i.matRate), 0);
-    const labourTotal = processedItems.reduce((sum, i) => sum + (i.qty * i.labRate), 0);
-    const grandTotal = materialTotal + labourTotal;
-    const ratePerSft = totalBUA > 0 ? grandTotal / totalBUA : 0;
+    const grandTotalCost = totalMaterialCost + totalLabourCost;
+    const missingItems = processedItems.filter(it => !it.isFound);
 
     return {
-      items: processedItems,
-      materialTotal,
-      labourTotal,
-      grandTotal,
-      ratePerSft,
       totalBUA,
       totalPoints,
-      totalWireLength,
-      lightingPoints,
-      fanPoints,
-      powerPoints,
-      acPoints,
-      waterHeaterPoints,
-      exhaustFanPoints
+      wireLengthM,
+      conduitLengthM,
+      totalMaterialCost,
+      totalLabourCost,
+      grandTotalCost,
+      items: processedItems,
+      missingItems
     };
-  }, [totalPoints, lightingPoints, fanPoints, powerPoints, acPoints, waterHeaterPoints, exhaustFanPoints, motorPoints, conduit20, conduit25, wire1_5mm, wire2_5mm, wire4mm, wire6mm, floorCount, totalBUA, floors, kitchens, studyRooms, poojaRooms, livingRooms, rates]);
+  }, [plotLength, plotWidth, floors, bedrooms, rates]);
 
-  // Export Excel
+  const handleCalculate = () => {
+    setIsInputModified(false);
+    setIsCalculatedBlue(true);
+    setTimeout(() => setIsCalculatedBlue(false), 2000);
+  };
+
   const handleExportExcel = () => {
-    checkAndRun('boq_export', 'boq-electrical', () => {
-      const data = boqResults.items.map((i: any) => ({
-        'Sr No': i.sr,
-        'Item Code': i.code,
-        'Description': i.desc,
-        'UOM': i.uom,
-        'Quantity': formatNumber(i.qty),
-        'Mat. Rate (₹)': formatCurrency(i.matRate),
-        'Lab. Rate (₹)': formatCurrency(i.labRate),
-        'Total Amount (₹)': formatCurrency(i.amount)
-      }));
+    checkAndRun("electrical_boq_export", "ELEC-BOQ", () => {
+      const data = [
+        ["BUILDMITRA ELECTRICAL BOQ ESTIMATION REPORT"],
+        ["Generated Date", new Date().toLocaleDateString('en-IN')],
+        ["Built-up Area", `${calculations.totalBUA} Sq.ft`],
+        ["Total Wiring Points", `${calculations.totalPoints} Points`],
+        ["GRAND TOTAL ESTIMATED COST", formatCurrency(calculations.grandTotalCost)],
+        [],
+        ["ITEMIZED ELECTRICAL BOQ"],
+        ["Master Code", "Category", "Description", "Quantity", "UOM", "Approved Rate (₹)", "Total Amount (₹)"],
+        ...calculations.items.map(it => [
+          it.code,
+          it.category,
+          it.name,
+          it.qty,
+          it.uom,
+          it.isFound ? it.rateVal : "Master Mapping Required / Approved Rate Unavailable",
+          it.isFound ? it.amountVal : "—"
+        ])
+      ];
 
-      const ws = XLSX.utils.json_to_sheet(data);
+      const ws = XLSX.utils.aoa_to_sheet(data);
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Electrical_BOQ');
-      XLSX.writeFile(wb, `BuildMitra_Electrical_BOQ_${new Date().toISOString().split('T')[0]}.xlsx`);
+      XLSX.utils.book_append_sheet(wb, ws, "Electrical_BOQ");
+      XLSX.writeFile(wb, `BuildMitra_Electrical_BOQ_${Date.now()}.xlsx`);
     });
   };
 
-  // Share WhatsApp
-  const handleShareWhatsApp = () => {
-    checkAndRun('boq_export', 'boq-electrical', () => {
-      const msg = `*BuildMitra Electrical BOQ Estimate*%0A` +
-        `----------------------------------------%0A` +
-        `• *Plot Size*: ${plotLength}' x ${plotWidth}' (${plotArea} Sft) | *Floors*: ${floors}%0A` +
-        `• *Total BUA*: ${formatNumber(totalBUA)} Sft | *Total Points*: ${boqResults.totalPoints}%0A` +
-        `• *Total Wire Length*: ${formatNumber(boqResults.totalWireLength, 1)} Meters%0A` +
-        `• *Material Total*: ${formatCurrency(boqResults.materialTotal)}%0A` +
-        `• *Labour Total*: ${formatCurrency(boqResults.labourTotal)}%0A` +
-        `• *GRAND TOTAL COST*: ${formatCurrency(boqResults.grandTotal)} (${formatCurrency(boqResults.ratePerSft)}/Sft)%0A%0A` +
-        `*Generated via BuildMitra Electrical BOQ Engine*`;
-      window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
-    });
-  };
+  const handleExportPDF = () => {
+    checkAndRun("electrical_boq_export", "ELEC-BOQ", () => {
+      const headers = ["Master Code", "Category", "Description", "Qty", "UOM", "Rate (₹)", "Amount (₹)"];
+      const rows = calculations.items.map(it => [
+        it.code,
+        it.category,
+        it.name,
+        String(it.qty),
+        it.uom,
+        it.isFound ? formatCurrency(it.rateVal) : "Rate Pending Admin Update",
+        it.isFound ? formatCurrency(it.amountVal) : "—"
+      ]);
 
-  const handleReset = () => {
-    setPlotLength(30); setPlotWidth(40); setFloors(3.5); setWiringType("Copper");
-    setBedrooms(2); setGuestBedrooms(1); setLivingRooms(1); setKitchens(1); setToilets(5); setStudyRooms(1); setPoojaRooms(1);
-    setAcProvision(4); setWaterHeaterProvision(2); setExhaustFanProvision(5); setMotorProvision(1);
-    setGenerated(false);
+      downloadBuildMitraPDF(
+        "BuildMitra – Electrical BOQ Estimation Report",
+        [
+          ["Built-up Area:", `${calculations.totalBUA} Sq.ft`],
+          ["Total Wiring Points:", `${calculations.totalPoints} Points`],
+          ["GRAND TOTAL ESTIMATED COST:", formatCurrency(calculations.grandTotalCost)]
+        ],
+        headers,
+        rows,
+        `BuildMitra_Electrical_BOQ_${Date.now()}.pdf`
+      );
+    });
   };
 
   return (
-    <div className="bm-final-boq-page" style={styles.container}>
-      {/* 1. Header */}
-      <div style={styles.header}>
-        <div>
-          <button style={styles.backBtn} onClick={() => router.push('/calculators')}>← Back to Calculators</button>
-        </div>
-        <h1 style={styles.headerTitle}>
-          ⚡ Electrical BOQ Calculator
-          <span style={styles.badge}>IS 732 & IS 4648 Electrical Wiring Engine</span>
-        </h1>
-        <div>
-          <span style={{ fontSize: '11px', color: '#fde68a' }}>BuildMitra Professional Edition</span>
-        </div>
-      </div>
+    <>
+      <Head>
+        <title>Electrical BOQ Estimator | BuildMitra</title>
+      </Head>
 
-      {/* 2. Live Market Rate Ticker */}
-      <MarketRateTrend />
-
-      {/* 3. Building & Room Inputs Form */}
-      <div style={styles.stepperCard}>
-        <div style={styles.sectionHeader}>
-          <span>📐 Building & Room Configuration Inputs</span>
+      <div style={styles.container}>
+        {/* Header */}
+        <div style={styles.header}>
+          <div>
+            <span style={styles.badge}>MEP &amp; ELECTRICAL BOQ</span>
+            <h1 style={styles.headerTitle}>⚡ BuildMitra – Electrical BOQ Estimator</h1>
+          </div>
+          <button style={styles.backBtn} onClick={() => router.push("/contractor-dashboard")}>← Back to Dashboard</button>
         </div>
 
-        <div className="bm-final-boq-input-grid" style={styles.grid4}>
-          <div style={styles.fieldGroup}>
-            <label style={styles.label}>Plot Length (Ft)</label>
-            <input
-              type="number"
-              style={styles.input}
-              value={plotLength}
-              onChange={e => setPlotLength(parseFloat(e.target.value) || 0)}
-            />
-          </div>
+        <MarketRateTrend />
 
-          <div style={styles.fieldGroup}>
-            <label style={styles.label}>Plot Width (Ft)</label>
-            <input
-              type="number"
-              style={styles.input}
-              value={plotWidth}
-              onChange={e => setPlotWidth(parseFloat(e.target.value) || 0)}
-            />
-          </div>
-
-          <div style={styles.fieldGroup}>
-            <label style={styles.label}>No. of Floors</label>
-            <input
-              type="number"
-              style={styles.input}
-              value={floors}
-              onChange={e => setFloors(parseFloat(e.target.value) || 1)}
-            />
-          </div>
-
-          <div style={styles.fieldGroup}>
-            <label style={styles.label}>Wiring Conductor Type</label>
-            <select style={styles.select} value={wiringType} onChange={e => setWiringType(e.target.value)}>
-              <option value="Copper">Copper Wiring (FRLS Multi-strand)</option>
-              <option value="Aluminium">Aluminium Wiring</option>
-            </select>
-          </div>
-
-          <div style={styles.fieldGroup}>
-            <label style={styles.label}>Plot Area (Sft)</label>
-            <input
-              type="text"
-              readOnly
-              style={{ ...styles.input, ...styles.inputReadOnly }}
-              value={`${formatNumber(plotArea)} Sft`}
-            />
-          </div>
-
-          <div style={styles.fieldGroup}>
-            <label style={styles.label}>Auto Setback 10% Area</label>
-            <input
-              type="text"
-              readOnly
-              style={{ ...styles.input, ...styles.inputReadOnly }}
-              value={`${formatNumber(setbackArea)} Sft`}
-            />
-          </div>
-
-          <div style={styles.fieldGroup}>
-            <label style={styles.label}>Footprint Area</label>
-            <input
-              type="text"
-              readOnly
-              style={{ ...styles.input, ...styles.inputReadOnly }}
-              value={`${formatNumber(footprintArea)} Sft`}
-            />
-          </div>
-
-          <div style={styles.fieldGroup}>
-            <label style={styles.label}>Total Built-Up Area (Sft)</label>
-            <input
-              type="text"
-              readOnly
-              style={{ ...styles.input, ...styles.inputReadOnly }}
-              value={`${formatNumber(totalBUA)} Sft`}
-            />
-          </div>
-        </div>
-
-        {/* Room Configuration Inputs */}
-        <div style={{ backgroundColor: '#fffbe8', padding: '14px', borderRadius: '8px', marginBottom: '16px', border: '1px solid #fde68a' }}>
-          <div style={{ fontSize: '13px', fontWeight: '700', color: '#b45309', marginBottom: '10px' }}>🏠 Room & Heavy Power Provisions</div>
-          <div className="bm-final-boq-input-grid" style={styles.grid5}>
-            <div style={styles.fieldGroup}>
-              <label style={styles.label}>Bedrooms</label>
-              <input type="number" style={styles.input} value={bedrooms} onChange={e => setBedrooms(e.target.value === "" ? ("" as any) : parseFloat(e.target.value))} />
-            </div>
-            <div style={styles.fieldGroup}>
-              <label style={styles.label}>Guest Bedrooms</label>
-              <input type="number" style={styles.input} value={guestBedrooms} onChange={e => setGuestBedrooms(e.target.value === "" ? ("" as any) : parseFloat(e.target.value))} />
-            </div>
-            <div style={styles.fieldGroup}>
-              <label style={styles.label}>Living Rooms</label>
-              <input type="number" style={styles.input} value={livingRooms} onChange={e => setLivingRooms(e.target.value === "" ? ("" as any) : parseFloat(e.target.value))} />
-            </div>
-            <div style={styles.fieldGroup}>
-              <label style={styles.label}>Kitchens</label>
-              <input type="number" style={styles.input} value={kitchens} onChange={e => setKitchens(e.target.value === "" ? ("" as any) : parseFloat(e.target.value))} />
-            </div>
-            <div style={styles.fieldGroup}>
-              <label style={styles.label}>Toilets</label>
-              <input type="number" style={styles.input} value={toilets} onChange={e => setToilets(e.target.value === "" ? ("" as any) : parseFloat(e.target.value))} />
-            </div>
-            <div style={styles.fieldGroup}>
-              <label style={styles.label}>Study Rooms</label>
-              <input type="number" style={styles.input} value={studyRooms} onChange={e => setStudyRooms(e.target.value === "" ? ("" as any) : parseFloat(e.target.value))} />
-            </div>
-            <div style={styles.fieldGroup}>
-              <label style={styles.label}>Pooja Rooms</label>
-              <input type="number" style={styles.input} value={poojaRooms} onChange={e => setPoojaRooms(e.target.value === "" ? ("" as any) : parseFloat(e.target.value))} />
-            </div>
-            <div style={styles.fieldGroup}>
-              <label style={styles.label}>AC Units</label>
-              <input type="number" style={styles.input} value={acProvision} onChange={e => setAcProvision(e.target.value === "" ? ("" as any) : parseFloat(e.target.value))} />
-            </div>
-            <div style={styles.fieldGroup}>
-              <label style={styles.label}>Water Heaters</label>
-              <input type="number" style={styles.input} value={waterHeaterProvision} onChange={e => setWaterHeaterProvision(e.target.value === "" ? ("" as any) : parseFloat(e.target.value))} />
-            </div>
-            <div style={styles.fieldGroup}>
-              <label style={styles.label}>Exhaust Fans</label>
-              <input type="number" style={styles.input} value={exhaustFanProvision} onChange={e => setExhaustFanProvision(e.target.value === "" ? ("" as any) : parseFloat(e.target.value))} />
-            </div>
-          </div>
-        </div>
-
-        {/* Structural Engine Rules Badge */}
-        <div className="bm-boq-mobile-technical-note" style={styles.noteBox}>
-          💡 <strong>IS Electrical Engine Rules</strong>: 💡 Lighting: <strong>{lightingPoints}</strong> | 🌀 Fan: <strong>{fanPoints}</strong> | 🔌 Power: <strong>{powerPoints}</strong> | ❄️ AC: <strong>{acPoints}</strong> | 🔥 Geyser: <strong>{waterHeaterPoints}</strong> | 💨 Exhaust: <strong>{exhaustFanPoints}</strong> | Total Points: <strong>{totalPoints}</strong>
-        </div>
-
-        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '10px' }}>
-          <button style={styles.btnReset} onClick={handleReset}>🔄 Reset Form</button>
-          <button style={styles.btnPrimary} onClick={() => setGenerated(true)}>🔨 Generate Electrical BOQ</button>
-        </div>
-      </div>
-
-      {/* 4. Detailed Results BOQ Cards & Table */}
-      {generated && (
-        <div style={styles.stepperCard}>
+        {/* Inputs */}
+        <div style={styles.card}>
           <div style={styles.sectionHeader}>
-            <span>📊 Electrical BOQ Estimation Summary & Itemized BOQ</span>
+            <span>📐 Enter Electrical Load &amp; Building Specifications</span>
           </div>
 
-          {/* Metric Summary Grid */}
-          <div className="bm-boq-summary-scroll" style={styles.summaryGrid}>
-            <div style={{ ...styles.metricCard, ...styles.metricMaroon }}>
-              <span style={styles.metricTitle}>Grand Total Cost</span>
-              <span style={styles.metricVal}>₹{formatNumber(boqResults.grandTotal / 100000, 2)} Lakhs</span>
-              <span style={{ fontSize: '11px', opacity: 0.9 }}>{formatCurrency(boqResults.grandTotal)}</span>
+          <div style={styles.gridCompact}>
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Plot Length (ft)</label>
+              <input type="number" value={plotLength} onChange={(e) => handleInputChange(setPlotLength, Number(e.target.value))} style={{ ...styles.input, ...(isInputModified ? styles.inputModified : {}) }} />
             </div>
 
-            <div style={{ ...styles.metricCard, ...styles.metricOrange }}>
-              <span style={styles.metricTitle}>Total Points</span>
-              <span style={styles.metricVal}>{boqResults.totalPoints} Points</span>
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Plot Width (ft)</label>
+              <input type="number" value={plotWidth} onChange={(e) => handleInputChange(setPlotWidth, Number(e.target.value))} style={{ ...styles.input, ...(isInputModified ? styles.inputModified : {}) }} />
             </div>
 
-            <div style={{ ...styles.metricCard, ...styles.metricTeal }}>
-              <span style={styles.metricTitle}>Total Wire Length</span>
-              <span style={styles.metricVal}>{formatNumber(boqResults.totalWireLength, 1)} m</span>
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Floors Count</label>
+              <input type="number" value={floors} onChange={(e) => handleInputChange(setFloors, Number(e.target.value))} style={styles.input} />
             </div>
 
-            <div style={{ ...styles.metricCard, ...styles.metricTeal, backgroundColor: '#0284c7' }}>
-              <span style={styles.metricTitle}>Wiring Labour Cost</span>
-              <span style={styles.metricVal}>₹{formatNumber(boqResults.labourTotal / 100000, 2)} Lakhs</span>
-              <span style={{ fontSize: '11px', opacity: 0.9 }}>{formatCurrency(boqResults.labourTotal)}</span>
-            </div>
-
-            <div style={{ ...styles.metricCard, ...styles.metricGreen }}>
-              <span style={styles.metricTitle}>Estimated Rate / Sft</span>
-              <span style={styles.metricVal}>{formatCurrency(boqResults.ratePerSft)} / Sft</span>
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Bedrooms Count</label>
+              <input type="number" value={bedrooms} onChange={(e) => handleInputChange(setBedrooms, Number(e.target.value))} style={styles.input} />
             </div>
           </div>
 
-          {/* BOQ Action Buttons */}
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}>
+          {/* Action Buttons */}
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '14px' }}>
+            <button style={styles.btnPrimary} onClick={handleCalculate}>⚡ Calculate Electrical BOQ</button>
+            <button style={styles.btnReset} onClick={() => setPlotLength(30)}>🔄 Reset</button>
             <button style={styles.btnSecondary} onClick={handleExportExcel}>📊 Export Excel</button>
-            <button style={styles.btnSuccess} onClick={handleShareWhatsApp}>💬 WhatsApp Share</button>
-            <button style={{ backgroundColor: '#0284c7', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' }} onClick={() => alert('🛒 Electrical BOQ Package sent to Vendor Marketplace RFQ!')}>🛒 Request Marketplace RFQ</button>
-            <button style={{ backgroundColor: '#0f766e', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' }} onClick={() => alert('📈 Applied Bengaluru Live Mandi Wholesale Rates to Electrical BOQ!')}>📈 Sync Live Market Rates</button>
-            <button style={{ backgroundColor: '#475569', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' }} onClick={() => alert('💾 Saved Electrical BOQ Revision 1.0 to Active Project!')}>💾 Save BOQ Revision</button>
-          </div>
-
-          {/* Itemized BOQ Table */}
-          <div className="bm-boq-table-scroll" style={styles.tableContainer}>
-            <div className="bm-real-boq-scroll"><table className="bm-boq-table bm-final-boq-table bm-real-boq-table" style={styles.table}>
-              <thead>
-                <tr>
-                  <th style={styles.th}>Sr.</th>
-                  <th style={styles.th}>Item Code</th>
-                  <th style={styles.th}>Item Description</th>
-                  <th style={styles.th}>UOM</th>
-                  <th style={styles.th}>Qty</th>
-                  <th style={styles.th}>Mat. Rate</th>
-                  <th style={styles.th}>Lab. Rate</th>
-                  <th style={styles.th}>Total (₹)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {boqResults.items.map((i: any, idx: number) => (
-                  <tr key={i.sr} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
-                    <td style={styles.td}><strong>{i.sr}</strong></td>
-                    <td style={styles.td}><code>{i.code}</code></td>
-                    <td style={styles.td}><strong>{i.desc}</strong></td>
-                    <td style={styles.td}>{i.uom}</td>
-                    <td style={styles.td}>{formatNumber(i.qty)}</td>
-                    <td style={styles.td}>{formatCurrency(i.matRate)}</td>
-                    <td style={styles.td}>{formatCurrency(i.labRate)}</td>
-                    <td style={styles.td}><strong>{formatCurrency(i.amount)}</strong></td>
-                  </tr>
-                ))}
-                <tr style={{ backgroundColor: '#d97706', color: 'white', fontWeight: '800' }}>
-                  <td colSpan={7} style={{ padding: '12px', fontSize: '13px' }}>GRAND TOTAL ESTIMATED ELECTRICAL BOQ COST</td>
-                  <td style={{ padding: '12px', fontSize: '14px' }}>{formatCurrency(boqResults.grandTotal)}</td>
-                </tr>
-              </tbody>
-            </table></div>
+            <button style={styles.btnSuccess} onClick={handleExportPDF}>📄 Export PDF Report</button>
           </div>
         </div>
-      )}
-    </div>
+
+        {/* Result Metric Cards */}
+        <div style={styles.summaryGrid}>
+          <div style={{ ...styles.metricCard, ...styles.metricAmber }}>
+            <span style={styles.metricTitle}>Built-up Area</span>
+            <span style={{ ...styles.metricVal, color: isCalculatedBlue ? '#fde68a' : '#ffffff' }}>{calculations.totalBUA.toLocaleString()} Sq.ft</span>
+          </div>
+          <div style={{ ...styles.metricCard, ...styles.metricTeal }}>
+            <span style={styles.metricTitle}>Total Wiring Points</span>
+            <span style={styles.metricVal}>{calculations.totalPoints} Points</span>
+          </div>
+          <div style={{ ...styles.metricCard, ...styles.metricOrange }}>
+            <span style={styles.metricTitle}>Total Wire Length</span>
+            <span style={styles.metricVal}>{calculations.wireLengthM.toLocaleString()} M</span>
+          </div>
+          <div style={{ ...styles.metricCard, ...styles.metricBlue }}>
+            <span style={styles.metricTitle}>Material Subtotal</span>
+            <span style={styles.metricVal}>{formatCurrency(calculations.totalMaterialCost)}</span>
+          </div>
+          <div style={{ ...styles.metricCard, ...styles.metricGreen }}>
+            <span style={styles.metricTitle}>GRAND ESTIMATED TOTAL</span>
+            <span style={{ ...styles.metricValGrand, color: isCalculatedBlue ? '#60a5fa' : '#ffffff' }}>{formatCurrency(calculations.grandTotalCost)}</span>
+          </div>
+        </div>
+
+        {/* Missing Master Rates Warning Banner */}
+        {calculations.missingItems.length > 0 && (
+          <div style={styles.warnBanner}>
+            ⚠️ <strong>Master Mapping Required / Approved Rate Unavailable ({calculations.missingItems.length} Line Items)</strong>
+            <ul style={{ margin: '6px 0 0 0', paddingLeft: '20px', fontSize: '13px' }}>
+              {calculations.missingItems.map(it => (
+                <li key={it.code}>
+                  <code>{it.code}</code>: {it.name} — Quantity: <strong>{it.qty.toLocaleString()} {it.uom}</strong> (Status: <em>Master Mapping Required</em>)
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Itemized BOQ Table */}
+        <div style={styles.tableContainer}>
+          <div style={{ padding: '12px 16px', backgroundColor: '#d97706', color: 'white', fontWeight: '800', fontSize: '16px' }}>
+            📑 Itemized Electrical &amp; Wiring BOQ (Admin Master Linked)
+          </div>
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th style={styles.th}>Master Code</th>
+                <th style={styles.th}>Category</th>
+                <th style={styles.th}>Item Description</th>
+                <th style={styles.th}>Quantity</th>
+                <th style={styles.th}>UOM</th>
+                <th style={styles.th}>Approved Rate (₹)</th>
+                <th style={styles.th}>Total Amount (₹)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {calculations.items.map(it => (
+                <tr key={it.code}>
+                  <td style={styles.td}><code>{it.code}</code></td>
+                  <td style={styles.td}>{it.category}</td>
+                  <td style={styles.td}><strong>{it.name}</strong></td>
+                  <td style={styles.td}>{it.qty.toLocaleString()}</td>
+                  <td style={styles.td}>{it.uom}</td>
+                  <td style={styles.td}>
+                    {it.isFound ? formatCurrency(it.rateVal) : <span style={{ color: '#dc2626', fontWeight: '700' }}>Master Mapping Required / Approved Rate Unavailable</span>}
+                  </td>
+                  <td style={styles.td}>
+                    {it.isFound ? <strong>{formatCurrency(it.amountVal)}</strong> : <span style={{ color: '#94a3b8' }}>—</span>}
+                  </td>
+                </tr>
+              ))}
+              <tr style={{ backgroundColor: '#d97706', color: 'white', fontWeight: '800' }}>
+                <td colSpan={6} style={{ padding: '12px 14px', fontSize: '16px' }}>GRAND TOTAL ESTIMATED COST</td>
+                <td style={{ padding: '12px 14px', fontSize: '18px' }}>{formatCurrency(calculations.grandTotalCost)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
   );
 }
-
-
-
-

@@ -1,97 +1,232 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import Head from 'next/head';
 import * as XLSX from 'xlsx';
 import { useRouter } from 'next/router';
 import { usePaymentBarrier } from '../hooks/usePaymentBarrier';
 import MarketRateTrend from '../components/ui/MarketRateTrend';
-import EngineeringSpecimen from '../components/engineering/EngineeringSpecimen';
 import { getMasterRate, syncApprovedRatesFromBackend, MasterRateResult } from "../utils/masterRates";
 import { downloadBuildMitraPDF } from "../utils/pdfExport";
 
+const BLOCK_SPECS: Record<string, { label: string; lMm: number; hMm: number; wMm: number; isBrick?: boolean; isAAC?: boolean }> = {
+  'Clay Brick (4.5" Wall)': { label: 'Standard Clay Brick (190 x 90 x 90 mm)', lMm: 190, hMm: 90, wMm: 90, isBrick: true },
+  'Clay Brick (9" Wall)': { label: 'Standard Clay Brick (190 x 90 x 90 mm)', lMm: 190, hMm: 90, wMm: 90, isBrick: true },
+  'Concrete Block (4")': { label: 'Concrete Solid Block 4" (400 x 100 x 200 mm)', lMm: 400, hMm: 200, wMm: 100 },
+  'Concrete Block (6")': { label: 'Concrete Solid Block 6" (400 x 150 x 200 mm)', lMm: 400, hMm: 200, wMm: 150 },
+  'Concrete Block (8")': { label: 'Concrete Solid Block 8" (400 x 200 x 200 mm)', lMm: 400, hMm: 200, wMm: 200 },
+  'AAC Block (4")': { label: 'AAC Block 4" (600 x 100 x 200 mm)', lMm: 600, hMm: 200, wMm: 100, isAAC: true },
+  'AAC Block (6")': { label: 'AAC Block 6" (600 x 150 x 200 mm)', lMm: 600, hMm: 200, wMm: 150, isAAC: true },
+  'AAC Block (8")': { label: 'AAC Block 8" (600 x 200 x 200 mm)', lMm: 600, hMm: 200, wMm: 200, isAAC: true }
+};
+
 const styles: Record<string, React.CSSProperties> = {
-  container: { width: '100%', maxWidth: '100%', margin: '0', padding: '4px 8px', boxSizing: 'border-box' },
-  header: { maxWidth: '100%', margin: '0 0 8px 0', padding: '6px 10px', borderRadius: '6px' },
-  headerTitle: { margin: 0, fontSize: '16px', lineHeight: '1.15', fontWeight: '800', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px' },
-  badge: { padding: '2px 6px', borderRadius: '10px', fontSize: '9px', lineHeight: '1.1', fontWeight: '700' },
-  backBtn: { backgroundColor: 'rgba(255,255,255,0.15)', border: 'none', color: 'white', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '600' },
-
-  dropdowncard: { padding: "3px 2px", borderRadius: "4px", textAlign: "center", minHeight: "0", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" },
-  dropdownlabel: { display: 'block', fontSize: '10px', fontWeight: '600', marginBottom: '2px', textAlign: 'center', whiteSpace: 'normal', overflow: 'hidden', textOverflow: 'ellipsis' },
-  modeselect: { width: '100%', padding: '2px 4px', height: '30px', fontSize: '11px', borderRadius: '4px', border: '1px solid #d1d5db', boxSizing: 'border-box' },
-
-  steppercard: { padding: "3px 2px", borderRadius: "4px", textAlign: "center", minHeight: "0", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" },
-  sectionheader: { maxWidth: '100%', margin: '0 0 8px 0', padding: '6px 10px', borderRadius: '6px' },
-
-  grid3: { display: 'grid', gridTemplateColumns: 'repeat(4, minmax(68px, 1fr))', gap: '5px', alignItems: 'end', width: '100%', maxWidth: '100%', marginBottom: '5px' },
-  grid4: { display: 'grid', gridTemplateColumns: 'repeat(4, minmax(68px, 1fr))', gap: '5px', alignItems: 'end', width: '100%', maxWidth: '100%', marginBottom: '5px' },
-
-  fieldGroup: { minWidth: 0, width: '100%', margin: 0, padding: 0 },
-  label: { display: 'block', fontSize: '10px', lineHeight: '1.1', fontWeight: '700', marginBottom: '2px', whiteSpace: 'normal' },
-  input: { width: '100%', minWidth: 0, maxWidth: '100%', height: '32px', padding: '3px 5px', fontSize: '12px', lineHeight: '1.1', textAlign: 'center', borderRadius: '5px', border: '1px solid #cbd5e1', boxSizing: 'border-box' },
-  select: { width: '100%', minWidth: 0, maxWidth: '100%', height: '32px', padding: '3px 4px', fontSize: '11px', lineHeight: '1.1', borderRadius: '5px', border: '1px solid #cbd5e1', boxSizing: 'border-box', overflow: 'hidden', textOverflow: 'ellipsis' },
-
-  btnPrimary: { backgroundColor: '#0f766e', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '6px' },
-  btnSecondary: { backgroundColor: '#2563eb', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700' },
-  btnDanger: { backgroundColor: '#ef4444', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '11px', fontWeight: '600' },
-  btnSuccess: { backgroundColor: '#16a34a', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '700' },
-  btnReset: { backgroundColor: '#64748b', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '600' },
+  container: {
+    maxWidth: '1280px',
+    margin: '0 auto',
+    padding: '16px',
+    backgroundColor: '#f8fafc',
+    minHeight: '100vh',
+    boxSizing: 'border-box',
+    fontFamily: 'Segoe UI, -apple-system, BlinkMacSystemFont, Roboto, sans-serif'
+  },
+  header: {
+    backgroundColor: '#b45309',
+    padding: '16px 20px',
+    borderRadius: '12px',
+    marginBottom: '16px',
+    color: 'white',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: '12px',
+    boxShadow: '0 4px 12px rgba(180,83,9,0.2)'
+  },
+  headerTitle: {
+    margin: 0,
+    fontSize: '22px',
+    fontWeight: '800',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px'
+  },
+  badge: {
+    backgroundColor: '#d97706',
+    color: '#ffffff',
+    padding: '4px 10px',
+    borderRadius: '20px',
+    fontSize: '11px',
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px'
+  },
+  backBtn: {
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    border: 'none',
+    color: 'white',
+    padding: '8px 16px',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '13px',
+    fontWeight: '700',
+    transition: '0.2s'
+  },
+  modeToggleContainer: {
+    display: 'flex',
+    gap: '10px',
+    marginBottom: '16px'
+  },
+  modeToggleBtn: {
+    padding: '10px 20px',
+    fontSize: '15px',
+    fontWeight: '800',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    transition: '0.2s',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '8px'
+  },
+  card: {
+    backgroundColor: '#ffffff',
+    borderRadius: '12px',
+    border: '1px solid #e2e8f0',
+    padding: '18px',
+    marginBottom: '16px',
+    boxShadow: '0 2px 6px rgba(0,0,0,0.03)'
+  },
+  sectionHeader: {
+    fontSize: '16px',
+    fontWeight: '800',
+    color: '#b45309',
+    marginBottom: '14px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '8px',
+    borderBottom: '2px solid #fef3c7',
+    paddingBottom: '8px'
+  },
+  gridCompact: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+    gap: '12px',
+    marginBottom: '12px'
+  },
+  fieldGroup: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px'
+  },
+  label: {
+    fontSize: '15px',
+    fontWeight: '700',
+    color: '#334155',
+    marginBottom: '2px'
+  },
+  input: {
+    width: '100%',
+    height: '38px',
+    padding: '8px 12px',
+    fontSize: '16px',
+    fontWeight: '600',
+    color: '#0f172a',
+    backgroundColor: '#ffffff',
+    border: '1px solid #cbd5e1',
+    borderRadius: '8px',
+    boxSizing: 'border-box',
+    outline: 'none'
+  },
+  inputModified: {
+    color: '#dc2626',
+    fontWeight: '800',
+    borderColor: '#fca5a5',
+    backgroundColor: '#fef2f2'
+  },
+  select: {
+    width: '100%',
+    height: '38px',
+    padding: '8px 12px',
+    fontSize: '16px',
+    fontWeight: '600',
+    color: '#0f172a',
+    backgroundColor: '#ffffff',
+    border: '1px solid #cbd5e1',
+    borderRadius: '8px',
+    boxSizing: 'border-box',
+    outline: 'none'
+  },
   summaryGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(5, minmax(112px, 1fr))',
-    gap: '5px',
-    width: '100%',
-    maxWidth: '100%',
-    overflowX: 'auto',
-    overflowY: 'hidden',
-    WebkitOverflowScrolling: 'touch',
-    touchAction: 'pan-x',
-    overscrollBehaviorX: 'contain',
-    scrollSnapType: 'x proximity',
-    padding: '3px 2px 7px',
-    margin: '3px 0 6px'
+    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+    gap: '12px',
+    marginBottom: '16px'
   },
-  metricCard: { flex: '0 0 112px', width: '112px', minwidth: '112px', maxWidth: '150px', minHeight: '68px', height: 'auto', padding: '6px', margin: 0, borderRadius: '7px', boxSizing: 'border-box', textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', overflow: 'hidden', scrollSnapAlign: 'start' },
+  metricCard: {
+    padding: '16px',
+    borderRadius: '10px',
+    color: 'white',
+    textAlign: 'center',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    boxShadow: '0 4px 10px rgba(0,0,0,0.06)'
+  },
+  metricAmber: { backgroundColor: '#b45309' },
   metricTeal: { backgroundColor: '#0f766e' },
-  metricBlue: { backgroundColor: '#2563eb' },
   metricGreen: { backgroundColor: '#16a34a' },
   metricOrange: { backgroundColor: '#ea580c' },
-  metricTitle: { fontSize: '10px', lineHeight: '1.1', textTransform: 'uppercase', opacity: 0.95, fontWeight: '700', whiteSpace: 'normal', marginBottom: '2px' },
-  metricVal: { fontSize: '15px', lineHeight: '1.15', fontWeight: '800', marginTop: '2px', whiteSpace: 'normal', overflowWrap: 'anywhere' },
+  metricBlue: { backgroundColor: '#2563eb' },
+  metricTitle: { fontSize: '12px', textTransform: 'uppercase', opacity: 0.9, fontWeight: '700', letterSpacing: '0.5px' },
+  metricVal: { fontSize: '18px', fontWeight: '800', marginTop: '6px' },
+  metricValGrand: { fontSize: '22px', fontWeight: '900', marginTop: '6px' },
 
-  tablecontainer: { width: '100%', maxWidth: '100%', margin: '0', padding: '4px 8px', boxSizing: 'border-box' },
-  table: { width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', fontSize: '10px' },
-  th: { padding: '3px 4px', fontSize: '10px', fontWeight: 'bold', backgroundColor: '#f1f5f9', textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal' },
-  td: { padding: '3px 4px', fontSize: '10px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal' },
+  tableContainer: {
+    overflowX: 'auto',
+    WebkitOverflowScrolling: 'touch',
+    border: '1px solid #e2e8f0',
+    borderRadius: '10px',
+    backgroundColor: '#ffffff',
+    marginBottom: '16px'
+  },
+  table: { width: '100%', borderCollapse: 'collapse', fontSize: '15px' },
+  th: { backgroundColor: '#b45309', color: 'white', padding: '10px 14px', textAlign: 'left', fontWeight: '700', fontSize: '15px' },
+  td: { padding: '10px 14px', borderBottom: '1px solid #f1f5f9', color: '#334155', fontSize: '15px' },
 
-  rateTag: { backgroundColor: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', padding: '2px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: '700' },
-  rateTagWarn: { backgroundColor: '#fff7ed', color: '#c2410c', border: '1px solid #ffedd5', padding: '2px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: '700' },
+  btnPrimary: { backgroundColor: '#b45309', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '8px', cursor: 'pointer', fontSize: '15px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '6px' },
+  btnSecondary: { backgroundColor: '#2563eb', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '8px', cursor: 'pointer', fontSize: '15px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '6px' },
+  btnSuccess: { backgroundColor: '#16a34a', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '8px', cursor: 'pointer', fontSize: '15px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '6px' },
+  btnReset: { backgroundColor: '#64748b', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '8px', cursor: 'pointer', fontSize: '15px', fontWeight: '700' },
+  btnAdd: { backgroundColor: '#0284c7', color: 'white', border: 'none', padding: '6px 14px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '4px' },
+  btnDelete: { backgroundColor: '#ef4444', color: 'white', border: 'none', padding: '6px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '700' },
 
-  warnBanner: { backgroundColor: '#fff7ed', border: '1px solid #fdba74', color: '#9a3412', padding: '12px', borderRadius: '8px', marginBottom: '16px', fontSize: '12px', fontWeight: '600' },
-  noteBox: { backgroundColor: '#f0fdfa', border: '1px solid #99f6e4', padding: '12px', borderRadius: '8px', fontSize: '12px', color: '#0f766e', marginBottom: '14px' }
+  warnBanner: { backgroundColor: '#fff1f2', border: '1px solid #fecdd3', color: '#9f1239', padding: '14px', borderRadius: '10px', fontSize: '14px', fontWeight: '600', marginBottom: '16px' }
 };
 
 const formatCurrency = (val: number | null | undefined): string => {
-  if (val === null || val === undefined || isNaN(val)) return "Rate Unavailable in Admin Master";
+  if (val === null || val === undefined || isNaN(val) || val <= 0) return "Master Mapping Required / Approved Rate Unavailable";
   return `₹${val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
-const formatNumber = (val: number | null | undefined, decimals = 2): string => {
-  if (val === null || val === undefined || isNaN(val)) return "0";
-  return val.toLocaleString('en-IN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
-};
+export interface BrickWallRow {
+  id: string;
+  name: string;
+  length: number;
+  height: number;
+  thicknessIn: number;
+  masonryType: string;
+  nos: number;
+}
 
-// Block & Brick Specifications (Dimensions in Inches)
-const BLOCK_SPECS: Record<string, { length: number; height: number; width: number; category: string }> = {
-  'Clay Brick (4.5" Wall)': { length: 9, height: 3, width: 4.5, category: 'Brick' },
-  'Clay Brick (9" Wall)': { length: 9, height: 3, width: 9.0, category: 'Brick' },
-  'Concrete Block (4")': { length: 16, height: 8, width: 4.0, category: 'Concrete Block' },
-  'Concrete Block (6")': { length: 16, height: 8, width: 6.0, category: 'Concrete Block' },
-  'Concrete Block (8")': { length: 16, height: 8, width: 8.0, category: 'Concrete Block' },
-  'AAC Block (4")': { length: 24, height: 8, width: 4.0, category: 'AAC Block' },
-  'AAC Block (6")': { length: 24, height: 8, width: 6.0, category: 'AAC Block' },
-  'AAC Block (8")': { length: 24, height: 8, width: 8.0, category: 'AAC Block' }
-};
+export interface BrickDeductionRow {
+  id: string;
+  name: string;
+  height: number;
+  width: number;
+  thicknessIn: number;
+  nos: number;
+}
 
-export default function BrickWorkCalculator() {
+export default function BrickWorkCalculatorPage() {
   const router = useRouter();
   const { checkAndRun } = usePaymentBarrier();
 
@@ -99,986 +234,640 @@ export default function BrickWorkCalculator() {
     syncApprovedRatesFromBackend();
   }, []);
 
-  // Mode: 'quick' vs 'detailed'
   const [calcMode, setCalcMode] = useState<'quick' | 'detailed'>('quick');
+  const [isInputModified, setIsInputModified] = useState<boolean>(false);
+  const [isCalculatedBlue, setIsCalculatedBlue] = useState<boolean>(false);
 
-  // QUICK CALCULATION INPUTS
-  const initialQuickInputs = {
-    inputType: 'Plot Dimensions (L x W x Floors)',
-    plotLength: 30, // ft
-    plotWidth: 40,  // ft
-    floors: 2,      // floors
-    directWallArea: 1000,
-    internalWallSize: '4.5" Partition Wall', // 4.5" Partition Wall | 6" Block Wall | 8" Block Wall
-    mortarThicknessMm: 10, // 10mm, 12mm, 15mm, 4mm
-    blockType: 'Clay Brick (4.5" Wall)',
-    mortarRatio: '1:6',
-    wastagePct: 3
-  };
-  const [quickInputs, setQuickInputs] = useState(initialQuickInputs);
+  // Quick Mode Inputs
+  const [totalArea, setTotalArea] = useState(1000);
+  const [masonryType, setMasonryType] = useState('Clay Brick (9" Wall)');
+  const [mortarRatio, setMortarRatio] = useState('1:6');
+  const [wastagePct, setWastagePct] = useState(5);
 
-  // DETAILED WALL-WISE INPUTS
-  const initialDetailedInputs = {
-    wallNos: 4,
-    length: 10,
-    height: 10,
-    wallThicknessInches: 4.5, // 4.5", 6", 8", 9"
-    mortarThicknessMm: 10, // 10mm, 12mm
-    blockType: 'Clay Brick (4.5" Wall)',
-    mortarRatio: '1:6',
-    wastagePct: 3
-  };
-  const [detailedInputs, setDetailedInputs] = useState(initialDetailedInputs);
-
-  // Auto Sync Block Type when Wall Thickness changes
-  const syncBlockTypeWithThickness = (thicknessInches: number, currentType: string) => {
-    if (thicknessInches === 4.5 || thicknessInches === 4) {
-      if (currentType.includes("AAC")) return 'AAC Block (4")';
-      if (currentType.includes("Concrete")) return 'Concrete Block (4")';
-      return 'Clay Brick (4.5" Wall)';
-    } else if (thicknessInches === 6) {
-      if (currentType.includes("AAC")) return 'AAC Block (6")';
-      if (currentType.includes("Brick")) return 'Clay Brick (4.5" Wall)';
-      return 'Concrete Block (6")';
-    } else if (thicknessInches === 8 || thicknessInches === 9) {
-      if (currentType.includes("AAC")) return 'AAC Block (8")';
-      if (currentType.includes("Concrete")) return 'Concrete Block (8")';
-      return 'Clay Brick (9" Wall)';
-    }
-    return currentType;
-  };
-
-  // Openings for Detailed Mode
-  const [openings, setOpenings] = useState<any[]>([
-    { name: "Door", length: 3.5, width: 7, nos: 1, area: 24.5 },
-    { name: "Window", length: 4, width: 5, nos: 2, area: 40 }
+  // Detailed Mode Inputs
+  const [wallRows, setWallRows] = useState<BrickWallRow[]>([
+    { id: 'bw1', name: 'External Outer Wall (9")', length: 40, height: 10, thicknessIn: 9, masonryType: 'Clay Brick (9" Wall)', nos: 2 },
+    { id: 'bw2', name: 'Internal Partition Wall (4.5")', length: 30, height: 10, thicknessIn: 4.5, masonryType: 'Clay Brick (4.5" Wall)', nos: 2 }
   ]);
-  const [openingInput, setOpeningInput] = useState({ name: 'Door', length: 3.5, width: 7, nos: 1 });
 
-  // Admin Rate (₹)s Lookup
-  const clayBrickRate = getMasterRate(["MAT-BRK-01", "clay brick", "brick"], 7.50);
-  const concreteBlockRate = getMasterRate(["MAT-BLK-01", "concrete block", "solid block"], 45);
-  const aacBlockRate = getMasterRate(["MAT-AAC-01", "aac block", "aac"], 75);
-  const cementRate = getMasterRate(["MAT-CEM-01", "cement", "opc 53", "opc"], 385);
-  const sandRate = getMasterRate(["MAT-MSND-01", "m-sand", "sand"], 46);
-  const waterRate = getMasterRate(["MAT-WTR-01", "construction water", "water"], 0.05); // ₹0.05 / Ltr
-  const labourRate = getMasterRate(["SRV-BRK-LAY", "brickwork labour", "masonry labour"], 12);
+  const [deductionRows, setDeductionRows] = useState<BrickDeductionRow[]>([
+    { id: 'bd1', name: 'Main Door & Doors', height: 7, width: 3, thicknessIn: 9, nos: 4 },
+    { id: 'bd2', name: 'Windows & Ventilators', height: 4, width: 4, thicknessIn: 9, nos: 4 }
+  ]);
 
-  const getBlockRateObj = (type: string): MasterRateResult => {
+  const handleAddWallRow = () => {
+    setWallRows(prev => [...prev, { id: `bw_${Date.now()}`, name: `Wall ${prev.length + 1}`, length: 20, height: 10, thicknessIn: 9, masonryType: 'Clay Brick (9" Wall)', nos: 1 }]);
+    setIsInputModified(true);
+  };
+
+  const handleUpdateWallRow = (id: string, field: keyof BrickWallRow, value: any) => {
+    setWallRows(prev => prev.map(r => r.id === id ? { ...r, [field]: value } : r));
+    setIsInputModified(true);
+  };
+
+  const handleDeleteWallRow = (id: string) => {
+    setWallRows(prev => prev.filter(r => r.id !== id));
+    setIsInputModified(true);
+  };
+
+  const handleAddDeductionRow = () => {
+    setDeductionRows(prev => [...prev, { id: `bd_${Date.now()}`, name: 'Door / Window', height: 4, width: 3, thicknessIn: 9, nos: 1 }]);
+    setIsInputModified(true);
+  };
+
+  const handleUpdateDeductionRow = (id: string, field: keyof BrickDeductionRow, value: any) => {
+    setDeductionRows(prev => prev.map(r => r.id === id ? { ...r, [field]: value } : r));
+    setIsInputModified(true);
+  };
+
+  const handleDeleteDeductionRow = (id: string) => {
+    setDeductionRows(prev => prev.filter(r => r.id !== id));
+    setIsInputModified(true);
+  };
+
+  // Authoritative Admin Rate Master Lookups (0 fallback)
+  const clayBrickRate = getMasterRate(["MAT-BRK-01", "clay brick", "red brick"], 0);
+  const concreteBlock4Rate = getMasterRate(["MAT-BLK-04", "solid block 4", "concrete block"], 0);
+  const concreteBlock6Rate = getMasterRate(["MAT-BLK-06", "solid block 6", "concrete block"], 0);
+  const aacBlockRate = getMasterRate(["MAT-AAC-01", "aac block", "lightweight block"], 0);
+
+  const cementRate = getMasterRate(["MAT-CEM-01", "cement", "opc 53"], 0);
+  const sandRate = getMasterRate(["MAT-MSND-01", "m-sand", "sand"], 0);
+  const labourRate = getMasterRate(["SRV-MAS-LAY", "brickwork labour", "masonry labour"], 0);
+
+  const getMasonryRateObj = (type: string): MasterRateResult => {
+    if (type.includes("Clay")) return clayBrickRate;
     if (type.includes("AAC")) return aacBlockRate;
-    if (type.includes("Concrete") || type.includes("Solid")) return concreteBlockRate;
-    return clayBrickRate;
+    if (type.includes("4\"")) return concreteBlock4Rate;
+    return concreteBlock6Rate;
   };
 
-  const handleAddOpening = () => {
-    if (openingInput.length > 0 && openingInput.width > 0 && openingInput.nos > 0) {
-      const area = openingInput.length * openingInput.width * openingInput.nos;
-      setOpenings([...openings, { ...openingInput, area, id: Date.now() }]);
-    }
-  };
+  // Calculations Engine
+  const calcResults = useMemo(() => {
+    if (calcMode === 'quick') {
+      const spec = BLOCK_SPECS[masonryType] || BLOCK_SPECS['Clay Brick (9" Wall)'];
+      const areaSqft = Math.max(0, totalArea);
 
-  const handleRemoveOpening = (index: number) => {
-    const next = [...openings];
-    next.splice(index, 1);
-    setOpenings(next);
-  };
+      // Volume in CUM
+      const thicknessFt = spec.wMm / 304.8;
+      const volCum = (areaSqft * thicknessFt) / 35.3147;
 
-  const handleResetQuick = () => setQuickInputs(initialQuickInputs);
-  const handleResetDetailed = () => {
-    setDetailedInputs(initialDetailedInputs);
-    setOpenings([
-      { name: "Door", length: 3.5, width: 7, nos: 1, area: 24.5 },
-      { name: "Window", length: 4, width: 5, nos: 2, area: 40 }
-    ]);
-  };
+      // Unit Block Volume with 10mm Mortar Joint
+      const blockVolWithMortarM3 = ((spec.lMm + 10) / 1000) * ((spec.hMm + 10) / 1000) * (spec.wMm / 1000);
+      const netUnits = Math.ceil(volCum / blockVolWithMortarM3);
+      const grossUnits = Math.ceil(netUnits * (1 + wastagePct / 100));
 
-  // IS Code Volumetric Masonry & Mortar Calculation Engine (IS 2212 / IS 2185 / IS 1077)
-  const calculateMasonry = (netWallArea: number, wallThicknessInches: number, mortarThickMm: number, blockTypeKey: string, mortarRatio: string, wastagePct: number) => {
-    const spec = BLOCK_SPECS[blockTypeKey] || BLOCK_SPECS['Clay Brick (4.5" Wall)'];
-    const wallThicknessFt = wallThicknessInches / 12;
-    const wastageFactor = 1 + (wastagePct / 100);
+      // Mortar Calculations
+      const dryMortarVolCum = volCum * 0.25 * 1.25; // 25% wet mortar + 25% dry expansion
+      const parts = mortarRatio.split(':').map(Number);
+      const cementPart = parts[0] || 1;
+      const sandPart = parts[1] || 6;
 
-    // Total Masonry Volume
-    const masonryVolCft = netWallArea * wallThicknessFt;
-    const masonryVolCum = masonryVolCft / 35.3147;
+      const cementBags = Math.ceil(((dryMortarVolCum * cementPart) / (cementPart + sandPart) * 1440) / 50);
+      const sandCft = Math.round(((dryMortarVolCum * sandPart) / (cementPart + sandPart)) * 35.3147);
 
-    const activeBlockRate = getBlockRateObj(blockTypeKey);
+      const masonryRateObj = getMasonryRateObj(masonryType);
 
-    let blockL = spec.length * 0.0254; // meters
-    let blockH = spec.height * 0.0254;
-    let blockW = wallThicknessInches * 0.0254;
+      const items = [
+        {
+          code: masonryRateObj.itemCode || "MAT-BRK-01",
+          category: "Masonry Units",
+          name: `Masonry Blocks / Bricks (${spec.label})`,
+          uom: "NOS",
+          qty: grossUnits,
+          rateObj: masonryRateObj
+        },
+        {
+          code: cementRate.itemCode || "MAT-CEM-01",
+          category: "Mortar Material",
+          name: `Cement (OPC 53 Grade - ${mortarRatio} Masonry Mortar)`,
+          uom: "BAG",
+          qty: cementBags,
+          rateObj: cementRate
+        },
+        {
+          code: sandRate.itemCode || "MAT-MSND-01",
+          category: "Mortar Material",
+          name: "M-Sand (Masonry Course Sand)",
+          uom: "CFT",
+          qty: sandCft,
+          rateObj: sandRate
+        },
+        {
+          code: labourRate.itemCode || "SRV-MAS-LAY",
+          category: "Labour Services",
+          name: "Brickwork / Blockwork Construction Labour",
+          uom: "CUM",
+          qty: Number(volCum.toFixed(2)),
+          rateObj: labourRate
+        }
+      ];
 
-    const mortarThickM = mortarThickMm / 1000;
+      let totalMaterialCost = 0;
+      let totalLabourCost = 0;
 
-    // Nominal Block Dimensions with Mortar Joint
-    const nominalL = blockL + mortarThickM;
-    const nominalH = blockH + mortarThickM;
-    const nominalW = blockW + mortarThickM;
+      const processedItems = items.map(it => {
+        const isFound = it.rateObj.found && Number(it.rateObj.rate) > 0;
+        const rateVal = isFound ? Number(it.rateObj.rate) : 0;
+        const amountVal = isFound ? it.qty * rateVal : 0;
 
-    // Nominal Block Volume
-    const nominalVolCum = nominalL * nominalH * nominalW;
+        if (it.category.includes("Labour")) {
+          totalLabourCost += amountVal;
+        } else {
+          totalMaterialCost += amountVal;
+        }
 
-    // Nominal Block Count
-    const nominalBlocksTotal = nominalVolCum > 0 ? (masonryVolCum / nominalVolCum) : 0;
-    const totalBlocks = Math.ceil(nominalBlocksTotal * wastageFactor);
-
-    // Single Block Net Volume without Mortar
-    const singleBlockNetVolCum = blockL * blockH * blockW;
-    const totalBlocksNetVolCum = nominalBlocksTotal * singleBlockNetVolCum;
-
-    // Wet Volume of Mortar
-    const wetMortarVolCum = Math.max(0, masonryVolCum - totalBlocksNetVolCum);
-    // Mortar dry volume factor = 1.33 (30-35% dry shrinkage + joint filling allowance)
-    const dryMortarVolCum = wetMortarVolCum * 1.33;
-
-    const [cemPart, sandPart] = mortarRatio.split(":").map(Number);
-    const totalParts = cemPart + sandPart;
-
-    const cemVolCum = dryMortarVolCum * (cemPart / totalParts);
-    const cemBags = ((cemVolCum * 1440) / 50) * wastageFactor; // 50kg Bags OPC 53
-    const sandCft = (cemVolCum * sandPart * 35.3147) * wastageFactor;
-    const waterLtr = cemBags * 28; // ~28 Ltr per bag
-
-    let unpricedCount = 0;
-    const unpricedList: string[] = [];
-
-    if (!activeBlockRate.found) { unpricedCount++; unpricedList.push(blockTypeKey); }
-    if (!cementRate.found) { unpricedCount++; unpricedList.push("Cement (OPC 53)"); }
-    if (!sandRate.found) { unpricedCount++; unpricedList.push("M-Sand"); }
-    if (!waterRate.found) { unpricedCount++; unpricedList.push("Site Water"); }
-    if (!labourRate.found) { unpricedCount++; unpricedList.push("Brickwork Labour"); }
-
-    const blockCost = totalBlocks * (activeBlockRate.found ? activeBlockRate.rate : 0);
-    const cemCost = cemBags * (cementRate.found ? cementRate.rate : 0);
-    const sandCost = sandCft * (sandRate.found ? sandRate.rate : 0);
-    const waterCost = waterLtr * (waterRate.found ? waterRate.rate : 0);
-    const labourCost = netWallArea * (labourRate.found ? labourRate.rate : 0);
-
-    const grandMatCost = blockCost + cemCost + sandCost + waterCost;
-    const grandTotal = grandMatCost + labourCost;
-    const costPerSqft = netWallArea > 0 ? grandTotal / netWallArea : 0;
-
-    const resultItems: any[] = [
-      {
-        code: activeBlockRate.itemCode || "MAT-BRK-01",
-        category: "Material",
-        description: `${blockTypeKey} (${spec.length}"x${spec.height}"x${wallThicknessInches}")`,
-        unit: "NOS",
-        engQty: totalBlocks / wastageFactor,
-        procQty: totalBlocks,
-        rate: activeBlockRate.rate,
-        rateFound: activeBlockRate.found,
-        amount: blockCost
-      },
-      {
-        code: cementRate.itemCode || "MAT-CEM-01",
-        category: "Material",
-        description: `Cement (OPC 53 Grade 50kg Bags)`,
-        unit: "BAG",
-        engQty: (cemVolCum * 1440) / 50,
-        procQty: Math.ceil(cemBags),
-        rate: cementRate.rate,
-        rateFound: cementRate.found,
-        amount: cemCost
-      },
-      {
-        code: sandRate.itemCode || "MAT-MSND-01",
-        category: "Material",
-        description: `Mortar M-Sand / Fine Sand (${mortarThickMm}mm Mortar Joint)`,
-        unit: "CFT",
-        engQty: (cemVolCum * sandPart * 35.3147),
-        procQty: Math.ceil(sandCft),
-        rate: sandRate.rate,
-        rateFound: sandRate.found,
-        amount: sandCost
-      },
-      {
-        code: waterRate.itemCode || "MAT-WTR-01",
-        category: "Site Utility",
-        description: `Construction Water Supply`,
-        unit: "LTR",
-        engQty: waterLtr,
-        procQty: Math.ceil(waterLtr),
-        rate: waterRate.rate,
-        rateFound: waterRate.found,
-        amount: waterCost
-      },
-      {
-        code: labourRate.itemCode || "SRV-BRK-LAY",
-        category: "Labour",
-        description: `Brickwork / Blockwork Masonry Labour (${wallThicknessInches}" Wall)`,
-        unit: "SQFT",
-        engQty: netWallArea,
-        procQty: netWallArea,
-        rate: labourRate.rate,
-        rateFound: labourRate.found,
-        amount: labourCost
-      }
-    ];
-
-    return {
-      netWallArea,
-      masonryVolCft,
-      totalBlocks,
-      cemBags,
-      sandCft,
-      waterLtr,
-      grandMatCost,
-      grandLabCost: labourCost,
-      grandTotal,
-      costPerSqft,
-      resultItems,
-      unpricedCount,
-      unpricedList
-    };
-  };
-
-  // 1. QUICK CALCULATION ENGINE (Plot Size L x W x Floors BUA + Wall Size Sync)
-  const quickCalcResults = useMemo(() => {
-    const q = quickInputs;
-    let netWallArea = 0;
-    let builtUpArea = 0;
-
-    if (q.inputType === 'Plot Dimensions (L x W x Floors)') {
-      const plotArea = q.plotLength * q.plotWidth;
-      builtUpArea = plotArea * q.floors;
-      // Civil Engineering Thumb Rule: Total Masonry Surface Area = BUA x 1.4 Sqft
-      netWallArea = builtUpArea * 1.4;
-    } else {
-      netWallArea = q.directWallArea;
-      builtUpArea = netWallArea / 1.4;
-    }
-
-    const wallThickness = q.internalWallSize.includes("4.5") ? 4.5 : q.internalWallSize.includes("6") ? 6 : 8;
-    const res = calculateMasonry(netWallArea, wallThickness, q.mortarThicknessMm, q.blockType, q.mortarRatio, q.wastagePct);
-
-    return {
-      ...res,
-      builtUpArea,
-      plotArea: q.plotLength * q.plotWidth
-    };
-  }, [quickInputs, clayBrickRate, concreteBlockRate, aacBlockRate, cementRate, sandRate, waterRate, labourRate]);
-
-  // 2. DETAILED WALL-WISE CALCULATION ENGINE
-  const detailedCalcResults = useMemo(() => {
-    const d = detailedInputs;
-    const grossWallArea = d.wallNos * d.length * d.height;
-
-    let openingArea = 0;
-    openings.forEach(o => {
-      openingArea += (o.length * o.width * o.nos);
-    });
-
-    const netWallArea = Math.max(0, grossWallArea - openingArea);
-    const res = calculateMasonry(netWallArea, d.wallThicknessInches, d.mortarThicknessMm, d.blockType, d.mortarRatio, d.wastagePct);
-
-    return {
-      ...res,
-      grossWallArea,
-      openingArea
-    };
-  }, [detailedInputs, openings, clayBrickRate, concreteBlockRate, aacBlockRate, cementRate, sandRate, waterRate, labourRate]);
-
-  // Export PDF BuildMitra Letterhead
-  const handleExportPDF = () => {
-    checkAndRun('calculator_export', 'brick-work-calculator', () => {
-      const res = calcMode === 'quick' ? quickCalcResults : detailedCalcResults;
-      downloadBuildMitraPDF({
-        documentTitle: `BRICK & BLOCK MASONRY BOQ REPORT (${calcMode.toUpperCase()})`,
-        documentNo: `BM-BRK-${Date.now().toString().slice(-6)}`,
-        date: new Date().toISOString().split('T')[0],
-        projectName: "Masonry Construction",
-        buyerName: "Client / Buyer",
-        contractorName: "BuildMitra Masonry Division",
-        items: res.resultItems.map((item: any, idx: number) => ({
-          sno: idx + 1,
-          itemCode: item.code,
-          category: item.category,
-          description: item.description,
-          quantity: item.procQty,
-          unit: item.unit,
-          rate: item.rateFound ? item.rate : 0,
-          amount: item.amount
-        })),
-        notes: `Net Wall Area: ${formatNumber(res.netWallArea)} Sqft | Masonry Vol: ${formatNumber(res.masonryVolCft)} CFT | Total Blocks: ${formatNumber(res.totalBlocks, 0)} Nos`
+        return { ...it, isFound, rateVal, amountVal };
       });
-    });
+
+      const grandTotalCost = totalMaterialCost + totalLabourCost;
+
+      return {
+        grossArea: areaSqft,
+        netArea: areaSqft,
+        grossVolCum: Number(volCum.toFixed(2)),
+        netVolCum: Number(volCum.toFixed(2)),
+        grossUnits,
+        cementBags,
+        sandCft,
+        totalMaterialCost,
+        totalLabourCost,
+        grandTotalCost,
+        items: processedItems,
+        missingItems: processedItems.filter(it => !it.isFound)
+      };
+    } else {
+      // Detailed Mode Calculations
+      let grossWallAreaSqft = 0;
+      let grossVolCumTotal = 0;
+      let totalUnitsGross = 0;
+
+      wallRows.forEach(row => {
+        const areaSqft = row.length * row.height * row.nos;
+        const volCum = (areaSqft * (row.thicknessIn / 12)) / 35.3147;
+        grossWallAreaSqft += areaSqft;
+        grossVolCumTotal += volCum;
+
+        const spec = BLOCK_SPECS[row.masonryType] || BLOCK_SPECS['Clay Brick (9" Wall)'];
+        const blockVolM3 = ((spec.lMm + 10) / 1000) * ((spec.hMm + 10) / 1000) * (spec.wMm / 1000);
+        const units = Math.ceil(volCum / blockVolM3);
+        totalUnitsGross += Math.ceil(units * 1.05); // 5% wastage
+      });
+
+      let deductionAreaSqft = 0;
+      let deductionVolCumTotal = 0;
+
+      deductionRows.forEach(row => {
+        const areaSqft = row.height * row.width * row.nos;
+        const volCum = (areaSqft * (row.thicknessIn / 12)) / 35.3147;
+        deductionAreaSqft += areaSqft;
+        deductionVolCumTotal += volCum;
+      });
+
+      const netAreaSqft = Math.max(0, grossWallAreaSqft - deductionAreaSqft);
+      const netVolCum = Math.max(0, grossVolCumTotal - deductionVolCumTotal);
+
+      // Mortar Requirements
+      const dryMortarVolCum = netVolCum * 0.25 * 1.25;
+      const cementBags = Math.ceil(((dryMortarVolCum * 1) / 7 * 1440) / 50); // 1:6 ratio
+      const sandCft = Math.round(((dryMortarVolCum * 6) / 7) * 35.3147);
+
+      const activeMasonryRateObj = clayBrickRate;
+
+      const items = [
+        {
+          code: activeMasonryRateObj.itemCode || "MAT-BRK-01",
+          category: "Masonry Units",
+          name: "Clay Bricks / Solid Concrete Blocks (Assorted Walls)",
+          uom: "NOS",
+          qty: totalUnitsGross,
+          rateObj: activeMasonryRateObj
+        },
+        {
+          code: cementRate.itemCode || "MAT-CEM-01",
+          category: "Mortar Material",
+          name: "Cement (OPC 53 Grade - Masonry Mortar)",
+          uom: "BAG",
+          qty: cementBags,
+          rateObj: cementRate
+        },
+        {
+          code: sandRate.itemCode || "MAT-MSND-01",
+          category: "Mortar Material",
+          name: "M-Sand (Fine Sand)",
+          uom: "CFT",
+          qty: sandCft,
+          rateObj: sandRate
+        },
+        {
+          code: labourRate.itemCode || "SRV-MAS-LAY",
+          category: "Labour Services",
+          name: "Brickwork / Blockwork Masonry Labour",
+          uom: "CUM",
+          qty: Number(netVolCum.toFixed(2)),
+          rateObj: labourRate
+        }
+      ];
+
+      let totalMaterialCost = 0;
+      let totalLabourCost = 0;
+
+      const processedItems = items.map(it => {
+        const isFound = it.rateObj.found && Number(it.rateObj.rate) > 0;
+        const rateVal = isFound ? Number(it.rateObj.rate) : 0;
+        const amountVal = isFound ? it.qty * rateVal : 0;
+
+        if (it.category.includes("Labour")) {
+          totalLabourCost += amountVal;
+        } else {
+          totalMaterialCost += amountVal;
+        }
+
+        return { ...it, isFound, rateVal, amountVal };
+      });
+
+      const grandTotalCost = totalMaterialCost + totalLabourCost;
+
+      return {
+        grossArea: Math.round(grossWallAreaSqft),
+        netArea: Math.round(netAreaSqft),
+        grossVolCum: Number(grossVolCumTotal.toFixed(2)),
+        netVolCum: Number(netVolCum.toFixed(2)),
+        grossUnits: totalUnitsGross,
+        cementBags,
+        sandCft,
+        totalMaterialCost,
+        totalLabourCost,
+        grandTotalCost,
+        items: processedItems,
+        missingItems: processedItems.filter(it => !it.isFound)
+      };
+    }
+  }, [calcMode, totalArea, masonryType, mortarRatio, wastagePct, wallRows, deductionRows, clayBrickRate, concreteBlock4Rate, concreteBlock6Rate, aacBlockRate, cementRate, sandRate, labourRate]);
+
+  const handleCalculate = () => {
+    setIsInputModified(false);
+    setIsCalculatedBlue(true);
+    setTimeout(() => setIsCalculatedBlue(false), 2000);
   };
 
-  // Export Excel
   const handleExportExcel = () => {
-    checkAndRun('calculator_export', 'brick-work-calculator', () => {
-      const items = calcMode === 'quick' ? quickCalcResults.resultItems : detailedCalcResults.resultItems;
-      const data = items.map(item => ({
-        "Master Item Code": item.code,
-        "Category": item.category,
-        "Description": item.description,
-        "Unit": item.unit,
-        "Engineering Qty": item.engQty,
-        "Procurement Qty": item.procQty,
-        "Approved Rate (₹)": item.rateFound ? item.rate : "Rate Unavailable in Admin Master",
-        "Amount (₹)": item.rateFound ? item.amount : 0
-      }));
+    checkAndRun("brickwork_calc_export", "BRICKWORK-CALC", () => {
+      const data = [
+        ["BUILDMITRA BRICKWORK & MASONRY ESTIMATION REPORT"],
+        ["Generated Date", new Date().toLocaleDateString('en-IN')],
+        ["Calculation Mode", calcMode.toUpperCase()],
+        ["Net Masonry Volume", `${calcResults.netVolCum} CUM`],
+        ["Bricks / Blocks Required", `${calcResults.grossUnits} Nos`],
+        ["Cement Bags Required", `${calcResults.cementBags} Bags`],
+        ["GRAND TOTAL ESTIMATED COST", formatCurrency(calcResults.grandTotalCost)],
+        [],
+        ["ITEMIZED BRICKWORK BOQ"],
+        ["Master Code", "Category", "Description", "Quantity", "UOM", "Approved Rate (₹)", "Total Amount (₹)"],
+        ...calcResults.items.map(it => [
+          it.code,
+          it.category,
+          it.name,
+          it.qty,
+          it.uom,
+          it.isFound ? it.rateVal : "Master Mapping Required / Approved Rate Unavailable",
+          it.isFound ? it.amountVal : "—"
+        ])
+      ];
 
-      const ws = XLSX.utils.json_to_sheet(data);
+      const ws = XLSX.utils.aoa_to_sheet(data);
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Brickwork Estimation Results");
-      XLSX.writeFile(wb, `BuildMitra_Brickwork_Calculator_${calcMode}.xlsx`);
+      XLSX.utils.book_append_sheet(wb, ws, "Brickwork_BOQ");
+      XLSX.writeFile(wb, `BuildMitra_Brickwork_BOQ_${Date.now()}.xlsx`);
     });
   };
 
-  // Share WhatsApp
-  const handleShareWhatsApp = () => {
-    checkAndRun('calculator_export', 'brick-work-calculator', () => {
-      const res = calcMode === 'quick' ? quickCalcResults : detailedCalcResults;
-      const msg = `🏗️ *BUILDMITRA INFRA — MASONRY BOQ REPORT*\nNo:378, Near Gurusidheswra theater, 80 ft Road, JP Nagar, 4th Block, 9th Phase, Bengaluru- 560062 | 📱 +91 76769 42386\n\n*MODE*: ${calcMode === 'quick' ? 'Quick Plot Area' : 'Detailed Wall-Wise'}\n• *Net Wall Area*: ${formatNumber(res.netWallArea)} Sqft\n• *Masonry Volume*: ${formatNumber(res.masonryVolCft)} CFT\n• *Bricks / Blocks*: ${formatNumber(res.totalBlocks, 0)} Nos\n• *Cement (Bags)*: ${formatNumber(res.cemBags, 1)} Bags\n• *Estimated Cost*: ${formatCurrency(res.grandTotal)}\n\n*BOQ ITEM BREAKDOWN*\n${res.resultItems.map((it: any, i: number) => `${i+1}. [${it.code}] ${it.description} — ${it.procQty} ${it.unit} @ ₹${it.rate} = ₹${it.amount}`).join('\n')}\n\nGenerated via BuildMitra Construction Suite.`;
-      window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+  const handleExportPDF = () => {
+    checkAndRun("brickwork_calc_export", "BRICKWORK-CALC", () => {
+      const headers = ["Master Code", "Category", "Description", "Qty", "UOM", "Rate (₹)", "Amount (₹)"];
+      const rows = calcResults.items.map(it => [
+        it.code,
+        it.category,
+        it.name,
+        String(it.qty),
+        it.uom,
+        it.isFound ? formatCurrency(it.rateVal) : "Rate Pending Admin Update",
+        it.isFound ? formatCurrency(it.amountVal) : "—"
+      ]);
+
+      downloadBuildMitraPDF(
+        `BuildMitra – Brickwork Estimation Report (${calcMode.toUpperCase()})`,
+        [
+          ["Mode:", calcMode.toUpperCase()],
+          ["Gross Masonry Volume:", `${calcResults.grossVolCum} CUM`],
+          ["Net Masonry Volume:", `${calcResults.netVolCum} CUM`],
+          ["Bricks / Blocks Required:", `${calcResults.grossUnits} Nos`],
+          ["Cement Bags Required:", `${calcResults.cementBags} Bags`],
+          ["GRAND TOTAL ESTIMATED COST:", formatCurrency(calcResults.grandTotalCost)]
+        ],
+        headers,
+        rows,
+        `BuildMitra_Brickwork_BOQ_${Date.now()}.pdf`
+      );
     });
   };
 
   return (
-    <div style={styles.container}>
-            <div className="engineering-top-layout">
-        <div className="engineering-top-left">
-{/* 1. Header */}
-      <div style={styles.header}>
-        <div>
-          <button style={styles.backBtn} onClick={() => router.push('/calculators')}>← Back to Calculators</button>
+    <>
+      <Head>
+        <title>Brickwork Calculator | BuildMitra</title>
+      </Head>
+
+      <div style={styles.container}>
+        {/* Header */}
+        <div style={styles.header}>
+          <div>
+            <span style={styles.badge}>MASONRY &amp; CIVIL ENGINE</span>
+            <h1 style={styles.headerTitle}>🧱 BuildMitra – Brick Work &amp; Block Estimator</h1>
+          </div>
+          <button style={styles.backBtn} onClick={() => router.push("/contractor-dashboard")}>← Back to Dashboard</button>
         </div>
-        <h1 style={styles.headerTitle}>
-          Block/Brick Work Calculator
-          <span className="bm-calc-mobile-technical-badge" style={styles.badge}>IS 2212 / IS 2185 Compliant</span>
-        </h1>
-        <div>
-          <span style={{ fontSize: '11px', color: '#e0f2fe' }}>BuildMitra Professional Edition</span>
+
+        <MarketRateTrend />
+
+        {/* Mode Switcher */}
+        <div style={styles.modeToggleContainer}>
+          <button
+            onClick={() => setCalcMode('quick')}
+            style={{
+              ...styles.modeToggleBtn,
+              backgroundColor: calcMode === 'quick' ? '#b45309' : '#ffffff',
+              color: calcMode === 'quick' ? '#ffffff' : '#475569',
+              border: calcMode === 'quick' ? '2px solid #b45309' : '1px solid #cbd5e1'
+            }}
+          >
+            ⚡ Quick Brickwork Calculator
+          </button>
+          <button
+            onClick={() => setCalcMode('detailed')}
+            style={{
+              ...styles.modeToggleBtn,
+              backgroundColor: calcMode === 'detailed' ? '#b45309' : '#ffffff',
+              color: calcMode === 'detailed' ? '#ffffff' : '#475569',
+              border: calcMode === 'detailed' ? '2px solid #b45309' : '1px solid #cbd5e1'
+            }}
+          >
+            📐 Detailed Wall &amp; Opening Calculator
+          </button>
         </div>
-      </div>
 
-      {/* 2. Single Live Market Rate Ticker */}
-      <MarketRateTrend />
-
-      {/* 3. Estimation Method Dropdown Selector */}
-      <div style={styles.dropdownCard}>
-        <label style={styles.dropdownLabel}>Select Estimation Method</label>
-        <select
-          style={styles.modeSelect}
-          value={calcMode}
-          onChange={(e) => setCalcMode(e.target.value as 'quick' | 'detailed')}
-        >
-          <option value="quick">Quick Calculation (Estimate from Plot Dimensions L x W x Floors BUA)</option>
-          <option value="detailed">Detailed Wall-Wise Calculation (Exact Room Dimensions & Openings)</option>
-        </select>
-      </div>
-        </div>
-        <div className="engineering-specimen-top">
-      <EngineeringSpecimen kind="masonry" title="Dynamic Brick / Block Specimen" material={calcMode === 'quick' ? quickInputs.blockType : detailedInputs.blockType} data={calcMode === 'quick' ? { length: quickInputs.plotLength, heightFt: 10, wallThicknessInches: quickInputs.internalWallSize.includes('4.5') ? 4.5 : quickInputs.internalWallSize.includes('6') ? 6 : 8, mortarThicknessMm: quickInputs.mortarThicknessMm } : { length: detailedInputs.length, heightFt: detailedInputs.height, wallThicknessInches: detailedInputs.wallThicknessInches, mortarThicknessMm: detailedInputs.mortarThicknessMm }} />
-        </div>
-      </div>
-      <style jsx>{`
-        .engineering-top-layout {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) 118px;
-          gap: 8px;
-          align-items: start;
-          margin-bottom: 6px;
-        }
-        .engineering-top-left { min-width: 0; overflow: hidden; }
-        .engineering-specimen-top {
-          width: 150px;
-          position: sticky;
-          top: 12px;
-          align-self: start;
-          z-index: 2;
-        }
-        @media (max-width: 900px) {
-          .engineering-top-layout {
-            display: grid !important;
-            grid-template-columns: minmax(0, 1fr) 118px !important;
-            gap: 5px !important;
-            align-items: start !important;
-            margin-bottom: 5px !important;
-            position: relative !important;
-          }
-
-          .engineering-top-left {
-            min-width: 0 !important;
-            overflow: visible !important;
-          }
-
-          .engineering-specimen-top {
-            width: 118px !important;
-            min-width: 118px !important;
-            max-width: 118px !important;
-
-            height: 125px !important;
-            max-height: 125px !important;
-
-            position: relative !important;
-            top: 0 !important;
-            right: 0 !important;
-
-            margin: 0 0 0 auto !important;
-            padding: 0 !important;
-
-            overflow: hidden !important;
-            align-self: start !important;
-          }
-
-          /*
-             Preserve specimen proportions but reduce its VERTICAL
-             footprint heavily. Scaling the complete component avoids
-             the ugly wrapped "3D ISOMETRIC" text seen previously.
-          */
-          .engineering-specimen-top > * {
-            width: 185% !important;
-            max-width: 185% !important;
-
-            transform: none !important;
-            transform-origin: top right !important;
-
-            margin-left: auto !important;
-            margin-right: 0 !important;
-          }
-
-          .engineering-specimen-top img,
-          .engineering-specimen-top svg,
-          .engineering-specimen-top canvas {
-            max-width: 100% !important;
-            height: auto !important;
-          }
-        }
-      `}</style>
-
-      {/* ========================================================= */}
-      {/* 4. QUICK CALCULATION MODE */}
-      {/* ========================================================= */}
-      {calcMode === 'quick' && (
-        <>
-          <div style={styles.stepperCard}>
+        {calcMode === 'quick' ? (
+          /* QUICK MODE INPUTS */
+          <div style={styles.card}>
             <div style={styles.sectionHeader}>
-              <span>Quick Calculation (Plot Dimensions & Wall Thickness BUA Rule)</span>
+              <span>📐 Enter Wall Area &amp; Masonry Specifications</span>
             </div>
 
-            <div className="bm-calc-mobile-technical-note" style={styles.noteBox}>
-              💡 <strong>IS Code Volumetric Rule</strong>: Block count, Cement (Bags), Sand CFT, and Water Litres automatically scale with Wall Thickness (4.5", 6", 8", 9") and Mortar Joint Thickness.
-            </div>
-
-            <div style={styles.grid3}>
+            <div style={styles.gridCompact}>
               <div style={styles.fieldGroup}>
-                <label style={styles.label}>Input Calculation Method</label>
-                <select
-                  style={{ ...styles.select, border: '2px solid #0f766e', backgroundColor: '#f0fdfa', fontWeight: '700' }}
-                  value={quickInputs.inputType}
-                  onChange={e => setQuickInputs({ ...quickInputs, inputType: e.target.value })}
-                >
-                  <option value="Plot Dimensions (L x W x Floors)">Plot Dimensions (Length x Width x Floors)</option>
-                  <option value="Direct Wall Area">Direct Wall Area (Sqft)</option>
-                </select>
-              </div>
-
-              {quickInputs.inputType === 'Plot Dimensions (L x W x Floors)' ? (
-                <>
-                  <div style={styles.fieldGroup}>
-                    <label style={styles.label}>Plot Length (Ft)</label>
-                    <input
-                      type="number"
-                      style={styles.input}
-                      value={quickInputs.plotLength}
-                      onChange={e => setQuickInputs({ ...quickInputs, plotLength: parseFloat(e.target.value) || 0 })}
-                    />
-                  </div>
-
-                  <div style={styles.fieldGroup}>
-                    <label style={styles.label}>Plot Width (Ft)</label>
-                    <input
-                      type="number"
-                      style={styles.input}
-                      value={quickInputs.plotWidth}
-                      onChange={e => setQuickInputs({ ...quickInputs, plotWidth: parseFloat(e.target.value) || 0 })}
-                    />
-                  </div>
-
-                  <div style={styles.fieldGroup}>
-                    <label style={styles.label}>Number of Floors (Nos)</label>
-                    <input
-                      type="number"
-                      style={styles.input}
-                      value={quickInputs.floors}
-                      onChange={e => setQuickInputs({ ...quickInputs, floors: parseFloat(e.target.value) || 1 })}
-                    />
-                  </div>
-                </>
-              ) : (
-                <div style={styles.fieldGroup}>
-                  <label style={styles.label}>Direct Wall Area (Sqft)</label>
-                  <input
-                    type="number"
-                    style={styles.input}
-                    value={quickInputs.directWallArea}
-                    onChange={e => setQuickInputs({ ...quickInputs, directWallArea: parseFloat(e.target.value) || 0 })}
-                  />
-                </div>
-              )}
-            </div>
-
-            <div style={styles.grid4}>
-              <div style={styles.fieldGroup}>
-                <label style={styles.label}>Wall Size / Thickness</label>
-                <select
-                  style={{ ...styles.select, border: '2px solid #0f766e', fontWeight: '700' }}
-                  value={quickInputs.internalWallSize}
-                  onChange={e => {
-                    const newThickness = e.target.value.includes("4.5") ? 4.5 : e.target.value.includes("6") ? 6 : 8;
-                    const syncedBlock = syncBlockTypeWithThickness(newThickness, quickInputs.blockType);
-                    setQuickInputs({ ...quickInputs, internalWallSize: e.target.value, blockType: syncedBlock });
-                  }}
-                >
-                  <option value='4.5" Partition Wall'>4.5" Partition Wall (4" Blocks / Bricks)</option>
-                  <option value='6" Block Wall'>6" Concrete / AAC Block Wall</option>
-                  <option value='8" Main Wall'>8" / 9" Heavy Main Wall (8" Blocks / 9" Bricks)</option>
-                </select>
-              </div>
-
-              <div style={styles.fieldGroup}>
-                <label style={styles.label}>Mortar Joint Thickness (mm)</label>
-                <select
-                  style={{ ...styles.select, border: '2px solid #0f766e', fontWeight: '700' }}
-                  value={quickInputs.mortarThicknessMm}
-                  onChange={e => setQuickInputs({ ...quickInputs, mortarThicknessMm: parseInt(e.target.value) || 10 })}
-                >
-                  <option value={10}>10 mm (Standard Mortar Joint)</option>
-                  <option value={12}>12 mm (Heavy Masonry Joint)</option>
-                  <option value={15}>15 mm (Rough Stone/Brick Joint)</option>
-                  <option value={4}>4 mm (AAC Thin-Bed Jointing)</option>
-                </select>
-              </div>
-
-              <div style={styles.fieldGroup}>
-                <label style={styles.label}>Block / Brick Type</label>
-                <select
-                  style={styles.select}
-                  value={quickInputs.blockType}
-                  onChange={e => setQuickInputs({ ...quickInputs, blockType: e.target.value })}
-                >
-                  {Object.keys(BLOCK_SPECS).map(type => (
-                    <option key={type} value={type}>{type}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div style={styles.fieldGroup}>
-                <label style={styles.label}>Mortar Grade (Cement : Sand)</label>
-                <select
-                  style={styles.select}
-                  value={quickInputs.mortarRatio}
-                  onChange={e => setQuickInputs({ ...quickInputs, mortarRatio: e.target.value })}
-                >
-                  <option value="1:3">1:3 (Rich Mortar)</option>
-                  <option value="1:4">1:4 (Standard Load Bearing)</option>
-                  <option value="1:5">1:5 (Standard Brickwork)</option>
-                  <option value="1:6">1:6 (General Partition Wall)</option>
-                </select>
-              </div>
-
-              <div style={styles.fieldGroup}>
-                <label style={styles.label}>Wastage (%)</label>
+                <label style={styles.label}>Total Wall Area (sq.ft)</label>
                 <input
                   type="number"
-                  style={styles.input}
-                  value={quickInputs.wastagePct}
-                  onChange={e => setQuickInputs({ ...quickInputs, wastagePct: parseFloat(e.target.value) || 0 })}
+                  value={totalArea}
+                  onChange={(e) => { setTotalArea(Number(e.target.value)); setIsInputModified(true); }}
+                  style={{ ...styles.input, ...(isInputModified ? styles.inputModified : {}) }}
                 />
               </div>
-            </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
-              <button style={styles.btnReset} onClick={handleResetQuick}>🔄 Reset Quick Form</button>
-            </div>
-          </div>
-
-          {/* Quick Results Summary & BOQ */}
-          <div style={styles.stepperCard}>
-            <div style={styles.sectionHeader}>
-              <span>📊 Block/Brick Work Calculation Results & Materials BOQ</span>
-            </div>
-
-            {quickCalcResults.unpricedCount > 0 ? (
-              <div style={styles.warnBanner}>
-                ⚠️ Partial Estimate: Admin Rate (₹)s unavailable for: {quickCalcResults.unpricedList.join(', ')}.
-              </div>
-            ) : (
-              <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', padding: '10px', borderRadius: '8px', marginBottom: '16px', fontSize: '12px', fontWeight: '700' }}>
-                ✓ Complete Estimate: All rates verified against BuildMitra Admin Master Database.
-              </div>
-            )}
-
-            {/* Summary Metric Cards */}
-            <div style={styles.summaryGrid}>
-              <div style={{ ...styles.metricCard, ...styles.metricTeal }}>
-                <span style={styles.metricTitle}>Built-Up Area (BUA)</span>
-                <span style={styles.metricVal}>{formatNumber(quickCalcResults.builtUpArea)} Sqft</span>
-              </div>
-              <div style={{ ...styles.metricCard, ...styles.metricTeal }}>
-                <span style={styles.metricTitle}>Masonry Volume</span>
-                <span style={styles.metricVal}>{formatNumber(quickCalcResults.masonryVolCft)} CFT</span>
-              </div>
-              <div style={{ ...styles.metricCard, ...styles.metricBlue }}>
-                <span style={styles.metricTitle}>Bricks / Blocks</span>
-                <span style={styles.metricVal}>{formatNumber(quickCalcResults.totalBlocks, 0)} Nos</span>
-              </div>
-              <div style={{ ...styles.metricCard, ...styles.metricOrange }}>
-                <span style={styles.metricTitle}>Cement & Sand</span>
-                <span style={styles.metricVal}>{formatNumber(quickCalcResults.cemBags, 1)} Bags | {formatNumber(quickCalcResults.sandCft, 1)} CFT</span>
-              </div>
-              <div style={{ ...styles.metricCard, ...styles.metricGreen }}>
-                <span style={styles.metricTitle}>Grand Total (₹)</span>
-                <span style={styles.metricVal}>{formatCurrency(quickCalcResults.grandTotal)}</span>
-                <span style={{ fontSize: '11px', opacity: 0.9 }}>({formatCurrency(quickCalcResults.costPerSqft)} / Sqft)</span>
-              </div>
-            </div>
-
-            {/* BOQ Table */}
-            <div className="bm-item-results-scroll" style={styles.tableContainer}>
-              <table className="bm-item-results-table" style={styles.table}>
-                <thead>
-                  <tr>
-                    <th className="bm-mobile-hide-col" style={styles.th}>Master Code</th>
-                    <th className="bm-mobile-hide-col" style={styles.th}>Category</th>
-                    <th style={styles.th}>Item Description</th>
-                    <th style={styles.th}>Unit</th>
-                    <th className="bm-mobile-hide-col" style={styles.th}>Eng Qty</th>
-                    <th style={styles.th}>Proc Qty</th>
-                    <th className="bm-mobile-hide-col" style={styles.th}>Approved Rate</th>
-                    <th style={styles.th}>Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {quickCalcResults.resultItems.map((item, idx) => (
-                    <tr key={idx}>
-                      <td className="bm-mobile-hide-col" style={styles.td}><code>{item.code}</code></td>
-                      <td className="bm-mobile-hide-col" style={styles.td}><span style={{
-                          backgroundColor: item.category === 'Material' ? '#e0f2fe' : '#ffedd5',
-                          color: item.category === 'Material' ? '#0369a1' : '#c2410c',
-                          padding: '2px 6px',
-                          borderRadius: '4px',
-                          fontWeight: '700',
-                          fontSize: '10px'
-                        }}>
-                          {item.category}
-                        </span>
-                      </td>
-                      <td style={styles.td}><strong>{item.description}</strong></td>
-                      <td style={styles.td}>{item.unit}</td>
-                      <td className="bm-mobile-hide-col" style={styles.td}>{formatNumber(item.engQty)}</td>
-                      <td style={styles.td}><strong>{formatNumber(item.procQty)}</strong></td>
-                      <td className="bm-mobile-hide-col" style={styles.td}>{item.rateFound ? (
-                          <span style={styles.rateTag}>{formatCurrency(item.rate)}</span>
-                        ) : (
-                          <span style={styles.rateTagWarn}>Rate Unavailable</span>
-                        )}
-                      </td>
-                      <td style={styles.td}><strong>{formatCurrency(item.amount)}</strong></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-              <button style={styles.btnSecondary} onClick={handleExportExcel}>📥 Export BOQ to Excel</button>
-              <button style={styles.btnSuccess} onClick={handleShareWhatsApp}>📲 Share Estimate on WhatsApp</button>
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* ========================================================= */}
-      {/* 5. DETAILED WALL-WISE CALCULATION MODE */}
-      {/* ========================================================= */}
-      {calcMode === 'detailed' && (
-        <div style={styles.stepperCard}>
-          <div style={styles.sectionHeader}>
-            <span>📐 Detailed Wall-Wise Brickwork Calculation Inputs (IS 2212 Exact Rules)</span>
-          </div>
-
-          <div style={styles.grid4}>
-            <div style={styles.fieldGroup}>
-              <label style={styles.label}>Number of Walls (Nos)</label>
-              <input
-                type="number"
-                style={styles.input}
-                value={detailedInputs.wallNos}
-                onChange={e => setDetailedInputs({ ...detailedInputs, wallNos: parseInt(e.target.value) || 1 })}
-              />
-            </div>
-
-            <div style={styles.fieldGroup}>
-              <label style={styles.label}>Length per Wall (Ft)</label>
-              <input
-                type="number"
-                style={styles.input}
-                value={detailedInputs.length}
-                onChange={e => setDetailedInputs({ ...detailedInputs, length: parseFloat(e.target.value) || 0 })}
-              />
-            </div>
-
-            <div style={styles.fieldGroup}>
-              <label style={styles.label}>Height per Wall (Ft)</label>
-              <input
-                type="number"
-                style={styles.input}
-                value={detailedInputs.height}
-                onChange={e => setDetailedInputs({ ...detailedInputs, height: parseFloat(e.target.value) || 0 })}
-              />
-            </div>
-
-            <div style={styles.fieldGroup}>
-              <label style={styles.label}>Wall Size / Thickness (Inches)</label>
-              <select
-                style={{ ...styles.select, fontWeight: '700' }}
-                value={detailedInputs.wallThicknessInches}
-                onChange={e => {
-                  const newThickness = parseFloat(e.target.value);
-                  const syncedBlock = syncBlockTypeWithThickness(newThickness, detailedInputs.blockType);
-                  setDetailedInputs({ ...detailedInputs, wallThicknessInches: newThickness, blockType: syncedBlock });
-                }}
-              >
-                <option value={4.5}>4.5" (Half-Brick Partition Wall)</option>
-                <option value={6}>6.0" (Concrete / AAC Block Wall)</option>
-                <option value={8}>8.0" (Heavy Block Main Wall)</option>
-                <option value={9}>9.0" (Full-Brick Main Outer Wall)</option>
-              </select>
-            </div>
-
-            <div style={styles.fieldGroup}>
-              <label style={styles.label}>Mortar Joint Thickness (mm)</label>
-              <select
-                style={{ ...styles.select, fontWeight: '700' }}
-                value={detailedInputs.mortarThicknessMm}
-                onChange={e => setDetailedInputs({ ...detailedInputs, mortarThicknessMm: parseInt(e.target.value) || 10 })}
-              >
-                <option value={10}>10 mm (Standard Mortar Joint)</option>
-                <option value={12}>12 mm (Heavy Masonry Joint)</option>
-                <option value={15}>15 mm (Rough Stone/Brick Joint)</option>
-                <option value={4}>4 mm (AAC Thin-Bed Jointing)</option>
-              </select>
-            </div>
-
-            <div style={styles.fieldGroup}>
-              <label style={styles.label}>Block / Brick Type</label>
-              <select
-                style={styles.select}
-                value={detailedInputs.blockType}
-                onChange={e => setDetailedInputs({ ...detailedInputs, blockType: e.target.value })}
-              >
-                {Object.keys(BLOCK_SPECS).map(type => (
-                  <option key={type} value={type}>{type}</option>
-                ))}
-              </select>
-            </div>
-
-            <div style={styles.fieldGroup}>
-              <label style={styles.label}>Mortar Grade (Cement : Sand)</label>
-              <select
-                style={styles.select}
-                value={detailedInputs.mortarRatio}
-                onChange={e => setDetailedInputs({ ...detailedInputs, mortarRatio: e.target.value })}
-              >
-                <option value="1:3">1:3</option>
-                <option value="1:4">1:4</option>
-                <option value="1:5">1:5</option>
-                <option value="1:6">1:6</option>
-              </select>
-            </div>
-
-            <div style={styles.fieldGroup}>
-              <label style={styles.label}>Wastage (%)</label>
-              <input
-                type="number"
-                style={styles.input}
-                value={detailedInputs.wastagePct}
-                onChange={e => setDetailedInputs({ ...detailedInputs, wastagePct: parseFloat(e.target.value) || 0 })}
-              />
-            </div>
-          </div>
-
-          {/* Openings Section */}
-          <div style={{ backgroundColor: '#f1f5f9', padding: '12px', borderRadius: '8px', marginBottom: '16px' }}>
-            <div style={{ fontSize: '13px', fontWeight: '700', color: '#0f766e', marginBottom: '8px' }}>🚪 Openings Deduction (Doors & Windows Volume Deduction)</div>
-            <div style={styles.grid4}>
               <div style={styles.fieldGroup}>
-                <label style={styles.label}>Opening Type</label>
-                <select style={styles.select} value={openingInput.name} onChange={e => setOpeningInput({ ...openingInput, name: e.target.value })}>
-                  <option value="Door">Door</option>
-                  <option value="Window">Window</option>
-                  <option value="Ventilation">Ventilation</option>
+                <label style={styles.label}>Masonry Type</label>
+                <select value={masonryType} onChange={(e) => { setMasonryType(e.target.value); setIsInputModified(true); }} style={styles.select}>
+                  {Object.entries(BLOCK_SPECS).map(([key, val]) => (
+                    <option key={key} value={key}>{key} - {val.label}</option>
+                  ))}
                 </select>
               </div>
+
               <div style={styles.fieldGroup}>
-                <label style={styles.label}>Width (Ft)</label>
-                <input type="number" style={styles.input} value={openingInput.length} onChange={e => setOpeningInput({ ...openingInput, length: parseFloat(e.target.value) || 0 })} />
+                <label style={styles.label}>Mortar Ratio</label>
+                <select value={mortarRatio} onChange={(e) => { setMortarRatio(e.target.value); setIsInputModified(true); }} style={styles.select}>
+                  <option value="1:4">1:4 (Rich Mortar)</option>
+                  <option value="1:6">1:6 (Standard Wall)</option>
+                  <option value="1:8">1:8 (Lean Wall)</option>
+                </select>
               </div>
+
               <div style={styles.fieldGroup}>
-                <label style={styles.label}>Height (Ft)</label>
-                <input type="number" style={styles.input} value={openingInput.width} onChange={e => setOpeningInput({ ...openingInput, width: parseFloat(e.target.value) || 0 })} />
-              </div>
-              <div style={styles.fieldGroup}>
-                <label style={styles.label}>Quantity (Nos)</label>
-                <input type="number" style={styles.input} value={openingInput.nos} onChange={e => setOpeningInput({ ...openingInput, nos: parseInt(e.target.value) || 1 })} />
+                <label style={styles.label}>Wastage %</label>
+                <input type="number" value={wastagePct} onChange={(e) => { setWastagePct(Number(e.target.value)); setIsInputModified(true); }} style={styles.input} />
               </div>
             </div>
-            <button style={styles.btnPrimary} onClick={handleAddOpening}>+ Add Opening</button>
 
-            {openings.length > 0 && (
-              <div style={{ marginTop: '10px', ...styles.tableContainer }}>
-                <table className="bm-item-results-table" style={styles.table}>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '14px' }}>
+              <button style={styles.btnPrimary} onClick={handleCalculate}>⚡ Calculate Brickwork BOQ</button>
+              <button style={styles.btnReset} onClick={() => setTotalArea(1000)}>🔄 Reset</button>
+              <button style={styles.btnSecondary} onClick={handleExportExcel}>📊 Export Excel</button>
+              <button style={styles.btnSuccess} onClick={handleExportPDF}>📄 Export PDF Report</button>
+            </div>
+          </div>
+        ) : (
+          /* DETAILED MODE INPUTS */
+          <>
+            {/* Section A: Individual Wall Measurements */}
+            <div style={styles.card}>
+              <div style={styles.sectionHeader}>
+                <span>🧱 Individual Wall Measurements</span>
+                <button style={styles.btnAdd} onClick={handleAddWallRow}>+ Add Wall</button>
+              </div>
+
+              <div style={styles.tableContainer}>
+                <table style={styles.table}>
                   <thead>
                     <tr>
-                      <th style={styles.th}>Type</th>
-                      <th style={styles.th}>Size</th>
+                      <th style={styles.th}>Wall Description</th>
+                      <th style={styles.th}>Length (ft)</th>
+                      <th style={styles.th}>Height (ft)</th>
+                      <th style={styles.th}>Thickness (in)</th>
+                      <th style={styles.th}>Masonry Type</th>
                       <th style={styles.th}>Nos</th>
-                      <th style={styles.th}>Gross Area</th>
+                      <th style={styles.th}>Calculated Area</th>
                       <th style={styles.th}>Action</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {openings.map((o, idx) => (
-                      <tr key={idx}>
-                        <td style={styles.td}>{o.name}</td>
-                        <td style={styles.td}>{`${o.length} ft x ${o.width} ft`}</td>
-                        <td style={styles.td}>{o.nos}</td>
-                        <td style={styles.td}><strong>{formatNumber(o.length * o.width * o.nos)} Sqft</strong></td>
-                        <td style={styles.td}>
-                          <button style={styles.btnDanger} onClick={() => handleRemoveOpening(idx)}>Remove</button>
-                        </td>
-                      </tr>
-                    ))}
+                    {wallRows.map((row) => {
+                      const areaSqft = row.length * row.height * row.nos;
+                      return (
+                        <tr key={row.id}>
+                          <td style={styles.td}>
+                            <input type="text" value={row.name} onChange={(e) => handleUpdateWallRow(row.id, 'name', e.target.value)} style={{ ...styles.input, height: '32px' }} />
+                          </td>
+                          <td style={styles.td}>
+                            <input type="number" value={row.length} onChange={(e) => handleUpdateWallRow(row.id, 'length', Number(e.target.value))} style={{ ...styles.input, height: '32px', ...(isInputModified ? styles.inputModified : {}) }} />
+                          </td>
+                          <td style={styles.td}>
+                            <input type="number" value={row.height} onChange={(e) => handleUpdateWallRow(row.id, 'height', Number(e.target.value))} style={{ ...styles.input, height: '32px' }} />
+                          </td>
+                          <td style={styles.td}>
+                            <input type="number" step="0.5" value={row.thicknessIn} onChange={(e) => handleUpdateWallRow(row.id, 'thicknessIn', Number(e.target.value))} style={{ ...styles.input, height: '32px' }} />
+                          </td>
+                          <td style={styles.td}>
+                            <select value={row.masonryType} onChange={(e) => handleUpdateWallRow(row.id, 'masonryType', e.target.value)} style={{ ...styles.select, height: '32px' }}>
+                              {Object.entries(BLOCK_SPECS).map(([key, val]) => (
+                                <option key={key} value={key}>{key}</option>
+                              ))}
+                            </select>
+                          </td>
+                          <td style={styles.td}>
+                            <input type="number" value={row.nos} onChange={(e) => handleUpdateWallRow(row.id, 'nos', Number(e.target.value))} style={{ ...styles.input, height: '32px' }} />
+                          </td>
+                          <td style={styles.td}><strong>{areaSqft.toLocaleString()} Sq.ft</strong></td>
+                          <td style={styles.td}>
+                            <button style={styles.btnDelete} onClick={() => handleDeleteWallRow(row.id)}>🗑️</button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
-            )}
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
-            <button style={styles.btnReset} onClick={handleResetDetailed}>🔄 Reset Detailed Form</button>
-          </div>
-
-          {/* DETAILED RESULTS TABLE */}
-          <div style={{ marginTop: '16px' }}>
-            <div style={styles.sectionHeader}>
-              <span>📊 Detailed Block/Brick Work Calculation Results & Materials BOQ</span>
             </div>
 
-            {detailedCalcResults.unpricedCount > 0 ? (
-              <div style={styles.warnBanner}>
-                ⚠️ Partial Estimate: Admin Rate (₹)s unavailable for: {detailedCalcResults.unpricedList.join(', ')}.
+            {/* Section B: Opening Deductions */}
+            <div style={styles.card}>
+              <div style={styles.sectionHeader}>
+                <span>🚪 Opening Deductions (Doors, Windows &amp; Vents)</span>
+                <button style={styles.btnAdd} onClick={handleAddDeductionRow}>+ Add Deduction</button>
               </div>
-            ) : (
-              <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', padding: '10px', borderRadius: '8px', marginBottom: '16px', fontSize: '12px', fontWeight: '700' }}>
-                ✓ Complete Estimate: All rates verified against BuildMitra Admin Master Database.
-              </div>
-            )}
 
-            <div style={styles.summaryGrid}>
-              <div style={{ ...styles.metricCard, ...styles.metricTeal }}>
-                <span style={styles.metricTitle}>Net Wall Area</span>
-                <span style={styles.metricVal}>{formatNumber(detailedCalcResults.netWallArea)} Sqft</span>
-              </div>
-              <div style={{ ...styles.metricCard, ...styles.metricTeal }}>
-                <span style={styles.metricTitle}>Masonry Volume</span>
-                <span style={styles.metricVal}>{formatNumber(detailedCalcResults.masonryVolCft)} CFT</span>
-              </div>
-              <div style={{ ...styles.metricCard, ...styles.metricBlue }}>
-                <span style={styles.metricTitle}>Bricks / Blocks</span>
-                <span style={styles.metricVal}>{formatNumber(detailedCalcResults.totalBlocks, 0)} Nos</span>
-              </div>
-              <div style={{ ...styles.metricCard, ...styles.metricOrange }}>
-                <span style={styles.metricTitle}>Cement & Sand</span>
-                <span style={styles.metricVal}>{formatNumber(detailedCalcResults.cemBags, 1)} Bags | {formatNumber(detailedCalcResults.sandCft, 1)} CFT</span>
-              </div>
-              <div style={{ ...styles.metricCard, ...styles.metricGreen }}>
-                <span style={styles.metricTitle}>Grand Total (₹)</span>
-                <span style={styles.metricVal}>{formatCurrency(detailedCalcResults.grandTotal)}</span>
-                <span style={{ fontSize: '11px', opacity: 0.9 }}>({formatCurrency(detailedCalcResults.costPerSqft)} / Sqft)</span>
-              </div>
-            </div>
-
-            <div className="bm-item-results-scroll" style={styles.tableContainer}>
-              <table className="bm-item-results-table" style={styles.table}>
-                <thead>
-                  <tr>
-                    <th className="bm-mobile-hide-col" style={styles.th}>Master Code</th>
-                    <th className="bm-mobile-hide-col" style={styles.th}>Category</th>
-                    <th style={styles.th}>Item Description</th>
-                    <th style={styles.th}>Unit</th>
-                    <th className="bm-mobile-hide-col" style={styles.th}>Eng Qty</th>
-                    <th style={styles.th}>Proc Qty</th>
-                    <th className="bm-mobile-hide-col" style={styles.th}>Approved Rate</th>
-                    <th style={styles.th}>Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {detailedCalcResults.resultItems.map((item, i) => (
-                    <tr key={i}>
-                      <td className="bm-mobile-hide-col" style={styles.td}><code>{item.code}</code></td>
-                      <td className="bm-mobile-hide-col" style={styles.td}><span style={{
-                          backgroundColor: item.category === 'Material' ? '#e0f2fe' : '#ffedd5',
-                          color: item.category === 'Material' ? '#0369a1' : '#c2410c',
-                          padding: '2px 6px',
-                          borderRadius: '4px',
-                          fontWeight: '700',
-                          fontSize: '10px'
-                        }}>
-                          {item.category}
-                        </span>
-                      </td>
-                      <td style={styles.td}><strong>{item.description}</strong></td>
-                      <td style={styles.td}>{item.unit}</td>
-                      <td className="bm-mobile-hide-col" style={styles.td}>{formatNumber(item.engQty)}</td>
-                      <td style={styles.td}><strong>{formatNumber(item.procQty)}</strong></td>
-                      <td className="bm-mobile-hide-col" style={styles.td}>{item.rateFound ? (
-                          <span style={styles.rateTag}>{formatCurrency(item.rate)}</span>
-                        ) : (
-                          <span style={styles.rateTagWarn}>Rate Unavailable</span>
-                        )}
-                      </td>
-                      <td style={styles.td}><strong>{formatCurrency(item.amount)}</strong></td>
+              <div style={styles.tableContainer}>
+                <table style={styles.table}>
+                  <thead>
+                    <tr>
+                      <th style={styles.th}>Opening Description</th>
+                      <th style={styles.th}>Height (ft)</th>
+                      <th style={styles.th}>Width (ft)</th>
+                      <th style={styles.th}>Thickness (in)</th>
+                      <th style={styles.th}>Nos</th>
+                      <th style={styles.th}>Deduction Area</th>
+                      <th style={styles.th}>Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {deductionRows.map((row) => {
+                      const dedSqft = row.height * row.width * row.nos;
+                      return (
+                        <tr key={row.id}>
+                          <td style={styles.td}>
+                            <input type="text" value={row.name} onChange={(e) => handleUpdateDeductionRow(row.id, 'name', e.target.value)} style={{ ...styles.input, height: '32px' }} />
+                          </td>
+                          <td style={styles.td}>
+                            <input type="number" value={row.height} onChange={(e) => handleUpdateDeductionRow(row.id, 'height', Number(e.target.value))} style={{ ...styles.input, height: '32px' }} />
+                          </td>
+                          <td style={styles.td}>
+                            <input type="number" value={row.width} onChange={(e) => handleUpdateDeductionRow(row.id, 'width', Number(e.target.value))} style={{ ...styles.input, height: '32px' }} />
+                          </td>
+                          <td style={styles.td}>
+                            <input type="number" step="0.5" value={row.thicknessIn} onChange={(e) => handleUpdateDeductionRow(row.id, 'thicknessIn', Number(e.target.value))} style={{ ...styles.input, height: '32px' }} />
+                          </td>
+                          <td style={styles.td}>
+                            <input type="number" value={row.nos} onChange={(e) => handleUpdateDeductionRow(row.id, 'nos', Number(e.target.value))} style={{ ...styles.input, height: '32px' }} />
+                          </td>
+                          <td style={styles.td}><strong>{dedSqft.toLocaleString()} Sq.ft</strong></td>
+                          <td style={styles.td}>
+                            <button style={styles.btnDelete} onClick={() => handleDeleteDeductionRow(row.id)}>🗑️</button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
 
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-              <button style={styles.btnPrimary} onClick={handleExportPDF}>🖨️ Download PDF (BuildMitra Letterhead)</button>
-              <button style={styles.btnSecondary} onClick={handleExportExcel}>📥 Export BOQ to Excel</button>
-              <button style={styles.btnSuccess} onClick={handleShareWhatsApp}>📲 Share Estimate on WhatsApp</button>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '14px' }}>
+                <button style={styles.btnPrimary} onClick={handleCalculate}>⚡ Calculate Detailed Brickwork BOQ</button>
+                <button style={styles.btnReset} onClick={() => { setWallRows([]); setDeductionRows([]); }}>🔄 Reset All</button>
+                <button style={styles.btnSecondary} onClick={handleExportExcel}>📊 Export Excel</button>
+                <button style={styles.btnSuccess} onClick={handleExportPDF}>📄 Export PDF Report</button>
+              </div>
             </div>
+          </>
+        )}
+
+        {/* Result Metrics */}
+        <div style={styles.summaryGrid}>
+          <div style={{ ...styles.metricCard, ...styles.metricAmber }}>
+            <span style={styles.metricTitle}>Bricks / Blocks</span>
+            <span style={{ ...styles.metricVal, color: isCalculatedBlue ? '#fef3c7' : '#ffffff' }}>{calcResults.grossUnits.toLocaleString()} Nos</span>
+          </div>
+          <div style={{ ...styles.metricCard, ...styles.metricTeal }}>
+            <span style={styles.metricTitle}>Net Masonry Volume</span>
+            <span style={styles.metricVal}>{calcResults.netVolCum} CUM</span>
+          </div>
+          <div style={{ ...styles.metricCard, ...styles.metricOrange }}>
+            <span style={styles.metricTitle}>Cement Required</span>
+            <span style={styles.metricVal}>{calcResults.cementBags} Bags</span>
+          </div>
+          <div style={{ ...styles.metricCard, ...styles.metricBlue }}>
+            <span style={styles.metricTitle}>Material Subtotal</span>
+            <span style={styles.metricVal}>{formatCurrency(calcResults.totalMaterialCost)}</span>
+          </div>
+          <div style={{ ...styles.metricCard, ...styles.metricGreen }}>
+            <span style={styles.metricTitle}>GRAND ESTIMATED TOTAL</span>
+            <span style={{ ...styles.metricValGrand, color: isCalculatedBlue ? '#60a5fa' : '#ffffff' }}>{formatCurrency(calcResults.grandTotalCost)}</span>
           </div>
         </div>
-      )}
-    </div>
+
+        {/* Missing Master Items Warning */}
+        {calcResults.missingItems.length > 0 && (
+          <div style={styles.warnBanner}>
+            ⚠️ <strong>Master Mapping Required / Approved Rate Unavailable ({calcResults.missingItems.length} Line Items)</strong>
+            <ul style={{ margin: '6px 0 0 0', paddingLeft: '20px', fontSize: '13px' }}>
+              {calcResults.missingItems.map(it => (
+                <li key={it.code}>
+                  <code>{it.code}</code>: {it.name} — Quantity: <strong>{it.qty.toLocaleString()} {it.uom}</strong> (Status: <em>Master Mapping Required</em>)
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Itemized BOQ Table */}
+        <div style={styles.tableContainer}>
+          <div style={{ padding: '12px 16px', backgroundColor: '#b45309', color: 'white', fontWeight: '800', fontSize: '16px' }}>
+            📑 Itemized Brickwork &amp; Masonry BOQ ({calcMode.toUpperCase()} MODE - Admin Master Linked)
+          </div>
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th style={styles.th}>Master Code</th>
+                <th style={styles.th}>Category</th>
+                <th style={styles.th}>Item Description</th>
+                <th style={styles.th}>Quantity</th>
+                <th style={styles.th}>UOM</th>
+                <th style={styles.th}>Approved Rate (₹)</th>
+                <th style={styles.th}>Total Amount (₹)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {calcResults.items.map(it => (
+                <tr key={it.code}>
+                  <td style={styles.td}><code>{it.code}</code></td>
+                  <td style={styles.td}>{it.category}</td>
+                  <td style={styles.td}><strong>{it.name}</strong></td>
+                  <td style={styles.td}>{it.qty.toLocaleString()}</td>
+                  <td style={styles.td}>{it.uom}</td>
+                  <td style={styles.td}>
+                    {it.isFound ? formatCurrency(it.rateVal) : <span style={{ color: '#dc2626', fontWeight: '700' }}>Master Mapping Required / Approved Rate Unavailable</span>}
+                  </td>
+                  <td style={styles.td}>
+                    {it.isFound ? <strong>{formatCurrency(it.amountVal)}</strong> : <span style={{ color: '#94a3b8' }}>—</span>}
+                  </td>
+                </tr>
+              ))}
+              <tr style={{ backgroundColor: '#b45309', color: 'white', fontWeight: '800' }}>
+                <td colSpan={6} style={{ padding: '12px 14px', fontSize: '16px' }}>GRAND TOTAL ESTIMATED COST</td>
+                <td style={{ padding: '12px 14px', fontSize: '18px' }}>{formatCurrency(calcResults.grandTotalCost)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
