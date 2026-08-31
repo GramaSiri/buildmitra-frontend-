@@ -131,33 +131,64 @@ export function analyzeFirstFloorPlanning(
     doors.push({ id: "dr_ter_toi", label: "D4 (2′-6″)", x: buildX + bedW, y: buildY + buildL - toiH / 2, widthFt: 2.5, hinge: "left", swingAngle: 90 });
     windows.push({ id: "win_gym", label: "W1 (5′-0″)", x: buildX, y: buildY + buildL - bedH / 2, widthFt: 5.0, orientation: "v" });
     windows.push({ id: "win_ter_toi", label: "V1 VENT", x: buildX + bedW + toiW / 2, y: buildY + buildL, widthFt: 2.0, orientation: "h", isVentilator: true });
-  } else {
-    // FIRST FLOOR & UPPER FLOOR PLANS (EXACT MATCHING TARGET REFERENCE DRG)
+  } else if (floorLevel === 2) {
+    // SECOND FLOOR: PRIVATE BEDROOM FLOOR (4 BEDROOMS + 4 ATTACHED TOILETS + FAMILY LOUNGE + BALCONIES)
+    const roomW = (buildW - staircase.w) / 2;
+    const roomH = buildL / 2;
+
     rooms = [
-      // Top Row (Rear):
-      { id: "ff_bed1", name: "BEDROOM 1", dimText: `${bedW.toFixed(0)}′-0″ × ${bedH.toFixed(0)}′-0″`, x: buildX, y: buildY + buildL - bedH, w: bedW, h: bedH, isMaster: true },
-      { id: "ff_toi1", name: "TOILET", dimText: `${toiW.toFixed(0)}′-0″ × ${toiH.toFixed(0)}′-0″`, x: buildX + bedW, y: buildY + buildL - toiH, w: toiW, h: toiH, isToilet: true },
+      { id: "sf_bed1", name: "BEDROOM 1 (SW MASTER)", dimText: `${roomW.toFixed(0)}′-0″ × ${roomH.toFixed(0)}′-0″`, x: buildX, y: buildY + buildL - roomH, w: roomW, h: roomH, isMaster: true },
+      { id: "sf_toi1", name: "TOILET 1", dimText: "5′-0″ × 7′-0″", x: buildX + roomW - 5, y: buildY + buildL - roomH, w: 5, h: 7, isToilet: true },
 
-      // Middle Row:
-      { id: "ff_kit", name: "KITCHEN", dimText: `${kitW.toFixed(0)}′-0″ × ${kitH.toFixed(0)}′-0″`, x: buildX, y: buildY + buildL - bedH - kitH, w: kitW, h: kitH, isKitchen: true },
-      { id: "ff_util", name: "UTILITY", dimText: `${utilW.toFixed(0)}′-0″ × ${utilH.toFixed(0)}′-0″`, x: buildX + buildW - utilW, y: buildY + buildL - staircase.h - utilH, w: utilW, h: utilH, isUtility: true },
+      { id: "sf_bed2", name: "BEDROOM 2 (NW)", dimText: `${roomW.toFixed(0)}′-0″ × ${roomH.toFixed(0)}′-0″`, x: buildX, y: buildY, w: roomW, h: roomH },
+      { id: "sf_toi2", name: "TOILET 2", dimText: "5′-0″ × 7′-0″", x: buildX + roomW - 5, y: buildY, w: 5, h: 7, isToilet: true },
 
-      // Bottom Row (Front):
-      { id: "ff_liv", name: "LIVING ROOM", dimText: `${livW.toFixed(0)}′-0″ × ${livH.toFixed(0)}′-0″`, x: buildX, y: buildY, w: livW, h: livH, isLiving: true },
-      { id: "ff_din", name: "DINING", dimText: `${dinW.toFixed(0)}′-0″ × ${dinH.toFixed(0)}′-0″`, x: buildX + livW, y: buildY, w: dinW, h: dinH, isDining: true },
+      { id: "sf_bed3", name: "BEDROOM 3 (NE)", dimText: `${(buildW - roomW - staircase.w).toFixed(0)}′-0″ × ${roomH.toFixed(0)}′-0″`, x: buildX + roomW, y: buildY, w: buildW - roomW - staircase.w, h: roomH },
+      { id: "sf_toi3", name: "TOILET 3", dimText: "5′-0″ × 7′-0″", x: buildX + roomW, y: buildY + roomH - 7, w: 5, h: 7, isToilet: true },
+
+      { id: "sf_bed4", name: "BEDROOM 4 (SE)", dimText: `${(buildW - roomW - staircase.w).toFixed(0)}′-0″ × ${roomH.toFixed(0)}′-0″`, x: buildX + roomW, y: buildY + buildL - roomH, w: buildW - roomW - staircase.w, h: roomH },
+      { id: "sf_toi4", name: "TOILET 4", dimText: "5′-0″ × 7′-0″", x: buildX + roomW, y: buildY + buildL - 7, w: 5, h: 7, isToilet: true },
+
+      { id: "sf_lounge", name: "FAMILY LOUNGE", dimText: "10′-0″ × 12′-0″", x: buildX + roomW / 2, y: buildY + roomH / 2, w: 10, h: 12, isLiving: true },
     ];
 
-    doors.push({ id: "dr_ff_main", label: "MAIN D1 (4′-0″)", x: buildX + livW / 2, y: buildY, widthFt: 4.0, hinge: "left", swingAngle: 90, isMainDoor: true });
+    balconies.push({ id: "bal_sf_mbr", name: "MASTER BALCONY", x: buildX, y: buildY + buildL, w: roomW, h: 4, projectionFt: 4, railingType: "Glass" });
+
+    doors.push({ id: "dr_sf_bed1", label: "D2", x: buildX + roomW / 2, y: buildY + buildL - roomH, widthFt: 3.0, hinge: "left", swingAngle: 90 });
+    doors.push({ id: "dr_sf_toi1", label: "TOILET D", x: buildX + roomW - 5, y: buildY + buildL - roomH + 3.5, widthFt: 2.5, hinge: "left", swingAngle: 90 });
+    doors.push({ id: "dr_sf_bed2", label: "D2", x: buildX + roomW / 2, y: buildY + roomH, widthFt: 3.0, hinge: "left", swingAngle: 90 });
+    doors.push({ id: "dr_sf_toi2", label: "TOILET D", x: buildX + roomW - 5, y: buildY + 3.5, widthFt: 2.5, hinge: "left", swingAngle: 90 });
+    doors.push({ id: "dr_sf_bed3", label: "D2", x: buildX + roomW + 3, y: buildY + roomH, widthFt: 3.0, hinge: "left", swingAngle: 90 });
+    doors.push({ id: "dr_sf_bed4", label: "D2", x: buildX + roomW + 3, y: buildY + buildL - roomH, widthFt: 3.0, hinge: "left", swingAngle: 90 });
+
+    windows.push({ id: "win_sf_b1", label: "W1", x: buildX, y: buildY + buildL - roomH / 2, widthFt: 5.0, orientation: "v" });
+    windows.push({ id: "win_sf_b2", label: "W1", x: buildX, y: buildY + roomH / 2, widthFt: 5.0, orientation: "v" });
+  } else {
+    // FIRST FLOOR: PRIMARY LIVING FLOOR (LIVING + BALCONY, KITCHEN SE + UTILITY + STORE, DINING, POOJA NE, FOYER, COMMON TOILET)
+    rooms = [
+      { id: "ff_foyer", name: "FOYER / LOBBY", dimText: "8′-0″ × 8′-0″", x: buildX, y: buildY, w: 8, h: livH, isFoyer: true },
+      { id: "ff_liv", name: "LIVING ROOM", dimText: `${(livW - 8).toFixed(0)}′-0″ × ${livH.toFixed(0)}′-0″`, x: buildX + 8, y: buildY, w: livW - 8, h: livH, isLiving: true },
+      { id: "ff_din", name: "DINING AREA", dimText: `${dinW.toFixed(0)}′-0″ × ${dinH.toFixed(0)}′-0″`, x: buildX + livW, y: buildY, w: dinW, h: dinH, isDining: true },
+
+      { id: "ff_kit", name: "KITCHEN (SE)", dimText: `${kitW.toFixed(0)}′-0″ × ${kitH.toFixed(0)}′-0″`, x: buildX, y: buildY + livH, w: kitW, h: kitH, isKitchen: true },
+      { id: "ff_store", name: "STORE ROOM", dimText: "5′-0″ × 6′-0″", x: buildX + kitW, y: buildY + livH, w: 5, h: 6, isStore: true },
+      { id: "ff_util", name: "UTILITY", dimText: `${utilW.toFixed(0)}′-0″ × ${utilH.toFixed(0)}′-0″`, x: buildX + buildW - utilW, y: buildY + buildL - staircase.h - utilH, w: utilW, h: utilH, isUtility: true },
+
+      { id: "ff_pooja", name: "POOJA ROOM (NE)", dimText: "6′-0″ × 6′-0″", x: buildX + buildW - 6, y: buildY, w: 6, h: 6, isPooja: true },
+      { id: "ff_toi_common", name: "COMMON TOILET", dimText: "5′-0″ × 7′-0″", x: buildX + buildW - utilW - 5, y: buildY + buildL - staircase.h - utilH, w: 5, h: 7, isToilet: true },
+    ];
+
+    balconies.push({ id: "bal_ff_living", name: "FRONT LIVING BALCONY", x: buildX, y: buildY - 4, w: livW, h: 4, projectionFt: 4, railingType: "Glass" });
+
+    doors.push({ id: "dr_ff_main", label: "MAIN D1 (4′-0″)", x: buildX + 4, y: buildY, widthFt: 4.0, hinge: "left", swingAngle: 90, isMainDoor: true });
     doors.push({ id: "dr_ff_kit", label: "KITCHEN D3 (3′-0″)", x: buildX + kitW / 2, y: buildY + livH, widthFt: 3.0, hinge: "left", swingAngle: 90 });
-    doors.push({ id: "dr_ff_util", label: "UTILITY D5 (2′-6″)", x: buildX + kitW, y: buildY + buildL - bedH - kitH / 2, widthFt: 2.5, hinge: "left", swingAngle: 90 });
-    doors.push({ id: "dr_ff_bed1", label: "D2 (3′-0″)", x: buildX + bedW / 2, y: buildY + buildL - bedH, widthFt: 3.0, hinge: "left", swingAngle: 90 });
-    doors.push({ id: "dr_ff_toi1", label: "TOILET D4 (2′-6″)", x: buildX + bedW, y: buildY + buildL - toiH / 2, widthFt: 2.5, hinge: "left", swingAngle: 90 });
+    doors.push({ id: "dr_ff_store", label: "STORE D", x: buildX + kitW, y: buildY + livH + 3, widthFt: 2.5, hinge: "left", swingAngle: 90 });
+    doors.push({ id: "dr_ff_util", label: "UTILITY D", x: buildX + buildW - utilW, y: buildY + buildL - staircase.h - utilH / 2, widthFt: 2.5, hinge: "left", swingAngle: 90 });
+    doors.push({ id: "dr_ff_pooja", label: "POOJA D", x: buildX + buildW - 6, y: buildY + 3, widthFt: 2.5, hinge: "left", swingAngle: 90 });
 
     windows.push({ id: "win_ff_liv", label: "W1 (5′-0″)", x: buildX, y: buildY + livH / 2, widthFt: 5.0, orientation: "v" });
-    windows.push({ id: "win_ff_din", label: "W2 (4′-6″)", x: buildX + buildW, y: buildY + dinH / 2, widthFt: 4.5, orientation: "v" });
-    windows.push({ id: "win_ff_kit", label: "W3 (4′-0″)", x: buildX, y: buildY + buildL - bedH - kitH / 2, widthFt: 4.0, orientation: "v" });
-    windows.push({ id: "win_ff_bed1", label: "W1 (5′-0″)", x: buildX + bedW / 2, y: buildY + buildL, widthFt: 5.0, orientation: "h" });
-    windows.push({ id: "win_ff_toi1", label: "V1 VENT", x: buildX + bedW + toiW / 2, y: buildY + buildL, widthFt: 2.0, orientation: "h", isVentilator: true });
+    windows.push({ id: "win_ff_kit", label: "W3 (4′-0″)", x: buildX, y: buildY + livH + kitH / 2, widthFt: 4.0, orientation: "v" });
+    windows.push({ id: "win_ff_pooja", label: "W4", x: buildX + buildW - 3, y: buildY, widthFt: 3.0, orientation: "h" });
   }
 
   const rawWalls = generateCleanWallSegments(

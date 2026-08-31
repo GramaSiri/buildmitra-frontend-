@@ -208,42 +208,64 @@ export function analyzeGroundFloorPlanning(
   const dinW = (buildW - livW);
   const dinH = 10.0 * scaleL;
 
-  const rooms = [
-    // Top Row (Rear):
-    { id: "gf_bed1", name: "BEDROOM 1", dimText: `${bedW.toFixed(0)}′-0″ × ${bedH.toFixed(0)}′-0″`, x: buildX, y: buildY + buildL - bedH, w: bedW, h: bedH, areaSqFt: Math.round(bedW * bedH) },
-    { id: "gf_toi1", name: "TOILET", dimText: `${toiW.toFixed(0)}′-0″ × ${toiH.toFixed(0)}′-0″`, x: buildX + bedW, y: buildY + buildL - toiH, w: toiW, h: toiH, areaSqFt: Math.round(toiW * toiH) },
-
-    // Middle Row:
-    { id: "gf_kit", name: "KITCHEN", dimText: `${kitW.toFixed(0)}′-0″ × ${kitH.toFixed(0)}′-0″`, x: buildX, y: buildY + buildL - bedH - kitH, w: kitW, h: kitH, areaSqFt: Math.round(kitW * kitH) },
-    { id: "gf_util", name: "UTILITY", dimText: `${utilW.toFixed(0)}′-0″ × ${utilH.toFixed(0)}′-0″`, x: buildX + buildW - utilW, y: buildY + buildL - stairL - utilH, w: utilW, h: utilH, areaSqFt: Math.round(utilW * utilH) },
-
-    // Bottom Row (Front):
-    { id: "gf_liv", name: "LIVING ROOM", dimText: `${livW.toFixed(0)}′-0″ × ${livH.toFixed(0)}′-0″`, x: buildX, y: buildY, w: livW, h: livH, areaSqFt: Math.round(livW * livH) },
-    { id: "gf_din", name: "DINING", dimText: `${dinW.toFixed(0)}′-0″ × ${dinH.toFixed(0)}′-0″`, x: buildX + livW, y: buildY, w: dinW, h: dinH, areaSqFt: Math.round(dinW * dinH) },
-  ];
-
-  // ARCHITECTURAL DOORS WITH PROPER WALL LOCATIONS AND SWINGS:
+  let rooms: { id: string; name: string; dimText: string; x: number; y: number; w: number; h: number; areaSqFt: number; isToilet?: boolean; isLiving?: boolean; isKitchen?: boolean; isMaster?: boolean }[] = [];
   const doors: { id: string; x: number; y: number; widthFt: number; hinge: "left" | "right"; swingAngle: number; isMainDoor?: boolean; label?: string }[] = [];
-
-  // Main Door: Opening 90° inward into Living Room from Front Road
-  doors.push({ id: "dr_main", x: buildX + livW / 2, y: buildY, widthFt: 4.0, hinge: "left", swingAngle: 90, isMainDoor: true, label: "MAIN D1 (4′-0″)" });
-  // Kitchen Door: Opening from Living into Kitchen
-  doors.push({ id: "dr_kit", x: buildX + kitW / 2, y: buildY + livH, widthFt: 3.0, hinge: "left", swingAngle: 90, label: "KITCHEN D3 (3′-0″)" });
-  // Bedroom 1 Door: Opening into Master Bed
-  doors.push({ id: "dr_bed1", x: buildX + bedW / 2, y: buildY + buildL - bedH, widthFt: 3.0, hinge: "left", swingAngle: 90, label: "D2 (3′-0″)" });
-  // Attached Toilet Door: Opening from Bed 1 into Toilet
-  doors.push({ id: "dr_toi1", x: buildX + bedW, y: buildY + buildL - toiH / 2, widthFt: 2.5, hinge: "left", swingAngle: 90, label: "TOILET D4 (2′-6″)" });
-  // Utility Door: Opening from Kitchen into Utility
-  doors.push({ id: "dr_util", x: buildX + kitW, y: buildY + buildL - bedH - kitH / 2, widthFt: 2.5, hinge: "left", swingAngle: 90, label: "UTILITY D5 (2′-6″)" });
-
-  // ARCHITECTURAL WINDOWS ON EXTERIOR WALLS ONLY:
   const windows: { id: string; x: number; y: number; widthFt: number; orientation: "h" | "v"; isVentilator?: boolean; label?: string }[] = [];
 
-  windows.push({ id: "win_liv", x: buildX, y: buildY + livH / 2, widthFt: 5.0, orientation: "v", label: "W1 (5′-0″)" });
-  windows.push({ id: "win_din", x: buildX + buildW, y: buildY + dinH / 2, widthFt: 4.5, orientation: "v", label: "W2 (4′-6″)" });
-  windows.push({ id: "win_kit", x: buildX, y: buildY + buildL - bedH - kitH / 2, widthFt: 4.0, orientation: "v", label: "W3 (4′-0″)" });
-  windows.push({ id: "win_bed1", x: buildX + bedW / 2, y: buildY + buildL, widthFt: 5.0, orientation: "h", label: "W1 (5′-0″)" });
-  windows.push({ id: "win_toi1", x: buildX + bedW + toiW / 2, y: buildY + buildL, widthFt: 2.0, orientation: "h", isVentilator: true, label: "V1 VENT (2′-0″)" });
+  if (isFullParking) {
+    // Mode A: 100% Full Stilt Parking Mode
+    const parkW = buildW - stairW - 1;
+    const parkH = buildL;
+
+    rooms = [
+      { id: "gf_park", name: "FULL PARKING AREA", dimText: `${parkW.toFixed(0)}′-0″ × ${parkH.toFixed(0)}′-0″`, x: buildX, y: buildY, w: parkW, h: parkH, areaSqFt: Math.round(parkW * parkH) },
+      { id: "gf_toi_common", name: "COMMON TOILET", dimText: "5′-0″ × 7′-0″", x: buildX + buildW - stairW, y: buildY + buildL - stairL - 7, w: 5, h: 7, areaSqFt: 35, isToilet: true },
+    ];
+
+    doors.push({ id: "dr_toi_common", x: buildX + buildW - stairW + 2.5, y: buildY + buildL - stairL - 7, widthFt: 2.5, hinge: "left", swingAngle: 90, label: "TOILET D (2′-6″)" });
+    windows.push({ id: "win_toi_common", x: buildX + buildW, y: buildY + buildL - stairL - 3.5, widthFt: 2.0, orientation: "v", isVentilator: true, label: "V1 VENT (2′-0″)" });
+  } else if (isHalfParking) {
+    // Mode B: Half Parking (50%) + Half Residential (50%)
+    const parkW = buildW / 2;
+    const parkH = buildL / 2;
+    const resW = buildW / 2;
+    const resH = buildL / 2;
+
+    rooms = [
+      { id: "gf_park_half", name: "STILT PARKING BAY", dimText: `${parkW.toFixed(0)}′-0″ × ${parkH.toFixed(0)}′-0″`, x: buildX, y: buildY, w: parkW, h: parkH, areaSqFt: Math.round(parkW * parkH) },
+      { id: "gf_liv_half", name: "LIVING ROOM", dimText: `${resW.toFixed(0)}′-0″ × ${resH.toFixed(0)}′-0″`, x: buildX + parkW, y: buildY, w: resW, h: resH, areaSqFt: Math.round(resW * resH), isLiving: true },
+      { id: "gf_bed_half", name: "BEDROOM 1", dimText: `${parkW.toFixed(0)}′-0″ × ${parkH.toFixed(0)}′-0″`, x: buildX, y: buildY + parkH, w: parkW, h: parkH, areaSqFt: Math.round(parkW * parkH), isMaster: true },
+      { id: "gf_kit_half", name: "KITCHEN (SE)", dimText: `${(resW - 5).toFixed(0)}′-0″ × ${resH.toFixed(0)}′-0″`, x: buildX + parkW, y: buildY + parkH, w: resW - 5, h: resH, areaSqFt: Math.round((resW - 5) * resH), isKitchen: true },
+      { id: "gf_toi_half", name: "TOILET", dimText: "5′-0″ × 7′-0″", x: buildX + buildW - 5, y: buildY + parkH, w: 5, h: 7, areaSqFt: 35, isToilet: true },
+    ];
+
+    doors.push({ id: "dr_main_half", x: buildX + parkW + resW / 2, y: buildY, widthFt: 3.5, hinge: "left", swingAngle: 90, isMainDoor: true, label: "MAIN D1" });
+    doors.push({ id: "dr_bed_half", x: buildX + parkW / 2, y: buildY + parkH, widthFt: 3.0, hinge: "left", swingAngle: 90, label: "D2" });
+    doors.push({ id: "dr_toi_half", x: buildX + buildW - 5, y: buildY + parkH + 3.5, widthFt: 2.5, hinge: "left", swingAngle: 90, label: "TOILET D" });
+    windows.push({ id: "win_liv_half", x: buildX + buildW, y: buildY + resH / 2, widthFt: 5.0, orientation: "v", label: "W1" });
+    windows.push({ id: "win_kit_half", x: buildX + buildW, y: buildY + parkH + resH / 2, widthFt: 4.0, orientation: "v", label: "W2" });
+  } else {
+    // Mode C: No Parking — 100% Residential Unit
+    rooms = [
+      { id: "gf_liv", name: "LIVING ROOM", dimText: `${livW.toFixed(0)}′-0″ × ${livH.toFixed(0)}′-0″`, x: buildX, y: buildY, w: livW, h: livH, areaSqFt: Math.round(livW * livH), isLiving: true },
+      { id: "gf_din", name: "DINING", dimText: `${dinW.toFixed(0)}′-0″ × ${dinH.toFixed(0)}′-0″`, x: buildX + livW, y: buildY, w: dinW, h: dinH, areaSqFt: Math.round(dinW * dinH) },
+      { id: "gf_kit", name: "KITCHEN (SE)", dimText: `${kitW.toFixed(0)}′-0″ × ${kitH.toFixed(0)}′-0″`, x: buildX, y: buildY + livH, w: kitW, h: kitH, areaSqFt: Math.round(kitW * kitH), isKitchen: true },
+      { id: "gf_util", name: "UTILITY", dimText: `${utilW.toFixed(0)}′-0″ × ${utilH.toFixed(0)}′-0″`, x: buildX + buildW - utilW, y: buildY + buildL - stairL - utilH, w: utilW, h: utilH, areaSqFt: Math.round(utilW * utilH) },
+      { id: "gf_bed1", name: "BEDROOM 1 (SW)", dimText: `${bedW.toFixed(0)}′-0″ × ${bedH.toFixed(0)}′-0″`, x: buildX, y: buildY + buildL - bedH, w: bedW, h: bedH, areaSqFt: Math.round(bedW * bedH), isMaster: true },
+      { id: "gf_toi1", name: "TOILET", dimText: `${toiW.toFixed(0)}′-0″ × ${toiH.toFixed(0)}′-0″`, x: buildX + bedW, y: buildY + buildL - toiH, w: toiW, h: toiH, areaSqFt: Math.round(toiW * toiH), isToilet: true },
+    ];
+
+    doors.push({ id: "dr_main", x: buildX + livW / 2, y: buildY, widthFt: 4.0, hinge: "left", swingAngle: 90, isMainDoor: true, label: "MAIN D1 (4′-0″)" });
+    doors.push({ id: "dr_kit", x: buildX + kitW / 2, y: buildY + livH, widthFt: 3.0, hinge: "left", swingAngle: 90, label: "KITCHEN D3 (3′-0″)" });
+    doors.push({ id: "dr_bed1", x: buildX + bedW / 2, y: buildY + buildL - bedH, widthFt: 3.0, hinge: "left", swingAngle: 90, label: "D2 (3′-0″)" });
+    doors.push({ id: "dr_toi1", x: buildX + bedW, y: buildY + buildL - toiH / 2, widthFt: 2.5, hinge: "left", swingAngle: 90, label: "TOILET D4 (2′-6″)" });
+
+    windows.push({ id: "win_liv", x: buildX, y: buildY + livH / 2, widthFt: 5.0, orientation: "v", label: "W1 (5′-0″)" });
+    windows.push({ id: "win_din", x: buildX + buildW, y: buildY + dinH / 2, widthFt: 4.5, orientation: "v", label: "W2 (4′-6″)" });
+    windows.push({ id: "win_kit", x: buildX, y: buildY + buildL - bedH - kitH / 2, widthFt: 4.0, orientation: "v", label: "W3 (4′-0″)" });
+    windows.push({ id: "win_bed1", x: buildX + bedW / 2, y: buildY + buildL, widthFt: 5.0, orientation: "h", label: "W1 (5′-0″)" });
+    windows.push({ id: "win_toi1", x: buildX + bedW + toiW / 2, y: buildY + buildL, widthFt: 2.0, orientation: "h", isVentilator: true, label: "V1 VENT (2′-0″)" });
+  }
 
   // 9. Clean CAD Double-Line Walls: 9" Outer Exterior Block Walls, 4.5" Inner Partition Block Walls
   const rawWalls = generateCleanWallSegments(

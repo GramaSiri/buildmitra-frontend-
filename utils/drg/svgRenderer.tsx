@@ -68,9 +68,9 @@ export const ArchitecturalSvgRenderer: React.FC<SvgRendererProps> = ({
   const rawWalls = generateCleanWallSegments(currentFloor.rooms, buildable);
   const cleanWalls = cutWallSegmentsAtDoors(rawWalls, []);
 
-  // Grid lines
-  const numBaysX = buildable.w > 45 ? 5 : buildable.w > 28 ? 4 : 3;
-  const numBaysY = buildable.h > 65 ? 6 : buildable.h > 45 ? 5 : buildable.h > 30 ? 4 : 3;
+  // Grid lines (IS 456 Civil Residential Standards: 12-15 ft max span)
+  const numBaysX = buildable.w <= 36 ? 3 : buildable.w <= 55 ? 4 : 5;
+  const numBaysY = buildable.h <= 45 ? 4 : buildable.h <= 65 ? 5 : 6;
 
   const gridXCoords: number[] = [];
   for (let i = 0; i < numBaysX; i++) {
@@ -1478,7 +1478,7 @@ export const ArchitecturalSvgRenderer: React.FC<SvgRendererProps> = ({
           {/* ========================================================================= */}
           {/* B. SPECIMEN FOOTING & COLUMN CROSS-SECTION SIDE DETAIL VIEW */}
           {/* ========================================================================= */}
-          {(structuralSubview === "specimen_detail" || structuralSubview === "all_combined") && (
+          {(structuralSubview === "specimen_detail" || structuralSubview === "sbc_recommendation" || structuralSubview === "all_combined") && (
             <g transform={`translate(20, ${structuralSubview === "all_combined" ? mainGridH + 20 : 10})`}>
               {/* Section Container Frame */}
               <rect

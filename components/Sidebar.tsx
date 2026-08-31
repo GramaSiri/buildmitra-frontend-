@@ -215,6 +215,7 @@ const styles = {
 };
 
 export const mainNavigationItems = [
+  { name: "Hands-Free Voice Guide", icon: "🎙️", path: "/hands-free", badge: "AI" },
   { name: "Marketplace", icon: "🛒", path: "/marketplace" },
   { name: "Labour Net", icon: "👥", path: "/labour-net", badge: "NEW" },
   { name: "DRG", icon: "📐", path: "/drg" },

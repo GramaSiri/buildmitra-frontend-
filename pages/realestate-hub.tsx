@@ -1,18 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import PropertyIntelligenceModal from '../components/PropertyIntelligenceModal';
+import InteractivePinpointMap from '../components/InteractivePinpointMap';
+import { autoResolvePropertyGeoData } from '../utils/geoResolver';
 
-interface PropertyItem {
+export interface PropertyItem {
   id: string;
   title: string;
   location: string;
+  lat: number;
+  lng: number;
   type: string;
+  listingType: string;
+  propertyType: string;
   price: string;
   priceNum: number;
   rate: string;
   bhk: string;
   dimensions: string;
   approach: string;
+  roadFacing: string;
   zoning: string;
+  sroOffice: string;
+  guidanceValue: number;
   image: string;
   tag: string;
   seller?: {
@@ -20,263 +29,275 @@ interface PropertyItem {
     sellerCode: string;
     phone: string;
   };
-  lat?: number;
-  lng?: number;
 }
 
-// Complete Public Verified Property Catalog (All 9+ Core Properties)
 const ALL_PUBLIC_PROPERTIES: PropertyItem[] = [
   {
     id: 'REP-197127',
     title: 'BDA Residential Villa Plot (BSK 6th Stage)',
     location: 'Near Arya Apartment, JP Nagar 8th Phase / BSK 6th Stage, Bengaluru',
+    lat: 12.8718,
+    lng: 77.5753,
     type: 'Plot',
+    listingType: 'Sale',
+    propertyType: 'BDA Plot',
     price: '₹1.50 Cr',
     priceNum: 150,
     rate: '₹12,500 / Sq.ft',
     bhk: 'Plot',
     dimensions: '30′ × 40′ (1,200 Sq.ft)',
     approach: '40 Ft Asphalt Road',
+    roadFacing: 'East Facing Main Road',
     zoning: 'BDA Approved Residential Yellow Zone',
+    sroOffice: 'SRO JP Nagar / Jayanagar',
+    guidanceValue: 6800,
     image: '/images/bda-plot-bsk6.jpeg',
     tag: '🏢 Garden Greens (REA-000003)',
-    seller: {
-      companyName: 'Garden Greens',
-      sellerCode: 'REA-000003',
-      phone: '9845012345'
-    },
-    lat: 12.8718,
-    lng: 77.5753
+    seller: { companyName: 'Garden Greens', sellerCode: 'REA-000003', phone: '9845012345' }
   },
   {
-    id: 'REP-MEDIA-064401',
-    title: 'LBS Nagar Residential Villa Plot',
-    location: 'Anjanapura, Bengaluru',
+    id: 'REP-AGRI-00912',
+    title: 'Managed Farmland & Agriculture Land (1.5 Acres)',
+    location: 'Belagondapalli, Near Taneja Aerospace (TAAL), Hosur Taluk, Krishnagiri Dist, Tamil Nadu',
+    lat: 12.6850,
+    lng: 77.8100,
     type: 'Plot',
-    price: '₹1.57 Cr',
-    priceNum: 157,
-    rate: '₹13,100 / Sq.ft',
+    listingType: 'Sale',
+    propertyType: 'Agriculture Land',
+    price: '₹1.80 Cr',
+    priceNum: 180,
+    rate: '₹1.20 Cr / Acre',
+    bhk: 'Land',
+    dimensions: '1.5 Acres (65,340 Sq.ft)',
+    approach: '30 Ft Concrete Approach Road',
+    roadFacing: 'North Facing Road',
+    zoning: 'Green Belt / Agricultural Zone',
+    sroOffice: 'SRO Denkanikottai / SRO Kelamangalam / SRO Hosur (TNREGINET)',
+    guidanceValue: 450,
+    image: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80',
+    tag: '🌾 Clear Title Farmland (TN)'
+  },
+  {
+    id: 'REP-IND-00441',
+    title: 'KIADB Approved Industrial Land / Plot (1 Acre)',
+    location: 'Harohalli Industrial Area Phase 2, Kanakapura NH Corridor',
+    lat: 12.6820,
+    lng: 77.4550,
+    type: 'Plot',
+    listingType: 'Sale',
+    propertyType: 'Industrial Land',
+    price: '₹3.50 Cr',
+    priceNum: 350,
+    rate: '₹800 / Sq.ft',
+    bhk: 'Industrial',
+    dimensions: '1 Acre (43,560 Sq.ft)',
+    approach: '60 Ft Heavy Vehicle Road',
+    roadFacing: 'East Facing Main Road',
+    zoning: 'KIADB Industrial Zone',
+    sroOffice: 'SRO Harohalli / Kanakapura',
+    guidanceValue: 450,
+    image: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80',
+    tag: '🏭 Heavy Power & Water Line'
+  },
+  {
+    id: 'REP-REV-00812',
+    title: 'DC Converted Revenue Residential Site (30x40)',
+    location: 'Near Anjanapura 11th Block, Bengaluru South',
+    lat: 12.8580,
+    lng: 77.5620,
+    type: 'Plot',
+    listingType: 'Sale',
+    propertyType: 'Revenue Sites',
+    price: '₹65 Lakhs',
+    priceNum: 65,
+    rate: '₹5,416 / Sq.ft',
     bhk: 'Plot',
     dimensions: '30′ × 40′ (1,200 Sq.ft)',
-    approach: '60 Ft Asphalt Road',
-    zoning: 'CDA 2031 Yellow Zone',
+    approach: '30 Ft Concrete Road',
+    roadFacing: 'North Facing Road',
+    zoning: 'DC Converted Revenue Approved',
+    sroOffice: 'SRO JP Nagar / Begur',
+    guidanceValue: 3200,
     image: 'https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=800&q=80',
-    tag: '+172.9% vs Locality Avg',
-    lat: 12.8580,
-    lng: 77.5620
+    tag: '📜 DC Converted e-Aasthi'
   },
   {
     id: 'REP-MEDIA-089122',
     title: 'Prestige Layout Premium G+2 Luxury Villa',
     location: 'Sarjapur Road, Near Wipro Campus, Bengaluru',
+    lat: 12.9249,
+    lng: 77.6835,
     type: 'Buy',
+    listingType: 'Sale',
+    propertyType: 'Residential Home',
     price: '₹2.85 Cr',
     priceNum: 285,
     rate: '₹9,500 / Sq.ft',
     bhk: '3 BHK',
     dimensions: '40′ × 60′ (2,400 Sq.ft)',
     approach: '40 Ft Asphalt Road',
+    roadFacing: 'East Facing Main Road',
     zoning: 'BMRDA Approved Residential',
+    sroOffice: 'SRO Bommanahalli / Sarjapur',
+    guidanceValue: 4800,
     image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80',
-    tag: 'High Rental Yield (5.1%)',
-    lat: 12.9249,
-    lng: 77.6835
-  },
-  {
-    id: 'REP-MEDIA-044211',
-    title: 'Commercial Corner Plot / Showroom Space',
-    location: 'Hosur Main Road, Electronic City Phase 1',
-    type: 'Commercial',
-    price: '₹4.20 Cr',
-    priceNum: 420,
-    rate: '₹17,500 / Sq.ft',
-    bhk: 'Commercial',
-    dimensions: '60′ × 40′ (2,400 Sq.ft)',
-    approach: '80 Ft Main Arterial Road',
-    zoning: 'BBMP Commercial BDA',
-    image: 'https://images.unsplash.com/photo-1577495508048-b635879837f1?auto=format&fit=crop&w=800&q=80',
-    tag: 'NICE Road Expressway Access',
-    lat: 12.8399,
-    lng: 77.6770
-  },
-  {
-    id: 'REP-MEDIA-011923',
-    title: 'Sobha Dream Acres High-Rise Apartment',
-    location: 'Panathur, Whitefield, Bengaluru',
-    type: 'Buy',
-    price: '₹1.15 Cr',
-    priceNum: 115,
-    rate: '₹9,200 / Sq.ft',
-    bhk: '2 BHK',
-    dimensions: '1,250 Sq.ft Super Built-up',
-    approach: '50 Ft Main Road',
-    zoning: 'BDA Approved / RERA Verified',
-    image: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80',
-    tag: 'Near Outer Ring Road IT Hub',
-    lat: 12.9352,
-    lng: 77.7126
-  },
-  {
-    id: 'REP-MEDIA-073381',
-    title: 'Brigade Meadows Modern Apartment',
-    location: 'Kanakapura Road, Bengaluru',
-    type: 'Rent',
-    price: '₹35,000 / mo',
-    priceNum: 0.35,
-    rate: '₹26 / Sq.ft',
-    bhk: '2 BHK',
-    dimensions: '1,150 Sq.ft',
-    approach: '40 Ft Road',
-    zoning: 'BMRDA Residential',
-    image: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=800&q=80',
-    tag: 'Near Silk Institute Metro',
-    lat: 12.8225,
-    lng: 77.5348
-  },
-  {
-    id: 'REP-MEDIA-051839',
-    title: 'BMRDA Gated Community Residential Plot',
-    location: 'Chandapura-Anekal Road, Bengaluru',
-    type: 'Plot',
-    price: '₹58.00 Lakhs',
-    priceNum: 58,
-    rate: '₹3,866 / Sq.ft',
-    bhk: 'Plot',
-    dimensions: '30′ × 50′ (1,500 Sq.ft)',
-    approach: '40 Ft Concrete Road',
-    zoning: 'BMRDA Approved Layout',
-    image: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80',
-    tag: 'Fast Appreciating Zone',
-    lat: 12.7891,
-    lng: 77.6974
-  },
-  {
-    id: 'REP-MEDIA-098271',
-    title: 'Godrej Eternity Garden Duplex Villa',
-    location: 'Holiday Village Road, Kanakapura Road',
-    type: 'Buy',
-    price: '₹2.10 Cr',
-    priceNum: 210,
-    rate: '₹10,500 / Sq.ft',
-    bhk: '3 BHK',
-    dimensions: '2,000 Sq.ft Built-up',
-    approach: '60 Ft Road',
-    zoning: 'BDA Approved',
-    image: 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=800&q=80',
-    tag: 'Vaastu 100% Compliant',
-    lat: 12.8682,
-    lng: 77.5451
-  },
-  {
-    id: 'REP-MEDIA-032918',
-    title: 'Prestige Tech Park Office Space',
-    location: 'Marathahalli - Sarjapur Outer Ring Road',
-    type: 'Commercial',
-    price: '₹1.80 Lakhs / mo',
-    priceNum: 1.8,
-    rate: '₹75 / Sq.ft',
-    bhk: 'Commercial',
-    dimensions: '2,400 Sq.ft Carpet',
-    approach: '100 Ft Outer Ring Road',
-    zoning: 'BBMP Grade-A IT SEZ',
-    image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80',
-    tag: 'Fully Furnished Plug & Play',
-    lat: 12.9378,
-    lng: 77.6934
-  },
-  {
-    id: 'REP-MEDIA-029411',
-    title: 'Independent 4 BHK Luxury Bungalow',
-    location: 'HSR Layout Sector 2, Bengaluru',
-    type: 'Buy',
-    price: '₹5.50 Cr',
-    priceNum: 550,
-    rate: '₹15,277 / Sq.ft',
-    bhk: '4+ BHK',
-    dimensions: '50′ × 80′ (3,600 Sq.ft Built-up)',
-    approach: '50 Ft Avenue Road',
-    zoning: 'BBMP A-Khata Freehold',
-    image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80',
-    tag: 'Prime Core Bengaluru Corridor',
-    lat: 12.9116,
-    lng: 77.6474
+    tag: 'High Rental Yield (5.1%)'
   }
 ];
 
 export const RealEstateHubPage: React.FC = () => {
   const [properties, setProperties] = useState<PropertyItem[]>(ALL_PUBLIC_PROPERTIES);
   const [selectedProperty, setSelectedProperty] = useState<PropertyItem | null>(null);
+  const [isPostModalOpen, setIsPostModalOpen] = useState(false);
+  const [editingPropertyId, setEditingPropertyId] = useState<string | null>(null);
 
-  // Original Clean Filters
+  // Filters
   const [searchLocation, setSearchLocation] = useState<string>('');
-  const [selectedType, setSelectedType] = useState<string>('ALL');
-  const [selectedBhk, setSelectedBhk] = useState<string>('ALL');
+  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [budgetRange, setBudgetRange] = useState<string>('ALL');
 
-  const fetchLiveProperties = async () => {
-    let dashboardItems: any[] = [];
-    if (typeof window !== 'undefined') {
-      const storageKeys = ['realestate_properties', 'properties', 'bm_properties'];
-      for (const k of storageKeys) {
-        const raw = localStorage.getItem(k);
-        if (raw) {
-          try {
-            const parsed = JSON.parse(raw);
-            if (Array.isArray(parsed)) dashboardItems = [...dashboardItems, ...parsed];
-          } catch(e) {}
-        }
-      }
+  // Form states
+  const [title, setTitle] = useState('');
+  const [location, setLocation] = useState('Near Arya Apartment, JP Nagar 8th Phase, Bengaluru');
+  const [lat, setLat] = useState<number>(12.8718);
+  const [lng, setLng] = useState<number>(77.5753);
+  const [propertyType, setPropertyType] = useState('BDA Plot');
+  const [listingType, setListingType] = useState('Sale');
+  const [price, setPrice] = useState('1.50');
+  const [priceUnit, setPriceUnit] = useState('Cr');
+  const [ratePerSqFt, setRatePerSqFt] = useState('12500');
+  const [dimensions, setDimensions] = useState('30′ × 40′ (1,200 Sq.ft)');
+  const [approachRoad, setApproachRoad] = useState('40 Ft Asphalt');
+  const [roadFacing, setRoadFacing] = useState('East Facing Main Road');
+  const [zoning, setZoning] = useState('BDA Approved Residential Yellow Zone');
+  const [uploadedImage, setUploadedImage] = useState('');
+
+  // Auto-Sourced Intelligence State
+  const [autoSro, setAutoSro] = useState('SRO JP Nagar / Jayanagar');
+  const [autoGuidance, setAutoGuidance] = useState<number>(6800);
+
+  const handleMapLocationSelect = (newLat: number, newLng: number, addressText: string) => {
+    setLat(newLat);
+    setLng(newLng);
+    setLocation(addressText);
+    const geo = autoResolvePropertyGeoData(addressText, title, newLat, newLng);
+    setAutoSro(geo.defaultSro);
+    setAutoGuidance(geo.guidanceValue);
+  };
+
+  const openPostModal = (propToEdit?: PropertyItem) => {
+    if (propToEdit) {
+      setEditingPropertyId(propToEdit.id);
+      setTitle(propToEdit.title);
+      setLocation(propToEdit.location);
+      setLat(propToEdit.lat || 12.8718);
+      setLng(propToEdit.lng || 77.5753);
+      setPropertyType(propToEdit.propertyType || 'BDA Plot');
+      setListingType(propToEdit.listingType || 'Sale');
+      setDimensions(propToEdit.dimensions);
+      setApproachRoad(propToEdit.approach);
+      setRoadFacing(propToEdit.roadFacing || 'East Facing Main Road');
+      setZoning(propToEdit.zoning);
+      setUploadedImage(propToEdit.image);
+      setAutoSro(propToEdit.sroOffice);
+      setAutoGuidance(propToEdit.guidanceValue);
+    } else {
+      setEditingPropertyId(null);
+      setTitle('');
+      setLocation('Near Arya Apartment, JP Nagar 8th Phase, Bengaluru');
+      setLat(12.8718);
+      setLng(77.5753);
+      setUploadedImage('');
+    }
+    setIsPostModalOpen(true);
+  };
+
+  const handleSaveProperty = (e: React.FormEvent) => {
+    e.preventDefault();
+    const pid = editingPropertyId || `REP-${Math.floor(100000 + Math.random() * 900000)}`;
+    const priceNumeric = priceUnit === 'Cr' ? parseFloat(price) * 100 : parseFloat(price) || 50;
+
+    const newProp: PropertyItem = {
+      id: pid,
+      title: title || `${propertyType} in ${location}`,
+      location,
+      lat,
+      lng,
+      type: propertyType.includes('Plot') || propertyType.includes('Land') || propertyType.includes('Site') ? 'Plot' : 'Buy',
+      listingType,
+      propertyType,
+      price: `₹${price} ${priceUnit}`,
+      priceNum: priceNumeric,
+      rate: `₹${ratePerSqFt} / Sq.ft`,
+      bhk: propertyType.includes('Plot') ? 'Plot' : propertyType.includes('Land') ? 'Land' : '3 BHK',
+      dimensions,
+      approach: approachRoad,
+      roadFacing,
+      zoning,
+      sroOffice: autoSro,
+      guidanceValue: autoGuidance,
+      image: uploadedImage || '/images/bda-plot-bsk6.jpeg',
+      tag: '✓ Live Pinpointed Listing',
+      seller: { companyName: 'BuildMitra Verified Seller', sellerCode: 'USR-LIVE', phone: '9845012345' }
+    };
+
+    let updatedList: PropertyItem[];
+    if (editingPropertyId) {
+      updatedList = properties.map((p) => (p.id === editingPropertyId ? newProp : p));
+    } else {
+      updatedList = [newProp, ...properties];
     }
 
-    if (dashboardItems.length > 0) {
-      const seenIds = new Set<string>();
-      const mapped: PropertyItem[] = [];
+    setProperties(updatedList);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('realestate_properties', JSON.stringify(updatedList));
+    }
+    setIsPostModalOpen(false);
+  };
 
-      for (const item of dashboardItems) {
-        const id = item.propertyId || item.id || `REP-${Math.floor(1000 + Math.random() * 9000)}`;
-        if (seenIds.has(id)) continue;
-        seenIds.add(id);
-
-        const rawPrice = item.price || '1.50 Cr';
-        const priceNumVal = typeof item.priceNum === 'number' ? item.priceNum : 150;
-
-        mapped.push({
-          id,
-          title: item.title || `${item.propertyType || 'Property'} in ${item.location || 'Bengaluru'}`,
-          location: item.location || 'Bengaluru',
-          type: item.propertyType?.includes('Plot') ? 'Plot' : item.propertyType?.includes('Commercial') ? 'Commercial' : item.type === 'Rent' ? 'Rent' : 'Buy',
-          price: String(rawPrice).startsWith('₹') ? rawPrice : `₹${rawPrice}`,
-          priceNum: priceNumVal,
-          rate: item.ratePerSqFt ? `₹${item.ratePerSqFt} / Sq.ft` : '₹12,500 / Sq.ft',
-          bhk: item.bhk ? `${item.bhk} BHK` : item.propertyType?.includes('Plot') ? 'Plot' : '3 BHK',
-          dimensions: item.dimensions || '1,200 Sq.ft',
-          approach: item.approachRoad || '40 Ft Asphalt Road',
-          zoning: item.zoning || 'BDA Approved Residential',
-          image: item.image || '/images/bda-plot-bsk6.jpeg',
-          tag: item.companyName ? `🏢 ${item.companyName}` : '✓ Live Verified',
-          seller: {
-            companyName: item.companyName || 'Garden Greens',
-            sellerCode: item.sellerCode || 'REA-000003',
-            phone: item.phone || '9845012345'
-          },
-          lat: item.lat ? parseFloat(item.lat) : 12.8718,
-          lng: item.lng ? parseFloat(item.lng) : 77.5753
-        });
-      }
-
-      // Merge user dashboard uploaded properties with full public catalog
-      const merged = [...mapped];
-      for (const def of ALL_PUBLIC_PROPERTIES) {
-        if (!seenIds.has(def.id)) {
-          merged.push(def);
-        }
-      }
-      setProperties(merged);
+  const handleImageFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const result = event.target?.result as string;
+        if (result) setUploadedImage(result);
+      };
+      reader.readAsDataURL(files[0]);
     }
   };
 
   useEffect(() => {
-    fetchLiveProperties();
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('realestate_properties');
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            // Replace any old mismatched coordinates in stored records
+            const synced = parsed.map((item: PropertyItem) => {
+              if (item.location?.toLowerCase().includes('belagondapalli') || item.location?.toLowerCase().includes('taneja')) {
+                return { ...item, lat: 12.6850, lng: 77.8100 };
+              }
+              return item;
+            });
+            const seen = new Set<string>();
+            const merged: PropertyItem[] = [];
+            for (const item of [...synced, ...ALL_PUBLIC_PROPERTIES]) {
+              if (!seen.has(item.id)) {
+                seen.add(item.id);
+                merged.push(item);
+              }
+            }
+            setProperties(merged);
+            localStorage.setItem('realestate_properties', JSON.stringify(merged));
+            return;
+          }
+        } catch (e) {}
+      }
+      setProperties(ALL_PUBLIC_PROPERTIES);
+      localStorage.setItem('realestate_properties', JSON.stringify(ALL_PUBLIC_PROPERTIES));
+    }
   }, []);
 
   const filteredProperties = properties.filter((p) => {
@@ -284,21 +305,16 @@ export const RealEstateHubPage: React.FC = () => {
       p.location.toLowerCase().includes(searchLocation.toLowerCase()) || 
       p.title.toLowerCase().includes(searchLocation.toLowerCase()) ||
       p.id.toLowerCase().includes(searchLocation.toLowerCase());
-
-    const typeMatch = selectedType === 'ALL' || p.type.toLowerCase() === selectedType.toLowerCase();
-
-    const bhkMatch = selectedBhk === 'ALL' || 
-      (selectedBhk === 'Plot' && p.bhk === 'Plot') ||
-      (selectedBhk === '4+' && (p.bhk.includes('4') || p.bhk.includes('5'))) ||
-      p.bhk.startsWith(selectedBhk);
-
+    
+    const catMatch = selectedCategory === 'ALL' || p.propertyType.toLowerCase() === selectedCategory.toLowerCase();
+    
     let budgetMatch = true;
     if (budgetRange === 'under_50l') budgetMatch = p.priceNum <= 50;
     else if (budgetRange === '50l_1cr') budgetMatch = p.priceNum > 50 && p.priceNum <= 100;
     else if (budgetRange === '1cr_3cr') budgetMatch = p.priceNum > 100 && p.priceNum <= 300;
     else if (budgetRange === 'above_3cr') budgetMatch = p.priceNum > 300;
-
-    return locMatch && typeMatch && bhkMatch && budgetMatch;
+    
+    return locMatch && catMatch && budgetMatch;
   });
 
   return (
@@ -313,45 +329,34 @@ export const RealEstateHubPage: React.FC = () => {
                 BuildMitra Verified Real Estate Hub
               </span>
               <span style={{ backgroundColor: '#10b981', color: '#ffffff', fontSize: '11px', fontWeight: 800, padding: '4px 10px', borderRadius: '6px' }}>
-                {filteredProperties.length} Public Listings Active
+                {filteredProperties.length} Verified Properties Active
               </span>
             </div>
             <h1 style={{ fontSize: '30px', fontWeight: 900, margin: '10px 0 6px 0', letterSpacing: '-0.02em' }}>
-              Verified Real Estate & Land Intelligence Hub
+              Verified Real Estate, Land & Intelligence Hub
             </h1>
             <p style={{ fontSize: '14px', color: '#94a3b8', margin: 0, maxWidth: '800px' }}>
-              Public buyer repository for BDA/BMRDA residential plots, luxury villas, apartments, and commercial sites across Bengaluru & Hosur.
+              Browse BDA Plots, Agriculture Farmland, Industrial KIADB Lands, Revenue & Gramatana Sites with instant SRO and GIS intelligence.
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button
-              onClick={fetchLiveProperties}
-              style={{ padding: '12px 18px', backgroundColor: '#334155', color: '#ffffff', fontWeight: 800, fontSize: '13px', borderRadius: '12px', border: 'none', cursor: 'pointer', boxShadow: '0 2px 6px rgba(0,0,0,0.15)' }}
-            >
-              🔄 Refresh Listings
-            </button>
-            <a
-              href="/realestate-dashboard"
-              style={{ padding: '12px 22px', backgroundColor: '#10b981', color: '#ffffff', fontWeight: 800, fontSize: '13px', borderRadius: '12px', textDecoration: 'none', boxShadow: '0 4px 12px rgba(16,185,129,0.3)', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
-            >
-              <span>+</span> Vendor Dashboard
-            </a>
-          </div>
+          <button
+            onClick={() => openPostModal()}
+            style={{ padding: '14px 24px', backgroundColor: '#10b981', color: '#ffffff', fontWeight: 900, fontSize: '14px', borderRadius: '12px', border: 'none', cursor: 'pointer', boxShadow: '0 4px 14px rgba(16,185,129,0.35)', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+          >
+            <span>📍</span> + Pinpoint & Post Land / Property
+          </button>
         </div>
       </div>
 
       {/* Multi-Filter Search Bar */}
       <div style={{ backgroundColor: '#ffffff', padding: '20px 24px', borderRadius: '18px', border: '1px solid #e2e8f0', marginBottom: '28px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.04)' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', alignItems: 'center' }}>
-          
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', alignItems: 'center' }}>
           <div>
-            <label style={{ fontSize: '11px', fontWeight: 800, color: '#475569', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>
-              📍 Locality / ID / Project
-            </label>
+            <label style={{ fontSize: '11px', fontWeight: 800, color: '#475569', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>📍 Locality / Pin</label>
             <input
               type="text"
-              placeholder="e.g. JP Nagar, Sarjapur, Whitefield..."
+              placeholder="e.g. Belagondapalli, JP Nagar, Harohalli, Sarjapur..."
               value={searchLocation}
               onChange={(e) => setSearchLocation(e.target.value)}
               style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', fontWeight: 600, outline: 'none', backgroundColor: '#f8fafc' }}
@@ -359,44 +364,27 @@ export const RealEstateHubPage: React.FC = () => {
           </div>
 
           <div>
-            <label style={{ fontSize: '11px', fontWeight: 800, color: '#475569', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>
-              🏷️ Category
-            </label>
+            <label style={{ fontSize: '11px', fontWeight: 800, color: '#475569', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>🏷️ Land & Property Type</label>
             <select
-              value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
               style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', fontWeight: 700, outline: 'none', backgroundColor: '#f8fafc', color: '#0f172a' }}
             >
               <option value="ALL">All Categories</option>
-              <option value="Plot">🏡 Villa Plots & Layouts</option>
-              <option value="Buy">🏠 Residential Homes / Villas</option>
-              <option value="Rent">🔑 Rentals & Leases</option>
-              <option value="Commercial">🏢 Commercial Properties</option>
+              <option value="BDA Plot">🏡 BDA Approved Plot</option>
+              <option value="BMRDA Villa Plot">🏡 BMRDA / DTCP Plot</option>
+              <option value="Agriculture Land">🌾 Agriculture Land / Farmland</option>
+              <option value="Industrial Land">🏭 Industrial Land / KIADB</option>
+              <option value="Revenue Sites">📜 Revenue Sites (DC Converted)</option>
+              <option value="Gramatana Sites">🏘️ Gramatana Sites (E-Swathu)</option>
+              <option value="Residential Home">🏠 Residential Home / Villa</option>
+              <option value="Apartment">🏢 Apartment</option>
+              <option value="Commercial Land">🏬 Commercial Land / Building</option>
             </select>
           </div>
 
           <div>
-            <label style={{ fontSize: '11px', fontWeight: 800, color: '#475569', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>
-              🛏️ BHK / Layout
-            </label>
-            <select
-              value={selectedBhk}
-              onChange={(e) => setSelectedBhk(e.target.value)}
-              style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', fontWeight: 700, outline: 'none', backgroundColor: '#f8fafc', color: '#0f172a' }}
-            >
-              <option value="ALL">Any Configuration</option>
-              <option value="Plot">Plots (No BHK)</option>
-              <option value="1">1 BHK</option>
-              <option value="2">2 BHK</option>
-              <option value="3">3 BHK</option>
-              <option value="4+">4+ BHK / Villas</option>
-            </select>
-          </div>
-
-          <div>
-            <label style={{ fontSize: '11px', fontWeight: 800, color: '#475569', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>
-              💰 Budget Range
-            </label>
+            <label style={{ fontSize: '11px', fontWeight: 800, color: '#475569', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>💰 Budget Range</label>
             <select
               value={budgetRange}
               onChange={(e) => setBudgetRange(e.target.value)}
@@ -409,19 +397,17 @@ export const RealEstateHubPage: React.FC = () => {
               <option value="above_3cr">Above ₹3.00 Cr</option>
             </select>
           </div>
-
         </div>
       </div>
 
-      {/* Public Property Cards Grid */}
+      {/* Property Cards Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '24px' }}>
         {filteredProperties.map((property) => (
           <div
             key={property.id}
             onClick={() => setSelectedProperty(property)}
-            style={{ backgroundColor: '#ffffff', borderRadius: '18px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', cursor: 'pointer', transition: 'all 0.2s ease-in-out', display: 'flex', flexDirection: 'column' }}
+            style={{ backgroundColor: '#ffffff', borderRadius: '18px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', cursor: 'pointer', display: 'flex', flexDirection: 'column' }}
           >
-            {/* Image Box */}
             <div style={{ position: 'relative', height: '230px', backgroundColor: '#0f172a' }}>
               <img
                 src={property.image}
@@ -433,28 +419,34 @@ export const RealEstateHubPage: React.FC = () => {
                 }}
               />
               <span style={{ position: 'absolute', top: '12px', left: '12px', backgroundColor: 'rgba(15,23,42,0.85)', backdropFilter: 'blur(4px)', color: '#ffffff', fontSize: '11px', fontWeight: 800, padding: '5px 10px', borderRadius: '8px' }}>
-                {property.type} • {property.bhk}
+                {property.propertyType} • {property.listingType}
               </span>
-              <span style={{ position: 'absolute', bottom: '12px', right: '12px', backgroundColor: '#059669', color: '#ffffff', fontSize: '11px', fontWeight: 800, padding: '5px 10px', borderRadius: '8px', boxShadow: '0 2px 6px rgba(5,150,105,0.4)' }}>
+              <span style={{ position: 'absolute', bottom: '12px', right: '12px', backgroundColor: '#059669', color: '#ffffff', fontSize: '11px', fontWeight: 800, padding: '5px 10px', borderRadius: '8px' }}>
                 {property.tag}
               </span>
             </div>
 
-            {/* Content */}
             <div style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '11px', fontWeight: 800, color: '#64748b' }}>{property.id}</span>
-                  <span style={{ fontSize: '11px', fontWeight: 800, color: '#059669', backgroundColor: '#ecfdf5', padding: '2px 8px', borderRadius: '6px' }}>✓ Title Verified</span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openPostModal(property);
+                    }}
+                    style={{ fontSize: '11px', fontWeight: 800, color: '#2563eb', background: '#eff6ff', border: '1px solid #bfdbfe', padding: '2px 8px', borderRadius: '6px', cursor: 'pointer' }}
+                  >
+                    📍 Pinpoint / Adjust Map
+                  </button>
                 </div>
                 <h3 style={{ fontSize: '18px', fontWeight: 900, color: '#0f172a', margin: '6px 0 4px 0', lineHeight: '1.3' }}>
                   {property.title}
                 </h3>
-                <div style={{ fontSize: '13px', color: '#475569', fontWeight: 600 }}>
+                <div style={{ fontSize: '12px', color: '#475569', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   📍 {property.location}
                 </div>
 
-                {/* Specs Grid */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', margin: '14px 0' }}>
                   <div style={{ padding: '8px 10px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #f1f5f9', fontSize: '11px', color: '#334155' }}>
                     📐 <strong>{property.dimensions}</strong>
@@ -465,7 +457,6 @@ export const RealEstateHubPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Price & Action Button */}
               <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <div style={{ fontSize: '22px', fontWeight: 900, color: '#0f172a' }}>{property.price}</div>
@@ -486,6 +477,181 @@ export const RealEstateHubPage: React.FC = () => {
           </div>
         ))}
       </div>
+
+      {/* POST / UPDATE MODAL */}
+      {isPostModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 10000, backgroundColor: 'rgba(15,23,42,0.75)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <form onSubmit={handleSaveProperty} style={{ backgroundColor: '#ffffff', borderRadius: '20px', maxWidth: '980px', width: '100%', maxHeight: '92vh', overflowY: 'auto', padding: '28px', border: '1px solid #cbd5e1', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '14px', marginBottom: '20px' }}>
+              <div>
+                <h2 style={{ fontSize: '20px', fontWeight: 900, color: '#0f172a', margin: 0 }}>
+                  {editingPropertyId ? `Adjust Property Pinpoint (${editingPropertyId})` : '📍 Pinpoint & Post Property / Land'}
+                </h2>
+                <p style={{ fontSize: '12px', color: '#64748b', margin: '4px 0 0 0' }}>
+                  Search building name, type address, or drag the red pin directly to your site.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPostModalOpen(false)}
+                style={{ backgroundColor: '#f1f5f9', border: 'none', borderRadius: '50%', width: '32px', height: '32px', fontWeight: 900, cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* INTERACTIVE LEAFLET PINPOINT MAP COMPONENT */}
+            <div style={{ marginBottom: '20px' }}>
+              <InteractivePinpointMap
+                initialLat={lat}
+                initialLng={lng}
+                initialAddress={location}
+                onLocationSelect={handleMapLocationSelect}
+              />
+            </div>
+
+            {/* Auto-Captured Intelligence Matrix */}
+            <div style={{ backgroundColor: '#f0fdf4', padding: '12px 16px', borderRadius: '12px', border: '1px solid #bbf7d0', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+              <div>
+                <span style={{ fontSize: '11px', fontWeight: 800, color: '#166534', textTransform: 'uppercase' }}>✓ Auto-Resolved Benchmarks</span>
+                <div style={{ fontSize: '12px', fontWeight: 900, color: '#14532d', marginTop: '2px' }}>
+                  🏛️ Jurisdiction: <strong>{autoSro}</strong> • 💰 Govt. Guidance Value: <strong>₹{autoGuidance.toLocaleString('en-IN')}/Sft</strong>
+                </div>
+              </div>
+              <span style={{ backgroundColor: '#16a34a', color: '#ffffff', fontSize: '10px', fontWeight: 800, padding: '3px 8px', borderRadius: '6px' }}>
+                Benchmark Locked
+              </span>
+            </div>
+
+            {/* Basic Details */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px', marginBottom: '16px' }}>
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: 800, color: '#334155', display: 'block', marginBottom: '4px' }}>Property Title</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Agriculture Land / Gramatana Site / BDA Plot"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12px', outline: 'none' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: 800, color: '#334155', display: 'block', marginBottom: '4px' }}>Property & Land Category</label>
+                <select
+                  value={propertyType}
+                  onChange={(e) => setPropertyType(e.target.value)}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12px', outline: 'none', backgroundColor: '#ffffff', fontWeight: 700 }}
+                >
+                  <option value="BDA Plot">🏡 BDA Approved Plot</option>
+                  <option value="BMRDA Villa Plot">🏡 BMRDA / DTCP Plot</option>
+                  <option value="Agriculture Land">🌾 Agriculture Land / Farmland</option>
+                  <option value="Industrial Land">🏭 Industrial Land / KIADB</option>
+                  <option value="Revenue Sites">📜 Revenue Sites (DC Converted)</option>
+                  <option value="Gramatana Sites">🏘️ Gramatana Sites (E-Swathu)</option>
+                  <option value="Residential Home">🏠 Residential Home / Villa</option>
+                  <option value="Apartment">🏢 Apartment</option>
+                  <option value="Commercial Land">🏬 Commercial Land / Building</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: 800, color: '#334155', display: 'block', marginBottom: '4px' }}>Road Facing</label>
+                <select
+                  value={roadFacing}
+                  onChange={(e) => setRoadFacing(e.target.value)}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12px', outline: 'none', backgroundColor: '#ffffff' }}
+                >
+                  <option value="East Facing Main Road">East Facing Main Road</option>
+                  <option value="North Facing Main Road">North Facing Main Road</option>
+                  <option value="North-East Corner Plot">North-East Corner Plot</option>
+                  <option value="West Facing 40ft Road">West Facing 40ft Road</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Pricing & Dimensions */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px', marginBottom: '16px' }}>
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: 800, color: '#334155', display: 'block', marginBottom: '4px' }}>Price</label>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <input
+                    type="text"
+                    required
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                    style={{ flex: 1, padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12px', outline: 'none' }}
+                  />
+                  <select
+                    value={priceUnit}
+                    onChange={(e) => setPriceUnit(e.target.value)}
+                    style={{ padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12px', backgroundColor: '#ffffff' }}
+                  >
+                    <option value="Cr">Cr</option>
+                    <option value="Lakhs">Lakhs</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: 800, color: '#334155', display: 'block', marginBottom: '4px' }}>Rate / Sq.ft (₹)</label>
+                <input
+                  type="text"
+                  value={ratePerSqFt}
+                  onChange={(e) => setRatePerSqFt(e.target.value)}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12px', outline: 'none' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: 800, color: '#334155', display: 'block', marginBottom: '4px' }}>Plot / Land Dimensions</label>
+                <input
+                  type="text"
+                  value={dimensions}
+                  onChange={(e) => setDimensions(e.target.value)}
+                  placeholder="e.g. 30x40 / 1.5 Acres"
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12px', outline: 'none' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: 800, color: '#334155', display: 'block', marginBottom: '4px' }}>Approach Road Width</label>
+                <input
+                  type="text"
+                  value={approachRoad}
+                  onChange={(e) => setApproachRoad(e.target.value)}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12px', outline: 'none' }}
+                />
+              </div>
+            </div>
+
+            {/* Media Upload */}
+            <div style={{ padding: '14px', borderRadius: '10px', border: '1.5px dashed #cbd5e1', backgroundColor: '#f8fafc', marginBottom: '20px', textAlign: 'center' }}>
+              <div style={{ fontSize: '12px', fontWeight: 800, color: '#1e293b', marginBottom: '4px' }}>📷 Property Photo (JPG, PNG, WEBP)</div>
+              <input type="file" accept="image/*" onChange={handleImageFile} style={{ fontSize: '12px', cursor: 'pointer' }} />
+              {uploadedImage && <div style={{ fontSize: '11px', color: '#059669', fontWeight: 800, marginTop: '6px' }}>✓ Image Loaded Ready</div>}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={() => setIsPostModalOpen(false)}
+                style={{ padding: '10px 20px', backgroundColor: '#f1f5f9', color: '#334155', fontWeight: 800, fontSize: '13px', borderRadius: '8px', border: 'none', cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                style={{ padding: '10px 24px', backgroundColor: '#10b981', color: '#ffffff', fontWeight: 900, fontSize: '13px', borderRadius: '8px', border: 'none', cursor: 'pointer', boxShadow: '0 4px 10px rgba(16,185,129,0.3)' }}
+              >
+                {editingPropertyId ? 'Save & Lock Pinpoint Benchmark →' : 'Publish Property with Fixed Pin →'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {selectedProperty && (
         <PropertyIntelligenceModal

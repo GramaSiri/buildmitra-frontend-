@@ -27,6 +27,7 @@ import { runBuildingModelQA } from "../utils/drg/qaEngine";
 import { ArchitecturalSvgRenderer } from "../utils/drg/svgRenderer";
 import { generateVastuFloorPlan } from "../utils/drg/layoutEngine";
 import PreFloorPlanSvg from "../components/PreFloorPlanSvg";
+import { generateProfessionalCadSheetSvg, generateStructuralCadSheetSvg, generateSingleFloorCadSheetSvg } from "../utils/drg/professionalBlueprintEngine";
 import {
   exportDrawingAsPng,
   exportDrawingAsSvg,
@@ -218,6 +219,7 @@ export default function ProfessionalDRGPage() {
   const [activeFloorLevel, setActiveFloorLevel] = useState<number>(0);
   const [structuralSubview, setStructuralSubview] = useState<StructuralSubview>("column_grid");
   const [selectedCandidateId, setSelectedCandidateId] = useState<string>("cand_1");
+  const [showCadSheet, setShowCadSheet] = useState<boolean>(false);
 
   // Persistent Single Source of Truth Calculation Engine Reports
   const phase0Report = useMemo(() => analyzePlotPhase0(inputs), [inputs]);
@@ -235,7 +237,12 @@ export default function ProfessionalDRGPage() {
   );
 
   const firstFloorReport = useMemo(
-    () => analyzeFirstFloorPlanning(inputs, phase0Report, structuralPlanningReport, groundFloorReport),
+    () => analyzeFirstFloorPlanning(inputs, phase0Report, structuralPlanningReport, groundFloorReport, 1),
+    [inputs, phase0Report, structuralPlanningReport, groundFloorReport]
+  );
+
+  const secondFloorReport = useMemo(
+    () => analyzeFirstFloorPlanning(inputs, phase0Report, structuralPlanningReport, groundFloorReport, 2),
     [inputs, phase0Report, structuralPlanningReport, groundFloorReport]
   );
 
@@ -952,24 +959,145 @@ export default function ProfessionalDRGPage() {
             </div>
           )}
 
-          <div style={{ fontSize: "14px", fontWeight: "bold", color: "#0284c7", marginBottom: "14px" }}>
-            📐 ACTIVE MODULE: {primaryTab.toUpperCase()} ({structuralSubview.toUpperCase()})
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px", flexWrap: "wrap", gap: "10px" }}>
+            <div style={{ fontSize: "14px", fontWeight: "bold", color: "#0284c7" }}>
+              📐 ACTIVE MODULE: {primaryTab.toUpperCase()} ({structuralSubview.toUpperCase()})
+            </div>
+
+            <div style={{ display: "flex", gap: "8px" }}>
+              <button
+                onClick={() => setShowCadSheet(true)}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: "8px",
+                  border: showCadSheet ? "2px solid #0284c7" : "1px solid #cbd5e1",
+                  backgroundColor: showCadSheet ? "#0284c7" : "#ffffff",
+                  color: showCadSheet ? "#ffffff" : "#334155",
+                  fontWeight: "bold",
+                  fontSize: "12px",
+                  cursor: "pointer",
+                  boxShadow: showCadSheet ? "0 4px 12px rgba(2, 132, 199, 0.3)" : "none"
+                }}
+              >
+                📐 Full CAD Blueprint Sheet View (Ground + 1st + 2nd + Elevation)
+              </button>
+
+              <button
+                onClick={() => setShowCadSheet(false)}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: "8px",
+                  border: !showCadSheet ? "2px solid #0284c7" : "1px solid #cbd5e1",
+                  backgroundColor: !showCadSheet ? "#0284c7" : "#ffffff",
+                  color: !showCadSheet ? "#ffffff" : "#334155",
+                  fontWeight: "bold",
+                  fontSize: "12px",
+                  cursor: "pointer"
+                }}
+              >
+                🔍 Single Floor Zoom View
+              </button>
+            </div>
           </div>
 
-          <div style={{ width: "100%", minHeight: "600px" }}>
-            <ArchitecturalSvgRenderer
-              primaryTab={primaryTab}
-              activeFloorLevel={activeFloorLevel}
-              structuralSubview={structuralSubview === "sbc_recommendation" ? "specimen_detail" : structuralSubview}
-              candidate={activeCandidate}
-              inputs={inputs}
-              buildable={{ x: inputs.setbacks.left, y: inputs.setbacks.front, w: inputs.plotWidth - inputs.setbacks.left - inputs.setbacks.right, h: inputs.plotLength - inputs.setbacks.front - inputs.setbacks.rear }}
-              columns={buildingModel.columns}
-              areaStatement={buildingModel.areaStatement}
-              structuralPlanningReport={structuralPlanningReport}
-              groundFloorReport={groundFloorReport}
-            />
-          </div>
+          {showCadSheet ? (
+            <div style={{ width: "100%", overflowX: "auto", background: "#f8fafc", padding: "16px", borderRadius: "12px", border: "2px solid #0284c7" }}>
+              <div style={{ marginBottom: "10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: "12px", fontWeight: "bold", color: primaryTab === "structural_planning" ? "#0369a1" : "#16a34a" }}>
+                  {primaryTab === "structural_planning"
+                    ? "🏗️ IS 456 / IS 13920 CIVIL STRUCTURAL COLUMN & FOOTING GRID BLUEPRINT SHEET"
+                    : "✅ 100% VAASTU SHASTRA COMPLIANT MULTI-FLOOR CAD ARCHITECTURAL SHEET"}
+                </span>
+                <button
+                  onClick={() => {
+                    const isStruct = primaryTab === "structural_planning";
+                    const svgData = isStruct
+                      ? generateStructuralCadSheetSvg({
+                          plotWidth: inputs.plotWidth,
+                          plotLength: inputs.plotLength,
+                          facing: inputs.facing as any,
+                          floors: inputs.floors,
+                          projectName: inputs.projectName,
+                          sbcKpa: inputs.sbcKpa
+                        })
+                      : generateProfessionalCadSheetSvg({
+                          plotWidth: inputs.plotWidth,
+                          plotLength: inputs.plotLength,
+                          facing: inputs.facing as any,
+                          floors: inputs.floors,
+                          projectName: inputs.projectName
+                        });
+                    const blob = new Blob([svgData], { type: "image/svg+xml" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `${inputs.projectName || "BuildMitra"}_${isStruct ? "Structural_Grid" : "CAD_Blueprint"}_Sheet.svg`;
+                    a.click();
+                  }}
+                  style={{ background: "#16a34a", color: "#fff", border: "none", padding: "6px 14px", borderRadius: "6px", fontWeight: "bold", fontSize: "12px", cursor: "pointer" }}
+                >
+                  📥 Download Vector CAD Blueprint (.SVG)
+                </button>
+              </div>
+
+              <div dangerouslySetInnerHTML={{
+                __html: generateProfessionalCadSheetSvg({
+                  plotWidth: inputs.plotWidth,
+                  plotLength: inputs.plotLength,
+                  facing: inputs.facing as any,
+                  floors: inputs.floors,
+                  projectName: inputs.projectName
+                })
+              }} />
+            </div>
+          ) : (
+            <div style={{ width: "100%", minHeight: "600px", overflowX: "auto" }}>
+              {primaryTab === "ground_floor" ? (
+                <div dangerouslySetInnerHTML={{
+                  __html: generateSingleFloorCadSheetSvg({
+                    plotWidth: inputs.plotWidth,
+                    plotLength: inputs.plotLength,
+                    facing: inputs.facing as any,
+                    floors: inputs.floors,
+                    projectName: inputs.projectName
+                  }, 0, groundFloorReport, firstFloorReport)
+                }} />
+              ) : primaryTab === "first_floor" ? (
+                <div dangerouslySetInnerHTML={{
+                  __html: generateSingleFloorCadSheetSvg({
+                    plotWidth: inputs.plotWidth,
+                    plotLength: inputs.plotLength,
+                    facing: inputs.facing as any,
+                    floors: inputs.floors,
+                    projectName: inputs.projectName
+                  }, 1, groundFloorReport, firstFloorReport)
+                }} />
+              ) : primaryTab === "second_floor" ? (
+                <div dangerouslySetInnerHTML={{
+                  __html: generateSingleFloorCadSheetSvg({
+                    plotWidth: inputs.plotWidth,
+                    plotLength: inputs.plotLength,
+                    facing: inputs.facing as any,
+                    floors: inputs.floors,
+                    projectName: inputs.projectName
+                  }, 2, groundFloorReport, secondFloorReport)
+                }} />
+              ) : (
+                <ArchitecturalSvgRenderer
+                  primaryTab={primaryTab === "structural_planning" ? "structural" : primaryTab}
+                  activeFloorLevel={activeFloorLevel}
+                  structuralSubview={structuralSubview}
+                  candidate={activeCandidate}
+                  inputs={inputs}
+                  buildable={{ x: inputs.setbacks.left, y: inputs.setbacks.front, w: inputs.plotWidth - inputs.setbacks.left - inputs.setbacks.right, h: inputs.plotLength - inputs.setbacks.front - inputs.setbacks.rear }}
+                  columns={buildingModel.columns}
+                  areaStatement={buildingModel.areaStatement}
+                  structuralPlanningReport={structuralPlanningReport}
+                  groundFloorReport={groundFloorReport}
+                />
+              )}
+            </div>
+          )}
         </div>
       )}
 

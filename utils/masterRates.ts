@@ -59,6 +59,7 @@ const CANONICAL_ALIAS_MAP: Record<string, string[]> = {
   "MAT-PEB-SEC": ["secondary steel", "z purlin", "c purlin", "girt"],
   "CIV-FND-CON": ["m25 concrete", "foundation concrete", "ready mix concrete", "footing concrete"],
   "SRV-RCC-LAY": ["rcc casting labour", "concrete labour", "casting labour"],
+  "SRV-BBN-LAY": ["bar bending", "bar bending labour", "steel binding", "steel binding labour", "rebar labour", "steel fixing"],
   "SRV-PLS-LAY": ["plastering labour", "plaster labour", "masonry plaster labour"],
   "SRV-PNT-LAY": ["painting labour", "painter labour", "paint labour"],
   "SRV-TIL-LAY": ["tile laying labour", "tiling labour", "tile mason"],

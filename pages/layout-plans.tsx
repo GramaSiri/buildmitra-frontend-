@@ -161,12 +161,12 @@ function approximatePolygon(points: SurveyPoint[]) {
 function makeAmenityBoxes(poly: XY[], selected: AmenityKey[], targetArea: number, bounds: { minX: number; minY: number; maxX: number; maxY: number }, forbidden: Box[] = []): AmenityBox[] {
   if (!selected.length || targetArea <= 0) return [];
   const bw = bounds.maxX - bounds.minX, bh = bounds.maxY - bounds.minY;
-  const minimum = (name: string) => name === "Security Cabin" ? 200 : name === "Rain Water Harvesting" ? 300 : name === "Overhead Tank" ? 400 : name === "UG Tank" ? 600 : name === "Transformer Yard" ? 900 : name === "STP" ? 1200 : name === "Swimming Pool" ? 1800 : name === "Club House" ? 2500 : 600;
+  const minimum = (name: string) => name === "Security Cabin" ? 60 : name === "Rain Water Harvesting" ? 100 : name === "Overhead Tank" ? 120 : name === "UG Tank" ? 180 : name === "Transformer Yard" ? 200 : name === "STP" ? 250 : name === "Swimming Pool" ? 350 : name === "Club House" ? 500 : 180;
   const minTotal = selected.reduce((s, n) => s + minimum(n), 0);
   const extra = Math.max(0, targetArea - minTotal);
   const boxes: AmenityBox[] = [];
-  const cellW = Math.max(18, Math.min(28, bw / 28));
-  const cellH = Math.max(16, Math.min(24, bh / 30));
+  const cellW = Math.max(10, Math.min(18, bw / 36));
+  const cellH = Math.max(10, Math.min(16, bh / 40));
   const cells: Box[] = [];
 
   for (let y = bounds.minY; y + cellH <= bounds.maxY + .01; y += cellH) {
@@ -438,7 +438,20 @@ function generateLayout(
   const allocated = gross ? Math.min(gross, roadArea + saleableArea + parkArea + utilityArea + amenityArea) : 0;
   const unusedArea = Math.max(0, gross - allocated);
 
-  // STEP 4: AUTOMATED GEOMETRY VALIDATION CHECK
+  // SPATIAL TOPOLOGICAL SORTING & STRICT SEQUENTIAL RE-INDEXING (101, 102, 103... N)
+  plots.sort((a, b) => {
+    const rowA = Math.round((bounds.maxY - a.y) / 10);
+    const rowB = Math.round((bounds.maxY - b.y) / 10);
+    if (rowA !== rowB) return rowA - rowB;
+    return a.x - b.x;
+  });
+
+  const startNo = Math.max(1, Math.round(numberingStart) || 101);
+  plots.forEach((p, idx) => {
+    p.number = startNo + idx;
+  });
+
+  // AUTOMATED GEOMETRY VALIDATION CHECK
   const unallocatedSaleableArea = 0.00; // Zero Unallocated Residual Land
   const geometryValidated = Math.abs(unallocatedSaleableArea) <= 0.05;
   const landscapeArea = selected.includes("Landscape Area") ? unusedArea : 0;
@@ -590,18 +603,18 @@ function LayoutSvg({ layout, mainRoad, internalRoad, selected }: { layout: Retur
         {layout.plots.map(p => {
           const fill = p.odd ? COLORS.odd : p.extended ? COLORS.extended : p.corner ? COLORS.corner : p.premium ? COLORS.premium : p.adjusted ? COLORS.adjusted : palette[Math.max(0, types.indexOf(p.type)) % palette.length];
           const stroke = p.extended ? "#047857" : COLORS.plotStroke;
+          const pw = p.w * scale;
+          const ph = p.h * scale;
+          const showDimensions = pw >= 32 && ph >= 22;
+
           return (
             <g key={p.number}>
               {p.shape ? (
                 <polygon points={p.shape.map(v => `${sx(v.x)},${sy(v.y)}`).join(" ")} fill={fill} stroke={stroke} strokeWidth=".8" />
               ) : (
-                <rect x={sx(p.x)} y={sy(p.y + p.h)} width={p.w * scale} height={p.h * scale} fill={fill} stroke={stroke} strokeWidth=".8" />
+                <rect x={sx(p.x)} y={sy(p.y + p.h)} width={pw} height={ph} fill={fill} stroke={stroke} strokeWidth=".8" />
               )}
-              <text x={sx(p.x + p.w / 2)} y={sy(p.y + p.h / 2) - 6} textAnchor="middle" fontSize="7" fontWeight="800" fill="#0f172a">{p.number}</text>
-              <text x={sx(p.x + p.w / 2)} y={sy(p.y + p.h / 2) + 2} textAnchor="middle" fontSize="5.5" fill="#334155">{p.shape ? `${num(p.area)} sqft` : `${p.width}×${p.depth}`}</text>
-              <text x={sx(p.x + p.w / 2)} y={sy(p.y + p.h / 2) + 10} textAnchor="middle" fontSize="4.8" fontWeight="800" fill="#0f172a">
-                {p.odd ? "ODD PLOT" : p.extended ? "EXTENDED PLOT" : p.corner ? "CORNER PLOT" : p.premium ? "PREMIUM PLOT" : p.adjusted ? "ADJUSTED PLOT" : p.type}
-              </text>
+              <text x={sx(p.x + p.w / 2)} y={sy(p.y + p.h / 2) + 2.5} textAnchor="middle" fontSize={Math.max(5.5, Math.min(8.5, Math.min(pw, ph) * 0.4))} fontWeight="800" fill="#0f172a">{p.number}</text>
             </g>
           );
         })}
