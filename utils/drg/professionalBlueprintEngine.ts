@@ -335,7 +335,12 @@ export const generateSingleFloorCadSheetSvg = (
 // =====================================================================================
 // 2. ARCHITECTURAL MULTI-FLOOR CAD BLUEPRINT SHEET GENERATOR
 // =====================================================================================
-export const generateProfessionalCadSheetSvg = (opts: BlueprintOptions): string => {
+export const generateProfessionalCadSheetSvg = (
+  opts: BlueprintOptions,
+  gfReport?: GroundFloorPlanningReport,
+  ffReport?: FirstFloorPlanningReport,
+  sfReport?: FirstFloorPlanningReport
+): string => {
   const w = opts.plotWidth || 30;
   const l = opts.plotLength || 40;
   const facing = opts.facing || 'South';
@@ -578,7 +583,7 @@ export const generateProfessionalCadSheetSvg = (opts: BlueprintOptions): string 
         <rect x="40" y="60" width="220" height="280" fill="#f8fafc" stroke="#0f172a" stroke-width="2" />
         <rect x="50" y="250" width="200" height="85" fill="#cbd5e1" stroke="#0f172a" stroke-width="2" />
         <rect x="60" y="265" width="120" height="70" fill="#475569" stroke="#0f172a" stroke-width="1.5" />
-        <text x="120" y="305" fill="#ffffff" font-size="10" font-weight="bold" text-anchor="middle">SLIDING GATE</text>
+        <text x="120" y="305" fill="#ffffff" font-size="10" font-weight="bold" text-anchor="middle">SLIDING GATE (18')</text>
 
         <rect x="50" y="160" width="200" height="85" fill="#ffffff" stroke="#0f172a" stroke-width="2" />
         <rect x="60" y="165" width="140" height="75" fill="#e0f2fe" opacity="0.6" stroke="#0284c7" stroke-width="1" />
@@ -593,10 +598,17 @@ export const generateProfessionalCadSheetSvg = (opts: BlueprintOptions): string 
         <rect x="210" y="60" width="40" height="275" fill="#e2e8f0" stroke="#0f172a" stroke-width="2" />
         <text x="230" y="180" fill="#0f172a" font-size="9" font-weight="bold" text-anchor="middle" transform="rotate(-90 230 180)">LIFT &amp; STAIR TOWER</text>
 
-        <line x1="270" y1="60" x2="270" y2="345" stroke="#0f172a" stroke-width="1.5" />
-        <text x="285" y="120" fill="#0f172a" font-size="9" font-weight="bold">2ND FL (19'6")</text>
-        <text x="285" y="210" fill="#0f172a" font-size="9" font-weight="bold">1ST FL (12'8")</text>
-        <text x="285" y="300" fill="#0f172a" font-size="9" font-weight="bold">GF (1'0")</text>
+        <!-- ELEVATION HEIGHT EXTENSION DIMENSION LINES (RIGHT SIDE) -->
+        <line x1="265" y1="60" x2="295" y2="60" stroke="#dc2626" stroke-width="1.5" />
+        <line x1="265" y1="160" x2="295" y2="160" stroke="#dc2626" stroke-width="1.5" />
+        <line x1="265" y1="250" x2="295" y2="250" stroke="#dc2626" stroke-width="1.5" />
+        <line x1="265" y1="335" x2="295" y2="335" stroke="#dc2626" stroke-width="1.5" />
+        <line x1="285" y1="60" x2="285" y2="335" stroke="#dc2626" stroke-width="1.5" />
+
+        <text x="290" y="115" fill="#dc2626" font-size="9" font-weight="bold">19'6" 2ND FL</text>
+        <text x="290" y="205" fill="#dc2626" font-size="9" font-weight="bold">12'8" 1ST FL</text>
+        <text x="290" y="295" fill="#dc2626" font-size="9" font-weight="bold">2'0" PLINTH</text>
+        <text x="290" y="340" fill="#dc2626" font-size="9" font-weight="bold">TOTAL: 21'0"</text>
       </g>
 
       <!-- VAASTU AUDIT SHEET -->

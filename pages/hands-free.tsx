@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import Head from "next/head";
 import { getAllLiveMasterItems, searchMaterial, getMaterialsByKeyword, MaterialItem, cleanSearchQuery } from "../lib/csv-parser";
 import { syncApprovedRatesFromBackend } from "../utils/masterRates";
+import MarketRateTrend from "../components/ui/MarketRateTrend";
 
 declare global {
   interface Window {
@@ -773,6 +774,9 @@ export default function HandsFreeVoiceGuide() {
             ⚡ Live Admin Approved Rates &amp; Complete App Explanation (Why, Where, When, Whom &amp; How) across English, Hindi, Kannada, Telugu, Tamil, Malayalam, Bengali &amp; Odia
           </p>
         </div>
+
+        {/* CONTINUOUS RUNNING LIVE RATES TICKER MARQUEE */}
+        <MarketRateTrend />
 
         {/* VOICE SEARCH SECTION WITH HIGHLIGHTED NARRATION CONTROL BOX */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px", marginBottom: "20px" }}>

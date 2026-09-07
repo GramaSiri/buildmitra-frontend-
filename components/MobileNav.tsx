@@ -15,10 +15,12 @@ export const MODULES = [
   { id: "buyer", name: "Buyer / Owner", icon: "🏠", path: "/buyer-dashboard" },
   { id: "supplier", name: "Supplier", icon: "📦", path: "/supplier-dashboard" },
   { id: "vendor", name: "Contractor", icon: "🏗️", path: "/vendor-dashboard" },
+  { id: "weathersafety", name: "Weather & Safety", icon: "🌤️", path: "/weather-safety" },
   { id: "labour", name: "Labour Net", icon: "👷", path: "/laboursupply-dashboard" },
   { id: "machine", name: "Machine Hire", icon: "🚜", path: "/machinehire-dashboard" },
   { id: "realestate", name: "Real Estate", icon: "🏡", path: "/realestate-dashboard" },
   { id: "marketplace", name: "Marketplace", icon: "🛒", path: "/marketplace" },
+  { id: "bulkbuying", name: "Bulk Buying", icon: "⚡", path: "/bulk-buying" },
   { id: "admin", name: "Admin", icon: "👑", path: "/admin-dashboard" }
 ];
 

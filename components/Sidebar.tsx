@@ -216,7 +216,9 @@ const styles = {
 
 export const mainNavigationItems = [
   { name: "Hands-Free Voice Guide", icon: "🎙️", path: "/hands-free", badge: "AI" },
+  { name: "Weather & Pouring Safety", icon: "🌤️", path: "/weather-safety", badge: "SAFETY" },
   { name: "Marketplace", icon: "🛒", path: "/marketplace" },
+  { name: "Bulk Buying", icon: "⚡", path: "/bulk-buying", badge: "AUCTION" },
   { name: "Labour Net", icon: "👥", path: "/labour-net", badge: "NEW" },
   { name: "DRG", icon: "📐", path: "/drg" },
   { name: "Pre Floor Plan DRG", icon: "🏠", path: "/pre-floor-plan-drg" },

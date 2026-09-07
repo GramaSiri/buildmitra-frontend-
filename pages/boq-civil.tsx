@@ -129,12 +129,12 @@ const styles: Record<string, React.CSSProperties> = {
   },
   summaryGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-    gap: '12px',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+    gap: '10px',
     marginBottom: '16px'
   },
   metricCard: {
-    padding: '16px',
+    padding: '12px 10px',
     borderRadius: '10px',
     color: 'white',
     textAlign: 'center',
@@ -148,9 +148,11 @@ const styles: Record<string, React.CSSProperties> = {
   metricGreen: { backgroundColor: '#16a34a' },
   metricOrange: { backgroundColor: '#ea580c' },
   metricBlue: { backgroundColor: '#2563eb' },
-  metricTitle: { fontSize: '12px', textTransform: 'uppercase', opacity: 0.9, fontWeight: '700', letterSpacing: '0.5px' },
-  metricVal: { fontSize: '18px', fontWeight: '800', marginTop: '6px' },
-  metricValGrand: { fontSize: '22px', fontWeight: '900', marginTop: '6px' },
+  metricPurple: { backgroundColor: '#7c3aed' },
+  metricCyan: { backgroundColor: '#0891b2' },
+  metricTitle: { fontSize: '11px', textTransform: 'uppercase', opacity: 0.9, fontWeight: '700', letterSpacing: '0.5px' },
+  metricVal: { fontSize: '16px', fontWeight: '800', marginTop: '4px' },
+  metricValGrand: { fontSize: '18px', fontWeight: '900', marginTop: '4px' },
 
   tableContainer: {
     overflowX: 'auto',
@@ -177,6 +179,32 @@ const formatCurrency = (val: number | null | undefined): string => {
   return `₹${val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
+const ALL_BOQ_ITEMS_DEF = [
+  { id: "MAT-CEM-01", code: "MAT-CEM-01", name: "Cement (OPC 53 Grade)" },
+  { id: "MAT-STL-01", code: "MAT-STL-01", name: "Steel (TMT Fe 500D / 550D Rebar)" },
+  { id: "MAT-MSND-01", code: "MAT-MSND-01", name: "M-Sand (Fine Aggregate)" },
+  { id: "MAT-AGG-01", code: "MAT-AGG-01", name: "Aggregates CA-1 & CA-2 (20mm & 12mm)" },
+  { id: "CIV-CLR-01", code: "CIV-CLR-01", name: "Site Clearing, Marking & Leveling" },
+  { id: "CIV-FND-01", code: "CIV-FND-01", name: "Foundation + Damp Proof Course (DPC)" },
+  { id: "CIV-RCC-01", code: "CIV-RCC-01", name: "All RCC Concrete Works (Footings, Beams, Columns, Slabs)" },
+  { id: "CIV-MAS-01", code: "CIV-MAS-01", name: "Masonry Walls (Bricks/Blocks/AAC)" },
+  { id: "CIV-PLS-01", code: "CIV-PLS-01", name: "All Plastering (Internal + External)" },
+  { id: "CIV-FLR-01", code: "CIV-FLR-01", name: "Flooring + Kitchen Platform" },
+  { id: "CIV-WND-01", code: "CIV-WND-01", name: "Windows & Doors (UPVC/Teak)" },
+  { id: "CIV-GRL-01", code: "CIV-GRL-01", name: "Grills & Railings (MS/SS)" },
+  { id: "CIV-PNT-01", code: "CIV-PNT-01", name: "Painting Works (Interior + Exterior)" },
+  { id: "CIV-FCL-01", code: "CIV-FCL-01", name: "False Ceiling Works" },
+  { id: "CIV-ELE-01", code: "CIV-ELE-01", name: "Electrical + External Lighting + MCBs" },
+  { id: "CIV-PLB-01", code: "CIV-PLB-01", name: "Plumbing Works (CP fittings + Piping)" },
+  { id: "CIV-WTP-01", code: "CIV-WTP-01", name: "Waterproofing Works" },
+  { id: "CIV-SMP-01", code: "CIV-SMP-01", name: "Underground Sump (Concrete RCC)" },
+  { id: "CIV-OHT-01", code: "CIV-OHT-01", name: "Overhead Tank" },
+  { id: "CIV-CCTV-01", code: "CIV-CCTV-01", name: "CCTV Installation" },
+  { id: "CIV-CWD-01", code: "CIV-CWD-01", name: "Compound Wall + Gate + Paving" },
+  { id: "CIV-TRC-01", code: "CIV-TRC-01", name: "Terrace Canopy / Party Hall" },
+  { id: "CIV-INT-01", code: "CIV-INT-01", name: "All Interiors (Cabinets, Kitchen)" }
+];
+
 export default function CivilBOQPage() {
   const router = useRouter();
   const { checkAndRun } = usePaymentBarrier();
@@ -189,6 +217,10 @@ export default function CivilBOQPage() {
   const [plotWidth, setPlotWidth] = useState(40);
   const [floors, setFloors] = useState(3);
   const [wallType, setWallType] = useState('Concrete Blocks');
+  const [packageTier, setPackageTier] = useState<'Standard' | 'Premium' | 'Ultra Premium'>('Standard');
+  const [selectedItemIds, setSelectedItemIds] = useState<string[]>(ALL_BOQ_ITEMS_DEF.map(it => it.id));
+  const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
+  const [itemSearch, setItemSearch] = useState<string>('');
 
   const [isInputModified, setIsInputModified] = useState<boolean>(false);
   const [isCalculatedBlue, setIsCalculatedBlue] = useState<boolean>(false);
@@ -198,80 +230,147 @@ export default function CivilBOQPage() {
     setIsInputModified(true);
   };
 
-  // Authoritative Admin Rate Master Lookups (0 fallback)
-  const cementRate = getMasterRate(["MAT-CEM-01", "cement", "opc 53"], 0);
-  const steelRate = getMasterRate(["MAT-STL-01", "tmt steel", "steel rebar"], 0);
-  const sandRate = getMasterRate(["MAT-MSND-01", "m-sand", "sand"], 0);
-  const blockRate = getMasterRate(["MAT-BLK-01", "concrete block", "solid block"], 0);
-  const rccLabourRate = getMasterRate(["SRV-RCC-LAY", "rcc labour", "concrete labour"], 0);
+  const toggleItem = (id: string) => {
+    setSelectedItemIds(prev => 
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+    setIsInputModified(true);
+  };
+
+  const selectAllItems = () => {
+    setSelectedItemIds(ALL_BOQ_ITEMS_DEF.map(it => it.id));
+    setIsInputModified(true);
+  };
+
+  const deselectAllItems = () => {
+    setSelectedItemIds([]);
+    setIsInputModified(true);
+  };
+
+  // Authoritative Admin Rate Master Lookups (with benchmark fallbacks from uploaded CSV)
+  const cementRate = getMasterRate(["MAT-CEM-01", "cement", "opc 53"], 410);
+  const steelRate = getMasterRate(["MAT-STL-01", "tmt steel", "steel rebar"], 67);
+  const sandRate = getMasterRate(["MAT-MSND-01", "m-sand", "sand"], 48);
+  const aggRate = getMasterRate(["MAT-AGG-01", "MAT-AGG-12", "MAT-AGG-20", "aggregates ca-1 & ca-2"], 42);
+  const clearRate = getMasterRate(["CIV-CLR-01", "site clearing"], 20);
+  const fndRate = getMasterRate(["CIV-FND-01", "CIV-FND-CON", "foundation + damp proof course"], 45);
+  const rccRate = getMasterRate(["CIV-RCC-01", "all rcc concrete works"], 4850);
+  const masonryRate = getMasterRate(["CIV-MAS-01", "MAT-BLK-01", "masonry walls"], wallType === "Clay Bricks" ? 9 : (wallType === "AAC Blocks" ? 65 : 42));
+  const plasterRate = getMasterRate(["CIV-PLS-01", "MAT-PLS-01", "all plastering"], 48);
+  const flooringRate = getMasterRate(["CIV-FLR-01", "MAT-GRN-01", "flooring + kitchen platform"], 85);
+  const doorsWinRate = getMasterRate(["CIV-WND-01", "windows & doors"], 680);
+  const grillsRate = getMasterRate(["CIV-GRL-01", "grills & railings"], 120);
+  const paintRate = getMasterRate(["CIV-PNT-01", "MAT-PNT-01", "painting works"], 35);
+  const ceilingRate = getMasterRate(["CIV-FCL-01", "false ceiling works"], 65);
+  const elecRate = getMasterRate(["CIV-ELE-01", "electrical works"], 135);
+  const plbRate = getMasterRate(["CIV-PLB-01", "plumbing works"], 105);
+  const wtpRate = getMasterRate(["CIV-WTP-01", "waterproofing works"], 42);
+  const sumpRate = getMasterRate(["CIV-SMP-01", "underground sump"], 9.5);
+  const ohtRate = getMasterRate(["CIV-OHT-01", "overhead tank"], 6.5);
+  const cctvRate = getMasterRate(["CIV-CCTV-01", "cctv installation"], 3500);
+  const compoundRate = getMasterRate(["CIV-CWD-01", "compound wall + gate"], 160);
+  const canopyRate = getMasterRate(["CIV-TRC-01", "terrace canopy"], 480);
+  const interiorRate = getMasterRate(["CIV-INT-01", "all interiors"], 950);
 
   const calculations = useMemo(() => {
     const plotArea = plotLength * plotWidth;
     const footprintArea = plotArea * 0.9; // 10% setback
     const totalBUA = Math.round(footprintArea * floors);
 
-    const volumeCum = (totalBUA * 0.15) / 3.28084; // ~0.15m height equivalent concrete
-    const cementBags = Math.ceil(volumeCum * 8.07);
-    const sandCft = Math.round(volumeCum * 14.81);
-    const steelKg = Math.round(totalBUA * 3.5); // ~3.5 kg/sqft steel ratio
-    const blocksQty = Math.ceil(totalBUA * 1.2); // ~1.2 blocks/sqft
+    // Package Multipliers (Standard = 1.0 -> ₹1,800/sqft, Premium = 1.25 -> +25%, Ultra Premium = 1.50 -> +50%)
+    const packageMultiplier = packageTier === 'Ultra Premium' ? 1.50 : (packageTier === 'Premium' ? 1.25 : 1.0);
 
-    const items = [
-      {
-        code: cementRate.itemCode || "MAT-CEM-01",
-        category: "Substructure & Superstructure",
-        name: "Cement (OPC 53 Grade - Structural Construction)",
-        uom: "BAG",
-        qty: cementBags,
-        rateObj: cementRate
-      },
-      {
-        code: steelRate.itemCode || "MAT-STL-01",
-        category: "Reinforcement Steel",
-        name: "TMT Rebar Steel (Fe 500D)",
-        uom: "KG",
-        qty: steelKg,
-        rateObj: steelRate
-      },
-      {
-        code: sandRate.itemCode || "MAT-MSND-01",
-        category: "Aggregates & Mortar",
-        name: "M-Sand (Manufactured Fine Aggregate)",
-        uom: "CFT",
-        qty: sandCft,
-        rateObj: sandRate
-      },
-      {
-        code: blockRate.itemCode || "MAT-BLK-01",
-        category: "Masonry Construction",
-        name: "Concrete Solid Blocks (6 inch)",
-        uom: "NOS",
-        qty: blocksQty,
-        rateObj: blockRate
-      },
-      {
-        code: rccLabourRate.itemCode || "SRV-RCC-LAY",
-        category: "Labour Services",
-        name: "Civil Building Construction & RCC Labour",
-        uom: "SQFT",
-        qty: totalBUA,
-        rateObj: rccLabourRate
-      }
+    const isRccSelected = selectedItemIds.includes("CIV-RCC-01");
+
+    // IS Standard Empirical QS Quantities based on BUA & Structure Specification
+    // Deduplication rule: If RCC Concrete Works (RMC/structural concrete) is included:
+    // 1. Aggregates CA-1 & CA-2 = 0 CFT (coarse aggregate is 100% inside RCC Concrete)
+    // 2. Cement = 0.16 bags / sqft BUA (covers non-RCC mortar: Masonry, Plastering, Tiles, Waterproofing)
+    // 3. M-Sand = 0.60 CFT / sqft BUA (covers non-RCC mortar: Masonry, Plastering, Tiles bedding)
+    // If RCC Concrete Works is NOT selected:
+    // Raw materials revert to full quantities (Cement: 0.42 bags/sqft, M-Sand: 1.35 CFT/sqft, Aggregates: 1.35 CFT/sqft).
+    const cementBags = isRccSelected ? Math.ceil(totalBUA * 0.16) : Math.ceil(totalBUA * 0.42);
+    const steelKg = Math.round(totalBUA * 3.8);
+    const sandCft = isRccSelected ? Math.round(totalBUA * 0.60) : Math.round(totalBUA * 1.35);
+    const aggCft = isRccSelected ? 0 : Math.round(totalBUA * 1.35);
+    const clearSqft = Math.round(plotArea);
+    const fndSqft = Math.round(footprintArea);
+    const rccCum = Math.round((totalBUA * 0.15) / 3.28084);
+    
+    let masonryQty = Math.ceil(totalBUA * 1.2);
+    let masonryUom = "NOS";
+    if (wallType === "Clay Bricks") {
+      masonryQty = Math.ceil(totalBUA * 18);
+    } else if (wallType === "AAC Blocks") {
+      masonryQty = Math.ceil(totalBUA * 0.8);
+    }
+
+    const plasterSqft = Math.round(totalBUA * 2.8);
+    const flooringSqft = Math.round(totalBUA * 0.85);
+    const doorsWinSqft = Math.round(totalBUA * 0.13);
+    const grillsSqft = Math.round(totalBUA * 0.08);
+    const paintSqft = Math.round(totalBUA * 3.2);
+    const ceilingSqft = Math.round(totalBUA * 0.45);
+    const elecSqft = totalBUA;
+    const plbsqft = totalBUA;
+    const wtpSqft = Math.round(totalBUA * 0.25);
+    const sumpLtr = Math.max(5000, Math.round(totalBUA * 5));
+    const ohtLtr = Math.max(1000, floors * 1000);
+    const cctvQty = Math.max(4, Math.ceil(totalBUA / 500));
+    const compoundSqft = Math.round((plotLength + plotWidth) * 2 * 6);
+    const canopySqft = Math.round(footprintArea * 0.20);
+    const interiorSqft = Math.round(totalBUA * 0.30);
+
+    const allItems = [
+      { id: "MAT-CEM-01", code: cementRate.itemCode || "MAT-CEM-01", category: "Substructure & Superstructure", name: "Cement (OPC 53 Grade - Non-RCC / Mortar)", uom: "BAG", qty: cementBags, rateObj: cementRate },
+      { id: "MAT-STL-01", code: steelRate.itemCode || "MAT-STL-01", category: "Reinforcement Steel", name: "Steel (TMT Fe 500D / 550D Rebar)", uom: "KG", qty: steelKg, rateObj: steelRate },
+      { id: "MAT-MSND-01", code: sandRate.itemCode || "MAT-MSND-01", category: "Aggregates & Mortar", name: "M-Sand (Manufactured Fine Aggregate)", uom: "CFT", qty: sandCft, rateObj: sandRate },
+      { id: "MAT-AGG-01", code: aggRate.itemCode || "MAT-AGG-01", category: "Aggregates & Mortar", name: "Aggregates CA-1 & CA-2 (20mm & 12mm Coarse Jelly)", uom: "CFT", qty: aggCft, rateObj: aggRate },
+      { id: "CIV-CLR-01", code: clearRate.itemCode || "CIV-CLR-01", category: "Earthwork & Site Prep", name: "Site Clearing, Marking & Leveling", uom: "SQFT", qty: clearSqft, rateObj: clearRate },
+      { id: "CIV-FND-01", code: fndRate.itemCode || "CIV-FND-01", category: "Substructure & Foundation", name: "Foundation + Damp Proof Course (DPC 50mm)", uom: "SQFT", qty: fndSqft, rateObj: fndRate },
+      { id: "CIV-RCC-01", code: rccRate.itemCode || "CIV-RCC-01", category: "Superstructure Concrete", name: "All RCC Concrete Works (Footings, Beams, Columns, Slabs)", uom: "CUM", qty: rccCum, rateObj: rccRate },
+      { id: "CIV-MAS-01", code: masonryRate.itemCode || "CIV-MAS-01", category: "Masonry Construction", name: `Masonry Walls (${wallType} + Interlock Masonry)`, uom: masonryUom, qty: masonryQty, rateObj: masonryRate },
+      { id: "CIV-PLS-01", code: plasterRate.itemCode || "CIV-PLS-01", category: "Wall & Ceiling Finishes", name: "All Plastering (Internal Smooth + External Sponge)", uom: "SQFT", qty: plasterSqft, rateObj: plasterRate },
+      { id: "CIV-FLR-01", code: flooringRate.itemCode || "CIV-FLR-01", category: "Flooring & Surfaces", name: "Flooring + Kitchen Platform (Vitrified Tiles / Granite)", uom: "SQFT", qty: flooringSqft, rateObj: flooringRate },
+      { id: "CIV-WND-01", code: doorsWinRate.itemCode || "CIV-WND-01", category: "Doors & Windows", name: "Windows & Doors (UPVC/Teak Frames + Shutters)", uom: "SQFT", qty: doorsWinSqft, rateObj: doorsWinRate },
+      { id: "CIV-GRL-01", code: grillsRate.itemCode || "CIV-GRL-01", category: "Metal Fabrication", name: "Grills & Railings (MS Window Grills + SS Balcony Railings)", uom: "SQFT", qty: grillsSqft, rateObj: grillsRate },
+      { id: "CIV-PNT-01", code: paintRate.itemCode || "CIV-PNT-01", category: "Painting & Protective Coatings", name: "Painting Works (Interior Emulsion + Exterior Weather Shield)", uom: "SQFT", qty: paintSqft, rateObj: paintRate },
+      { id: "CIV-FCL-01", code: ceilingRate.itemCode || "CIV-FCL-01", category: "Ceiling & Joinery", name: "False Ceiling Works (Gypsum / POP Grid System)", uom: "SQFT", qty: ceilingSqft, rateObj: ceilingRate },
+      { id: "CIV-ELE-01", code: elecRate.itemCode || "CIV-ELE-01", category: "MEP Services - Electrical", name: "Electrical + External Lighting + Distribution Boards/MCBs", uom: "SQFT", qty: elecSqft, rateObj: elecRate },
+      { id: "CIV-PLB-01", code: plbRate.itemCode || "CIV-PLB-01", category: "MEP Services - Plumbing", name: "Plumbing Works (CP fittings + CPVC Piping + Sanitary)", uom: "SQFT", qty: plbsqft, rateObj: plbRate },
+      { id: "CIV-WTP-01", code: wtpRate.itemCode || "CIV-WTP-01", category: "Waterproofing & Insulation", name: "Waterproofing Works (Terrace, Toilets & Sump Coating)", uom: "SQFT", qty: wtpSqft, rateObj: wtpRate },
+      { id: "CIV-SMP-01", code: sumpRate.itemCode || "CIV-SMP-01", category: "Water Storage Systems", name: "Underground Sump (Concrete RCC Tank)", uom: "LTR", qty: sumpLtr, rateObj: sumpRate },
+      { id: "CIV-OHT-01", code: ohtRate.itemCode || "CIV-OHT-01", category: "Water Storage Systems", name: "Overhead Tank (Triple Layer Storage)", uom: "LTR", qty: ohtLtr, rateObj: ohtRate },
+      { id: "CIV-CCTV-01", code: cctvRate.itemCode || "CIV-CCTV-01", category: "Security & Automation", name: "CCTV Installation (HD Cameras + DVR + Cabling)", uom: "NOS", qty: cctvQty, rateObj: cctvRate },
+      { id: "CIV-CWD-01", code: compoundRate.itemCode || "CIV-CWD-01", category: "External & Site Infra", name: "Compound Wall + Gate + External Paving + Landscaping", uom: "SQFT", qty: compoundSqft, rateObj: compoundRate },
+      { id: "CIV-TRC-01", code: canopyRate.itemCode || "CIV-TRC-01", category: "Special Structures", name: "Terrace Canopy / Party Hall", uom: "SQFT", qty: canopySqft, rateObj: canopyRate },
+      { id: "CIV-INT-01", code: interiorRate.itemCode || "CIV-INT-01", category: "Interior Works", name: "All Interiors (Cabinets, Wardrobes, Modular Kitchen)", uom: "SQFT", qty: interiorSqft, rateObj: interiorRate }
     ];
+
+    const selectedItems = allItems.filter(it => selectedItemIds.includes(it.id));
+    const effectiveTierScale = packageMultiplier;
 
     let totalMaterialCost = 0;
     let totalLabourCost = 0;
 
-    const processedItems = items.map(it => {
+    const processedItems = selectedItems.map(it => {
       const isFound = it.rateObj.found && Number(it.rateObj.rate) > 0;
-      const rateVal = isFound ? Number(it.rateObj.rate) : 0;
-      const amountVal = isFound ? it.qty * rateVal : 0;
+      const baseRateVal = isFound ? Number(it.rateObj.rate) : 0;
+      const rateVal = Math.round(baseRateVal * effectiveTierScale * 100) / 100;
+      const amountVal = Math.round(it.qty * rateVal);
 
-      if (it.category.includes("Labour")) {
-        totalLabourCost += amountVal;
-      } else {
-        totalMaterialCost += amountVal;
+      let matRatio = 0.68;
+      if (it.category.includes("Labour") || it.category.includes("Services")) {
+        matRatio = 0.35;
+      } else if (["Substructure & Superstructure", "Reinforcement Steel", "Aggregates & Mortar"].includes(it.category)) {
+        matRatio = 1.0;
       }
+
+      const itemMatCost = amountVal * matRatio;
+      const itemLabCost = amountVal * (1 - matRatio);
+
+      totalMaterialCost += itemMatCost;
+      totalLabourCost += itemLabCost;
 
       return {
         ...it,
@@ -281,7 +380,8 @@ export default function CivilBOQPage() {
       };
     });
 
-    const grandTotalCost = totalMaterialCost + totalLabourCost;
+    const grandTotalCost = processedItems.reduce((sum, item) => sum + item.amountVal, 0);
+    const costPerSqft = totalBUA > 0 ? grandTotalCost / totalBUA : (1800 * packageMultiplier);
     const missingItems = processedItems.filter(it => !it.isFound);
 
     return {
@@ -290,14 +390,15 @@ export default function CivilBOQPage() {
       totalBUA,
       cementBags,
       steelKg,
+      isRccSelected,
       totalMaterialCost,
       totalLabourCost,
       grandTotalCost,
-      costPerSqft: totalBUA > 0 ? grandTotalCost / totalBUA : 0,
+      costPerSqft,
       items: processedItems,
       missingItems
     };
-  }, [plotLength, plotWidth, floors, wallType, cementRate, steelRate, sandRate, blockRate, rccLabourRate]);
+  }, [selectedItemIds, plotLength, plotWidth, floors, wallType, packageTier, cementRate, steelRate, sandRate, aggRate, clearRate, fndRate, rccRate, masonryRate, plasterRate, flooringRate, doorsWinRate, grillsRate, paintRate, ceilingRate, elecRate, plbRate, wtpRate, sumpRate, ohtRate, cctvRate, compoundRate, canopyRate, interiorRate]);
 
   const handleCalculate = () => {
     setIsInputModified(false);
@@ -312,7 +413,11 @@ export default function CivilBOQPage() {
         ["Generated Date", new Date().toLocaleDateString('en-IN')],
         ["Plot Dimensions", `${plotLength}ft (L) x ${plotWidth}ft (W)`],
         ["Floors Count", floors],
+        ["Construction Package", packageTier],
         ["Total Built-up Area", `${calculations.totalBUA} Sq.ft`],
+        ["Material Subtotal", formatCurrency(calculations.totalMaterialCost)],
+        ["Labour Subtotal", formatCurrency(calculations.totalLabourCost)],
+        ["Estimated Rate / Sq.ft", `${formatCurrency(calculations.costPerSqft)} / Sq.ft`],
         ["GRAND TOTAL ESTIMATED COST", formatCurrency(calculations.grandTotalCost)],
         [],
         ["ITEMIZED CIVIL BOQ"],
@@ -353,7 +458,11 @@ export default function CivilBOQPage() {
         [
           ["Plot Dimensions:", `${plotLength}ft (L) x ${plotWidth}ft (W)`],
           ["Floors Count:", floors],
+          ["Package Specification:", packageTier],
           ["Total Built-up Area:", `${calculations.totalBUA} Sq.ft`],
+          ["Material Subtotal:", formatCurrency(calculations.totalMaterialCost)],
+          ["Labour Subtotal:", formatCurrency(calculations.totalLabourCost)],
+          ["Est. Rate / Sq.ft:", `₹${calculations.costPerSqft.toFixed(2)} / Sq.ft`],
           ["GRAND TOTAL ESTIMATED COST:", formatCurrency(calculations.grandTotalCost)]
         ],
         headers,
@@ -411,12 +520,128 @@ export default function CivilBOQPage() {
                 <option value="AAC Blocks">AAC Blocks (6 inch)</option>
               </select>
             </div>
+
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Construction Package</label>
+              <select
+                value={packageTier}
+                onChange={(e) => handleInputChange(setPackageTier, e.target.value as any)}
+                style={{
+                  ...styles.select,
+                  fontWeight: '800',
+                  color: packageTier === 'Ultra Premium' ? '#7c3aed' : (packageTier === 'Premium' ? '#2563eb' : '#0f766e')
+                }}
+              >
+                <option value="Standard">Standard (₹1,800 / Sq.ft)</option>
+                <option value="Premium">Premium (+25% — ₹2,250 / Sq.ft)</option>
+                <option value="Ultra Premium">Ultra Premium (+50% — ₹2,700 / Sq.ft)</option>
+              </select>
+            </div>
+
+            {/* Horizontal BOQ Line Items Filter Bar & Pill Checklist */}
+          <div style={{ marginTop: '16px', borderTop: '1px dashed #cbd5e1', paddingTop: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '10px' }}>
+              <label style={{ ...styles.label, display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                <span>📋 <strong>Include / Exclude BOQ Line Items</strong></span>
+                <span style={{ fontSize: '12px', fontWeight: '800', backgroundColor: '#800020', color: '#ffffff', padding: '3px 10px', borderRadius: '12px' }}>
+                  {selectedItemIds.length} of {ALL_BOQ_ITEMS_DEF.length} Selected
+                </span>
+              </label>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <input
+                  type="text"
+                  placeholder="🔍 Search items..."
+                  value={itemSearch}
+                  onChange={(e) => setItemSearch(e.target.value)}
+                  style={{
+                    padding: '5px 10px',
+                    fontSize: '12px',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '6px',
+                    outline: 'none',
+                    width: '160px'
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={selectAllItems}
+                  style={{ padding: '5px 10px', fontSize: '12px', fontWeight: '800', borderRadius: '6px', border: '1px solid #16a34a', backgroundColor: '#f0fdf4', color: '#15803d', cursor: 'pointer' }}
+                >
+                  ✓ Select All ({ALL_BOQ_ITEMS_DEF.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={deselectAllItems}
+                  style={{ padding: '5px 10px', fontSize: '12px', fontWeight: '800', borderRadius: '6px', border: '1px solid #dc2626', backgroundColor: '#fef2f2', color: '#b91c1c', cursor: 'pointer' }}
+                >
+                  ✕ Deselect All
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  style={{ padding: '5px 12px', fontSize: '12px', fontWeight: '800', borderRadius: '6px', border: '1px solid #800020', backgroundColor: isDropdownOpen ? '#800020' : '#ffffff', color: isDropdownOpen ? '#ffffff' : '#800020', cursor: 'pointer' }}
+                >
+                  {isDropdownOpen ? '▲ Hide Items' : '▼ Filter Items List'}
+                </button>
+              </div>
+            </div>
+
+            {/* Horizontal Pill Badges List */}
+            {isDropdownOpen && (
+              <div style={{ backgroundColor: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '14px', marginTop: '8px', maxHeight: '300px', overflowY: 'auto', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.03)' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {ALL_BOQ_ITEMS_DEF.filter(it => it.name.toLowerCase().includes(itemSearch.toLowerCase()) || it.code.toLowerCase().includes(itemSearch.toLowerCase())).map(item => {
+                    const isChecked = selectedItemIds.includes(item.id);
+                    const isRccItem = item.id === 'CIV-RCC-01';
+                    return (
+                      <label
+                        key={item.id}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '6px 12px',
+                          borderRadius: '20px',
+                          backgroundColor: isChecked ? '#800020' : '#ffffff',
+                          color: isChecked ? '#ffffff' : '#475569',
+                          border: isChecked ? '1px solid #800020' : '1px solid #cbd5e1',
+                          cursor: 'pointer',
+                          fontSize: '12px',
+                          fontWeight: isChecked ? '700' : '500',
+                          boxShadow: isChecked ? '0 2px 4px rgba(128,0,32,0.15)' : 'none',
+                          transition: 'all 0.15s ease',
+                          userSelect: 'none'
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => toggleItem(item.id)}
+                          style={{ width: '14px', height: '14px', accentColor: '#ffffff', cursor: 'pointer' }}
+                        />
+                        <span>
+                          <code style={{ fontSize: '11px', color: isChecked ? '#fef08a' : '#800020' }}>{item.code}</code> – {item.name} {isRccItem && <span style={{ color: isChecked ? '#a7f3d0' : '#059669', fontSize: '11px', fontWeight: '800' }}>(Auto-Deducts Concrete Materials)</span>}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
+          </div>
+
+          {/* Deduplication Info Notice */}
+          {calculations.isRccSelected && (
+            <div style={{ marginTop: '12px', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', padding: '10px 14px', borderRadius: '8px', fontSize: '13px', fontWeight: '600' }}>
+              💡 <strong>IS Standard Concrete Deduplication Active:</strong> Because <code>CIV-RCC-01</code> (All RCC Concrete Works) is selected, Aggregates CA-1 &amp; CA-2 quantity is set to 0 CFT, and Cement &amp; M-Sand quantities automatically adjust to non-RCC mortar works (Masonry, Plastering, Flooring, Waterproofing) to prevent double counting.
+            </div>
+          )}
 
           {/* Action Buttons */}
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '14px' }}>
             <button style={styles.btnPrimary} onClick={handleCalculate}>⚡ Calculate Civil BOQ</button>
-            <button style={styles.btnReset} onClick={() => setPlotLength(30)}>🔄 Reset</button>
+            <button style={styles.btnReset} onClick={() => { setPlotLength(30); setPackageTier('Standard'); selectAllItems(); }}>🔄 Reset</button>
             <button style={styles.btnSecondary} onClick={handleExportExcel}>📊 Export Excel</button>
             <button style={styles.btnSuccess} onClick={handleExportPDF}>📄 Export PDF Report</button>
           </div>
@@ -428,20 +653,28 @@ export default function CivilBOQPage() {
             <span style={styles.metricTitle}>Built-up Area</span>
             <span style={{ ...styles.metricVal, color: isCalculatedBlue ? '#fecdd3' : '#ffffff' }}>{calculations.totalBUA.toLocaleString()} Sq.ft</span>
           </div>
+          <div style={{ ...styles.metricCard, ...styles.metricBlue }}>
+            <span style={styles.metricTitle}>Material Subtotal</span>
+            <span style={styles.metricVal}>{formatCurrency(calculations.totalMaterialCost)}</span>
+          </div>
+          <div style={{ ...styles.metricCard, ...styles.metricPurple }}>
+            <span style={styles.metricTitle}>Labour Subtotal</span>
+            <span style={styles.metricVal}>{formatCurrency(calculations.totalLabourCost)}</span>
+          </div>
+          <div style={{ ...styles.metricCard, ...styles.metricCyan }}>
+            <span style={styles.metricTitle}>Est. Rate / Sq.ft</span>
+            <span style={styles.metricVal}>₹{calculations.costPerSqft.toFixed(2)} / Sq.ft</span>
+          </div>
           <div style={{ ...styles.metricCard, ...styles.metricTeal }}>
             <span style={styles.metricTitle}>Cement Bags</span>
             <span style={styles.metricVal}>{calculations.cementBags} Bags</span>
           </div>
           <div style={{ ...styles.metricCard, ...styles.metricOrange }}>
-            <span style={styles.metricTitle}>Steel Rebar Required</span>
+            <span style={styles.metricTitle}>Steel Rebar</span>
             <span style={styles.metricVal}>{calculations.steelKg.toLocaleString()} KG</span>
           </div>
-          <div style={{ ...styles.metricCard, ...styles.metricBlue }}>
-            <span style={styles.metricTitle}>Material Subtotal</span>
-            <span style={styles.metricVal}>{formatCurrency(calculations.totalMaterialCost)}</span>
-          </div>
           <div style={{ ...styles.metricCard, ...styles.metricGreen }}>
-            <span style={styles.metricTitle}>GRAND ESTIMATED TOTAL</span>
+            <span style={styles.metricTitle}>GRAND TOTAL COST</span>
             <span style={{ ...styles.metricValGrand, color: isCalculatedBlue ? '#60a5fa' : '#ffffff' }}>{formatCurrency(calculations.grandTotalCost)}</span>
           </div>
         </div>

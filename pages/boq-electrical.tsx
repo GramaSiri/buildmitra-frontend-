@@ -4,7 +4,7 @@ import { useRouter } from 'next/router';
 import * as XLSX from 'xlsx';
 import { usePaymentBarrier } from '../hooks/usePaymentBarrier';
 import { downloadBuildMitraPDF } from '../utils/pdfExport';
-import { getMasterRate, syncApprovedRatesFromBackend, MasterRateResult } from '../utils/masterRates';
+import { getMasterRate, syncApprovedRatesFromBackend } from '../utils/masterRates';
 import MarketRateTrend from '../components/ui/MarketRateTrend';
 
 const styles: Record<string, React.CSSProperties> = {
@@ -148,6 +148,7 @@ const styles: Record<string, React.CSSProperties> = {
   metricGreen: { backgroundColor: '#16a34a' },
   metricOrange: { backgroundColor: '#ea580c' },
   metricBlue: { backgroundColor: '#2563eb' },
+  metricPurple: { backgroundColor: '#7c3aed' },
   metricTitle: { fontSize: '12px', textTransform: 'uppercase', opacity: 0.9, fontWeight: '700', letterSpacing: '0.5px' },
   metricVal: { fontSize: '18px', fontWeight: '800', marginTop: '6px' },
   metricValGrand: { fontSize: '22px', fontWeight: '900', marginTop: '6px' },
@@ -160,9 +161,9 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: '#ffffff',
     marginBottom: '16px'
   },
-  table: { width: '100%', borderCollapse: 'collapse', fontSize: '15px' },
-  th: { backgroundColor: '#d97706', color: 'white', padding: '10px 14px', textAlign: 'left', fontWeight: '700', fontSize: '15px' },
-  td: { padding: '10px 14px', borderBottom: '1px solid #f1f5f9', color: '#334155', fontSize: '15px' },
+  table: { width: '100%', borderCollapse: 'collapse', fontSize: '14px' },
+  th: { backgroundColor: '#d97706', color: 'white', padding: '10px 14px', textAlign: 'left', fontWeight: '700', fontSize: '14px' },
+  td: { padding: '10px 14px', borderBottom: '1px solid #f1f5f9', color: '#334155', fontSize: '14px' },
 
   btnPrimary: { backgroundColor: '#d97706', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '8px', cursor: 'pointer', fontSize: '15px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '6px' },
   btnSecondary: { backgroundColor: '#2563eb', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '8px', cursor: 'pointer', fontSize: '15px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '6px' },
@@ -177,6 +178,19 @@ const formatCurrency = (val: number | null | undefined): string => {
   return `₹${val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
+const ALL_ELECTRICAL_ITEMS_DEF = [
+  { id: "EL01", slNo: 1, code: "EL01", name: "Temporary & Permanent Electrical Connection", materials: "Service cable, meter board, cutouts", defaultUom: "Points" },
+  { id: "EL02", slNo: 2, code: "EL02", name: "PVC Conduits & Accessories", materials: "PVC conduits, bends, junction boxes", defaultUom: "m" },
+  { id: "EL03", slNo: 3, code: "EL03", name: "Modular Switches, Plates & Sockets", materials: "Anchor/Northwest modular switches, plates, sockets", defaultUom: "nos" },
+  { id: "EL04", slNo: 4, code: "EL04", name: "All Wires (Lighting, Power, AC, Main)", materials: "FRLS copper wires (1.5, 2.5, 4, 6 sqmm)", defaultUom: "m" },
+  { id: "EL05", slNo: 5, code: "EL05", name: "All Lights (Bulbs, Battens, Panels)", materials: "LED bulbs, battens, panel lights", defaultUom: "nos" },
+  { id: "EL06", slNo: 6, code: "EL06", name: "Distribution Boards & MCBs", materials: "DB boxes, copper busbars, MCBs", defaultUom: "nos" },
+  { id: "EL07", slNo: 7, code: "EL07", name: "Light Fittings (Decorative, Ceiling, Wall)", materials: "Chandeliers, ceiling lights, wall brackets", defaultUom: "nos" },
+  { id: "EL08", slNo: 8, code: "EL08", name: "Electrical Appliances (Fans, Geysers, AC Units)", materials: "Ceiling fans, exhaust fans, geysers, AC units", defaultUom: "nos" },
+  { id: "EL09", slNo: 9, code: "EL09", name: "Earthing (Plate/Rod Type)", materials: "GI plate/rod, charcoal, salt", defaultUom: "set" },
+  { id: "EL10", slNo: 10, code: "EL10", name: "Inverter/UPS & Battery", materials: "UPS unit, batteries", defaultUom: "set" }
+];
+
 export default function ElectricalBOQPage() {
   const router = useRouter();
   const { checkAndRun } = usePaymentBarrier();
@@ -189,6 +203,10 @@ export default function ElectricalBOQPage() {
   const [plotWidth, setPlotWidth] = useState(40);
   const [floors, setFloors] = useState(3);
   const [bedrooms, setBedrooms] = useState(3);
+  const [packageTier, setPackageTier] = useState<'Standard' | 'Premium' | 'Ultra Premium'>('Standard');
+  const [selectedItemIds, setSelectedItemIds] = useState<string[]>(ALL_ELECTRICAL_ITEMS_DEF.map(it => it.id));
+  const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(true);
+  const [itemSearch, setItemSearch] = useState<string>('');
 
   const [isInputModified, setIsInputModified] = useState<boolean>(false);
   const [isCalculatedBlue, setIsCalculatedBlue] = useState<boolean>(false);
@@ -198,113 +216,103 @@ export default function ElectricalBOQPage() {
     setIsInputModified(true);
   };
 
-  // Authoritative Admin Rate Master Lookups (0 fallback)
-  const rates = useMemo(() => ({
-    elec01: getMasterRate(["ELEC-01", "conduit 20"], 0),
-    elec02: getMasterRate(["ELEC-02", "conduit 25"], 0),
-    elec03: getMasterRate(["ELEC-03", "wire 1.5"], 0),
-    elec04: getMasterRate(["ELEC-04", "wire 2.5"], 0),
-    elec05: getMasterRate(["ELEC-05", "wire 4.0"], 0),
-    elec06: getMasterRate(["ELEC-06", "wire 6.0"], 0),
-    elec07: getMasterRate(["ELEC-07", "modular switch"], 0),
-    elec16: getMasterRate(["ELEC-16", "db 8 way"], 0),
-    elec22: getMasterRate(["ELEC-22", "earthing plate"], 0)
-  }), []);
+  const toggleItem = (id: string) => {
+    setSelectedItemIds(prev =>
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+    setIsInputModified(true);
+  };
+
+  const selectAllItems = () => {
+    setSelectedItemIds(ALL_ELECTRICAL_ITEMS_DEF.map(it => it.id));
+    setIsInputModified(true);
+  };
+
+  const deselectAllItems = () => {
+    setSelectedItemIds([]);
+    setIsInputModified(true);
+  };
+
+  // Authoritative Admin Rate Master Lookups (with fallback seeds from rate sheet)
+  const el01Rate = getMasterRate(["CIV-ELE-01", "EL01", "ele-conn-01", "temporary & permanent electrical connection"], 50000);
+  const el02Rate = getMasterRate(["EL02", "ele-cnd-01", "pvc conduits"], 25);
+  const el03Rate = getMasterRate(["EL03", "ele-swt-01", "modular switches"], 140);
+  const el04Rate = getMasterRate(["EL04", "ele-wir-01", "copper wires"], 28);
+  const el05Rate = getMasterRate(["EL05", "ele-lgt-01", "led lights"], 220);
+  const el06Rate = getMasterRate(["CIV-ELE-02", "EL06", "ele-mcb-01", "distribution boards"], 3200);
+  const el07Rate = getMasterRate(["EL07", "ele-fit-01", "light fittings"], 550);
+  const el08Rate = getMasterRate(["CIV-ELE-03", "EL08", "ele-app-01", "electrical appliances"], 950);
+  const el09Rate = getMasterRate(["EL09", "ele-eth-01", "earthing"], 3500);
+  const el10Rate = getMasterRate(["EL10", "ele-ups-01", "inverter ups"], 21000);
 
   const calculations = useMemo(() => {
     const totalBUA = Math.round(plotLength * plotWidth * 0.9 * floors);
-    const totalPoints = Math.round(totalBUA * 0.08); // 8 points / 100 sqft
-    const wireLengthM = Math.round(totalPoints * 12);
-    const conduitLengthM = Math.round(wireLengthM * 0.7);
 
-    const items = [
-      {
-        code: rates.elec01.itemCode || "ELEC-01",
-        category: "Conduits & Enclosures",
-        name: "20mm PVC Electrical Heavy Conduit",
-        uom: "M",
-        qty: conduitLengthM,
-        rateObj: rates.elec01
-      },
-      {
-        code: rates.elec03.itemCode || "ELEC-03",
-        category: "Copper Wires",
-        name: "1.5 sq.mm FR-LSH Copper Insulated Wire",
-        uom: "M",
-        qty: Math.round(wireLengthM * 0.6),
-        rateObj: rates.elec03
-      },
-      {
-        code: rates.elec04.itemCode || "ELEC-04",
-        category: "Copper Wires",
-        name: "2.5 sq.mm FR-LSH Power Copper Wire",
-        uom: "M",
-        qty: Math.round(wireLengthM * 0.4),
-        rateObj: rates.elec04
-      },
-      {
-        code: rates.elec07.itemCode || "ELEC-07",
-        category: "Switches & Sockets",
-        name: "6A / 16A Modular Switches & Socket Assemblies",
-        uom: "NOS",
-        qty: totalPoints,
-        rateObj: rates.elec07
-      },
-      {
-        code: rates.elec16.itemCode || "ELEC-16",
-        category: "Distribution & Protection",
-        name: "Main Distribution Board & MCB Breakers Set",
-        uom: "NOS",
-        qty: floors,
-        rateObj: rates.elec16
-      },
-      {
-        code: rates.elec22.itemCode || "ELEC-22",
-        category: "Earthing System",
-        name: "Copper Pipe Chemical Earthing Pit Complete",
-        uom: "NOS",
-        qty: 2,
-        rateObj: rates.elec22
-      }
+    const tierMultiplier = packageTier === 'Ultra Premium' ? 1.50 : packageTier === 'Premium' ? 1.25 : 1.0;
+
+    // Residential Electrical QS Quantities based on Built-Up Area & User Specifications
+    const qty1 = 1; // Fixed 1 Connection LS / Set
+    const qty2 = Math.round(totalBUA * 0.85); // ~0.85m PVC conduits per sqft BUA
+    const qty3 = Math.ceil(totalBUA * 0.12);  // ~0.12 modular switches per sqft BUA
+    const qty4 = Math.round(totalBUA * 1.60); // ~1.60m FRLS copper wire per sqft BUA
+    const qty5 = Math.ceil(totalBUA * 0.035); // ~0.035 LED lights per sqft BUA
+    const qty6 = Math.max(1, Math.ceil(totalBUA / 1000)); // DBs & MCBs (1 per 1000 sqft BUA)
+    const qty7 = Math.ceil(totalBUA * 0.015); // Light fittings ~0.015 per sqft BUA
+    const qty8 = Math.ceil(totalBUA * 0.010); // Electrical appliances ~0.010 per sqft BUA
+    const qty9 = 1; // Fixed 1 Earthing Set
+    const qty10 = Math.max(1, Math.ceil(totalBUA / 2500)); // Inverter/UPS & Battery (1 set per 2500 sqft BUA)
+
+    const rawItems = [
+      { id: "EL01", slNo: 1, code: el01Rate.itemCode || "CIV-ELE-01", category: "Connection & Infrastructure", name: "Temporary & Permanent Electrical Connection", materials: "Service cable, meter board, cutouts", uom: "LS", qty: qty1, rateObj: el01Rate },
+      { id: "EL02", slNo: 2, code: el02Rate.itemCode || "EL02", category: "Conduiting & Accessories", name: "PVC Conduits & Accessories", materials: "PVC conduits, bends, junction boxes", uom: "m", qty: qty2, rateObj: el02Rate },
+      { id: "EL03", slNo: 3, code: el03Rate.itemCode || "EL03", category: "Switches & Sockets", name: "Modular Switches, Plates & Sockets", materials: "Anchor/Northwest modular switches, plates, sockets", uom: "nos", qty: qty3, rateObj: el03Rate },
+      { id: "EL04", slNo: 4, code: el04Rate.itemCode || "EL04", category: "Wiring & Cables", name: "All Wires (Lighting, Power, AC, Main)", materials: "FRLS copper wires (1.5, 2.5, 4, 6 sqmm)", uom: "m", qty: qty4, rateObj: el04Rate },
+      { id: "EL05", slNo: 5, code: el05Rate.itemCode || "EL05", category: "Lighting Devices", name: "All Lights (Bulbs, Battens, Panels)", materials: "LED bulbs, battens, panel lights", uom: "nos", qty: qty5, rateObj: el05Rate },
+      { id: "EL06", slNo: 6, code: el06Rate.itemCode || "CIV-ELE-02", category: "Distribution & Protection", name: "Distribution Boards & MCBs", materials: "DB boxes, copper busbars, MCBs", uom: "nos", qty: qty6, rateObj: el06Rate },
+      { id: "EL07", slNo: 7, code: el07Rate.itemCode || "EL07", category: "Luminaires & Fixtures", name: "Light Fittings (Decorative, Ceiling, Wall)", materials: "Chandeliers, ceiling lights, wall brackets", uom: "nos", qty: qty7, rateObj: el07Rate },
+      { id: "EL08", slNo: 8, code: el08Rate.itemCode || "CIV-ELE-03", category: "Electrical Appliances", name: "Electrical Appliances (Fans, Geysers, AC Units)", materials: "Ceiling fans, exhaust fans, geysers, AC units", uom: "nos", qty: qty8, rateObj: el08Rate },
+      { id: "EL09", slNo: 9, code: el09Rate.itemCode || "EL09", category: "Earthing System", name: "Earthing (Plate/Rod Type)", materials: "GI plate/rod, charcoal, salt", uom: "set", qty: qty9, rateObj: el09Rate },
+      { id: "EL10", slNo: 10, code: el10Rate.itemCode || "EL10", category: "Power Backup & Storage", name: "Inverter/UPS & Battery", materials: "UPS unit, batteries", uom: "set", qty: qty10, rateObj: el10Rate }
     ];
+
+    const selectedItems = rawItems.filter(it => selectedItemIds.includes(it.id));
 
     let totalMaterialCost = 0;
     let totalLabourCost = 0;
 
-    const processedItems = items.map(it => {
+    const processedItems = selectedItems.map((it, idx) => {
       const isFound = it.rateObj.found && Number(it.rateObj.rate) > 0;
-      const rateVal = isFound ? Number(it.rateObj.rate) : 0;
-      const amountVal = isFound ? it.qty * rateVal : 0;
+      const baseRate = isFound ? Number(it.rateObj.rate) : 0;
+      const rateVal = Math.round(baseRate * tierMultiplier);
+      const amountVal = isFound ? Math.round(it.qty * rateVal) : 0;
 
-      if (it.category.includes("Labour")) {
-        totalLabourCost += amountVal;
-      } else {
-        totalMaterialCost += amountVal;
-      }
+      // 70% material, 30% labour distribution
+      totalMaterialCost += amountVal * 0.70;
+      totalLabourCost += amountVal * 0.30;
 
       return {
         ...it,
+        slNo: idx + 1,
         isFound,
         rateVal,
         amountVal
       };
     });
 
-    const grandTotalCost = totalMaterialCost + totalLabourCost;
+    const grandTotalCost = Math.round(totalMaterialCost + totalLabourCost);
+    const costPerSqft = totalBUA > 0 ? grandTotalCost / totalBUA : 0;
     const missingItems = processedItems.filter(it => !it.isFound);
 
     return {
       totalBUA,
-      totalPoints,
-      wireLengthM,
-      conduitLengthM,
-      totalMaterialCost,
-      totalLabourCost,
+      totalMaterialCost: Math.round(totalMaterialCost),
+      totalLabourCost: Math.round(totalLabourCost),
       grandTotalCost,
+      costPerSqft,
       items: processedItems,
       missingItems
     };
-  }, [plotLength, plotWidth, floors, bedrooms, rates]);
+  }, [selectedItemIds, plotLength, plotWidth, floors, bedrooms, packageTier, el01Rate, el02Rate, el03Rate, el04Rate, el05Rate, el06Rate, el07Rate, el08Rate, el09Rate, el10Rate]);
 
   const handleCalculate = () => {
     setIsInputModified(false);
@@ -315,20 +323,24 @@ export default function ElectricalBOQPage() {
   const handleExportExcel = () => {
     checkAndRun("electrical_boq_export", "ELEC-BOQ", () => {
       const data = [
-        ["BUILDMITRA ELECTRICAL BOQ ESTIMATION REPORT"],
+        ["BUILDMITRA RESIDENTIAL ELECTRICAL BOQ REPORT"],
         ["Generated Date", new Date().toLocaleDateString('en-IN')],
+        ["Package Tier", `${packageTier} (${packageTier === 'Ultra Premium' ? '+50% Luxury Multiplier' : packageTier === 'Premium' ? '+25% Premium Multiplier' : 'Baseline Standard Multiplier'})`],
         ["Built-up Area", `${calculations.totalBUA} Sq.ft`],
-        ["Total Wiring Points", `${calculations.totalPoints} Points`],
+        ["Material Subtotal", formatCurrency(calculations.totalMaterialCost)],
+        ["Labour Subtotal", formatCurrency(calculations.totalLabourCost)],
+        ["Est. Rate / Sq.ft", `${formatCurrency(calculations.costPerSqft)} / Sq.ft`],
         ["GRAND TOTAL ESTIMATED COST", formatCurrency(calculations.grandTotalCost)],
         [],
         ["ITEMIZED ELECTRICAL BOQ"],
-        ["Master Code", "Category", "Description", "Quantity", "UOM", "Approved Rate (₹)", "Total Amount (₹)"],
+        ["Sl.No", "Item Code", "Description", "Key Materials", "UOM", "Quantity", "Approved Rate (₹)", "Total Amount (₹)"],
         ...calculations.items.map(it => [
+          it.slNo,
           it.code,
-          it.category,
           it.name,
-          it.qty,
+          it.materials,
           it.uom,
+          it.qty,
           it.isFound ? it.rateVal : "Master Mapping Required / Approved Rate Unavailable",
           it.isFound ? it.amountVal : "—"
         ])
@@ -343,11 +355,12 @@ export default function ElectricalBOQPage() {
 
   const handleExportPDF = () => {
     checkAndRun("electrical_boq_export", "ELEC-BOQ", () => {
-      const headers = ["Master Code", "Category", "Description", "Qty", "UOM", "Rate (₹)", "Amount (₹)"];
+      const headers = ["Sl.No", "Item Code", "Description", "Key Materials", "Qty", "UOM", "Rate (₹)", "Amount (₹)"];
       const rows = calculations.items.map(it => [
+        String(it.slNo),
         it.code,
-        it.category,
         it.name,
+        it.materials,
         String(it.qty),
         it.uom,
         it.isFound ? formatCurrency(it.rateVal) : "Rate Pending Admin Update",
@@ -355,10 +368,13 @@ export default function ElectricalBOQPage() {
       ]);
 
       downloadBuildMitraPDF(
-        "BuildMitra – Electrical BOQ Estimation Report",
+        "BuildMitra – Residential Electrical BOQ Report",
         [
+          ["Package Tier:", `${packageTier} (${packageTier === 'Ultra Premium' ? '+50% Luxury' : packageTier === 'Premium' ? '+25% Premium' : 'Baseline Standard'})`],
           ["Built-up Area:", `${calculations.totalBUA} Sq.ft`],
-          ["Total Wiring Points:", `${calculations.totalPoints} Points`],
+          ["Material Subtotal:", formatCurrency(calculations.totalMaterialCost)],
+          ["Labour Subtotal:", formatCurrency(calculations.totalLabourCost)],
+          ["Est. Rate / Sq.ft:", `₹${calculations.costPerSqft.toFixed(2)} / Sq.ft`],
           ["GRAND TOTAL ESTIMATED COST:", formatCurrency(calculations.grandTotalCost)]
         ],
         headers,
@@ -412,12 +428,122 @@ export default function ElectricalBOQPage() {
               <label style={styles.label}>Bedrooms Count</label>
               <input type="number" value={bedrooms} onChange={(e) => handleInputChange(setBedrooms, Number(e.target.value))} style={styles.input} />
             </div>
+
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Specification Package Tier</label>
+              <select
+                value={packageTier}
+                onChange={(e) => handleInputChange(setPackageTier, e.target.value as any)}
+                style={{
+                  ...styles.select,
+                  fontWeight: '700',
+                  color: packageTier === 'Ultra Premium' ? '#7c3aed' : packageTier === 'Premium' ? '#2563eb' : '#d97706',
+                  borderColor: packageTier === 'Ultra Premium' ? '#c4b5fd' : packageTier === 'Premium' ? '#93c5fd' : '#fcd34d',
+                  backgroundColor: packageTier === 'Ultra Premium' ? '#f5f3ff' : packageTier === 'Premium' ? '#eff6ff' : '#fffbe0'
+                }}
+              >
+                <option value="Standard">Standard (Baseline ~₹135/sqft)</option>
+                <option value="Premium">Premium (+25% Tier Multiplier)</option>
+                <option value="Ultra Premium">Ultra Premium (+50% Tier Multiplier)</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Horizontal Electrical Line Items Selector */}
+          <div style={{ marginTop: '16px', borderTop: '1px dashed #cbd5e1', paddingTop: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '10px' }}>
+              <label style={{ ...styles.label, display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                <span>📋 <strong>Include / Exclude Electrical BOQ Line Items</strong></span>
+                <span style={{ fontSize: '12px', fontWeight: '800', backgroundColor: '#d97706', color: '#ffffff', padding: '3px 10px', borderRadius: '12px' }}>
+                  {selectedItemIds.length} of {ALL_ELECTRICAL_ITEMS_DEF.length} Selected
+                </span>
+              </label>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <input
+                  type="text"
+                  placeholder="🔍 Search items..."
+                  value={itemSearch}
+                  onChange={(e) => setItemSearch(e.target.value)}
+                  style={{
+                    padding: '5px 10px',
+                    fontSize: '12px',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '6px',
+                    outline: 'none',
+                    width: '160px'
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={selectAllItems}
+                  style={{ padding: '5px 10px', fontSize: '12px', fontWeight: '800', borderRadius: '6px', border: '1px solid #16a34a', backgroundColor: '#f0fdf4', color: '#15803d', cursor: 'pointer' }}
+                >
+                  ✓ Select All ({ALL_ELECTRICAL_ITEMS_DEF.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={deselectAllItems}
+                  style={{ padding: '5px 10px', fontSize: '12px', fontWeight: '800', borderRadius: '6px', border: '1px solid #dc2626', backgroundColor: '#fef2f2', color: '#b91c1c', cursor: 'pointer' }}
+                >
+                  ✕ Deselect All
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  style={{ padding: '5px 12px', fontSize: '12px', fontWeight: '800', borderRadius: '6px', border: '1px solid #d97706', backgroundColor: isDropdownOpen ? '#d97706' : '#ffffff', color: isDropdownOpen ? '#ffffff' : '#d97706', cursor: 'pointer' }}
+                >
+                  {isDropdownOpen ? '▲ Hide Items' : '▼ Filter Items List'}
+                </button>
+              </div>
+            </div>
+
+            {/* Horizontal Pill Badges List */}
+            {isDropdownOpen && (
+              <div style={{ backgroundColor: '#fffbebfb', border: '1px solid #fde68a', borderRadius: '10px', padding: '14px', marginTop: '8px', maxHeight: '280px', overflowY: 'auto', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.03)' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {ALL_ELECTRICAL_ITEMS_DEF.filter(it => it.name.toLowerCase().includes(itemSearch.toLowerCase()) || it.code.toLowerCase().includes(itemSearch.toLowerCase()) || it.materials.toLowerCase().includes(itemSearch.toLowerCase())).map(item => {
+                    const isChecked = selectedItemIds.includes(item.id);
+                    return (
+                      <label
+                        key={item.id}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '6px 12px',
+                          borderRadius: '20px',
+                          backgroundColor: isChecked ? '#d97706' : '#ffffff',
+                          color: isChecked ? '#ffffff' : '#475569',
+                          border: isChecked ? '1px solid #d97706' : '1px solid #cbd5e1',
+                          cursor: 'pointer',
+                          fontSize: '12px',
+                          fontWeight: isChecked ? '700' : '500',
+                          boxShadow: isChecked ? '0 2px 4px rgba(217,119,6,0.18)' : 'none',
+                          transition: 'all 0.15s ease',
+                          userSelect: 'none'
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => toggleItem(item.id)}
+                          style={{ width: '14px', height: '14px', accentColor: '#ffffff', cursor: 'pointer' }}
+                        />
+                        <span>
+                          <code style={{ fontSize: '11px', color: isChecked ? '#fef08a' : '#d97706' }}>{item.code}</code> – {item.name}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Action Buttons */}
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '14px' }}>
             <button style={styles.btnPrimary} onClick={handleCalculate}>⚡ Calculate Electrical BOQ</button>
-            <button style={styles.btnReset} onClick={() => setPlotLength(30)}>🔄 Reset</button>
+            <button style={styles.btnReset} onClick={() => { setPlotLength(30); setPlotWidth(40); setFloors(3); setBedrooms(3); setPackageTier('Standard'); selectAllItems(); }}>🔄 Reset</button>
             <button style={styles.btnSecondary} onClick={handleExportExcel}>📊 Export Excel</button>
             <button style={styles.btnSuccess} onClick={handleExportPDF}>📄 Export PDF Report</button>
           </div>
@@ -429,17 +555,17 @@ export default function ElectricalBOQPage() {
             <span style={styles.metricTitle}>Built-up Area</span>
             <span style={{ ...styles.metricVal, color: isCalculatedBlue ? '#fde68a' : '#ffffff' }}>{calculations.totalBUA.toLocaleString()} Sq.ft</span>
           </div>
-          <div style={{ ...styles.metricCard, ...styles.metricTeal }}>
-            <span style={styles.metricTitle}>Total Wiring Points</span>
-            <span style={styles.metricVal}>{calculations.totalPoints} Points</span>
-          </div>
-          <div style={{ ...styles.metricCard, ...styles.metricOrange }}>
-            <span style={styles.metricTitle}>Total Wire Length</span>
-            <span style={styles.metricVal}>{calculations.wireLengthM.toLocaleString()} M</span>
-          </div>
           <div style={{ ...styles.metricCard, ...styles.metricBlue }}>
             <span style={styles.metricTitle}>Material Subtotal</span>
             <span style={styles.metricVal}>{formatCurrency(calculations.totalMaterialCost)}</span>
+          </div>
+          <div style={{ ...styles.metricCard, ...styles.metricPurple }}>
+            <span style={styles.metricTitle}>Labour Subtotal</span>
+            <span style={styles.metricVal}>{formatCurrency(calculations.totalLabourCost)}</span>
+          </div>
+          <div style={{ ...styles.metricCard, ...styles.metricTeal }}>
+            <span style={styles.metricTitle}>Est. Rate / Sq.ft</span>
+            <span style={styles.metricVal}>₹{calculations.costPerSqft.toFixed(2)} / Sq.ft</span>
           </div>
           <div style={{ ...styles.metricCard, ...styles.metricGreen }}>
             <span style={styles.metricTitle}>GRAND ESTIMATED TOTAL</span>
@@ -464,16 +590,17 @@ export default function ElectricalBOQPage() {
         {/* Itemized BOQ Table */}
         <div style={styles.tableContainer}>
           <div style={{ padding: '12px 16px', backgroundColor: '#d97706', color: 'white', fontWeight: '800', fontSize: '16px' }}>
-            📑 Itemized Electrical &amp; Wiring BOQ (Admin Master Linked)
+            📑 Itemized Electrical BOQ (Admin Master Linked - 10 Line Items)
           </div>
           <table style={styles.table}>
             <thead>
               <tr>
-                <th style={styles.th}>Master Code</th>
-                <th style={styles.th}>Category</th>
-                <th style={styles.th}>Item Description</th>
-                <th style={styles.th}>Quantity</th>
+                <th style={styles.th}>Sl.No</th>
+                <th style={styles.th}>Item Code</th>
+                <th style={styles.th}>Description</th>
+                <th style={styles.th}>Key Materials</th>
                 <th style={styles.th}>UOM</th>
+                <th style={styles.th}>Quantity</th>
                 <th style={styles.th}>Approved Rate (₹)</th>
                 <th style={styles.th}>Total Amount (₹)</th>
               </tr>
@@ -481,11 +608,12 @@ export default function ElectricalBOQPage() {
             <tbody>
               {calculations.items.map(it => (
                 <tr key={it.code}>
+                  <td style={styles.td}><strong>{it.slNo}</strong></td>
                   <td style={styles.td}><code>{it.code}</code></td>
-                  <td style={styles.td}>{it.category}</td>
                   <td style={styles.td}><strong>{it.name}</strong></td>
-                  <td style={styles.td}>{it.qty.toLocaleString()}</td>
+                  <td style={styles.td}>{it.materials}</td>
                   <td style={styles.td}>{it.uom}</td>
+                  <td style={styles.td}>{it.qty.toLocaleString()}</td>
                   <td style={styles.td}>
                     {it.isFound ? formatCurrency(it.rateVal) : <span style={{ color: '#dc2626', fontWeight: '700' }}>Master Mapping Required / Approved Rate Unavailable</span>}
                   </td>
@@ -495,7 +623,7 @@ export default function ElectricalBOQPage() {
                 </tr>
               ))}
               <tr style={{ backgroundColor: '#d97706', color: 'white', fontWeight: '800' }}>
-                <td colSpan={6} style={{ padding: '12px 14px', fontSize: '16px' }}>GRAND TOTAL ESTIMATED COST</td>
+                <td colSpan={7} style={{ padding: '12px 14px', fontSize: '16px' }}>GRAND TOTAL ESTIMATED COST</td>
                 <td style={{ padding: '12px 14px', fontSize: '18px' }}>{formatCurrency(calculations.grandTotalCost)}</td>
               </tr>
             </tbody>

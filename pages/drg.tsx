@@ -1026,7 +1026,7 @@ export default function ProfessionalDRGPage() {
                           facing: inputs.facing as any,
                           floors: inputs.floors,
                           projectName: inputs.projectName
-                        });
+                        }, groundFloorReport, firstFloorReport, secondFloorReport);
                     const blob = new Blob([svgData], { type: "image/svg+xml" });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement("a");
@@ -1047,7 +1047,7 @@ export default function ProfessionalDRGPage() {
                   facing: inputs.facing as any,
                   floors: inputs.floors,
                   projectName: inputs.projectName
-                })
+                }, groundFloorReport, firstFloorReport, secondFloorReport)
               }} />
             </div>
           ) : (
@@ -1081,6 +1081,16 @@ export default function ProfessionalDRGPage() {
                     floors: inputs.floors,
                     projectName: inputs.projectName
                   }, 2, groundFloorReport, secondFloorReport)
+                }} />
+              ) : primaryTab === "architectural" || primaryTab === "layout_plans" ? (
+                <div dangerouslySetInnerHTML={{
+                  __html: generateProfessionalCadSheetSvg({
+                    plotWidth: inputs.plotWidth,
+                    plotLength: inputs.plotLength,
+                    facing: inputs.facing as any,
+                    floors: inputs.floors,
+                    projectName: inputs.projectName
+                  }, groundFloorReport, firstFloorReport, secondFloorReport)
                 }} />
               ) : (
                 <ArchitecturalSvgRenderer
