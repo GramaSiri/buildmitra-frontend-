@@ -7,7 +7,8 @@
    - Action buttons: compact 4-button horizontal grid in 1 row.
    - Selection bars: single clean horizontal row.
    - Metric & Result cards: exactly 3 boxes per row with short single-line labels.
-   - Tables: sticky visible headers, hiding ONLY Master/Item Code and Category columns on mobile.
+   - Input grids: 3 compact columns per row.
+   - Tables: sticky visible headers, unlocked vertical scrolling for all line items.
    ========================================================================= */
 
 /* Global Responsive Text Visibility Toggles (Desktop Default) */
@@ -112,7 +113,6 @@
     border-radius: 8px !important;
   }
 
-  /* Hide verbose titles, subtitles, badges, and breadcrumb text on mobile */
   .bm-boq-top-header h1,
   .bm-boq-top-header h2,
   .bm-boq-top-header p,
@@ -121,7 +121,6 @@
     display: none !important;
   }
 
-  /* Pin back arrow button cleanly to top-right corner */
   .bm-top-back-btn,
   .bm-boq-top-header button {
     margin-left: auto !important;
@@ -245,17 +244,51 @@
     white-space: nowrap !important;
   }
 
-  /* --- 8. TABLE HEADERS & ROWS: VISIBLE, STICKY & SURGICAL COLUMN HIDING --- */
+  /* --- 8. INPUT FIELDS: 3 COMPACT COLUMNS PER ROW --- */
+  .bm-calc-input-grid,
+  [class*="gridCompact" i],
+  div[style*="gridTemplateColumns"] {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+    width: 100% !important;
+  }
+
+  .bm-calc-input-grid label,
+  [class*="gridCompact" i] label,
+  div[style*="gridTemplateColumns"] label {
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    margin-bottom: 2px !important;
+  }
+
+  .bm-calc-input-grid input,
+  .bm-calc-input-grid select,
+  [class*="gridCompact" i] input,
+  [class*="gridCompact" i] select,
+  div[style*="gridTemplateColumns"] input,
+  div[style*="gridTemplateColumns"] select {
+    height: 30px !important;
+    padding: 4px 6px !important;
+    font-size: 11px !important;
+  }
+
+  /* --- 9. TABLE HEADERS & UNLOCKED VERTICAL TABLE SCROLLING --- */
   .bm-boq-table-scroll,
   [class*="tableContainer" i] {
     display: block !important;
     width: 100% !important;
     max-width: 100% !important;
-    max-height: 60vh !important;
+    max-height: none !important;
+    height: auto !important;
     overflow-x: auto !important;
-    overflow-y: auto !important;
+    overflow-y: visible !important;
     -webkit-overflow-scrolling: touch !important;
     margin-top: 4px !important;
+    padding-bottom: 20px !important;
     border-radius: 6px !important;
   }
 
@@ -263,7 +296,7 @@
   [class*="tableContainer" i] table {
     display: table !important;
     width: max-content !important;
-    min-width: 320px !important;
+    min-width: 480px !important;
     border-collapse: collapse !important;
   }
 
