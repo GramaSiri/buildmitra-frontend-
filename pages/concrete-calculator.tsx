@@ -553,34 +553,61 @@ export default function ConcretePage() {
 
           {/* Action Button Bar */}
           <div className="bm-boq-actions" style={{ marginTop: '12px' }}>
-            <button style={styles.btnPrimary} onClick={handleCalculate}>⚡ Calculate Concrete</button>
-            <button style={styles.btnReset} onClick={() => setLength(26)}>🔄 Reset</button>
-            <button style={styles.btnSecondary} onClick={handleExportExcel}>📊 Export Excel</button>
-            <button style={styles.btnSuccess} onClick={handleExportPDF}>📄 Export PDF Report</button>
+            <button style={styles.btnPrimary} onClick={handleCalculate}>
+              <span className="bm-desktop-only">⚡ Calculate Concrete</span>
+              <span className="bm-mobile-only">⚡ Calc</span>
+            </button>
+            <button style={styles.btnReset} onClick={() => setLength(26)}>
+              <span className="bm-desktop-only">🔄 Reset</span>
+              <span className="bm-mobile-only">🔄 Reset</span>
+            </button>
+            <button style={styles.btnSecondary} onClick={handleExportExcel}>
+              <span className="bm-desktop-only">📊 Export Excel</span>
+              <span className="bm-mobile-only">📊 Excel</span>
+            </button>
+            <button style={styles.btnSuccess} onClick={handleExportPDF}>
+              <span className="bm-desktop-only">📄 Export PDF Report</span>
+              <span className="bm-mobile-only">📄 PDF</span>
+            </button>
           </div>
         </div>
 
         {/* Result Metric Cards */}
         <div style={styles.summaryGrid} className="bm-boq-summary-scroll">
           <div style={{ ...styles.metricCard, ...styles.metricMaroon }}>
-            <span style={styles.metricTitle}>Concrete Volume</span>
+            <span style={styles.metricTitle}>
+              <span className="bm-desktop-only">Concrete Volume</span>
+              <span className="bm-mobile-only">Conc Vol</span>
+            </span>
             <span style={{ ...styles.metricVal, color: isCalculatedBlue ? '#93c5fd' : '#ffffff' }}>{calculations.volumeCum} CUM</span>
             <span style={{ fontSize: '11px', opacity: 0.9 }}>({calculations.volumeCft} CFT)</span>
           </div>
           <div style={{ ...styles.metricCard, ...styles.metricTeal }}>
-            <span style={styles.metricTitle}>Cement Bags</span>
+            <span style={styles.metricTitle}>
+              <span className="bm-desktop-only">Cement Bags</span>
+              <span className="bm-mobile-only">Cement</span>
+            </span>
             <span style={styles.metricVal}>{calculations.totalCementBags} Bags</span>
           </div>
           <div style={{ ...styles.metricCard, ...styles.metricOrange }}>
-            <span style={styles.metricTitle}>M-Sand Quantity</span>
+            <span style={styles.metricTitle}>
+              <span className="bm-desktop-only">M-Sand Quantity</span>
+              <span className="bm-mobile-only">Sand</span>
+            </span>
             <span style={styles.metricVal}>{calculations.totalSandCft} CFT</span>
           </div>
           <div style={{ ...styles.metricCard, ...styles.metricBlue }}>
-            <span style={styles.metricTitle}>Material Subtotal</span>
+            <span style={styles.metricTitle}>
+              <span className="bm-desktop-only">Material Subtotal</span>
+              <span className="bm-mobile-only">Mat ₹</span>
+            </span>
             <span style={styles.metricVal}>{formatCurrency(calculations.totalMaterialCost)}</span>
           </div>
           <div style={{ ...styles.metricCard, ...styles.metricGreen }}>
-            <span style={styles.metricTitle}>GRAND ESTIMATED TOTAL</span>
+            <span style={styles.metricTitle}>
+              <span className="bm-desktop-only">GRAND ESTIMATED TOTAL</span>
+              <span className="bm-mobile-only">Grand ₹</span>
+            </span>
             <span style={{ ...styles.metricValGrand, color: isCalculatedBlue ? '#60a5fa' : '#ffffff' }}>{formatCurrency(calculations.grandTotalCost)}</span>
           </div>
         </div>

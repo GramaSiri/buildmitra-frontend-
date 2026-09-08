@@ -1339,13 +1339,22 @@ export default function SteelCalculatorPage() {
           </div>
         </div>
 
-        <div style={styles.buttonRow}>
-          <button onClick={handleGenerate} style={styles.buttonGenerate}>🔨 Calculate Rebar BBS &amp; Quantities</button>
+        <div style={styles.buttonRow} className="bm-boq-actions">
+          <button onClick={handleGenerate} style={styles.buttonGenerate}>
+            <span className="bm-desktop-only">🔨 Calculate Rebar BBS &amp; Quantities</span>
+            <span className="bm-mobile-only">⚡ Calc BBS</span>
+          </button>
           {generated && results && (
             <>
-              <button onClick={handleExportPDF} style={{ ...styles.buttonExport, backgroundColor: '#0284c7', color: 'white' }}>🖨️ Export PDF</button>
-              <button onClick={handleExportExcel} style={styles.buttonExport}>📊 Export Excel BBS</button>
-              <button onClick={handleWhatsApp} style={styles.buttonWhatsapp}>💬 Share WhatsApp</button>
+              <button onClick={handleExportPDF} style={{ ...styles.buttonExport, backgroundColor: '#0284c7', color: 'white' }}>
+                <span className="bm-desktop-only">🖨️ Export PDF</span>
+                <span className="bm-mobile-only">📄 PDF</span>
+              </button>
+              <button onClick={handleExportExcel} style={styles.buttonExport}>
+                <span className="bm-desktop-only">📊 Export Excel BBS</span>
+                <span className="bm-mobile-only">📊 Excel</span>
+              </button>
+              <button onClick={handleWhatsApp} style={styles.buttonWhatsapp} className="bm-desktop-only">💬 Share WhatsApp</button>
             </>
           )}
         </div>
@@ -1353,34 +1362,46 @@ export default function SteelCalculatorPage() {
         {generated && results && (
           <div>
             {results.warnings.length > 0 ? (
-              <div style={styles.warningBox}>
+              <div style={styles.warningBox} className="bm-hide-mobile">
                 {results.warnings.map((w: string, i: number) => <div key={i}>{w}</div>)}
               </div>
             ) : (
-              <div style={styles.passBox}>
+              <div style={styles.passBox} className="bm-hide-mobile">
                 ✅ <b>IS 456:2000 Code Compliance Verified:</b> Clear Cover &amp; Bar Spacing adhere strictly to IS 456 structural guidelines.
               </div>
             )}
 
-            <div style={styles.cardContainer}>
+            <div style={styles.cardContainer} className="bm-boq-summary-scroll">
               <div style={{ ...styles.card, ...styles.cardBlue }}>
                 <div>🔩</div>
-                <div>Total Steel Weight</div>
-                <div style={styles.cardValue}>{formatNumber(results.totalSteelKg)} kg ({formatNumber(results.totalSteelMT, 3)} MT)</div>
+                <div>
+                  <span className="bm-desktop-only">Total Steel Weight</span>
+                  <span className="bm-mobile-only">Steel Weight</span>
+                </div>
+                <div style={styles.cardValue}>{formatNumber(results.totalSteelKg)} kg</div>
               </div>
               <div style={{ ...styles.card, ...styles.cardLightGreen }}>
                 <div>🧵</div>
-                <div>Binding Wire (GI)</div>
+                <div>
+                  <span className="bm-desktop-only">Binding Wire (GI)</span>
+                  <span className="bm-mobile-only">Wire (GI)</span>
+                </div>
                 <div style={styles.cardValue}>{formatNumber(results.bindingWireKg)} kg</div>
               </div>
               <div style={{ ...styles.card, ...styles.cardLightOrange }}>
                 <div>💰</div>
-                <div>Tot. Mat (₹)</div>
+                <div>
+                  <span className="bm-desktop-only">Total Material (₹)</span>
+                  <span className="bm-mobile-only">Mat ₹</span>
+                </div>
                 <div style={styles.cardValue}>{formatCurrency(results.totalMaterialCost)}</div>
               </div>
               <div style={{ ...styles.card, ...styles.cardLightTeal }}>
                 <div>💎</div>
-                <div>Estimated Grand Total (₹)</div>
+                <div>
+                  <span className="bm-desktop-only">Estimated Grand Total (₹)</span>
+                  <span className="bm-mobile-only">Grand ₹</span>
+                </div>
                 <div style={styles.cardValue}>{formatCurrency(results.grandTotalCost)}</div>
               </div>
             </div>

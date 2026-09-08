@@ -780,10 +780,22 @@ export default function BrickWorkCalculatorPage() {
               </div>
 
               <div className="bm-boq-actions" style={{ marginTop: '12px' }}>
-                <button style={styles.btnPrimary} onClick={handleCalculate}>⚡ Calculate Detailed Brickwork BOQ</button>
-                <button style={styles.btnReset} onClick={() => { setWallRows([]); setDeductionRows([]); }}>🔄 Reset All</button>
-                <button style={styles.btnSecondary} onClick={handleExportExcel}>📊 Export Excel</button>
-                <button style={styles.btnSuccess} onClick={handleExportPDF}>📄 Export PDF Report</button>
+                <button style={styles.btnPrimary} onClick={handleCalculate}>
+                  <span className="bm-desktop-only">⚡ Calculate Detailed Brickwork BOQ</span>
+                  <span className="bm-mobile-only">⚡ Calc</span>
+                </button>
+                <button style={styles.btnReset} onClick={() => { setWallRows([]); setDeductionRows([]); }}>
+                  <span className="bm-desktop-only">🔄 Reset All</span>
+                  <span className="bm-mobile-only">🔄 Reset</span>
+                </button>
+                <button style={styles.btnSecondary} onClick={handleExportExcel}>
+                  <span className="bm-desktop-only">📊 Export Excel</span>
+                  <span className="bm-mobile-only">📊 Excel</span>
+                </button>
+                <button style={styles.btnSuccess} onClick={handleExportPDF}>
+                  <span className="bm-desktop-only">📄 Export PDF Report</span>
+                  <span className="bm-mobile-only">📄 PDF</span>
+                </button>
               </div>
             </div>
           </>
@@ -792,23 +804,38 @@ export default function BrickWorkCalculatorPage() {
         {/* Result Metrics */}
         <div style={styles.summaryGrid} className="bm-boq-summary-scroll">
           <div style={{ ...styles.metricCard, ...styles.metricAmber }}>
-            <span style={styles.metricTitle}>Bricks / Blocks</span>
+            <span style={styles.metricTitle}>
+              <span className="bm-desktop-only">Bricks / Blocks</span>
+              <span className="bm-mobile-only">Bricks</span>
+            </span>
             <span style={{ ...styles.metricVal, color: isCalculatedBlue ? '#fef3c7' : '#ffffff' }}>{calcResults.grossUnits.toLocaleString()} Nos</span>
           </div>
           <div style={{ ...styles.metricCard, ...styles.metricTeal }}>
-            <span style={styles.metricTitle}>Net Masonry Volume</span>
+            <span style={styles.metricTitle}>
+              <span className="bm-desktop-only">Net Masonry Volume</span>
+              <span className="bm-mobile-only">Masonry Vol</span>
+            </span>
             <span style={styles.metricVal}>{calcResults.netVolCum} CUM</span>
           </div>
           <div style={{ ...styles.metricCard, ...styles.metricOrange }}>
-            <span style={styles.metricTitle}>Cement Required</span>
+            <span style={styles.metricTitle}>
+              <span className="bm-desktop-only">Cement Required</span>
+              <span className="bm-mobile-only">Cement</span>
+            </span>
             <span style={styles.metricVal}>{calcResults.cementBags} Bags</span>
           </div>
           <div style={{ ...styles.metricCard, ...styles.metricBlue }}>
-            <span style={styles.metricTitle}>Material Subtotal</span>
+            <span style={styles.metricTitle}>
+              <span className="bm-desktop-only">Material Subtotal</span>
+              <span className="bm-mobile-only">Mat ₹</span>
+            </span>
             <span style={styles.metricVal}>{formatCurrency(calcResults.totalMaterialCost)}</span>
           </div>
           <div style={{ ...styles.metricCard, ...styles.metricGreen }}>
-            <span style={styles.metricTitle}>GRAND ESTIMATED TOTAL</span>
+            <span style={styles.metricTitle}>
+              <span className="bm-desktop-only">GRAND ESTIMATED TOTAL</span>
+              <span className="bm-mobile-only">Grand ₹</span>
+            </span>
             <span style={{ ...styles.metricValGrand, color: isCalculatedBlue ? '#60a5fa' : '#ffffff' }}>{formatCurrency(calcResults.grandTotalCost)}</span>
           </div>
         </div>

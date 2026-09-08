@@ -325,9 +325,9 @@ export default function InteriorBOQPage() {
   return (
     <div className="bm-final-boq-page" style={styles.container}>
       {/* 1. Header */}
-      <div style={styles.header}>
+      <div style={styles.header} className="bm-boq-top-header">
         <div>
-          <button style={styles.backBtn} onClick={() => router.push('/calculators')}>← Back to Calculators</button>
+          <button style={styles.backBtn} className="bm-top-back-btn" onClick={() => router.push('/calculators')}>← Back to Calculators</button>
         </div>
         <h1 style={styles.headerTitle}>
           🛋️ Interior BOQ Calculator
@@ -551,6 +551,7 @@ export default function InteriorBOQPage() {
     </div>
   );
 }
+
 
 
 

@@ -392,12 +392,12 @@ export default function ElectricalBOQPage() {
 
       <div style={styles.container}>
         {/* Header */}
-        <div style={styles.header}>
+        <div style={styles.header} className="bm-boq-top-header">
           <div>
             <span style={styles.badge}>MEP &amp; ELECTRICAL BOQ</span>
             <h1 style={styles.headerTitle}>⚡ BuildMitra – Electrical BOQ Estimator</h1>
           </div>
-          <button style={styles.backBtn} onClick={() => router.push("/contractor-dashboard")}>← Back to Dashboard</button>
+          <button style={styles.backBtn} className="bm-top-back-btn" onClick={() => router.push("/contractor-dashboard")}>← Back to Dashboard</button>
         </div>
 
         <MarketRateTrend />
@@ -541,34 +541,61 @@ export default function ElectricalBOQPage() {
           </div>
 
           {/* Action Buttons */}
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '14px' }}>
-            <button style={styles.btnPrimary} onClick={handleCalculate}>⚡ Calculate Electrical BOQ</button>
-            <button style={styles.btnReset} onClick={() => { setPlotLength(30); setPlotWidth(40); setFloors(3); setBedrooms(3); setPackageTier('Standard'); selectAllItems(); }}>🔄 Reset</button>
-            <button style={styles.btnSecondary} onClick={handleExportExcel}>📊 Export Excel</button>
-            <button style={styles.btnSuccess} onClick={handleExportPDF}>📄 Export PDF Report</button>
+          <div className="bm-boq-actions" style={{ marginTop: '12px' }}>
+            <button style={styles.btnPrimary} onClick={handleCalculate}>
+              <span className="bm-desktop-only">⚡ Calculate Electrical BOQ</span>
+              <span className="bm-mobile-only">⚡ Calc</span>
+            </button>
+            <button style={styles.btnReset} onClick={() => { setPlotLength(30); setPlotWidth(40); setFloors(3); setBedrooms(3); setPackageTier('Standard'); selectAllItems(); }}>
+              <span className="bm-desktop-only">🔄 Reset</span>
+              <span className="bm-mobile-only">🔄 Reset</span>
+            </button>
+            <button style={styles.btnSecondary} onClick={handleExportExcel}>
+              <span className="bm-desktop-only">📊 Export Excel</span>
+              <span className="bm-mobile-only">📊 Excel</span>
+            </button>
+            <button style={styles.btnSuccess} onClick={handleExportPDF}>
+              <span className="bm-desktop-only">📄 Export PDF Report</span>
+              <span className="bm-mobile-only">📄 PDF</span>
+            </button>
           </div>
         </div>
 
         {/* Result Metric Cards */}
-        <div style={styles.summaryGrid}>
+        <div style={styles.summaryGrid} className="bm-boq-summary-scroll">
           <div style={{ ...styles.metricCard, ...styles.metricAmber }}>
-            <span style={styles.metricTitle}>Built-up Area</span>
+            <span style={styles.metricTitle}>
+              <span className="bm-desktop-only">Built-up Area</span>
+              <span className="bm-mobile-only">BUA</span>
+            </span>
             <span style={{ ...styles.metricVal, color: isCalculatedBlue ? '#fde68a' : '#ffffff' }}>{calculations.totalBUA.toLocaleString()} Sq.ft</span>
           </div>
           <div style={{ ...styles.metricCard, ...styles.metricBlue }}>
-            <span style={styles.metricTitle}>Material Subtotal</span>
+            <span style={styles.metricTitle}>
+              <span className="bm-desktop-only">Material Subtotal</span>
+              <span className="bm-mobile-only">Mat ₹</span>
+            </span>
             <span style={styles.metricVal}>{formatCurrency(calculations.totalMaterialCost)}</span>
           </div>
           <div style={{ ...styles.metricCard, ...styles.metricPurple }}>
-            <span style={styles.metricTitle}>Labour Subtotal</span>
+            <span style={styles.metricTitle}>
+              <span className="bm-desktop-only">Labour Subtotal</span>
+              <span className="bm-mobile-only">Lab ₹</span>
+            </span>
             <span style={styles.metricVal}>{formatCurrency(calculations.totalLabourCost)}</span>
           </div>
           <div style={{ ...styles.metricCard, ...styles.metricTeal }}>
-            <span style={styles.metricTitle}>Est. Rate / Sq.ft</span>
+            <span style={styles.metricTitle}>
+              <span className="bm-desktop-only">Est. Rate / Sq.ft</span>
+              <span className="bm-mobile-only">Rate/Sq.ft</span>
+            </span>
             <span style={styles.metricVal}>₹{calculations.costPerSqft.toFixed(2)} / Sq.ft</span>
           </div>
           <div style={{ ...styles.metricCard, ...styles.metricGreen }}>
-            <span style={styles.metricTitle}>GRAND ESTIMATED TOTAL</span>
+            <span style={styles.metricTitle}>
+              <span className="bm-desktop-only">GRAND ESTIMATED TOTAL</span>
+              <span className="bm-mobile-only">Grand ₹</span>
+            </span>
             <span style={{ ...styles.metricValGrand, color: isCalculatedBlue ? '#60a5fa' : '#ffffff' }}>{formatCurrency(calculations.grandTotalCost)}</span>
           </div>
         </div>
@@ -588,7 +615,7 @@ export default function ElectricalBOQPage() {
         )}
 
         {/* Itemized BOQ Table */}
-        <div style={styles.tableContainer}>
+        <div style={styles.tableContainer} className="bm-boq-table-scroll">
           <div style={{ padding: '12px 16px', backgroundColor: '#d97706', color: 'white', fontWeight: '800', fontSize: '16px' }}>
             📑 Itemized Electrical BOQ (Admin Master Linked - 10 Line Items)
           </div>
@@ -596,7 +623,7 @@ export default function ElectricalBOQPage() {
             <thead>
               <tr>
                 <th style={styles.th}>Sl.No</th>
-                <th style={styles.th}>Item Code</th>
+                <th style={styles.th} className="bm-hide-mobile">Item Code</th>
                 <th style={styles.th}>Description</th>
                 <th style={styles.th}>Key Materials</th>
                 <th style={styles.th}>UOM</th>
@@ -609,7 +636,7 @@ export default function ElectricalBOQPage() {
               {calculations.items.map(it => (
                 <tr key={it.code}>
                   <td style={styles.td}><strong>{it.slNo}</strong></td>
-                  <td style={styles.td}><code>{it.code}</code></td>
+                  <td style={styles.td} className="bm-hide-mobile"><code>{it.code}</code></td>
                   <td style={styles.td}><strong>{it.name}</strong></td>
                   <td style={styles.td}>{it.materials}</td>
                   <td style={styles.td}>{it.uom}</td>
@@ -633,3 +660,4 @@ export default function ElectricalBOQPage() {
     </>
   );
 }
+

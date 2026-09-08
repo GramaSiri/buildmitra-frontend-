@@ -1,13 +1,34 @@
 /* =========================================================================
-   BuildMitra Adaptive Mobile Engine (Production Safe)
+   BuildMitra Adaptive Mobile Engine (Production Safe & Standardized)
    - Desktop layout & calculations remain 100% untouched.
-   - Login / Register pages and checkboxes remain 100% untouched.
-   - Table headers remain fully visible; only Master Code and Category are hidden on mobile.
+   - Login & Register pages, checkboxes, and agreement text remain 100% protected.
+   - Headers: titles hidden on mobile, back button pinned to top-right.
+   - Technical notes, IS Standard boxes, and deduplication banners hidden on mobile.
+   - Action buttons: compact 4-button horizontal grid in 1 row.
+   - Selection bars: single clean horizontal row.
+   - Metric & Result cards: exactly 3 boxes per row with short single-line labels.
+   - Tables: sticky visible headers, hiding ONLY Master/Item Code and Category columns on mobile.
    ========================================================================= */
+
+/* Global Responsive Text Visibility Toggles (Desktop Default) */
+.bm-mobile-only {
+  display: none !important;
+}
+.bm-desktop-only {
+  display: inline !important;
+}
 
 @media (max-width: 768px) {
 
-  /* --- 1. ROOT VIEWPORT & GLOBAL BASE --- */
+  /* Responsive Text Visibility Toggles (Mobile Overrides) */
+  .bm-mobile-only {
+    display: inline !important;
+  }
+  .bm-desktop-only {
+    display: none !important;
+  }
+
+  /* --- 1. ROOT VIEWPORT & GAP ELIMINATION --- */
   html,
   body,
   #__next {
@@ -24,40 +45,110 @@
     box-sizing: border-box !important;
   }
 
-  /* Exclude Login & Register pages from aggressive mobile formatting */
-  .bm-register-page *,
-  .bm-login-page *,
-  [class*="login" i] *,
-  [class*="register" i] * {
+  /* Eliminate dead vertical whitespace gaps around containers & cards */
+  div[style*="container" i],
+  div[style*="card" i],
+  .bm-container,
+  [class*="container" i],
+  [class*="card" i] {
+    padding: 8px !important;
+    margin-top: 4px !important;
+    margin-bottom: 6px !important;
+    border-radius: 8px !important;
+  }
+
+  /* --- 2. AUTHENTICATION PROTECTION (LOGIN & REGISTER PAGES) --- */
+  .bm-register-page,
+  .bm-login-page,
+  [class*="login" i],
+  [class*="register" i] {
     writing-mode: horizontal-tb !important;
   }
 
-  /* --- 2. UNIVERSAL MOBILE HIDING (EXCLUDING LOGIN/REGISTER TEXT & CHECKBOXES) --- */
-  .bm-hide-mobile:not(.bm-register-page *) {
-    display: none !important;
+  /* Protect checkboxes, labels, and agreement text */
+  .bm-login-page input[type="checkbox"],
+  .bm-register-page input[type="checkbox"],
+  form input[type="checkbox"],
+  [class*="agreeLabel" i] input[type="checkbox"] {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 16px !important;
+    height: 16px !important;
+    min-width: 16px !important;
+    min-height: 16px !important;
+    margin: 0 6px 0 0 !important;
+    accent-color: #800020 !important;
+    flex-shrink: 0 !important;
+    cursor: pointer !important;
   }
 
-  /* --- 3. TOP HEADER: PIN BACK BUTTON TO TOP-RIGHT --- */
-  .bm-boq-top-header {
+  .bm-login-page label,
+  .bm-register-page label,
+  [class*="agreeLabel" i],
+  .bm-agree-label {
+    display: inline-flex !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    font-size: 11px !important;
+    line-height: 1.3 !important;
+    color: #334155 !important;
+    white-space: normal !important;
+    max-width: 100% !important;
+    cursor: pointer !important;
+  }
+
+  /* --- 3. TOP HEADER & NAVIGATION CLEANUP --- */
+  .bm-boq-top-header,
+  div[style*="header" i]:not(.bm-login-page *):not(.bm-register-page *) {
     display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
     justify-content: flex-end !important;
-    padding: 8px 10px !important;
-    margin-bottom: 6px !important;
+    padding: 6px 10px !important;
+    margin: 0 0 6px 0 !important;
+    min-height: 38px !important;
     width: 100% !important;
+    border-radius: 8px !important;
   }
 
-  .bm-boq-top-header > div:not(:has(.bm-top-back-btn)) {
+  /* Hide verbose titles, subtitles, badges, and breadcrumb text on mobile */
+  .bm-boq-top-header h1,
+  .bm-boq-top-header h2,
+  .bm-boq-top-header p,
+  .bm-boq-top-header span:not(.bm-top-back-btn),
+  .bm-boq-top-header > div:not(:has(.bm-top-back-btn)):not(:has(button)) {
     display: none !important;
   }
 
-  .bm-top-back-btn {
+  /* Pin back arrow button cleanly to top-right corner */
+  .bm-top-back-btn,
+  .bm-boq-top-header button {
     margin-left: auto !important;
     font-size: 11px !important;
-    padding: 5px 10px !important;
+    font-weight: 800 !important;
+    padding: 5px 12px !important;
+    border-radius: 6px !important;
+    white-space: nowrap !important;
+    background-color: rgba(255, 255, 255, 0.22) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.35) !important;
   }
 
-  /* --- 4. ACTION BUTTONS: CLEAN 4-BUTTON GRID IN 1 ROW --- */
-  .bm-boq-actions {
+  /* --- 4. UNWANTED CLUTTER HIDING (MOBILE ONLY) --- */
+  .noteBox,
+  div[style*="noteBox" i],
+  .bm-note-box,
+  .bm-technical-note,
+  .bm-dedup-banner,
+  .bm-is-note,
+  .bm-hide-mobile:not(.bm-register-page *):not(.bm-login-page *) {
+    display: none !important;
+  }
+
+  /* --- 5. ACTION BUTTONS: COMPACT 4-BUTTON HORIZONTAL ROW --- */
+  .bm-boq-actions,
+  [class*="actionGroup" i] {
     display: grid !important;
     grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
     gap: 4px !important;
@@ -65,19 +156,21 @@
     margin: 6px 0 !important;
   }
 
-  .bm-boq-actions button {
+  .bm-boq-actions button,
+  [class*="actionGroup" i] button {
     width: 100% !important;
     min-height: 32px !important;
     height: 32px !important;
     font-size: 10px !important;
     font-weight: 800 !important;
-    padding: 2px !important;
+    padding: 2px 4px !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
+    border-radius: 6px !important;
   }
 
-  /* --- 5. SELECTION BAR: 1 HORIZONTAL ROW --- */
+  /* --- 6. SELECTION BAR: SINGLE CLEAN HORIZONTAL ROW --- */
   .bm-boq-select-bar,
   .bm-select-actions {
     display: flex !important;
@@ -85,21 +178,28 @@
     flex-wrap: nowrap !important;
     gap: 4px !important;
     width: 100% !important;
+    align-items: center !important;
   }
 
-  .bm-select-actions button {
+  .bm-select-actions button,
+  .bm-boq-select-bar button {
     flex: 1 1 0 !important;
     min-width: 0 !important;
-    padding: 4px 2px !important;
+    height: 30px !important;
+    padding: 2px 4px !important;
     font-size: 10px !important;
+    font-weight: 700 !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
+    border-radius: 6px !important;
   }
 
-  /* --- 6. SUMMARY & METRIC CARDS: EXACTLY 3 PER ROW --- */
+  /* --- 7. METRIC & RESULT CARDS: EXACTLY 3 BOXES PER ROW --- */
   .bm-boq-summary-scroll,
-  [class*="summaryGrid"] {
+  [class*="summaryGrid" i],
+  [class*="metricGrid" i],
+  [class*="resultGrid" i] {
     display: grid !important;
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     gap: 4px !important;
@@ -108,7 +208,9 @@
   }
 
   .bm-boq-summary-scroll > div,
-  [class*="summaryGrid"] > div {
+  [class*="summaryGrid" i] > div,
+  [class*="metricGrid" i] > div,
+  [class*="resultGrid" i] > div {
     padding: 6px 3px !important;
     min-height: 52px !important;
     height: auto !important;
@@ -118,10 +220,34 @@
     flex-direction: column !important;
     justify-content: center !important;
     align-items: center !important;
+    box-sizing: border-box !important;
   }
 
-  /* --- 7. TABLE HEADERS & ROWS: FULLY VISIBLE & STICKY --- */
-  .bm-boq-table-scroll {
+  .bm-boq-summary-scroll span:first-child,
+  [class*="summaryGrid" i] span:first-child,
+  [class*="metricTitle" i] {
+    font-size: 9.5px !important;
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 100% !important;
+    letter-spacing: 0px !important;
+  }
+
+  .bm-boq-summary-scroll span:last-child,
+  [class*="summaryGrid" i] span:last-child,
+  [class*="metricVal" i] {
+    font-size: 12.5px !important;
+    font-weight: 900 !important;
+    margin-top: 2px !important;
+    white-space: nowrap !important;
+  }
+
+  /* --- 8. TABLE HEADERS & ROWS: VISIBLE, STICKY & SURGICAL COLUMN HIDING --- */
+  .bm-boq-table-scroll,
+  [class*="tableContainer" i] {
     display: block !important;
     width: 100% !important;
     max-width: 100% !important;
@@ -133,40 +259,59 @@
     border-radius: 6px !important;
   }
 
-  .bm-boq-table-scroll table {
+  .bm-boq-table-scroll table,
+  [class*="tableContainer" i] table {
     display: table !important;
     width: max-content !important;
-    min-width: 480px !important;
+    min-width: 320px !important;
     border-collapse: collapse !important;
   }
 
-  .bm-boq-table-scroll thead {
+  .bm-boq-table-scroll thead,
+  [class*="tableContainer" i] thead {
     display: table-header-group !important;
     visibility: visible !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 10 !important;
   }
 
-  .bm-boq-table-scroll tr {
+  .bm-boq-table-scroll tr,
+  [class*="tableContainer" i] tr {
     display: table-row !important;
     visibility: visible !important;
   }
 
-  .bm-boq-table-scroll th {
+  .bm-boq-table-scroll th,
+  [class*="tableContainer" i] th {
     display: table-cell !important;
     position: sticky !important;
     top: 0 !important;
-    z-index: 2 !important;
+    z-index: 10 !important;
     background-color: #800020 !important;
     color: #ffffff !important;
-    font-size: 10.5px !important;
+    font-size: 10px !important;
     padding: 5px 6px !important;
     visibility: visible !important;
+    white-space: nowrap !important;
   }
 
-  .bm-boq-table-scroll td {
+  .bm-boq-table-scroll td,
+  [class*="tableContainer" i] td {
     display: table-cell !important;
     font-size: 10px !important;
     padding: 4px 6px !important;
     vertical-align: middle !important;
     visibility: visible !important;
+  }
+
+  /* Surgically hide ONLY Master Code / Item Code & Category columns on mobile */
+  th.bm-col-code,
+  td.bm-col-code,
+  th.bm-col-category,
+  td.bm-col-category,
+  .bm-hide-mobile-col,
+  .bm-hide-col-mobile {
+    display: none !important;
   }
 }

@@ -452,12 +452,12 @@ export default function PaintingBOQPage() {
 
       <div style={styles.container}>
         {/* Header */}
-        <div style={styles.header}>
+        <div style={styles.header} className="bm-boq-top-header">
           <div>
             <span style={styles.badge}>FINISHES &amp; PAINTING BOQ</span>
             <h1 style={styles.headerTitle}>🎨 BuildMitra – Painting BOQ Estimator</h1>
           </div>
-          <button style={styles.backBtn} onClick={() => router.push("/contractor-dashboard")}>← Back to Dashboard</button>
+          <button style={styles.backBtn} className="bm-top-back-btn" onClick={() => router.push("/contractor-dashboard")}>← Back to Dashboard</button>
         </div>
 
         <MarketRateTrend />
@@ -649,45 +649,75 @@ export default function PaintingBOQPage() {
           </div>
 
           {/* Action Buttons */}
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '14px' }}>
-            <button style={styles.btnPrimary} onClick={handleCalculate}>⚡ Calculate Painting BOQ</button>
-            <button style={styles.btnReset} onClick={handleReset}>🔄 Reset</button>
-            <button style={styles.btnSecondary} onClick={handleExportExcel}>📊 Export Excel</button>
-            <button style={styles.btnSuccess} onClick={handleExportPDF}>📄 Export PDF Report</button>
-            <button style={{ backgroundColor: '#15803d', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '8px', cursor: 'pointer', fontSize: '15px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '6px' }} onClick={handleShareWhatsApp}>💬 WhatsApp Share</button>
+          <div className="bm-boq-actions" style={{ marginTop: '12px' }}>
+            <button style={styles.btnPrimary} onClick={handleCalculate}>
+              <span className="bm-desktop-only">⚡ Calculate Painting BOQ</span>
+              <span className="bm-mobile-only">⚡ Calc</span>
+            </button>
+            <button style={styles.btnReset} onClick={handleReset}>
+              <span className="bm-desktop-only">🔄 Reset</span>
+              <span className="bm-mobile-only">🔄 Reset</span>
+            </button>
+            <button style={styles.btnSecondary} onClick={handleExportExcel}>
+              <span className="bm-desktop-only">📊 Export Excel</span>
+              <span className="bm-mobile-only">📊 Excel</span>
+            </button>
+            <button style={styles.btnSuccess} onClick={handleExportPDF}>
+              <span className="bm-desktop-only">📄 Export PDF Report</span>
+              <span className="bm-mobile-only">📄 PDF</span>
+            </button>
+            <button style={{ backgroundColor: '#15803d', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '8px', cursor: 'pointer', fontSize: '15px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '6px' }} className="bm-desktop-only" onClick={handleShareWhatsApp}>💬 WhatsApp Share</button>
           </div>
         </div>
 
         {/* Result Metric Cards */}
-        <div style={styles.summaryGrid}>
+        <div style={styles.summaryGrid} className="bm-boq-summary-scroll">
           <div style={{ ...styles.metricCard, ...styles.metricMaroon }}>
-            <span style={styles.metricTitle}>Built-up Area</span>
+            <span style={styles.metricTitle}>
+              <span className="bm-desktop-only">Built-up Area</span>
+              <span className="bm-mobile-only">BUA</span>
+            </span>
             <span style={{ ...styles.metricVal, color: isCalculatedBlue ? '#fbcfe8' : '#ffffff' }}>{boqResults.totalBUA.toLocaleString()} Sq.ft</span>
           </div>
           <div style={{ ...styles.metricCard, ...styles.metricTeal }}>
-            <span style={styles.metricTitle}>Net Paint Area</span>
+            <span style={styles.metricTitle}>
+              <span className="bm-desktop-only">Net Paint Area</span>
+              <span className="bm-mobile-only">Paint Area</span>
+            </span>
             <span style={styles.metricVal}>{formatNumber(boqResults.netWallArea)} Sq.ft</span>
           </div>
           <div style={{ ...styles.metricCard, ...styles.metricBlue }}>
-            <span style={styles.metricTitle}>Material Subtotal</span>
+            <span style={styles.metricTitle}>
+              <span className="bm-desktop-only">Material Subtotal</span>
+              <span className="bm-mobile-only">Mat ₹</span>
+            </span>
             <span style={styles.metricVal}>{formatCurrency(boqResults.materialTotal)}</span>
           </div>
           <div style={{ ...styles.metricCard, ...styles.metricPurple }}>
-            <span style={styles.metricTitle}>Labour Subtotal</span>
+            <span style={styles.metricTitle}>
+              <span className="bm-desktop-only">Labour Subtotal</span>
+              <span className="bm-mobile-only">Lab ₹</span>
+            </span>
             <span style={styles.metricVal}>{formatCurrency(boqResults.labourTotal)}</span>
           </div>
           <div style={{ ...styles.metricCard, ...styles.metricOrange }}>
-            <span style={styles.metricTitle}>Est. Rate / Sq.ft</span>
+            <span style={styles.metricTitle}>
+              <span className="bm-desktop-only">Est. Rate / Sq.ft</span>
+              <span className="bm-mobile-only">Rate/Sq.ft</span>
+            </span>
             <span style={styles.metricVal}>₹{boqResults.ratePerSft.toFixed(2)} / Sq.ft</span>
           </div>
           <div style={{ ...styles.metricCard, ...styles.metricGreen }}>
-            <span style={styles.metricTitle}>GRAND ESTIMATED TOTAL</span>
+            <span style={styles.metricTitle}>
+              <span className="bm-desktop-only">GRAND ESTIMATED TOTAL</span>
+              <span className="bm-mobile-only">Grand ₹</span>
+            </span>
             <span style={{ ...styles.metricValGrand, color: isCalculatedBlue ? '#60a5fa' : '#ffffff' }}>{formatCurrency(boqResults.grandTotal)}</span>
           </div>
         </div>
 
         {/* Itemized BOQ Table */}
-        <div style={styles.tableContainer}>
+        <div style={styles.tableContainer} className="bm-boq-table-scroll">
           <div style={{ padding: '12px 16px', backgroundColor: '#db2777', color: 'white', fontWeight: '800', fontSize: '16px' }}>
             📑 Itemized Painting BOQ ({workType} Mode - Admin Master Linked)
           </div>
@@ -695,7 +725,7 @@ export default function PaintingBOQPage() {
             <thead>
               <tr>
                 <th style={styles.th}>Sl.No</th>
-                <th style={styles.th}>Item Code</th>
+                <th style={styles.th} className="bm-hide-mobile">Item Code</th>
                 <th style={styles.th}>Description</th>
                 <th style={styles.th}>Key Materials</th>
                 <th style={styles.th}>UOM</th>
@@ -709,7 +739,7 @@ export default function PaintingBOQPage() {
               {boqResults.items.map(it => (
                 <tr key={it.code}>
                   <td style={styles.td}><strong>{it.sr}</strong></td>
-                  <td style={styles.td}><code>{it.code}</code></td>
+                  <td style={styles.td} className="bm-hide-mobile"><code>{it.code}</code></td>
                   <td style={styles.td}><strong>{it.desc}</strong></td>
                   <td style={styles.td}>{it.materials}</td>
                   <td style={styles.td}>{it.uom}</td>
@@ -730,6 +760,7 @@ export default function PaintingBOQPage() {
     </>
   );
 }
+
 
 
 

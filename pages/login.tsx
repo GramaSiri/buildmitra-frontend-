@@ -211,7 +211,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main style={styles.pageContainer}>
+    <main style={styles.pageContainer} className="bm-login-page">
       <div style={styles.contentWrapper}>
         
         {/* LIGHTWEIGHT PROMOTIONAL TEXT AREA (NO CARD, NO DUPLICATE LOGO) */}

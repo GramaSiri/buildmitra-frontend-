@@ -199,9 +199,9 @@ export default function FalseCeilingBOQPage() {
   return (
     <div style={styles.container}>
       {/* 1. Header */}
-      <div style={styles.header}>
+      <div style={styles.header} className="bm-boq-top-header">
         <div>
-          <button style={styles.backBtn} onClick={() => router.push('/calculators')}>← Back to Calculators</button>
+          <button style={styles.backBtn} className="bm-top-back-btn" onClick={() => router.push('/calculators')}>← Back to Calculators</button>
         </div>
         <h1 style={styles.headerTitle}>
           ⬇️ False Ceiling BOQ Calculator
@@ -367,7 +367,7 @@ export default function FalseCeilingBOQPage() {
               <thead>
                 <tr>
                   <th style={styles.th}>Sr.</th>
-                  <th style={styles.th}>Item Code</th>
+                  <th style={styles.th} className="bm-hide-mobile">Item Code</th>
                   <th style={styles.th}>Item Description</th>
                   <th style={styles.th}>UOM</th>
                   <th style={styles.th}>Qty</th>
@@ -401,4 +401,5 @@ export default function FalseCeilingBOQPage() {
     </div>
   );
 }
+
 

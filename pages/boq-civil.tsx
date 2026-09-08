@@ -4,7 +4,7 @@ import { useRouter } from 'next/router';
 import * as XLSX from 'xlsx';
 import { usePaymentBarrier } from '../hooks/usePaymentBarrier';
 import { downloadBuildMitraPDF } from '../utils/pdfExport';
-import { getMasterRate, syncApprovedRatesFromBackend, MasterRateResult } from '../utils/masterRates';
+import { getMasterRate, syncApprovedRatesFromBackend } from '../utils/masterRates';
 import MarketRateTrend from '../components/ui/MarketRateTrend';
 
 const styles: Record<string, React.CSSProperties> = {
@@ -90,7 +90,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '4px'
   },
   label: {
-    fontSize: '15px',
+    fontSize: '14px',
     fontWeight: '700',
     color: '#334155',
     marginBottom: '2px'
@@ -99,7 +99,7 @@ const styles: Record<string, React.CSSProperties> = {
     width: '100%',
     height: '38px',
     padding: '8px 12px',
-    fontSize: '16px',
+    fontSize: '15px',
     fontWeight: '600',
     color: '#0f172a',
     backgroundColor: '#ffffff',
@@ -118,7 +118,7 @@ const styles: Record<string, React.CSSProperties> = {
     width: '100%',
     height: '38px',
     padding: '8px 12px',
-    fontSize: '16px',
+    fontSize: '15px',
     fontWeight: '600',
     color: '#0f172a',
     backgroundColor: '#ffffff',
@@ -150,8 +150,8 @@ const styles: Record<string, React.CSSProperties> = {
   metricBlue: { backgroundColor: '#2563eb' },
   metricPurple: { backgroundColor: '#7c3aed' },
   metricCyan: { backgroundColor: '#0891b2' },
-  metricTitle: { fontSize: '11px', textTransform: 'uppercase', opacity: 0.9, fontWeight: '700', letterSpacing: '0.5px' },
-  metricVal: { fontSize: '16px', fontWeight: '800', marginTop: '4px' },
+  metricTitle: { fontSize: '11px', textTransform: 'uppercase', opacity: 0.95, fontWeight: '700', letterSpacing: '0.5px' },
+  metricVal: { fontSize: '15px', fontWeight: '800', marginTop: '4px' },
   metricValGrand: { fontSize: '18px', fontWeight: '900', marginTop: '4px' },
 
   tableContainer: {
@@ -162,20 +162,20 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: '#ffffff',
     marginBottom: '16px'
   },
-  table: { width: '100%', borderCollapse: 'collapse', fontSize: '15px' },
-  th: { backgroundColor: '#800020', color: 'white', padding: '10px 14px', textAlign: 'left', fontWeight: '700', fontSize: '15px' },
-  td: { padding: '10px 14px', borderBottom: '1px solid #f1f5f9', color: '#334155', fontSize: '15px' },
+  table: { width: '100%', borderCollapse: 'collapse', fontSize: '14px' },
+  th: { backgroundColor: '#800020', color: 'white', padding: '10px 14px', textAlign: 'left', fontWeight: '700', fontSize: '14px', whiteSpace: 'nowrap' },
+  td: { padding: '10px 14px', borderBottom: '1px solid #f1f5f9', color: '#334155', fontSize: '14px' },
 
-  btnPrimary: { backgroundColor: '#800020', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '8px', cursor: 'pointer', fontSize: '15px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '6px' },
-  btnSecondary: { backgroundColor: '#2563eb', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '8px', cursor: 'pointer', fontSize: '15px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '6px' },
-  btnSuccess: { backgroundColor: '#16a34a', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '8px', cursor: 'pointer', fontSize: '15px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '6px' },
-  btnReset: { backgroundColor: '#64748b', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '8px', cursor: 'pointer', fontSize: '15px', fontWeight: '700' },
+  btnPrimary: { backgroundColor: '#800020', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' },
+  btnSecondary: { backgroundColor: '#2563eb', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' },
+  btnSuccess: { backgroundColor: '#16a34a', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' },
+  btnReset: { backgroundColor: '#64748b', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' },
 
-  warnBanner: { backgroundColor: '#fff1f2', border: '1px solid #fecdd3', color: '#9f1239', padding: '14px', borderRadius: '10px', fontSize: '14px', fontWeight: '600', marginBottom: '16px' }
+  warnBanner: { backgroundColor: '#fff1f2', border: '1px solid #fecdd3', color: '#9f1239', padding: '14px', borderRadius: '10px', fontSize: '13px', fontWeight: '600', marginBottom: '16px' }
 };
 
 const formatCurrency = (val: number | null | undefined): string => {
-  if (val === null || val === undefined || isNaN(val) || val <= 0) return "Master Mapping Required / Approved Rate Unavailable";
+  if (val === null || val === undefined || isNaN(val) || val <= 0) return "Rate Pending";
   return `₹${val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
@@ -247,7 +247,7 @@ export default function CivilBOQPage() {
     setIsInputModified(true);
   };
 
-  // Authoritative Admin Rate Master Lookups (with benchmark fallbacks from uploaded CSV)
+  // Authoritative Admin Rate Master Lookups
   const cementRate = getMasterRate(["MAT-CEM-01", "cement", "opc 53"], 410);
   const steelRate = getMasterRate(["MAT-STL-01", "tmt steel", "steel rebar"], 67);
   const sandRate = getMasterRate(["MAT-MSND-01", "m-sand", "sand"], 48);
@@ -277,18 +277,9 @@ export default function CivilBOQPage() {
     const footprintArea = plotArea * 0.9; // 10% setback
     const totalBUA = Math.round(footprintArea * floors);
 
-    // Package Multipliers (Standard = 1.0 -> ₹1,800/sqft, Premium = 1.25 -> +25%, Ultra Premium = 1.50 -> +50%)
     const packageMultiplier = packageTier === 'Ultra Premium' ? 1.50 : (packageTier === 'Premium' ? 1.25 : 1.0);
-
     const isRccSelected = selectedItemIds.includes("CIV-RCC-01");
 
-    // IS Standard Empirical QS Quantities based on BUA & Structure Specification
-    // Deduplication rule: If RCC Concrete Works (RMC/structural concrete) is included:
-    // 1. Aggregates CA-1 & CA-2 = 0 CFT (coarse aggregate is 100% inside RCC Concrete)
-    // 2. Cement = 0.16 bags / sqft BUA (covers non-RCC mortar: Masonry, Plastering, Tiles, Waterproofing)
-    // 3. M-Sand = 0.60 CFT / sqft BUA (covers non-RCC mortar: Masonry, Plastering, Tiles bedding)
-    // If RCC Concrete Works is NOT selected:
-    // Raw materials revert to full quantities (Cement: 0.42 bags/sqft, M-Sand: 1.35 CFT/sqft, Aggregates: 1.35 CFT/sqft).
     const cementBags = isRccSelected ? Math.ceil(totalBUA * 0.16) : Math.ceil(totalBUA * 0.42);
     const steelKg = Math.round(totalBUA * 3.8);
     const sandCft = isRccSelected ? Math.round(totalBUA * 0.60) : Math.round(totalBUA * 1.35);
@@ -428,7 +419,7 @@ export default function CivilBOQPage() {
           it.name,
           it.qty,
           it.uom,
-          it.isFound ? it.rateVal : "Master Mapping Required / Approved Rate Unavailable",
+          it.isFound ? it.rateVal : "Rate Pending",
           it.isFound ? it.amountVal : "—"
         ])
       ];
@@ -449,7 +440,7 @@ export default function CivilBOQPage() {
         it.name,
         String(it.qty),
         it.uom,
-        it.isFound ? formatCurrency(it.rateVal) : "Rate Pending Admin Update",
+        it.isFound ? formatCurrency(it.rateVal) : "Rate Pending",
         it.isFound ? formatCurrency(it.amountVal) : "—"
       ]);
 
@@ -479,13 +470,15 @@ export default function CivilBOQPage() {
       </Head>
 
       <div style={styles.container}>
-        {/* Header */}
-        <div style={styles.header}>
-          <div>
+        {/* Header: desktop displays full brand header; mobile pins back button to top-right */}
+        <div style={styles.header} className="bm-boq-top-header">
+          <div className="bm-hide-mobile">
             <span style={styles.badge}>CIVIL BUILDING BOQ</span>
             <h1 style={styles.headerTitle}>🏗️ BuildMitra – Civil Construction BOQ</h1>
           </div>
-          <button style={styles.backBtn} onClick={() => router.push("/contractor-dashboard")}>← Back to Dashboard</button>
+          <button style={styles.backBtn} className="bm-top-back-btn" className="bm-top-back-btn" onClick={() => router.push("/contractor-dashboard")}>
+            ← Back to Dashboard
+          </button>
         </div>
 
         <MarketRateTrend />
@@ -496,7 +489,7 @@ export default function CivilBOQPage() {
             <span>📐 Enter Plot &amp; Building Specifications</span>
           </div>
 
-          <div style={styles.gridCompact}>
+          <div style={styles.gridCompact} className="bm-calc-input-grid">
             <div style={styles.fieldGroup}>
               <label style={styles.label}>Plot Length (ft)</label>
               <input type="number" value={plotLength} onChange={(e) => handleInputChange(setPlotLength, Number(e.target.value))} style={{ ...styles.input, ...(isInputModified ? styles.inputModified : {}) }} />
@@ -537,59 +530,61 @@ export default function CivilBOQPage() {
                 <option value="Ultra Premium">Ultra Premium (+50% — ₹2,700 / Sq.ft)</option>
               </select>
             </div>
+          </div>
 
-            {/* Horizontal BOQ Line Items Filter Bar & Pill Checklist */}
-          <div style={{ marginTop: '16px', borderTop: '1px dashed #cbd5e1', paddingTop: '14px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '10px' }}>
-              <label style={{ ...styles.label, display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+          {/* Line Items Selection Bar (1 row on mobile) */}
+          <div style={{ marginTop: '12px', borderTop: '1px dashed #cbd5e1', paddingTop: '10px' }}>
+            <div className="bm-boq-select-bar">
+              <label style={{ ...styles.label, display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }} className="bm-hide-mobile">
                 <span>📋 <strong>Include / Exclude BOQ Line Items</strong></span>
-                <span style={{ fontSize: '12px', fontWeight: '800', backgroundColor: '#800020', color: '#ffffff', padding: '3px 10px', borderRadius: '12px' }}>
+                <span style={{ fontSize: '11px', fontWeight: '800', backgroundColor: '#800020', color: '#ffffff', padding: '2px 8px', borderRadius: '12px' }}>
                   {selectedItemIds.length} of {ALL_BOQ_ITEMS_DEF.length} Selected
                 </span>
               </label>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <div className="bm-select-actions">
                 <input
                   type="text"
-                  placeholder="🔍 Search items..."
+                  placeholder="🔍 Search..."
                   value={itemSearch}
                   onChange={(e) => setItemSearch(e.target.value)}
+                  className="bm-hide-mobile"
                   style={{
                     padding: '5px 10px',
                     fontSize: '12px',
                     border: '1px solid #cbd5e1',
                     borderRadius: '6px',
                     outline: 'none',
-                    width: '160px'
+                    width: '140px'
                   }}
                 />
                 <button
                   type="button"
                   onClick={selectAllItems}
-                  style={{ padding: '5px 10px', fontSize: '12px', fontWeight: '800', borderRadius: '6px', border: '1px solid #16a34a', backgroundColor: '#f0fdf4', color: '#15803d', cursor: 'pointer' }}
+                  style={{ padding: '5px 8px', fontSize: '11px', fontWeight: '800', borderRadius: '6px', border: '1px solid #16a34a', backgroundColor: '#f0fdf4', color: '#15803d', cursor: 'pointer' }}
                 >
                   ✓ Select All ({ALL_BOQ_ITEMS_DEF.length})
                 </button>
                 <button
                   type="button"
                   onClick={deselectAllItems}
-                  style={{ padding: '5px 10px', fontSize: '12px', fontWeight: '800', borderRadius: '6px', border: '1px solid #dc2626', backgroundColor: '#fef2f2', color: '#b91c1c', cursor: 'pointer' }}
+                  style={{ padding: '5px 8px', fontSize: '11px', fontWeight: '800', borderRadius: '6px', border: '1px solid #dc2626', backgroundColor: '#fef2f2', color: '#b91c1c', cursor: 'pointer' }}
                 >
                   ✕ Deselect All
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  style={{ padding: '5px 12px', fontSize: '12px', fontWeight: '800', borderRadius: '6px', border: '1px solid #800020', backgroundColor: isDropdownOpen ? '#800020' : '#ffffff', color: isDropdownOpen ? '#ffffff' : '#800020', cursor: 'pointer' }}
+                  style={{ padding: '5px 10px', fontSize: '11px', fontWeight: '800', borderRadius: '6px', border: '1px solid #800020', backgroundColor: isDropdownOpen ? '#800020' : '#ffffff', color: isDropdownOpen ? '#ffffff' : '#800020', cursor: 'pointer' }}
                 >
-                  {isDropdownOpen ? '▲ Hide Items' : '▼ Filter Items List'}
+                  {isDropdownOpen ? '▲ Hide' : '▼ Filter'}
                 </button>
               </div>
             </div>
 
-            {/* Horizontal Pill Badges List */}
+            {/* Pill Badges List */}
             {isDropdownOpen && (
-              <div style={{ backgroundColor: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '14px', marginTop: '8px', maxHeight: '300px', overflowY: 'auto', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.03)' }}>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              <div style={{ backgroundColor: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '10px', marginTop: '6px', maxHeight: '260px', overflowY: 'auto' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                   {ALL_BOQ_ITEMS_DEF.filter(it => it.name.toLowerCase().includes(itemSearch.toLowerCase()) || it.code.toLowerCase().includes(itemSearch.toLowerCase())).map(item => {
                     const isChecked = selectedItemIds.includes(item.id);
                     const isRccItem = item.id === 'CIV-RCC-01';
@@ -599,17 +594,15 @@ export default function CivilBOQPage() {
                         style={{
                           display: 'inline-flex',
                           alignItems: 'center',
-                          gap: '6px',
-                          padding: '6px 12px',
-                          borderRadius: '20px',
+                          gap: '5px',
+                          padding: '4px 8px',
+                          borderRadius: '16px',
                           backgroundColor: isChecked ? '#800020' : '#ffffff',
                           color: isChecked ? '#ffffff' : '#475569',
                           border: isChecked ? '1px solid #800020' : '1px solid #cbd5e1',
                           cursor: 'pointer',
-                          fontSize: '12px',
+                          fontSize: '11px',
                           fontWeight: isChecked ? '700' : '500',
-                          boxShadow: isChecked ? '0 2px 4px rgba(128,0,32,0.15)' : 'none',
-                          transition: 'all 0.15s ease',
                           userSelect: 'none'
                         }}
                       >
@@ -617,10 +610,10 @@ export default function CivilBOQPage() {
                           type="checkbox"
                           checked={isChecked}
                           onChange={() => toggleItem(item.id)}
-                          style={{ width: '14px', height: '14px', accentColor: '#ffffff', cursor: 'pointer' }}
+                          style={{ width: '13px', height: '13px', accentColor: '#ffffff', cursor: 'pointer' }}
                         />
                         <span>
-                          <code style={{ fontSize: '11px', color: isChecked ? '#fef08a' : '#800020' }}>{item.code}</code> – {item.name} {isRccItem && <span style={{ color: isChecked ? '#a7f3d0' : '#059669', fontSize: '11px', fontWeight: '800' }}>(Auto-Deducts Concrete Materials)</span>}
+                          <code style={{ fontSize: '10px', color: isChecked ? '#fef08a' : '#800020' }}>{item.code}</code> – {item.name} {isRccItem && <span style={{ color: isChecked ? '#a7f3d0' : '#059669', fontSize: '10px', fontWeight: '800' }}>(Auto-Deducts)</span>}
                         </span>
                       </label>
                     );
@@ -629,97 +622,122 @@ export default function CivilBOQPage() {
               </div>
             )}
           </div>
-          </div>
 
-          {/* Deduplication Info Notice */}
+          {/* Deduplication Info Notice (Desktop only, hidden on mobile) */}
           {calculations.isRccSelected && (
-            <div style={{ marginTop: '12px', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', padding: '10px 14px', borderRadius: '8px', fontSize: '13px', fontWeight: '600' }}>
-              💡 <strong>IS Standard Concrete Deduplication Active:</strong> Because <code>CIV-RCC-01</code> (All RCC Concrete Works) is selected, Aggregates CA-1 &amp; CA-2 quantity is set to 0 CFT, and Cement &amp; M-Sand quantities automatically adjust to non-RCC mortar works (Masonry, Plastering, Flooring, Waterproofing) to prevent double counting.
+            <div className="bm-hide-mobile" style={{ marginTop: '10px', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', padding: '8px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: '600' }}>
+              💡 <strong>IS Standard Concrete Deduplication Active:</strong> <code>CIV-RCC-01</code> auto-adjusts non-RCC mortar works to prevent double counting.
             </div>
           )}
 
-          {/* Action Buttons */}
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '14px' }}>
-            <button style={styles.btnPrimary} onClick={handleCalculate}>⚡ Calculate Civil BOQ</button>
-            <button style={styles.btnReset} onClick={() => { setPlotLength(30); setPackageTier('Standard'); selectAllItems(); }}>🔄 Reset</button>
-            <button style={styles.btnSecondary} onClick={handleExportExcel}>📊 Export Excel</button>
-            <button style={styles.btnSuccess} onClick={handleExportPDF}>📄 Export PDF Report</button>
+          {/* Action Buttons: 1 compact row on mobile, full on desktop */}
+          <div className="bm-boq-actions" style={{ marginTop: '12px' }}>
+            <button style={styles.btnPrimary} onClick={handleCalculate}>
+              <span className="bm-desktop-only">⚡ Calculate Civil BOQ</span>
+              <span className="bm-mobile-only">⚡ Calculate</span>
+            </button>
+            <button style={styles.btnReset} onClick={() => { setPlotLength(30); setPackageTier('Standard'); selectAllItems(); }}>
+              <span className="bm-desktop-only">🔄 Reset</span>
+              <span className="bm-mobile-only">🔄 Reset</span>
+            </button>
+            <button style={styles.btnSecondary} onClick={handleExportExcel}>
+              <span className="bm-desktop-only">📊 Export Excel</span>
+              <span className="bm-mobile-only">📊 Excel</span>
+            </button>
+            <button style={styles.btnSuccess} onClick={handleExportPDF}>
+              <span className="bm-desktop-only">📄 Export PDF Report</span>
+              <span className="bm-mobile-only">📄 PDF</span>
+            </button>
           </div>
         </div>
 
-        {/* Result Cards */}
-        <div style={styles.summaryGrid}>
+        {/* Result Cards: 3 per row on mobile with short text */}
+        <div style={styles.summaryGrid} className="bm-boq-summary-scroll">
           <div style={{ ...styles.metricCard, ...styles.metricMaroon }}>
-            <span style={styles.metricTitle}>Built-up Area</span>
+            <span style={styles.metricTitle}>
+              <span className="bm-desktop-only">Built-up Area</span>
+              <span className="bm-mobile-only">BUA</span>
+            </span>
             <span style={{ ...styles.metricVal, color: isCalculatedBlue ? '#fecdd3' : '#ffffff' }}>{calculations.totalBUA.toLocaleString()} Sq.ft</span>
           </div>
           <div style={{ ...styles.metricCard, ...styles.metricBlue }}>
-            <span style={styles.metricTitle}>Material Subtotal</span>
+            <span style={styles.metricTitle}>
+              <span className="bm-desktop-only">Material Subtotal</span>
+              <span className="bm-mobile-only">Mat ₹</span>
+            </span>
             <span style={styles.metricVal}>{formatCurrency(calculations.totalMaterialCost)}</span>
           </div>
           <div style={{ ...styles.metricCard, ...styles.metricPurple }}>
-            <span style={styles.metricTitle}>Labour Subtotal</span>
+            <span style={styles.metricTitle}>
+              <span className="bm-desktop-only">Labour Subtotal</span>
+              <span className="bm-mobile-only">Lab ₹</span>
+            </span>
             <span style={styles.metricVal}>{formatCurrency(calculations.totalLabourCost)}</span>
           </div>
           <div style={{ ...styles.metricCard, ...styles.metricCyan }}>
-            <span style={styles.metricTitle}>Est. Rate / Sq.ft</span>
-            <span style={styles.metricVal}>₹{calculations.costPerSqft.toFixed(2)} / Sq.ft</span>
+            <span style={styles.metricTitle}>
+              <span className="bm-desktop-only">Est. Rate / Sq.ft</span>
+              <span className="bm-mobile-only">Est. Rate</span>
+            </span>
+            <span style={styles.metricVal}>₹{calculations.costPerSqft.toFixed(2)}</span>
           </div>
           <div style={{ ...styles.metricCard, ...styles.metricTeal }}>
-            <span style={styles.metricTitle}>Cement Bags</span>
+            <span style={styles.metricTitle}>
+              <span className="bm-desktop-only">Cement Bags</span>
+              <span className="bm-mobile-only">Cement</span>
+            </span>
             <span style={styles.metricVal}>{calculations.cementBags} Bags</span>
           </div>
           <div style={{ ...styles.metricCard, ...styles.metricOrange }}>
-            <span style={styles.metricTitle}>Steel Rebar</span>
+            <span style={styles.metricTitle}>
+              <span className="bm-desktop-only">Steel Rebar</span>
+              <span className="bm-mobile-only">Steel</span>
+            </span>
             <span style={styles.metricVal}>{calculations.steelKg.toLocaleString()} KG</span>
           </div>
           <div style={{ ...styles.metricCard, ...styles.metricGreen }}>
-            <span style={styles.metricTitle}>GRAND TOTAL COST</span>
+            <span style={styles.metricTitle}>
+              <span className="bm-desktop-only">GRAND TOTAL COST</span>
+              <span className="bm-mobile-only">Grand ₹</span>
+            </span>
             <span style={{ ...styles.metricValGrand, color: isCalculatedBlue ? '#60a5fa' : '#ffffff' }}>{formatCurrency(calculations.grandTotalCost)}</span>
           </div>
         </div>
 
-        {/* Missing Master Rates Warning Banner */}
+        {/* Warning Banner for Missing Rates */}
         {calculations.missingItems.length > 0 && (
-          <div style={styles.warnBanner}>
-            ⚠️ <strong>Master Mapping Required / Approved Rate Unavailable ({calculations.missingItems.length} Line Items)</strong>
-            <ul style={{ margin: '6px 0 0 0', paddingLeft: '20px', fontSize: '13px' }}>
-              {calculations.missingItems.map(it => (
-                <li key={it.code}>
-                  <code>{it.code}</code>: {it.name} — Quantity: <strong>{it.qty.toLocaleString()} {it.uom}</strong> (Status: <em>Master Mapping Required</em>)
-                </li>
-              ))}
-            </ul>
+          <div style={styles.warnBanner} className="bm-hide-mobile">
+            ⚠️ <strong>Master Mapping Required ({calculations.missingItems.length} Line Items)</strong>
           </div>
         )}
 
         {/* Itemized BOQ Table */}
-        <div style={styles.tableContainer}>
-          <div style={{ padding: '12px 16px', backgroundColor: '#800020', color: 'white', fontWeight: '800', fontSize: '16px' }}>
+        <div style={styles.tableContainer} className="bm-boq-table-scroll">
+          <div style={{ padding: '10px 14px', backgroundColor: '#800020', color: 'white', fontWeight: '800', fontSize: '15px' }} className="bm-hide-mobile">
             📑 Itemized Civil Construction BOQ (Admin Master Linked)
           </div>
           <table style={styles.table}>
             <thead>
               <tr>
-                <th style={styles.th}>Master Code</th>
-                <th style={styles.th}>Category</th>
-                <th style={styles.th}>Item Description</th>
-                <th style={styles.th}>Quantity</th>
+                <th style={styles.th} className="bm-hide-mobile">Master Code</th>
+                <th style={styles.th} className="bm-hide-mobile">Category</th>
+                <th style={styles.th}>Description</th>
+                <th style={styles.th}>Qty</th>
                 <th style={styles.th}>UOM</th>
-                <th style={styles.th}>Approved Rate (₹)</th>
-                <th style={styles.th}>Total Amount (₹)</th>
+                <th style={styles.th}>Rate (₹)</th>
+                <th style={styles.th}>Amount (₹)</th>
               </tr>
             </thead>
             <tbody>
               {calculations.items.map(it => (
                 <tr key={it.code}>
-                  <td style={styles.td}><code>{it.code}</code></td>
-                  <td style={styles.td}>{it.category}</td>
+                  <td style={styles.td} className="bm-hide-mobile"><code>{it.code}</code></td>
+                  <td style={styles.td} className="bm-hide-mobile">{it.category}</td>
                   <td style={styles.td}><strong>{it.name}</strong></td>
                   <td style={styles.td}>{it.qty.toLocaleString()}</td>
                   <td style={styles.td}>{it.uom}</td>
                   <td style={styles.td}>
-                    {it.isFound ? formatCurrency(it.rateVal) : <span style={{ color: '#dc2626', fontWeight: '700' }}>Master Mapping Required / Approved Rate Unavailable</span>}
+                    {it.isFound ? formatCurrency(it.rateVal) : <span style={{ color: '#dc2626', fontWeight: '700' }}>Pending</span>}
                   </td>
                   <td style={styles.td}>
                     {it.isFound ? <strong>{formatCurrency(it.amountVal)}</strong> : <span style={{ color: '#94a3b8' }}>—</span>}
@@ -727,13 +745,109 @@ export default function CivilBOQPage() {
                 </tr>
               ))}
               <tr style={{ backgroundColor: '#800020', color: 'white', fontWeight: '800' }}>
-                <td colSpan={6} style={{ padding: '12px 14px', fontSize: '16px' }}>GRAND TOTAL ESTIMATED COST</td>
-                <td style={{ padding: '12px 14px', fontSize: '18px' }}>{formatCurrency(calculations.grandTotalCost)}</td>
+                <td colSpan={4} className="bm-mobile-only" style={{ padding: '10px 12px', fontSize: '13px' }}>GRAND TOTAL</td>
+                <td colSpan={6} className="bm-desktop-only" style={{ padding: '12px 14px', fontSize: '15px' }}>GRAND TOTAL ESTIMATED COST</td>
+                <td style={{ padding: '10px 14px', fontSize: '15px' }}>{formatCurrency(calculations.grandTotalCost)}</td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
+
+      <style jsx>{`
+        .bm-mobile-only {
+          display: none !important;
+        }
+        .bm-desktop-only {
+          display: inline !important;
+        }
+
+        @media (max-width: 768px) {
+          .bm-mobile-only {
+            display: inline !important;
+          }
+          .bm-desktop-only {
+            display: none !important;
+          }
+          .bm-hide-mobile {
+            display: none !important;
+          }
+
+          /* Header: Keep Back button pinned top-right */
+          :global(.bm-boq-top-header) {
+            display: flex !important;
+            justify-content: flex-end !important;
+            padding: 8px 10px !important;
+            margin-bottom: 8px !important;
+          }
+          :global(.bm-top-back-btn) {
+            margin-left: auto !important;
+            font-size: 11px !important;
+            padding: 5px 10px !important;
+          }
+
+          /* Select Bar: 1 horizontal row */
+          .bm-boq-select-bar {
+            width: 100% !important;
+          }
+          .bm-select-actions {
+            display: flex !important;
+            flex-direction: row !important;
+            gap: 4px !important;
+            width: 100% !important;
+          }
+          .bm-select-actions button {
+            flex: 1 1 0 !important;
+            min-width: 0 !important;
+            padding: 5px 2px !important;
+            font-size: 10px !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+
+          /* Action buttons: 1 row of 4 */
+          .bm-boq-actions {
+            display: grid !important;
+            grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+            gap: 4px !important;
+            width: 100% !important;
+          }
+          .bm-boq-actions button {
+            width: 100% !important;
+            min-height: 32px !important;
+            height: 32px !important;
+            font-size: 10px !important;
+            font-weight: 800 !important;
+            padding: 2px !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+
+          /* Result summary boxes: 3 per row */
+          :global(.bm-boq-summary-scroll) {
+            display: grid !important;
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 4px !important;
+            margin-bottom: 8px !important;
+          }
+          :global(.bm-boq-summary-scroll > div) {
+            padding: 6px 2px !important;
+            min-height: 52px !important;
+          }
+
+          /* Table responsiveness */
+          :global(.bm-boq-table-scroll) {
+            margin-top: 4px !important;
+          }
+          :global(.bm-boq-table-scroll th),
+          :global(.bm-boq-table-scroll td) {
+            padding: 5px 6px !important;
+            font-size: 11px !important;
+          }
+        }
+      `}</style>
     </>
   );
 }
