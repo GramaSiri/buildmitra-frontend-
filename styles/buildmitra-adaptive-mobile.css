@@ -1,2544 +1,400 @@
-/*
- BuildMitra Adaptive Mobile UI
- Desktop is intentionally untouched.
-*/
+/* =========================================================================
+   BUILDMITRA ADAPTIVE MOBILE ENGINE
+   Strict horizontal boundary lock, compact cards, scaled typography
+   ========================================================================= */
 
-@media (max-width: 768px) {
+/* --- 1. GLOBAL ROOT VIEWPORT & OVERFLOW LOCK --- */
+*, *::before, *::after {
+  box-sizing: border-box !important;
+}
 
-  html,
-  body,
-  #__next {
-    width: 100%;
-    max-width: 100%;
-    margin: 0;
-    overflow-x: hidden;
-  }
+html, body {
+  width: 100% !important;
+  max-width: 100vw !important;
+  overflow-x: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  -webkit-text-size-adjust: 100% !important;
+}
 
+#__next,
+main,
+.app-layout-wrapper,
+.page-container,
+.main-content {
+  width: 100% !important;
+  max-width: 100vw !important;
+  overflow-x: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* --- 2. MOBILE RESPONSIVE ENGINE (Screens <= 768px) --- */
+@media screen and (max-width: 768px) {
+
+  /* Typography: scaled down to eliminate oversized headings & bloated cards */
   body {
-    font-size: 13px;
-    -webkit-text-size-adjust: 100%;
+    font-size: 13.5px !important;
+    line-height: 1.4 !important;
   }
 
-  * {
-    box-sizing: border-box;
-  }
+  h1 { font-size: 18px !important; font-weight: 800 !important; margin: 4px 0 !important; line-height: 1.25 !important; }
+  h2 { font-size: 16px !important; font-weight: 750 !important; margin: 4px 0 !important; line-height: 1.25 !important; }
+  h3 { font-size: 14.5px !important; font-weight: 700 !important; margin: 3px 0 !important; line-height: 1.3 !important; }
+  h4, h5, h6 { font-size: 13px !important; font-weight: 650 !important; margin: 2px 0 !important; }
+  p, span, label { font-size: 13px !important; }
 
-
-  /* ---------- GENERAL MOBILE DENSITY ---------- */
-
-  input[type="checkbox"] {
-    width: 13px !important;
-    height: 13px !important;
-    min-width: 13px !important;
-    min-height: 13px !important;
-    max-width: 13px !important;
-    max-height: 13px !important;
-    flex: 0 0 13px !important;
-    padding: 0 !important;
-  }
-
-  input:not([type="checkbox"]):not([type="radio"]),
-  select {
-    min-height: 35px !important;
-    padding: 5px 7px !important;
-    font-size: 12px !important;
-    border-radius: 7px !important;
-  }
-
-  textarea {
-    min-height: 58px !important;
-    padding: 6px 7px !important;
-    font-size: 12px !important;
-  }
-
-  button {
-    min-height: 33px;
-    font-size: 11.5px;
-    padding: 5px 7px;
-  }
-
-
-  /* ---------- REMOVE LARGE SIDE GAPS ---------- */
-
+  /* Eliminate side gap & margins across main content */
+  .container,
   main,
-  [class*="Page"],
-  [class*="page"],
-  [class*="Container"],
-  [class*="container"] {
-    max-width: 100% !important;
-    box-sizing: border-box !important;
-  }
-
-  [class*="Page"],
-  [class*="page"] {
-    padding-left: 5px !important;
-    padding-right: 5px !important;
-  }
-
-
-  /* ========================================================
-     MARKETPLACE = MOBILE E-COMMERCE PROFILE
-  ======================================================== */
-
-  [class*="marketplace"],
-  [class*="Marketplace"] {
+  section,
+  .page-container,
+  .page-content,
+  .content-wrapper,
+  .dashboard-content {
     width: 100% !important;
     max-width: 100% !important;
-    margin: 0 !important;
-    padding-left: 4px !important;
-    padding-right: 4px !important;
+    padding-left: 6px !important;
+    padding-right: 6px !important;
+    padding-top: 4px !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    margin-top: 0 !important;
   }
 
-  [class*="productGrid"],
-  [class*="ProductGrid"],
-  [class*="productsGrid"],
-  [class*="ProductsGrid"],
-  [class*="marketGrid"],
-  [class*="MarketGrid"] {
+  /* Compact Cards: removes large empty vertical margins */
+  .card,
+  .box,
+  .panel,
+  .calculator-card,
+  .boq-card,
+  .summary-card,
+  .card-compact,
+  div[class*="card"]:not(.marketplace-card),
+  div[class*="shadow"] {
+    width: 100% !important;
+    padding: 8px !important;
+    margin-top: 0 !important;
+    margin-bottom: 6px !important;
+    border-radius: 6px !important;
+  }
+
+  /* Compact Nav & Tabs: no dead vertical gaps under header */
+  .bm-mobile-nav,
+  .bm-mobile-header,
+  .bm-dashboard-header {
+    margin-bottom: 0 !important;
+    padding-bottom: 2px !important;
+  }
+
+  .bm-tab-bar {
+    margin-top: 0 !important;
+    margin-bottom: 4px !important;
+    padding: 2px 0 4px 0 !important;
+  }
+
+  /* 2-Column Form & Calculator Grid */
+  div:has(> .bm-field-shell + .bm-field-shell),
+  section:has(> .bm-field-shell + .bm-field-shell),
+  form:has(> .bm-field-shell + .bm-field-shell),
+  .bm-uniform-input-group,
+  .bm-concrete-true-single-row,
+  .form-grid,
+  .input-grid,
+  .calculator-input-grid,
+  .calculator-grid,
+  .boq-input-grid {
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 6px !important;
     width: 100% !important;
-    margin: 0 !important;
-  }
-
-  [class*="productCard"],
-  [class*="ProductCard"],
-  [class*="marketCard"],
-  [class*="MarketCard"] {
-    width: 100% !important;
-    min-width: 0 !important;
-    margin: 0 !important;
-    border-radius: 9px !important;
-    overflow: hidden !important;
-  }
-
-  [class*="productCard"] img,
-  [class*="ProductCard"] img,
-  [class*="marketCard"] img,
-  [class*="MarketCard"] img,
-  [class*="productImage"] img,
-  [class*="ProductImage"] img {
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    filter: none !important;
-
-    width: 100% !important;
-    height: 100% !important;
-
-    object-fit: cover !important;
-    object-position: center !important;
-
-    background: #fff !important;
-    margin: 0 auto !important;
-  }
-
-  [class*="productImage"],
-  [class*="ProductImage"],
-  [class*="imageWrap"],
-  [class*="ImageWrap"] {
-    min-height: 118px !important;
-    background: #fff !important;
-    overflow: hidden !important;
-  }
-
-
-  /* ========================================================
-     BUYER DASHBOARD = COMPACT APP PROFILE
-  ======================================================== */
-
-  [class*="tabs"],
-  [class*="Tabs"],
-  [class*="tabList"],
-  [class*="TabList"] {
-    display: grid !important;
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-    gap: 5px !important;
-    width: 100% !important;
-  }
-
-  [class*="tabs"] button,
-  [class*="Tabs"] button,
-  [class*="tabList"] button,
-  [class*="TabList"] button {
-    width: 100% !important;
-    min-width: 0 !important;
-    min-height: 32px !important;
-    padding: 4px 3px !important;
-    margin: 0 !important;
-    font-size: 10px !important;
-    white-space: normal !important;
-  }
-
-  [class*="dashboardCard"],
-  [class*="DashboardCard"] {
-    padding: 7px !important;
     margin-bottom: 6px !important;
   }
 
-
-  /* ========================================================
-     LABOUR NET = WORKER DIRECTORY PROFILE
-  ======================================================== */
-
-  [class*="workerGrid"],
-  [class*="WorkerGrid"],
-  [class*="labourGrid"],
-  [class*="LabourGrid"] {
-    display: grid !important;
-    grid-template-columns: 1fr !important;
-    gap: 6px !important;
-    width: 100% !important;
+  .bm-concrete-true-single-row > .bm-concrete-dimension-grid,
+  .bm-concrete-true-single-row > .bm-concrete-mix-grid,
+  .bm-concrete-true-single-row > div[style],
+  .bm-uniform-layout-contents {
+    display: contents !important;
   }
 
-  [class*="workerCard"],
-  [class*="WorkerCard"],
-  [class*="labourCard"],
-  [class*="LabourCard"] {
-    width: 100% !important;
-    margin: 0 !important;
-    padding: 7px !important;
-    border-radius: 9px !important;
-  }
-
-  /*
-   Geofence belongs to labour-management/attendance functions,
-   not the public worker-directory mobile presentation.
-  */
-
-  [class*="geofence"],
-  [class*="Geofence"],
-  [class*="geoFence"],
-  [class*="GeoFence"],
-  [class*="geo-fence"] {
-    display: none !important;
-  }
-
-
-  /* ========================================================
-     REAL ESTATE = PROPERTY PROFILE
-  ======================================================== */
-
-  .hubPage {
-    width: 100% !important;
-    max-width: 100% !important;
-    padding-left: 5px !important;
-    padding-right: 5px !important;
-  }
-
-  .propertyGrid {
-    display: grid !important;
-    grid-template-columns: 1fr !important;
-    gap: 8px !important;
-  }
-
-  .propertyCard {
+  /* Compact Field Inputs */
+  .bm-field-shell {
     width: 100% !important;
     margin: 0 !important;
   }
 
-
-  /* ========================================================
-     CALCULATORS / FILTER FORMS
-     2 fields per row where page already exposes a grid wrapper
-  ======================================================== */
-
-  [class*="formGrid"],
-  [class*="FormGrid"],
-  [class*="fieldGrid"],
-  [class*="FieldGrid"],
-  [class*="filterGrid"],
-  [class*="FilterGrid"] {
-    display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 5px !important;
-    width: 100% !important;
+  .bm-field-shell > label,
+  .bm-field-shell label,
+  .bm-uniform-field label {
+    font-size: 11px !important;
+    margin-bottom: 2px !important;
+    line-height: 1.15 !important;
+    font-weight: 700 !important;
+    white-space: nowrap !important;
   }
 
-
-  /* ========================================================
-     BOQ / TABLE PROFILE
-  ======================================================== */
-
-  [class*="tableWrap"],
-  [class*="TableWrap"],
-  [class*="tableContainer"],
-  [class*="TableContainer"] {
-    width: 100% !important;
-    max-width: 100% !important;
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  table {
-    font-size: 10.5px !important;
-  }
-
-  th,
-  td {
-    padding: 5px !important;
-  }
-
-
-  /* ---------- UNIVERSAL OVERFLOW SAFETY ---------- */
-
-  img,
-  video,
-  canvas,
-  svg {
-    max-width: 100%;
-  }
-
-}
-
-
-/* Small phones */
-@media (max-width: 380px) {
-
-  [class*="tabs"],
-  [class*="Tabs"],
-  [class*="tabList"],
-  [class*="TabList"] {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  }
-
-  [class*="productGrid"],
-  [class*="ProductGrid"],
-  [class*="productsGrid"],
-  [class*="ProductsGrid"] {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  }
-}
-
-
-
-
-
-
-
-/* BUILDMITRA FINAL MOBILE EXPERIENCE START */
-
-@media (max-width: 768px) {
-
-  /* ======================================================
-     MOBILE SCREEN FOUNDATION
-     Use the complete device width.
-  ====================================================== */
-
-  html,
-  body,
-  #__next {
-    width: 100% !important;
-    max-width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    overflow-x: hidden !important;
-  }
-
-  body {
-    font-size: 13px !important;
-    -webkit-text-size-adjust: 100%;
-  }
-
-  * {
-    box-sizing: border-box !important;
-  }
-
-
-  /* ======================================================
-     COMMON MOBILE CONTROLS
-  ====================================================== */
-
-  input[type="checkbox"] {
-    width: 13px !important;
-    height: 13px !important;
-    min-width: 13px !important;
-    min-height: 13px !important;
-    max-width: 13px !important;
-    max-height: 13px !important;
-    flex: 0 0 13px !important;
-  }
-
-  input:not([type="checkbox"]):not([type="radio"]),
-  select {
-    min-height: 34px !important;
-    padding: 5px 7px !important;
-    font-size: 12px !important;
-    border-radius: 7px !important;
-  }
-
-  textarea {
-    min-height: 58px !important;
-    padding: 6px 7px !important;
-    font-size: 12px !important;
-  }
-
-  button {
-    min-height: 32px;
-    padding: 5px 7px;
-    font-size: 11px;
-  }
-
-
-  /* ======================================================
-     MARKETPLACE PROFILE
-     Dense ecommerce presentation.
-  ====================================================== */
-
-  .marketplace-page {
-    width: 100% !important;
-    max-width: 100% !important;
-    margin: 0 !important;
-    padding-left: 4px !important;
-    padding-right: 4px !important;
-    overflow-x: hidden !important;
-  }
-
-  .marketplace-grid {
-    display: grid !important;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
-    gap: 6px !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-
-  @media (max-width: 480px) {
-    .marketplace-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-      gap: 6px !important;
-    }
-  }
-
-  .marketplace-grid > .marketplace-card {
+  input.bm-user-number-field,
+  input.bm-compact-number,
+  input.bm-uniform-number,
+  input[type="number"] {
     width: 100% !important;
     min-width: 0 !important;
     max-width: 100% !important;
-    margin: 0 !important;
-    padding: 6px !important;
-    border-radius: 8px !important;
-    overflow: hidden !important;
-    background: #ffffff !important;
-    border: 1px solid #e2e8f0 !important;
-  }
-
-  .marketplace-card .product-image-container,
-  .marketplace-card .thumbnail-wrapper {
-    width: 100% !important;
-    aspect-ratio: 1 / 1 !important;
-    height: auto !important;
-    min-height: 0 !important;
-    max-height: none !important;
-    margin: 0 0 4px 0 !important;
-    padding: 0 !important;
-    background: #f8fafc !important;
-    overflow: hidden !important;
-    border-radius: 4px !important;
-  }
-
-  .marketplace-card .bm-marketplace-product-image {
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    width: 100% !important;
-    height: 100% !important;
-    aspect-ratio: 1 / 1 !important;
-    object-fit: cover !important;
-    object-position: center !important;
-    margin: 0 auto !important;
-    padding: 0 !important;
-    filter: none !important;
-  }
-
-  .marketplace-card .product-title {
-    font-size: 11.5px !important;
-    line-height: 1.25 !important;
-    font-weight: 600 !important;
-    color: #1e293b !important;
-    margin: 2px 0 !important;
-    display: -webkit-box !important;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden !important;
-  }
-
-  .marketplace-card .supplier-name {
-    font-size: 10.5px !important;
-    line-height: 1.2 !important;
-    color: #64748b !important;
-  }
-
-  .marketplace-card .product-price {
-    font-size: 12px !important;
-    font-weight: 800 !important;
-    color: #15803d !important;
-    line-height: 1.2 !important;
-  }
-
-  .marketplace-card .card-actions button {
-    min-height: 28px !important;
-    padding: 4px 6px !important;
-    font-size: 10.5px !important;
-    font-weight: 700 !important;
+    height: 34px !important;
+    font-size: 13px !important;
+    text-align: center !important;
+    padding: 4px !important;
     border-radius: 5px !important;
   }
 
-
-  /* ======================================================
-     REAL ESTATE PROFILE
-     Larger visual cards.
-     Do NOT shrink like Marketplace.
-  ====================================================== */
-
-  .hubPage {
+  input.bm-compact-text,
+  input.bm-uniform-text,
+  select.bm-compact-number-select,
+  select.bm-compact-text-select,
+  select.bm-uniform-select,
+  input[type="text"],
+  select {
     width: 100% !important;
+    min-width: 0 !important;
     max-width: 100% !important;
-
-    padding-left: 6px !important;
-    padding-right: 6px !important;
+    height: 34px !important;
+    font-size: 12px !important;
+    padding: 4px 6px !important;
+    border-radius: 5px !important;
   }
 
-  .propertyGrid {
+  /* Action Buttons */
+  .bm-uniform-action-row,
+  div[class*="action-row"] {
     display: grid !important;
-
-    grid-template-columns:
-      repeat(auto-fit, minmax(270px, 1fr)) !important;
-
-    gap: 9px !important;
-
-    width: 100% !important;
-  }
-
-  .propertyCard {
-    width: 100% !important;
-    max-width: 100% !important;
-
-    margin: 0 !important;
-  }
-
-
-  /* ======================================================
-     LABOUR NET PROFILE
-     Worker directory presentation.
-  ====================================================== */
-
-  [class*="workerGrid"],
-  [class*="WorkerGrid"],
-  [class*="labourGrid"],
-  [class*="LabourGrid"] {
-    display: grid !important;
-
-    grid-template-columns:
-      repeat(auto-fit, minmax(260px, 1fr)) !important;
-
-    gap: 7px !important;
-
-    width: 100% !important;
-  }
-
-  [class*="workerCard"],
-  [class*="WorkerCard"],
-  [class*="labourCard"],
-  [class*="LabourCard"] {
-    width: 100% !important;
-
-    margin: 0 !important;
-    padding: 8px !important;
-
-    border-radius: 9px !important;
-  }
-
-
-  /*
-    Public Labour Net mobile view does not need geofence UI.
-  */
-
-  [class*="geofence"],
-  [class*="Geofence"],
-  [class*="geoFence"],
-  [class*="GeoFence"],
-  [class*="geo-fence"] {
-    display: none !important;
-  }
-
-
-  /* ======================================================
-     BUYER / DASHBOARD PROFILE
-  ====================================================== */
-
-  [class*="tabs"],
-  [class*="Tabs"],
-  [class*="tabList"],
-  [class*="TabList"] {
-    display: grid !important;
-
-    grid-template-columns:
-      repeat(auto-fit, minmax(90px, 1fr)) !important;
-
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 5px !important;
-
     width: 100% !important;
+    margin: 6px 0 !important;
   }
 
-  [class*="tabs"] button,
-  [class*="Tabs"] button,
-  [class*="tabList"] button,
-  [class*="TabList"] button {
-    min-width: 0 !important;
+  .bm-uniform-action-row button,
+  .bm-uniform-action-row [role="button"] {
     width: 100% !important;
-
-    margin: 0 !important;
-
-    font-size: 10px !important;
-
-    white-space: normal !important;
+    min-height: 34px !important;
+    font-size: 12px !important;
+    padding: 6px !important;
   }
 
-
-  /* ======================================================
-     CALCULATOR / FORM PROFILE
-  ====================================================== */
-
-  [class*="formGrid"],
-  [class*="FormGrid"],
-  [class*="fieldGrid"],
-  [class*="FieldGrid"],
-  [class*="filterGrid"],
-  [class*="FilterGrid"] {
-    display: grid !important;
-
-    grid-template-columns:
-      repeat(auto-fit, minmax(145px, 1fr)) !important;
-
-    gap: 6px !important;
-
-    width: 100% !important;
+  /* Compact Results */
+  [class*="result" i],
+  [class*="output" i],
+  [class*="summary" i],
+  [class*="calculation" i],
+  [class*="estimate" i] {
+    font-size: 13px !important;
+    line-height: 1.35 !important;
   }
 
-
-  /* ======================================================
-     BOQ / TABLE PROFILE
-  ====================================================== */
-
-  [class*="tableWrap"],
-  [class*="TableWrap"],
-  [class*="tableContainer"],
-  [class*="TableContainer"] {
-    width: 100% !important;
-    max-width: 100% !important;
-
-    overflow-x: auto !important;
-
-    -webkit-overflow-scrolling: touch;
+  [class*="result" i] strong,
+  [class*="output" i] strong,
+  [class*="summary" i] strong,
+  [class*="estimate" i] strong {
+    font-size: 14.5px !important;
+    font-weight: 800 !important;
   }
 
-  table {
-    max-width: 100% !important;
-    font-size: 10px !important;
-  }
-
-  th,
-  td {
-    padding: 5px !important;
-  }
-
-
-  /* ======================================================
-     UNIVERSAL MEDIA SAFETY
-  ====================================================== */
-
-  img,
-  video,
-  svg,
-  canvas {
-    max-width: 100%;
+  .bm-uniform-grand-total,
+  .bm-uniform-grand-total strong {
+    font-size: 16.5px !important;
+    font-weight: 900 !important;
   }
 }
 
-
-/*
- Wider phones / small tablets.
-*/
-@media (min-width: 600px) and (max-width: 900px) {
-
-  .marketplace-grid {
-    grid-template-columns:
-      repeat(auto-fit, minmax(105px, 1fr)) !important;
-  }
-
-  .propertyGrid {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr)) !important;
-  }
-}
-
-/* BUILDMITRA FINAL MOBILE EXPERIENCE END */
-
-
-
-
-/* BUILDMITRA MARKETPLACE STABLE POLISH START */
-
-@media (max-width: 768px) {
-
-  .marketplace-card .bm-marketplace-product-image {
-    display: block !important;
-
-    width: 100% !important;
-    height: 100% !important;
-
-    object-fit: contain !important;
-    object-position: center !important;
-
-    background: #ffffff !important;
-
-    visibility: visible !important;
-    opacity: 1 !important;
-
-    filter: none !important;
-  }
-
-  .marketplace-card .product-title {
-    font-size: clamp(8px, 2.2vw, 10px) !important;
-    line-height: 1.12 !important;
-
-    margin: 2px 0 !important;
-
-    display: -webkit-box !important;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-
-    overflow: hidden !important;
-  }
-
-  .marketplace-card .supplier-name {
-    font-size: clamp(7px, 1.8vw, 9px) !important;
-    line-height: 1.1 !important;
-  }
-
-  .marketplace-card .product-price {
-    font-size: clamp(8px, 2vw, 10px) !important;
-    line-height: 1.1 !important;
-  }
-
-  .marketplace-card .card-actions button {
-    min-height: 23px !important;
-
-    padding: 2px !important;
-
-    font-size: clamp(7px, 1.8vw, 9px) !important;
-  }
-}
-
-/* BUILDMITRA MARKETPLACE STABLE POLISH END */
-
-/* BUILDMITRA MARKETPLACE PERSISTENT MOBILE START */
-
-@media screen and (max-width: 768px) {
-
-  /*
-    Sidebar mobile child wrapper adds 6px each side.
-    Marketplace intentionally expands by 12px and moves left 6px
-    so the product grid uses the complete available phone width.
-  */
-  .marketplace-page {
-    width: calc(100% + 12px) !important;
-    max-width: calc(100% + 12px) !important;
-
-    margin-left: -6px !important;
-    margin-right: -6px !important;
-
-    padding-left: 2px !important;
-    padding-right: 2px !important;
-
-    box-sizing: border-box !important;
-    overflow-x: hidden !important;
-  }
-
-  /*
-    Exact real Marketplace grid.
-    Four equal product cards regardless of React rerenders.
-  */
-  .marketplace-page .marketplace-grid {
-    display: grid !important;
-
-    grid-template-columns:
-      repeat(4, minmax(0, 1fr)) !important;
-
-    column-gap: 3px !important;
-    row-gap: 4px !important;
-
-    width: 100% !important;
-    max-width: 100% !important;
-
-    margin: 0 !important;
-    padding: 0 !important;
-
-    box-sizing: border-box !important;
-  }
-
-  /*
-    Exact real Marketplace cards.
-    Remove intrinsic width that could force a column wider.
-  */
-  .marketplace-page .marketplace-grid > .marketplace-card {
-    width: 100% !important;
-    min-width: 0 !important;
-    max-width: none !important;
-
-    margin: 0 !important;
-    padding: 2px !important;
-
-    box-sizing: border-box !important;
-    overflow: hidden !important;
-  }
-
-  /*
-    Responsive ecommerce image:
-    square slot follows actual card width.
-  */
-  .marketplace-page .marketplace-card .product-image-container,
-  .marketplace-page .marketplace-card .thumbnail-wrapper {
-    width: 100% !important;
-
-    height: auto !important;
-    min-height: 0 !important;
-    max-height: none !important;
-
-    aspect-ratio: 1 / 1 !important;
-
-    margin: 0 !important;
-    padding: 0 !important;
-
-    background: #fff !important;
-    overflow: hidden !important;
-  }
-
-  .marketplace-page .marketplace-card .bm-marketplace-product-image {
-    display: block !important;
-
-    width: 100% !important;
-    height: 100% !important;
-
-    object-fit: contain !important;
-    object-position: center !important;
-
-    margin: 0 !important;
-    padding: 4px !important;
-
-    visibility: visible !important;
-    opacity: 1 !important;
-
-    background: #fff !important;
-  }
-
-  /*
-    Dense text underneath the image.
-  */
-  .marketplace-page .marketplace-card .product-title {
-    margin: 2px 0 !important;
-
-    font-size: 9px !important;
-    line-height: 1.12 !important;
-
-    min-width: 0 !important;
-
-    display: -webkit-box !important;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-
-    overflow: hidden !important;
-  }
-
-  .marketplace-page .marketplace-card .supplier-name {
-    font-size: 8px !important;
-    line-height: 1.1 !important;
-  }
-
-  .marketplace-page .marketplace-card .product-price {
-    font-size: 9px !important;
-    line-height: 1.1 !important;
-  }
-
-  .marketplace-page .marketplace-card .card-actions button {
-    width: 100% !important;
-
-    min-height: 23px !important;
-
-    padding: 2px !important;
-
-    font-size: 8px !important;
-  }
-}
-
-/*
- Very narrow phones:
- still keep 4 columns, but reduce gaps/text slightly.
-*/
-@media screen and (max-width: 350px) {
-
-  .marketplace-page .marketplace-grid {
-    column-gap: 2px !important;
-  }
-
-  .marketplace-page .marketplace-card {
-    padding: 1px !important;
-  }
-
-  .marketplace-page .marketplace-card .product-title {
-    font-size: 8px !important;
-  }
-}
-
-/* BUILDMITRA MARKETPLACE PERSISTENT MOBILE END */
-
-/* =========================================================================
-   BUILDMITRA APP-WIDE CALCULATOR COMPACT RESPONSIVE UX CONSOLIDATION
-   ========================================================================= */
-
-/* 1. INPUTS: Auto-responsive compact input grid (up to 4 short inputs per row on mobile) */
-@media (max-width: 600px) {
-  .bm-calc-input-grid,
-  [class*="grid2"],
-  [class*="grid3"],
-  [class*="grid4"],
-  [class*="fieldGrid"] {
-    display: grid !important;
-    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-    gap: 4px !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    margin-bottom: 6px !important;
-    align-items: end !important;
-  }
-}
-
-@media (max-width: 380px) {
-  .bm-calc-input-grid,
-  [class*="grid2"],
-  [class*="grid3"],
-  [class*="grid4"],
-  [class*="fieldGrid"] {
-    grid-template-columns: repeat(auto-fit, minmax(64px, 1fr)) !important;
-    gap: 3px !important;
-  }
-}
-
-/* Input labels and controls in compact inputs */
-[class*="fieldGroup"] label,
-[class*="dropdownlabel"],
-.label-compact {
-  font-size: 10px !important;
-  font-weight: 600 !important;
-  color: #334155 !important;
-  margin-bottom: 2px !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-}
-
-[class*="fieldGroup"] input,
-[class*="fieldGroup"] select,
-.input-compact {
-  height: 32px !important;
-  min-height: 32px !important;
-  padding: 2px 4px !important;
-  font-size: 11.5px !important;
-  text-align: center !important;
-  border-radius: 5px !important;
-}
-
-/* 2. RESULTS: Horizontal scroll strip for quick & consolidated result boxes */
-.bm-calc-result-strip,
-.bm-result-strip,
-[class*="summarygrid"],
-[class*="summaryGrid"],
-[class*="cardContainer"],
-[class*="metricGrid"] {
+/* --- 3. INTERNAL HORIZONTAL SCROLL CONTAINERS --- */
+/* The main page stays stationary; only summary cards and tables scroll smoothly */
+
+.bm-calc-results-scroll,
+.bm-boq-summary-scroll,
+.bm-final-boq-summary,
+.bm-calc-result-strip {
   display: flex !important;
   flex-direction: row !important;
   flex-wrap: nowrap !important;
   overflow-x: auto !important;
+  overflow-y: hidden !important;
   -webkit-overflow-scrolling: touch !important;
+  touch-action: pan-x !important;
   gap: 6px !important;
   width: 100% !important;
   max-width: 100% !important;
-  padding: 4px 2px 6px 2px !important;
-  box-sizing: border-box !important;
-  margin-bottom: 8px !important;
+  padding: 3px 0 6px 0 !important;
+  margin: 3px 0 6px 0 !important;
 }
 
-[class*="metriccard"],
-[class*="metricCard"],
-[class*="resultCard"],
-.bm-calc-result-box {
-  flex: 0 0 auto !important;
-  min-width: 105px !important;
-  max-width: 160px !important;
+.bm-calc-results-scroll > *,
+.bm-boq-summary-scroll > *,
+.bm-final-boq-summary > * {
+  flex: 0 0 135px !important;
+  min-width: 135px !important;
+  max-width: 140px !important;
   padding: 6px 8px !important;
-  border-radius: 6px !important;
-  text-align: center !important;
   box-sizing: border-box !important;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.03) !important;
 }
 
-/* 3. REFERENCE & TECHNICAL INFO */
-.rateInfo,
-[class*="rateInfo"],
-[class*="adminRatesBar"] {
-  font-size: 11px !important;
-  padding: 6px 8px !important;
-  border-radius: 6px !important;
-  background-color: #f8fafc !important;
-  border: 1px solid #e2e8f0 !important;
-  margin-bottom: 6px !important;
+.bm-calc-table-scroll,
+.bm-item-results-scroll,
+.bm-boq-table-scroll,
+.bm-final-boq-table-scroll,
+.bm-real-boq-scroll,
+.table-responsive,
+.table-container {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: pan-x !important;
+  overscroll-behavior-x: contain !important;
+  margin: 4px 0 8px 0 !important;
+  padding-bottom: 6px !important;
 }
 
-
-/* ============================================================
-   BUILDMITRA — UNIVERSAL COMPACT CALCULATOR SUMMARY
-   Final shared responsive rule
-   ============================================================ */
-
-/* ---- Calculator result / summary containers ---- */
-@media (max-width: 768px) {
-
-  /* Known BuildMitra calculator summary/result grid patterns */
-  [class*="summaryGrid"],
-  [class*="summarygrid"],
-  [class*="resultGrid"],
-  [class*="resultgrid"],
-  [class*="resultsGrid"],
-  [class*="resultsgrid"],
-  [class*="metricGrid"],
-  [class*="metricgrid"],
-  [class*="cardContainer"],
-  [class*="resultCards"],
-  [class*="summaryCards"] {
-    display: flex !important;
-    flex-direction: row !important;
-    flex-wrap: nowrap !important;
-
-    width: 100% !important;
-    max-width: 100% !important;
-
-    gap: 6px !important;
-
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
-
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-inline: contain;
-
-    padding: 3px 1px 6px !important;
-    margin: 4px 0 6px !important;
-
-    scroll-snap-type: x proximity;
-  }
-
-  /* ---- Individual coloured result boxes ---- */
-  [class*="summaryGrid"] > *,
-  [class*="summarygrid"] > *,
-  [class*="resultGrid"] > *,
-  [class*="resultgrid"] > *,
-  [class*="resultsGrid"] > *,
-  [class*="resultsgrid"] > *,
-  [class*="metricGrid"] > *,
-  [class*="metricgrid"] > *,
-  [class*="cardContainer"] > *,
-  [class*="resultCards"] > *,
-  [class*="summaryCards"] > * {
-    flex: 0 0 auto !important;
-
-    width: auto !important;
-    min-width: 118px !important;
-    max-width: 155px !important;
-
-    min-height: 66px !important;
-    height: auto !important;
-
-    padding: 7px 8px !important;
-    margin: 0 !important;
-
-    border-radius: 8px !important;
-
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: center !important;
-
-    overflow: hidden !important;
-
-    scroll-snap-align: start;
-  }
-
-  /* Result labels */
-  [class*="summaryGrid"] > * strong,
-  [class*="summarygrid"] > * strong,
-  [class*="resultGrid"] > * strong,
-  [class*="resultgrid"] > * strong,
-  [class*="resultsGrid"] > * strong,
-  [class*="resultsgrid"] > * strong,
-  [class*="metricGrid"] > * strong,
-  [class*="metricgrid"] > * strong,
-  [class*="cardContainer"] > * strong {
-    font-size: 10px !important;
-    line-height: 1.15 !important;
-    margin: 0 0 3px !important;
-  }
-
-  /* Keep engineering values readable */
-  [class*="summaryGrid"] > *,
-  [class*="summarygrid"] > *,
-  [class*="resultGrid"] > *,
-  [class*="resultgrid"] > *,
-  [class*="resultsGrid"] > *,
-  [class*="resultsgrid"] > *,
-  [class*="metricGrid"] > *,
-  [class*="metricgrid"] > * {
-    font-size: 13px !important;
-    line-height: 1.2 !important;
-  }
-
-
-  /* ==========================================================
-     ISOMETRIC / ENGINEERING VISUAL
-     Keep small and at calculator top-right on mobile
-     ========================================================== */
-
-  [class*="isometric"],
-  [class*="Isometric"],
-  [class*="diagram"],
-  [class*="Diagram"],
-  [class*="illustration"],
-  [class*="Illustration"],
-  [class*="calcImage"],
-  [class*="calculatorImage"],
-  [class*="engineeringImage"] {
-    float: right !important;
-
-    width: 82px !important;
-    max-width: 22vw !important;
-    height: auto !important;
-
-    margin: 0 0 4px 8px !important;
-    padding: 0 !important;
-
-    position: relative !important;
-    top: 0 !important;
-    right: 0 !important;
-
-    object-fit: contain !important;
-  }
-
-  [class*="isometric"] img,
-  [class*="Isometric"] img,
-  [class*="diagram"] img,
-  [class*="Diagram"] img,
-  [class*="illustration"] img,
-  [class*="Illustration"] img,
-  [class*="calcImage"] img,
-  [class*="calculatorImage"] img,
-  [class*="engineeringImage"] img {
-    display: block !important;
-    width: 100% !important;
-    max-width: 82px !important;
-    height: auto !important;
-
-    margin: 0 !important;
-    padding: 0 !important;
-
-    object-fit: contain !important;
-  }
-
+.bm-calc-table-scroll table,
+.bm-item-results-table,
+.bm-boq-table,
+.bm-final-boq-table,
+.bm-real-boq-table,
+table {
+  border-collapse: collapse !important;
+  table-layout: auto !important;
 }
 
-
-/* Slightly more room on tablet */
-@media (min-width: 769px) and (max-width: 1024px) {
-
-  [class*="summaryGrid"],
-  [class*="summarygrid"],
-  [class*="resultGrid"],
-  [class*="resultgrid"],
-  [class*="resultsGrid"],
-  [class*="resultsgrid"],
-  [class*="metricGrid"],
-  [class*="metricgrid"],
-  [class*="cardContainer"],
-  [class*="resultCards"],
-  [class*="summaryCards"] {
-    display: flex !important;
-    flex-wrap: nowrap !important;
-    gap: 8px !important;
-    overflow-x: auto !important;
-  }
-
-  [class*="summaryGrid"] > *,
-  [class*="summarygrid"] > *,
-  [class*="resultGrid"] > *,
-  [class*="resultgrid"] > *,
-  [class*="resultsGrid"] > *,
-  [class*="resultsgrid"] > *,
-  [class*="metricGrid"] > *,
-  [class*="metricgrid"] > *,
-  [class*="cardContainer"] > *,
-  [class*="resultCards"] > *,
-  [class*="summaryCards"] > * {
-    flex: 0 0 auto !important;
-    min-width: 135px !important;
-    max-width: 180px !important;
-  }
-}
-
-
-/* ==========================================================
-   BUILDMITRA PHASE1 MOBILE FOUNDATION 19-08-2026
-   Mobile only. Preserve desktop and engineering table data.
-   ========================================================== */
-
-@media (max-width: 768px) {
-
-  /* Never allow the complete application page to drift sideways */
-  html,
-  body,
-  #__next {
-    max-width: 100% !important;
-    overflow-x: hidden !important;
-  }
-
-  /*
-     Engineering / BOQ tables:
-     horizontal movement belongs INSIDE the table area,
-     never on the complete page.
-  */
-  .bm-table-scroll,
-  .bm-responsive-table,
-  .table-responsive,
-  [class*="tableWrapper"],
-  [class*="tableContainer"],
-  [class*="TableWrapper"],
-  [class*="TableContainer"] {
-    display: block !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    overflow-x: auto !important;
-    overflow-y: visible !important;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-x: contain;
-  }
-
-  .bm-table-scroll table,
-  .bm-responsive-table table,
-  .table-responsive table,
-  [class*="tableWrapper"] table,
-  [class*="tableContainer"] table,
-  [class*="TableWrapper"] table,
-  [class*="TableContainer"] table {
-    width: max-content !important;
-    min-width: 680px !important;
-    max-width: none !important;
-    table-layout: auto !important;
-  }
-
-  /* Keep engineering headings readable — never vertical letters */
-  table th,
-  table td {
-    writing-mode: horizontal-tb !important;
-    text-orientation: mixed !important;
-    word-break: normal !important;
-    overflow-wrap: normal !important;
-    white-space: nowrap;
-    vertical-align: middle !important;
-  }
-
-  table th {
-    position: sticky;
-    top: 0;
-    z-index: 2;
-  }
-
-  /*
-     Forms remain usable.
-     Do not force a tiny fixed width on number/text inputs.
-  */
-  input,
-  select,
-  textarea {
-    max-width: 100% !important;
-    box-sizing: border-box !important;
-  }
-
-  input[type="number"],
-  input[type="text"],
-  input[type="tel"],
-  input[type="email"] {
-    min-width: 0 !important;
-  }
-
-  /* Prevent long button text becoming vertical */
-  button,
-  [role="button"] {
-    writing-mode: horizontal-tb !important;
-    word-break: normal !important;
-    overflow-wrap: normal !important;
-  }
-
-  /*
-     Isometric / engineering visual:
-     existing rule already places it right.
-     Protect it from becoming large again.
-  */
-  [class*="isometric"],
-  [class*="Isometric"],
-  [class*="diagram"],
-  [class*="Diagram"],
-  [class*="calcImage"],
-  [class*="calculatorImage"],
-  [class*="engineeringImage"] {
-    width: 82px !important;
-    max-width: 22vw !important;
-    height: auto !important;
-    float: right !important;
-    object-fit: contain !important;
-  }
-
-  [class*="isometric"] img,
-  [class*="Isometric"] img,
-  [class*="diagram"] img,
-  [class*="Diagram"] img,
-  [class*="calcImage"] img,
-  [class*="calculatorImage"] img,
-  [class*="engineeringImage"] img {
-    width: 100% !important;
-    max-width: 82px !important;
-    height: auto !important;
-    object-fit: contain !important;
-  }
-}
-
-/* Extra protection for very small phones */
-@media (max-width: 380px) {
-
-  .bm-table-scroll table,
-  .bm-responsive-table table,
-  .table-responsive table,
-  [class*="tableWrapper"] table,
-  [class*="tableContainer"] table {
-    min-width: 640px !important;
-  }
-
-  [class*="isometric"],
-  [class*="Isometric"],
-  [class*="diagram"],
-  [class*="Diagram"],
-  [class*="calcImage"],
-  [class*="calculatorImage"],
-  [class*="engineeringImage"] {
-    width: 72px !important;
-    max-width: 21vw !important;
-  }
-}
-
-
-/* =========================================================
-   BUILDMITRA MARKETPLACE MOBILE CART 19-08-2026
-   Compact e-commerce mobile experience
-   ========================================================= */
-
-@media (max-width: 767px) {
-
-  /* Marketplace product cards */
-  body:has([class*="marketplace"]) {
-    overflow-x: hidden;
-  }
-
-  /* Keep product wording compact */
-  [class*="marketplace"] h2,
-  [class*="marketplace"] h3 {
-    line-height: 1.2 !important;
-  }
-
-  /* Cart / drawer overlays */
-  [style*="position: fixed"][style*="right: 0"][style*="bottom: 0"] {
-    max-width: 94vw !important;
-  }
-
-  /* Compact cart textareas */
-  textarea {
-    min-height: 52px;
-  }
-
-  /* Inputs remain touch-friendly but compact */
-  input,
-  select,
-  textarea {
-    font-size: 14px;
-  }
-
-  /* Compact quantity controls */
-  button {
-    min-height: unset;
-  }
-
-  /* Prevent cart/product names becoming vertical */
-  button,
-  input,
-  textarea,
-  select {
-    writing-mode: horizontal-tb !important;
-    word-break: normal !important;
-  }
-
-  /* Bottom floating e-commerce cart */
-  [style*="translateX(-50%)"][style*="position: fixed"] {
-    width: calc(100vw - 16px) !important;
-    max-width: 520px !important;
-    bottom: 8px !important;
-    border-radius: 12px !important;
-    padding: 8px 10px !important;
-    box-sizing: border-box !important;
-  }
-
-  /* Cart drawer scrolling */
-  [style*="overflow-y: auto"],
-  [style*='overflowY: "auto"'] {
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
-  }
-}
-
-@media (max-width: 420px) {
-
-  /* Preserve usable side breathing space */
-  [style*="position: fixed"][style*="right: 0"][style*="bottom: 0"] {
-    width: 94vw !important;
-    max-width: 94vw !important;
-  }
-
-  /* Product/cart typography */
-  [class*="cart"] {
-    line-height: 1.25;
-  }
-
-  /* Keep controls on one horizontal line where possible */
-  [class*="quantity"],
-  [class*="Quantity"] {
-    white-space: nowrap !important;
-  }
-}
-
-/* END BUILDMITRA MARKETPLACE MOBILE CART */
-
-
-/* =========================================================
-   BUILDMITRA_REGISTER_FULLSCREEN_20260820
-   Registration: full-width mobile form, single clean column
-   ========================================================= */
-@media (max-width: 768px) {
-
-  .bm-register-page {
-    width: 100vw !important;
-    max-width: 100vw !important;
-    min-height: 100dvh !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    background: #ffffff !important;
-    overflow-x: hidden !important;
-  }
-
-  .bm-register-card {
-    width: 100% !important;
-    max-width: 100% !important;
-    min-height: 100dvh !important;
-    margin: 0 !important;
-    padding: 14px !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-    box-sizing: border-box !important;
-  }
-
-  .bm-register-card form {
-    width: 100% !important;
-    max-width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-
-  .bm-register-fields-grid {
-    display: grid !important;
-    grid-template-columns: minmax(0, 1fr) !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    gap: 10px !important;
-  }
-
-  .bm-register-fields-grid > * {
-    width: 100% !important;
-    min-width: 0 !important;
-    max-width: 100% !important;
-    margin: 0 !important;
-    box-sizing: border-box !important;
-  }
-
-  .bm-register-card input,
-  .bm-register-card select,
-  .bm-register-card textarea {
-    display: block !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    max-width: 100% !important;
-    min-height: 46px !important;
-    box-sizing: border-box !important;
-    writing-mode: horizontal-tb !important;
-    word-break: normal !important;
-  }
-
-  .bm-register-plan-scroll {
-    display: grid !important;
-    grid-template-columns: minmax(0, 1fr) !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    gap: 10px !important;
-    overflow: visible !important;
-  }
-
-  .bm-register-plan-scroll > * {
-    width: 100% !important;
-    min-width: 0 !important;
-    max-width: 100% !important;
-    flex: none !important;
-  }
-
-  .bm-register-beta-notice {
-    display: none !important;
-  }
-}
-
-/* ==========================================================
-   BUILDMITRA_MARKETPLACE_MOBILE_FILTER_FINAL_20260820
-   ========================================================== */
-
-/* Desktop */
-.bm-marketplace-mobile-filters .bm-market-filter-row,
-.bm-marketplace-mobile-filters .bm-market-filter-search-row,
-.bm-marketplace-mobile-filters .bm-market-desktop-extra {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.bm-marketplace-mobile-filters .bm-market-desktop-extra {
-  display: contents;
-}
-
-
-/* MOBILE ONLY */
-@media (max-width: 767px) {
-
-  .bm-marketplace-mobile-filters {
-    display: flex !important;
-    flex-direction: column !important;
-    width: 100% !important;
-    gap: 7px !important;
-    padding: 8px !important;
-    margin: 0 0 8px 0 !important;
-    box-sizing: border-box !important;
-  }
-
-  /* ROW 1 — City + PIN */
-  .bm-market-filter-location {
-    display: grid !important;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 0.78fr) !important;
-    width: 100% !important;
-    gap: 7px !important;
-  }
-
-  /* ROW 2 — Min + Max + Newest */
-  .bm-market-filter-price {
-    display: grid !important;
-    grid-template-columns:
-      minmax(0, 0.8fr)
-      minmax(0, 0.8fr)
-      minmax(0, 1fr) !important;
-    width: 100% !important;
-    gap: 7px !important;
-  }
-
-  /* ROW 3 — Search */
-  .bm-market-filter-search-row {
-    display: block !important;
-    width: 100% !important;
-  }
-
-  .bm-marketplace-mobile-filters input,
-  .bm-marketplace-mobile-filters select {
-    width: 100% !important;
-    min-width: 0 !important;
-    max-width: 100% !important;
-    height: 40px !important;
-    padding: 7px 8px !important;
-    margin: 0 !important;
-    font-size: 13px !important;
-    border-radius: 7px !important;
-    box-sizing: border-box !important;
-  }
-
-  .bm-market-search {
-    width: 100% !important;
-  }
-
-  /* Hide clutter on mobile */
-  .bm-market-desktop-extra {
-    display: none !important;
-  }
-}
-
-/* ============================================================
-   BUILDMITRA_CALCULATOR_MOBILE_FAMILY_FINAL_20260820
-   MOBILE ONLY
-   Protected calculator engineering layout
-   ============================================================ */
-
-@media (max-width: 767px) {
-
-  /* ==========================================================
-     PAGE SCROLLING
-     Keep both natural vertical screen movement and horizontal
-     engineering/result scrolling.
-     ========================================================== */
-
-  html,
-  body,
-  #__next {
-    overflow-y: auto !important;
-  }
-
-
-  /* ==========================================================
-     USER INPUTS
-     At least 4 engineering fields per row.
-     Do NOT enlarge fields into one-field-per-row cards.
-     ========================================================== */
-
-  .engineering-top-left input,
-  .engineering-top-left select,
-  .engineering-top-left textarea {
-    min-width: 0 !important;
-    max-width: 100% !important;
-    box-sizing: border-box !important;
-  }
-
-  .engineering-top-left {
-    min-width: 0 !important;
-    overflow: visible !important;
-  }
-
-
-  /* ==========================================================
-     TOP HEADER + ISOMETRIC IMAGE
-
-     Left = calculator heading / options
-     Right = very small engineering/isometric tile.
-
-     Existing individual calculator CSS sometimes forces the
-     specimen child to 185%; these rules intentionally override it.
-     ========================================================== */
-
-  body .engineering-top-layout {
-    display: grid !important;
-    grid-template-columns: minmax(0, 1fr) 88px !important;
-    column-gap: 6px !important;
-    align-items: start !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    overflow: visible !important;
-  }
-
-  html body .engineering-specimen-top {
-    width: 86px !important;
-    min-width: 86px !important;
-    max-width: 86px !important;
-
-    height: 90px !important;
-    min-height: 90px !important;
-    max-height: 90px !important;
-
-    position: relative !important;
-    top: 0 !important;
-    right: 0 !important;
-
-    margin: 0 !important;
-    padding: 1px !important;
-
-    overflow: hidden !important;
-    align-self: start !important;
-
-    border-radius: 6px !important;
-    box-sizing: border-box !important;
-  }
-
-  html body .engineering-specimen-top > * {
-    width: 100% !important;
-    min-width: 0 !important;
-    max-width: 100% !important;
-
-    height: 100% !important;
-    max-height: 100% !important;
-
-    margin: 0 !important;
-    padding: 0 !important;
-
-    transform: none !important;
-    overflow: hidden !important;
-  }
-
-  html body .engineering-specimen-top canvas,
-  html body .engineering-specimen-top svg,
-  html body .engineering-specimen-top img {
-    width: 100% !important;
-    max-width: 100% !important;
-
-    height: 100% !important;
-    max-height: 100% !important;
-
-    object-fit: contain !important;
-    display: block !important;
-  }
-
-
-  /* ==========================================================
-     HIDE NON-ESSENTIAL TECHNICAL CLUTTER ON MOBILE
-
-     IMPORTANT:
-     Nothing is deleted.
-     Formula/calculation logic remains active internally.
-     Desktop continues showing the notes.
-     ========================================================== */
-
-  .bm-calc-mobile-technical-note,
-  .bm-calc-mobile-technical-badge {
-    display: none !important;
-  }
-
-
-  /* ==========================================================
-     COMPACT HEADER TEXT
-     ========================================================== */
-
-  .engineering-top-left h1 {
-    font-size: 15px !important;
-    line-height: 1.15 !important;
-    margin-top: 2px !important;
-    margin-bottom: 4px !important;
-  }
-
-  .engineering-top-left h2,
-  .engineering-top-left h3 {
-    font-size: 13px !important;
-    line-height: 1.15 !important;
-  }
-
-
-  /* ==========================================================
-     RESULTS
-
-     5 result boxes remain in an engineering row.
-     Swipe horizontally instead of crushing numbers.
-     ========================================================== */
-
-  [style*="overflowX"] {
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-x: contain;
-  }
-
-  table {
-    max-width: none !important;
-  }
-
-  .bm-mobile-table-scroll,
-  [class*="tableContainer"],
-  [class*="tablecontainer"] {
-    width: 100% !important;
-    max-width: 100% !important;
-    overflow-x: auto !important;
-    overflow-y: visible !important;
-    -webkit-overflow-scrolling: touch;
-  }
-
-
-  /* ==========================================================
-     TEXT SAFETY
-     ========================================================== */
-
-  .engineering-top-layout button,
-  .engineering-top-layout input,
-  .engineering-top-layout select,
-  .engineering-top-layout span,
-  .engineering-top-layout label {
-    writing-mode: horizontal-tb !important;
-    word-break: normal !important;
-  }
-}
-
-
-/* Very narrow phones: retain the same layout, just reduce tile */
-@media (max-width: 360px) {
-
-  body .engineering-top-layout {
-    grid-template-columns: minmax(0, 1fr) 76px !important;
-  }
-
-  html body .engineering-specimen-top {
-    width: 74px !important;
-    min-width: 74px !important;
-    max-width: 74px !important;
-
-    height: 80px !important;
-    min-height: 80px !important;
-    max-height: 80px !important;
-  }
-}
-
-
-/* ============================================================
-   BUILDMITRA_CALCULATOR_ISOMETRIC_HEADER_TILE_FINAL_20260820
-
-   Mobile calculator isometric:
-   - small header-right reference only
-   - approximately same depth as page title/header
-   - never consumes calculator body space
-   ============================================================ */
-
-@media (max-width: 767px) {
-
-  /* Header content + small right-side engineering reference */
-  html body .engineering-top-layout {
-    display: grid !important;
-    grid-template-columns: minmax(0, 1fr) 64px !important;
-    column-gap: 5px !important;
-    align-items: start !important;
-
-    width: 100% !important;
-    max-width: 100% !important;
-
-    margin: 0 !important;
-    padding: 0 !important;
-
-    overflow: visible !important;
-  }
-
-
-  /* The actual isometric tile */
-  html body .engineering-top-layout .engineering-specimen-top {
-    width: 64px !important;
-    min-width: 64px !important;
-    max-width: 64px !important;
-
-    height: 64px !important;
-    min-height: 64px !important;
-    max-height: 64px !important;
-
-    position: relative !important;
-    top: 0 !important;
-    right: 0 !important;
-
-    margin: 0 !important;
-    padding: 0 !important;
-
-    align-self: start !important;
-    justify-self: end !important;
-
-    overflow: hidden !important;
-
-    border-radius: 5px !important;
-    box-sizing: border-box !important;
-  }
-
-
-  /*
-     Override older calculator rules which enlarged
-     the EngineeringSpecimen child to 185%.
-  */
-  html body .engineering-top-layout .engineering-specimen-top > * {
-    width: 64px !important;
-    min-width: 64px !important;
-    max-width: 64px !important;
-
-    height: 64px !important;
-    min-height: 64px !important;
-    max-height: 64px !important;
-
-    margin: 0 !important;
-    padding: 0 !important;
-
-    transform: none !important;
-    overflow: hidden !important;
-  }
-
-
-  /* Actual drawing/image/canvas */
-  html body .engineering-top-layout .engineering-specimen-top canvas,
-  html body .engineering-top-layout .engineering-specimen-top svg,
-  html body .engineering-top-layout .engineering-specimen-top img {
-    display: block !important;
-
-    width: 100% !important;
-    max-width: 100% !important;
-
-    height: 100% !important;
-    max-height: 100% !important;
-
-    margin: 0 !important;
-    padding: 0 !important;
-
-    object-fit: contain !important;
-  }
-
-
-  /*
-     Specimen captions/headings are unnecessary in the
-     tiny mobile reference tile. Show only the drawing.
-  */
-  html body .engineering-specimen-top h1,
-  html body .engineering-specimen-top h2,
-  html body .engineering-specimen-top h3,
-  html body .engineering-specimen-top h4,
-  html body .engineering-specimen-top p {
-    display: none !important;
-  }
-
-
-  /* Keep calculator title compact beside the image */
-  html body .engineering-top-left h1 {
-    margin: 0 0 3px !important;
-    padding: 0 !important;
-
-    font-size: 15px !important;
-    line-height: 1.15 !important;
-  }
-}
-
-
-/* Extra-small phones */
-@media (max-width: 360px) {
-
-  html body .engineering-top-layout {
-    grid-template-columns: minmax(0, 1fr) 56px !important;
-  }
-
-  html body .engineering-top-layout .engineering-specimen-top,
-  html body .engineering-top-layout .engineering-specimen-top > * {
-    width: 56px !important;
-    min-width: 56px !important;
-    max-width: 56px !important;
-
-    height: 56px !important;
-    min-height: 56px !important;
-    max-height: 56px !important;
-  }
-}
-
-
-/* ============================================================
-   BUILDMITRA_BOQ_MOBILE_FAMILY_V1_20260820
-
-   MOBILE ONLY
-
-   1. Four user-input fields per row
-   2. Consolidated result cards one horizontal row
-   3. Detailed BOQ minimum six-column engineering grid
-   4. Horizontal + vertical BOQ scrolling
-   5. Hide technical rule/explanation text on mobile
-   6. Desktop untouched
-   ============================================================ */
-
-@media (max-width: 767px) {
-
-  /* ==========================================================
-     BOQ INPUT AREA — 4 FIELDS PER ROW
-     ========================================================== */
-
-  .bm-final-boq-input-grid {
-    display: grid !important;
-
-    grid-template-columns:
-      repeat(4, minmax(68px, 1fr)) !important;
-
-    gap: 5px !important;
-
-    width: 100% !important;
-    min-width: 0 !important;
-    max-width: 100% !important;
-
-    margin: 0 !important;
-    padding: 0 !important;
-
-    align-items: end !important;
-  }
-
-
-  .bm-final-boq-input-grid > * {
-    min-width: 0 !important;
-    max-width: 100% !important;
-
-    margin: 0 !important;
-
-    box-sizing: border-box !important;
-  }
-
-
-  .bm-final-boq-input-grid label {
-    display: block !important;
-
-    margin: 0 0 2px !important;
-
-    font-size: 9.5px !important;
-    line-height: 1.1 !important;
-
-    writing-mode: horizontal-tb !important;
-    word-break: normal !important;
-
-    overflow-wrap: anywhere !important;
-  }
-
-
-  .bm-final-boq-input-grid input,
-  .bm-final-boq-input-grid select,
-  .bm-final-boq-input-grid textarea {
-
-    width: 100% !important;
-
-    min-width: 0 !important;
-    max-width: 100% !important;
-
-    height: 34px !important;
-
-    margin: 0 !important;
-    padding: 3px 4px !important;
-
-    font-size: 11px !important;
-
-    box-sizing: border-box !important;
-
-    writing-mode: horizontal-tb !important;
-    word-break: normal !important;
-  }
-
-
-  /* ==========================================================
-     CONSOLIDATED BOQ RESULT CARDS
-     ONE ROW — HORIZONTAL SWIPE
-     ========================================================== */
-
-  .bm-boq-summary-scroll {
-
-    display: flex !important;
-
-    flex-direction: row !important;
-    flex-wrap: nowrap !important;
-
-    gap: 6px !important;
-
-    width: 100% !important;
-    max-width: 100% !important;
-
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
-
-    padding: 3px 2px 8px !important;
-    margin: 3px 0 7px !important;
-
-    -webkit-overflow-scrolling: touch;
-
-    touch-action: pan-x;
-
-    overscroll-behavior-x: contain;
-
-    scroll-snap-type: x proximity;
-  }
-
-
-  .bm-boq-summary-scroll > * {
-
-    flex: 0 0 112px !important;
-
-    width: 112px !important;
-    min-width: 112px !important;
-    max-width: 112px !important;
-
-    min-height: 64px !important;
-
-    margin: 0 !important;
-    padding: 5px !important;
-
-    box-sizing: border-box !important;
-
-    scroll-snap-align: start;
-  }
-
-
-  .bm-boq-summary-scroll span,
-  .bm-boq-summary-scroll strong {
-
-    writing-mode: horizontal-tb !important;
-
-    word-break: normal !important;
-
-    overflow-wrap: anywhere !important;
-  }
-
-
-  /* ==========================================================
-     DETAILED BOQ RESULTS
-
-     Six-column engineering viewing width.
-
-     Do NOT squeeze a large BOQ into the phone width.
-     User swipes sideways to inspect columns.
-
-     Vertical scrolling remains available inside large BOQs.
-     ========================================================== */
-
-  .bm-boq-table-scroll {
-
-    display: block !important;
-
-    width: 100% !important;
-    max-width: 100% !important;
-
-    max-height: 58vh !important;
-
-    overflow-x: auto !important;
-    overflow-y: auto !important;
-
-    -webkit-overflow-scrolling: touch;
-
-    overscroll-behavior: contain;
-
-    border-radius: 6px !important;
-  }
-
-
-  /*
-     Six useful engineering columns require approximately
-     6 × 92px = 552px minimum canvas.
-
-     Tables with 7/8/9 columns are NOT truncated.
-     They simply extend further horizontally.
-  */
-
-  .bm-boq-table {
-
-    width: max-content !important;
-
-    min-width: 552px !important;
-
-    max-width: none !important;
-
-    table-layout: auto !important;
-
-    border-collapse: collapse !important;
-  }
-
-
-  .bm-boq-table th,
-  .bm-boq-table td {
-
-    min-width: 92px !important;
-
-    max-width: 150px !important;
-
-    padding: 5px 6px !important;
-
-    font-size: 10px !important;
-    line-height: 1.2 !important;
-
-    vertical-align: middle !important;
-
-    writing-mode: horizontal-tb !important;
-
-    word-break: normal !important;
-
-    overflow-wrap: normal !important;
-
-    white-space: normal !important;
-  }
-
-
-  /* Serial / UOM columns can remain narrower */
-
-  .bm-boq-table th:first-child,
-  .bm-boq-table td:first-child {
-
-    min-width: 42px !important;
-    width: 42px !important;
-  }
-
-
-  /* ==========================================================
-     KEEP TABLE HEADER VISIBLE DURING VERTICAL BOQ SCROLL
-     ========================================================== */
-
-  .bm-boq-table thead th {
-
-    position: sticky !important;
-
-    top: 0 !important;
-
-    z-index: 2;
-
-    background-clip: padding-box;
-  }
-
-
-  /* ==========================================================
-     REMOVE MOBILE TECHNICAL CLUTTER
-
-     Calculations remain unchanged.
-     Only explanatory note box is hidden.
-     ========================================================== */
-
-  .bm-boq-mobile-technical-note {
-
-    display: none !important;
-  }
-
-
-  /* ==========================================================
-     SECTION / RESULT HEADINGS
-     ========================================================== */
-
-  .bm-boq-table-scroll + *,
-  .bm-boq-summary-scroll + * {
-
-    max-width: 100% !important;
-  }
-
-
-  /* ==========================================================
-     BOQ BUTTON WORDING
-     Keep horizontal; allow two lines where required.
-     ========================================================== */
-
-  button {
-
-    writing-mode: horizontal-tb !important;
-
-    word-break: normal !important;
-  }
-
-}
-
-
-/* ============================================================
-   EXTRA-SMALL MOBILE
-   Still retain 4 fields — permit horizontal input grid movement
-   instead of turning it into one field per row.
-   ============================================================ */
-
-@media (max-width: 360px) {
-
-  .bm-final-boq-input-grid {
-
-    grid-template-columns:
-      repeat(4, minmax(66px, 1fr)) !important;
-
-    min-width: 280px !important;
-  }
-
-
-  .bm-boq-summary-scroll > * {
-
-    flex-basis: 104px !important;
-
-    width: 104px !important;
-    min-width: 104px !important;
-    max-width: 104px !important;
-  }
-
-}
-
-
-/* ============================================================
-   BUILDMITRA_DASHBOARD_MOBILE_FAMILY_V1_20260820
-   Adaptive mobile dashboard standard
-   ============================================================ */
-
-@media (max-width: 767px) {
-
-  /* ----------------------------------------------------------
-     Dashboard page shell
-     ---------------------------------------------------------- */
-
-  .bm-dashboard-mobile-root {
-    width: 100% !important;
-    max-width: 100% !important;
-    min-width: 0 !important;
-
-    margin: 0 !important;
-    padding: 8px !important;
-
-    box-sizing: border-box !important;
-
-    overflow-x: hidden !important;
-  }
-
-
-  /* ----------------------------------------------------------
-     Dashboard headers
-     ---------------------------------------------------------- */
-
-  .bm-dashboard-mobile-root h1 {
-    font-size: 18px !important;
-    line-height: 1.15 !important;
-    margin: 0 0 5px !important;
-  }
-
-  .bm-dashboard-mobile-root h2 {
-    font-size: 15px !important;
-    line-height: 1.2 !important;
-  }
-
-  .bm-dashboard-mobile-root h3 {
-    font-size: 13px !important;
-    line-height: 1.2 !important;
-  }
-
-
-  /* ----------------------------------------------------------
-     Generic dashboard grids
-
-     Instead of forcing 1 fixed count, cards auto-adjust.
-     Standard mobile KPI target = 2 per row.
-     ---------------------------------------------------------- */
-
-  .bm-dashboard-mobile-root [style*="repeat(4,1fr)"],
-  .bm-dashboard-mobile-root [style*="repeat(4, 1fr)"],
-  .bm-dashboard-mobile-root [style*="repeat(3,1fr)"],
-  .bm-dashboard-mobile-root [style*="repeat(3, 1fr)"],
-  .bm-dashboard-mobile-root [style*="repeat(2,1fr)"],
-  .bm-dashboard-mobile-root [style*="repeat(2, 1fr)"] {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr)) !important;
-
-    gap: 8px !important;
-  }
-
-
-  /* ----------------------------------------------------------
-     Existing explicit mobile card grids stay compact
-     ---------------------------------------------------------- */
-
-  .bm-dashboard-mobile-root [class*="mobileCardGrid"],
-  .bm-dashboard-mobile-root [class*="mobile-card-grid"] {
-    display: grid !important;
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr)) !important;
-
-    gap: 7px !important;
-
-    width: 100% !important;
-  }
-
-
-  /* ----------------------------------------------------------
-     Cards / panels
-     ---------------------------------------------------------- */
-
-  .bm-dashboard-mobile-root [class*="card"],
-  .bm-dashboard-mobile-root [class*="Card"] {
-    min-width: 0 !important;
-    max-width: 100% !important;
-
-    box-sizing: border-box !important;
-  }
-
-
-  /* ----------------------------------------------------------
-     Forms
-
-     Two compact inputs where practical.
-     Long fields remain full usable width.
-     ---------------------------------------------------------- */
-
-  .bm-dashboard-mobile-root form {
-    width: 100% !important;
-    max-width: 100% !important;
-  }
-
-  .bm-dashboard-mobile-root input,
-  .bm-dashboard-mobile-root select,
-  .bm-dashboard-mobile-root textarea {
-    width: 100% !important;
-    max-width: 100% !important;
-    min-width: 0 !important;
-
-    box-sizing: border-box !important;
-
-    writing-mode: horizontal-tb !important;
-    word-break: normal !important;
-  }
-
-  .bm-dashboard-mobile-root textarea {
-    min-height: 58px !important;
-  }
-
-
-  /* ----------------------------------------------------------
-     Flex action groups automatically wrap
-     ---------------------------------------------------------- */
-
-  .bm-dashboard-mobile-root [style*="display: flex"] {
-    min-width: 0 !important;
-  }
-
-  .bm-dashboard-mobile-root button {
-    max-width: 100% !important;
-
-    writing-mode: horizontal-tb !important;
-    word-break: normal !important;
-
-    white-space: normal !important;
-
-    touch-action: manipulation;
-  }
-
-
-  /* ----------------------------------------------------------
-     Tables
-
-     Never squeeze large operational tables.
-     Horizontal scroll is the correct mobile behaviour.
-     ---------------------------------------------------------- */
-
-  .bm-dashboard-mobile-root table {
-    width: max-content !important;
+@media screen and (max-width: 768px) {
+  .bm-calc-table-scroll table,
+  .bm-item-results-table,
+  .bm-boq-table,
+  .bm-final-boq-table,
+  .bm-real-boq-table {
     min-width: 620px !important;
-    max-width: none !important;
-
-    table-layout: auto !important;
+    width: max-content !important;
   }
 
-  .bm-dashboard-mobile-root table th,
-  .bm-dashboard-mobile-root table td {
-    min-width: 86px !important;
-    max-width: 180px !important;
-
-    padding: 6px !important;
-
-    font-size: 10px !important;
+  th, td {
+    padding: 3px 5px !important;
+    font-size: 10.5px !important;
     line-height: 1.2 !important;
+  }
+}
 
-    vertical-align: middle !important;
+.bm-calc-results-scroll::-webkit-scrollbar,
+.bm-boq-summary-scroll::-webkit-scrollbar,
+.bm-final-boq-summary::-webkit-scrollbar,
+.bm-calc-table-scroll::-webkit-scrollbar,
+.bm-item-results-scroll::-webkit-scrollbar,
+.bm-boq-table-scroll::-webkit-scrollbar,
+.bm-final-boq-table-scroll::-webkit-scrollbar,
+.bm-real-boq-scroll::-webkit-scrollbar {
+  height: 6px !important;
+}
 
-    writing-mode: horizontal-tb !important;
+.bm-calc-table-scroll::-webkit-scrollbar-thumb,
+.bm-item-results-scroll::-webkit-scrollbar-thumb,
+.bm-boq-table-scroll::-webkit-scrollbar-thumb {
+  background: #94a3b8 !important;
+  border-radius: 4px !important;
+}
 
-    word-break: normal !important;
-    white-space: normal !important;
+/* --- 4. MARKETPLACE RESPONSIVE GRID --- */
+.marketplace-grid,
+.products-grid,
+.product-grid,
+.bm-marketplace-product-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)) !important;
+  gap: 8px !important;
+  width: 100% !important;
+}
+
+@media screen and (max-width: 768px) {
+  .marketplace-grid,
+  .products-grid,
+  .product-grid,
+  .bm-marketplace-product-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 4px !important;
   }
 
+  .marketplace-card,
+  .product-card {
+    padding: 4px !important;
+    border-radius: 5px !important;
+    margin: 0 !important;
+  }
 
-  /*
-     Any container directly holding a table can scroll.
-  */
-  .bm-dashboard-mobile-root div:has(> table) {
+  .thumbnail-wrapper,
+  .product-image-container {
     width: 100% !important;
-    max-width: 100% !important;
-
-    overflow-x: auto !important;
-    overflow-y: auto !important;
-
-    -webkit-overflow-scrolling: touch;
-
-    overscroll-behavior: contain;
+    height: 75px !important;
+    aspect-ratio: 1 / 1 !important;
+    border-radius: 4px !important;
+    overflow: hidden !important;
+    margin-bottom: 2px !important;
   }
 
-
-  /* ----------------------------------------------------------
-     Images / video / documents / previews
-     ---------------------------------------------------------- */
-
-  .bm-dashboard-mobile-root img,
-  .bm-dashboard-mobile-root video,
-  .bm-dashboard-mobile-root iframe,
-  .bm-dashboard-mobile-root canvas {
-    max-width: 100% !important;
+  .thumbnail-wrapper img,
+  .product-image-container img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
   }
 
-  .bm-dashboard-mobile-root img,
-  .bm-dashboard-mobile-root video {
-    height: auto !important;
+  .product-title,
+  .marketplace-card h2,
+  .marketplace-card h3 {
+    font-size: 10.5px !important;
+    line-height: 1.15 !important;
+    margin: 2px 0 1px 0 !important;
   }
 
-
-  /* ----------------------------------------------------------
-     Modals
-
-     Fit viewport and scroll internally.
-     ---------------------------------------------------------- */
-
-  .bm-dashboard-mobile-root [role="dialog"],
-  .bm-dashboard-mobile-root [style*="position: fixed"] > div {
-    max-width: calc(100vw - 16px) !important;
-    max-height: calc(100dvh - 16px) !important;
-
-    overflow-y: auto !important;
-
-    box-sizing: border-box !important;
-
-    -webkit-overflow-scrolling: touch;
-  }
-
-
-  /* ----------------------------------------------------------
-     Long status / project / enquiry text
-     ---------------------------------------------------------- */
-
-  .bm-dashboard-mobile-root p,
-  .bm-dashboard-mobile-root span,
-  .bm-dashboard-mobile-root strong,
-  .bm-dashboard-mobile-root label {
-    writing-mode: horizontal-tb !important;
-
-    word-break: normal !important;
-    overflow-wrap: anywhere;
-  }
-
-
-  /* ----------------------------------------------------------
-     Sticky horizontal action areas
-     ---------------------------------------------------------- */
-
-  .bm-dashboard-mobile-root [style*="justifyContent: space-between"],
-  .bm-dashboard-mobile-root [style*='justifyContent: "space-between"'] {
-    gap: 8px !important;
-    flex-wrap: wrap !important;
+  .product-price,
+  .marketplace-card .price {
+    font-size: 10.5px !important;
+    font-weight: 800 !important;
+    color: #166534 !important;
   }
 }
 
-
-/* ------------------------------------------------------------
-   Very narrow phones
-   KPI cards can collapse to one column only when necessary.
-   ------------------------------------------------------------ */
-
-@media (max-width: 360px) {
-
-  .bm-dashboard-mobile-root [style*="repeat(4,1fr)"],
-  .bm-dashboard-mobile-root [style*="repeat(4, 1fr)"],
-  .bm-dashboard-mobile-root [style*="repeat(3,1fr)"],
-  .bm-dashboard-mobile-root [style*="repeat(3, 1fr)"],
-  .bm-dashboard-mobile-root [style*="repeat(2,1fr)"],
-  .bm-dashboard-mobile-root [style*="repeat(2, 1fr)"] {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr)) !important;
-  }
-
-  .bm-dashboard-mobile-root {
-    padding: 6px !important;
+@media screen and (max-width: 360px) {
+  .marketplace-grid,
+  .products-grid,
+  .product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 }
 
+/* --- 5. LIVE RATES TICKER --- */
+div[class*="ticker"],
+div[class*="LiveRates"],
+div[class*="live-rates"] {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  white-space: nowrap !important;
+  max-height: 42px !important;
+  padding: 3px 6px !important;
+  gap: 6px !important;
+  align-items: center !important;
+  scrollbar-width: none !important;
+}
+
+div[class*="ticker"]::-webkit-scrollbar,
+div[class*="live-rates"]::-webkit-scrollbar {
+  display: none !important;
+}
+
+/* --- 6. PRESERVE TECHNICAL SVG / DRG DRAWINGS --- */
+svg text,
+svg tspan {
+  font-family: inherit !important;
+  font-size: inherit !important;
+}
