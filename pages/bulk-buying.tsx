@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/router";
 import DashboardLayout from "../components/DashboardLayout";
-import VendorBiddingCard from "../src/components/VendorBiddingCard";
+import VendorBiddingCard from '../src/components/VendorBiddingCard.jsx';
 import MarketRateTrend from "../components/ui/MarketRateTrend";
 
 // Material catalog options matching BuildMitra Master Items
