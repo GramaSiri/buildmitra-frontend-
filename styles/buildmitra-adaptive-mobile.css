@@ -276,20 +276,19 @@
     font-size: 11px !important;
   }
 
-  /* --- 9. TABLE HEADERS & UNLOCKED VERTICAL TABLE SCROLLING --- */
+  /* --- 9. MOBILE TABLE SCROLL: UNLOCKED NATURAL VERTICAL FLOW --- */
   .bm-boq-table-scroll,
   [class*="tableContainer" i] {
     display: block !important;
     width: 100% !important;
     max-width: 100% !important;
-    max-height: none !important;
     height: auto !important;
-    overflow-x: auto !important;
-    overflow-y: visible !important;
+    max-height: none !important;
+    overflow-y: visible !important; /* Let page handle vertical scroll naturally */
+    overflow-x: auto !important;  /* Horizontal swipe for wide tables */
     -webkit-overflow-scrolling: touch !important;
-    margin-top: 4px !important;
-    padding-bottom: 20px !important;
-    border-radius: 6px !important;
+    margin-top: 6px !important;
+    padding-bottom: 40px !important; /* Extra touch clearance at bottom */
   }
 
   .bm-boq-table-scroll table,
@@ -304,9 +303,6 @@
   [class*="tableContainer" i] thead {
     display: table-header-group !important;
     visibility: visible !important;
-    position: sticky !important;
-    top: 0 !important;
-    z-index: 10 !important;
   }
 
   .bm-boq-table-scroll tr,
@@ -318,22 +314,20 @@
   .bm-boq-table-scroll th,
   [class*="tableContainer" i] th {
     display: table-cell !important;
-    position: sticky !important;
-    top: 0 !important;
-    z-index: 10 !important;
     background-color: #800020 !important;
     color: #ffffff !important;
     font-size: 10px !important;
-    padding: 5px 6px !important;
+    padding: 6px 8px !important;
     visibility: visible !important;
     white-space: nowrap !important;
+    /* Removed sticky top positioning on mobile to prevent touch-trap bugs */
   }
 
   .bm-boq-table-scroll td,
   [class*="tableContainer" i] td {
     display: table-cell !important;
     font-size: 10px !important;
-    padding: 4px 6px !important;
+    padding: 5px 8px !important;
     vertical-align: middle !important;
     visibility: visible !important;
   }
