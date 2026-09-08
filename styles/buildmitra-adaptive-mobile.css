@@ -1,14 +1,16 @@
 /* =========================================================================
    BuildMitra Adaptive Mobile UI Engine (Production Standard)
    - Desktop layout & calculations remain 100% untouched.
+   - Calibrated mobile font sizes (no text overflow or wrapping in 3-box rows).
    - Hides Item Code/Master Code and Category columns on mobile.
-   - Fits 3 summary/metric boxes in one row.
-   - Converts lengthy engineering labels into standard short abbreviations.
+   - Auto-adjusts input fields (2-to-4 per row, fluid width).
+   - Short labels: BUA, Area, Mat ₹, Lab ₹, Grand ₹, Conc Vol, Steel Wt.
+   - Zero side-wobble and zero white gap gutters.
    ========================================================================= */
 
 @media (max-width: 768px) {
 
-  /* --- 1. ROOT VIEWPORT & ZERO HORIZONTAL WOBBLE --- */
+  /* --- 1. ROOT VIEWPORT & FONT BASE (PREVENTS EXCESSIVE SIZES) --- */
   html,
   body,
   #__next {
@@ -17,21 +19,28 @@
     margin: 0 !important;
     padding: 0 !important;
     overflow-x: hidden !important;
-    font-size: 13px !important;
-    -webkit-text-size-adjust: 100%;
+    font-size: 12px !important;
+    -webkit-text-size-adjust: 100% !important;
   }
 
   * {
     box-sizing: border-box !important;
   }
 
-  /* Universal text orientation: prevents single-letter vertical wrapping */
+  /* Universal text orientation: strictly horizontal, no vertical letter wraps */
   h1, h2, h3, h4, h5, h6, p, span, label, a, button, input, select, textarea, td, th {
     writing-mode: horizontal-tb !important;
     word-break: normal !important;
   }
 
-  /* Eliminate empty side margins across all app pages */
+  /* Headings: scaled down so they do not push content down the screen */
+  h1 { font-size: 16px !important; font-weight: 800 !important; margin: 2px 0 4px 0 !important; line-height: 1.2 !important; }
+  h2 { font-size: 14px !important; font-weight: 750 !important; margin: 2px 0 3px 0 !important; line-height: 1.2 !important; }
+  h3 { font-size: 13px !important; font-weight: 700 !important; margin: 2px 0 3px 0 !important; line-height: 1.25 !important; }
+  h4, h5, h6 { font-size: 12px !important; font-weight: 650 !important; margin: 1px 0 !important; }
+  p, span { font-size: 12px !important; }
+
+  /* Eliminate empty side margins and top gaps across all app pages */
   main,
   [class*="Page"],
   [class*="page"],
@@ -40,8 +49,8 @@
   .bm-dashboard-mobile-root {
     width: 100% !important;
     max-width: 100% !important;
-    padding-left: 5px !important;
-    padding-right: 5px !important;
+    padding-left: 4px !important;
+    padding-right: 4px !important;
     padding-top: 2px !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
@@ -54,45 +63,90 @@
   [class*="panel"],
   [class*="Panel"],
   .card-compact {
-    margin-top: 3px !important;
-    margin-bottom: 6px !important;
-    padding: 7px !important;
-    border-radius: 8px !important;
+    margin-top: 2px !important;
+    margin-bottom: 5px !important;
+    padding: 6px !important;
+    border-radius: 7px !important;
   }
 
-  /* --- 2. CONTROLS & COMPACT FORM INPUTS --- */
-  input[type="checkbox"] {
-    width: 13px !important;
-    height: 13px !important;
-    min-width: 13px !important;
-    min-height: 13px !important;
-    flex: 0 0 13px !important;
+  /* --- 2. USER INPUT FIELDS: AUTO-ADJUST & FONT SIZING --- */
+  .bm-field-shell,
+  div[class*="fieldGroup"],
+  div[class*="formGroup"],
+  div[class*="inputGroup"] {
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
-  input:not([type="checkbox"]):not([type="radio"]),
-  select {
-    min-height: 34px !important;
-    height: 34px !important;
-    padding: 4px 6px !important;
-    font-size: 12px !important;
-    border-radius: 6px !important;
+  .form-grid,
+  .input-grid,
+  .calculator-input-grid,
+  .calculator-grid,
+  .boq-input-grid,
+  .bm-final-boq-input-grid,
+  .bm-calc-input-grid,
+  [class*="grid4"],
+  [class*="fieldGrid"] {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(70px, 1fr)) !important;
+    gap: 4px !important;
+    width: 100% !important;
+    margin-bottom: 5px !important;
+    align-items: end !important;
+  }
+
+  .bm-field-shell > label,
+  .bm-field-shell label,
+  .bm-uniform-field label,
+  [class*="fieldGroup"] label,
+  label {
+    font-size: 9.5px !important;
+    margin-bottom: 2px !important;
+    line-height: 1.1 !important;
+    font-weight: 700 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    display: block !important;
+  }
+
+  input.bm-user-number-field,
+  input.bm-compact-number,
+  input.bm-uniform-number,
+  input[type="number"] {
+    width: 100% !important;
+    min-width: 0 !important;
     max-width: 100% !important;
+    height: 32px !important;
+    font-size: 12px !important;
+    text-align: center !important;
+    padding: 2px 3px !important;
+    border-radius: 5px !important;
+  }
+
+  input.bm-compact-text,
+  input.bm-uniform-text,
+  select.bm-compact-number-select,
+  select.bm-compact-text-select,
+  select.bm-uniform-select,
+  input[type="text"],
+  select {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    height: 32px !important;
+    font-size: 11.5px !important;
+    padding: 2px 5px !important;
+    border-radius: 5px !important;
   }
 
   textarea {
-    min-height: 56px !important;
-    padding: 6px 7px !important;
-    font-size: 12px !important;
-    border-radius: 6px !important;
-  }
-
-  button,
-  [role="button"] {
-    min-height: 32px !important;
+    min-height: 50px !important;
+    padding: 4px 6px !important;
     font-size: 11.5px !important;
-    padding: 5px 8px !important;
-    border-radius: 6px !important;
-    touch-action: manipulation;
+    border-radius: 5px !important;
   }
 
   /* --- 3. EXACTLY 3 RESULT & METRIC BOXES PER ROW --- */
@@ -111,12 +165,12 @@
   [class*="resultsgrid"] {
     display: grid !important;
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-    gap: 5px !important;
+    gap: 4px !important;
     width: 100% !important;
     max-width: 100% !important;
     overflow-x: visible !important;
-    padding: 3px 0 6px 0 !important;
-    margin: 3px 0 6px 0 !important;
+    padding: 2px 0 4px 0 !important;
+    margin: 2px 0 5px 0 !important;
   }
 
   .bm-calc-result-box,
@@ -134,9 +188,9 @@
     width: 100% !important;
     min-width: 0 !important;
     max-width: 100% !important;
-    min-height: 58px !important;
+    min-height: 52px !important;
     height: auto !important;
-    padding: 5px 3px !important;
+    padding: 4px 2px !important;
     margin: 0 !important;
     border-radius: 6px !important;
     display: flex !important;
@@ -146,7 +200,7 @@
     text-align: center !important;
   }
 
-  /* --- 4. SHORT ABBREVIATIONS FOR MOBILE BOX LABELS --- */
+  /* --- 4. FONT SIZE IN BOXES: CALIBRATED TO FIT WITHOUT WRAPPING --- */
   .bm-calc-result-box .bm-res-label,
   [class*="summaryGrid"] > * strong,
   [class*="summarygrid"] > * strong,
@@ -156,76 +210,82 @@
   [class*="metricCard"] > * strong,
   [class*="metriccard"] > * strong {
     font-size: 9.5px !important;
-    line-height: 1.15 !important;
+    line-height: 1.1 !important;
     font-weight: 700 !important;
     margin-bottom: 2px !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
     text-transform: uppercase !important;
-    letter-spacing: 0.02em !important;
+    letter-spacing: 0.01em !important;
     display: block !important;
   }
 
+  /* Numeric values inside result boxes */
   .bm-calc-result-box .bm-res-value,
   [class*="summaryGrid"] > *,
   [class*="summarygrid"] > *,
   [class*="resultGrid"] > *,
   [class*="resultgrid"] > * {
-    font-size: 12.5px !important;
+    font-size: 12px !important;
     font-weight: 800 !important;
-    line-height: 1.2 !important;
+    line-height: 1.15 !important;
   }
 
-  /* Concrete & Civil Short Labels */
-  [data-label*="Concrete Volume" i]::after,
-  [title*="Concrete Volume" i]::after,
-  .bm-res-label:has(:contains("Concrete Volume"))::after { content: "Conc. Vol" !important; }
+  /* --- 5. SHORT ENGINEERING LABELS --- */
+  [data-label*="Built" i]::after,
+  [title*="Built" i]::after,
+  [class*="res-label"]:has(:contains("Built"))::after { content: "BUA" !important; }
 
-  [data-label*="Cement" i]::after,
-  [title*="Cement Bags" i]::after { content: "Cement" !important; }
+  [data-label*="Total Area" i]::after,
+  [title*="Total Area" i]::after,
+  [data-label="Area"]::after { content: "Area" !important; }
 
-  [data-label*="Sand" i]::after,
-  [title*="M-Sand" i]::after { content: "M-Sand" !important; }
+  [data-label*="Material" i]::after,
+  [title*="Material" i]::after,
+  [class*="res-label"]:has(:contains("Material"))::after { content: "Mat ₹" !important; }
+
+  [data-label*="Labour" i]::after,
+  [title*="Labour" i]::after,
+  [class*="res-label"]:has(:contains("Labour"))::after { content: "Lab ₹" !important; }
+
+  [data-label*="Grand" i]::after,
+  [title*="Grand" i]::after,
+  [data-label*="Estimated Total" i]::after,
+  [title*="Estimated Total" i]::after { content: "Grand ₹" !important; }
+
+  [data-label*="Equipment" i]::after,
+  [data-label*="Machinery" i]::after,
+  [title*="Equipment" i]::after { content: "Equip ₹" !important; }
+
+  [data-label*="Transport" i]::after,
+  [title*="Transport" i]::after { content: "Trans ₹" !important; }
+
+  [data-label*="Concrete" i]::after,
+  [title*="Concrete" i]::after { content: "Conc Vol" !important; }
 
   [data-label*="Steel" i]::after,
-  [title*="Total steel" i]::after { content: "Steel Wt" !important; }
+  [title*="Steel" i]::after { content: "Steel Wt" !important; }
 
-  [data-label*="Binding" i]::after,
-  [title*="Binding" i]::after { content: "Binding" !important; }
+  [data-label*="Sand" i]::after,
+  [title*="Sand" i]::after { content: "M-Sand" !important; }
 
-  [data-label*="Gross" i]::after,
-  [title*="Gross secure" i]::after { content: "Gross Area" !important; }
+  [data-label*="Cement" i]::after,
+  [title*="Cement" i]::after { content: "Cement" !important; }
 
-  [data-label*="Boxes" i]::after,
-  [data-label*="Packs" i]::after,
-  [title*="Procurement Boxes" i]::after { content: "Proc. Pkts" !important; }
-
-  [data-label*="Skirting" i]::after,
-  [data-label*="Trims" i]::after { content: "Skirting" !important; }
-
-  [data-label*="Material Sub" i]::after,
-  [title*="Material Sub" i]::after { content: "Mat. Total" !important; }
-
-  [data-label*="Grand Estimated" i]::after,
-  [data-label*="Estimated Grand" i]::after,
-  [title*="Grand Estimated" i]::after,
-  [title*="Estimated Grand" i]::after { content: "Grand Total" !important; }
-
-  /* --- 5. HIDE ITEM CODE / MASTER CODE & CATEGORY COLUMNS ON MOBILE --- */
+  /* --- 6. HIDE ITEM CODE / MASTER CODE & CATEGORY COLUMNS ON MOBILE --- */
   th[data-col*="code" i], td[data-col*="code" i],
   th[data-col*="category" i], td[data-col*="category" i],
   th[class*="code" i], td[class*="code" i],
   th[class*="category" i], td[class*="category" i],
   .col-code, .col-item-code, .col-master-code, .col-category,
-  /* Positional hiding for standard multi-column BOQ tables: hide col 1 & 2 */
   .bm-boq-table th:nth-child(1), .bm-boq-table td:nth-child(1),
   .bm-final-boq-table th:nth-child(1), .bm-final-boq-table td:nth-child(1),
   .bm-item-results-table th:nth-child(1), .bm-item-results-table td:nth-child(1) {
     display: none !important;
   }
 
-  /* --- 6. BOQ & CALCULATION TABLES (SMOOTH INTERNAL SCROLL) --- */
+  /* --- 7. BOQ & CALCULATION TABLES (SMOOTH INTERNAL SCROLL + 10px FONT) --- */
   [class*="tableWrap"],
   [class*="TableWrap"],
   [class*="tableContainer"],
@@ -244,7 +304,7 @@
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch !important;
     overscroll-behavior: contain !important;
-    margin: 4px 0 8px 0 !important;
+    margin: 3px 0 5px 0 !important;
     border-radius: 6px !important;
   }
 
@@ -254,12 +314,12 @@
     max-width: none !important;
     border-collapse: collapse !important;
     table-layout: auto !important;
-    font-size: 10.5px !important;
+    font-size: 10px !important;
   }
 
   th,
   td {
-    padding: 5px 6px !important;
+    padding: 3px 4px !important;
     white-space: nowrap !important;
     vertical-align: middle !important;
   }
@@ -269,54 +329,30 @@
     top: 0 !important;
     z-index: 2 !important;
     background-color: #f8fafc !important;
+    font-size: 10px !important;
+    font-weight: 750 !important;
   }
 
-  /* Description receives readable horizontal width */
   th:nth-child(2),
   td:nth-child(2),
   th:nth-child(3),
   td:nth-child(3) {
-    min-width: 140px !important;
-    max-width: 220px !important;
+    min-width: 130px !important;
+    max-width: 200px !important;
     white-space: normal !important;
     overflow-wrap: anywhere !important;
   }
 
-  /* Hide technical footnote clutter on mobile screens */
   .bm-boq-mobile-technical-note,
   .bm-calc-mobile-technical-note,
   .bm-calc-mobile-technical-badge {
     display: none !important;
   }
 
-  /* --- 7. FORM & BOQ INPUT GRIDS (4 PER ROW) --- */
-  .bm-final-boq-input-grid,
-  .bm-calc-input-grid,
-  [class*="grid4"],
-  [class*="fieldGrid"] {
-    display: grid !important;
-    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-    gap: 4px !important;
-    width: 100% !important;
-    margin-bottom: 6px !important;
-    align-items: end !important;
-  }
-
-  .bm-final-boq-input-grid label,
-  [class*="fieldGroup"] label {
-    font-size: 9.5px !important;
-    margin-bottom: 2px !important;
-    line-height: 1.1 !important;
-    display: block !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-  }
-
-  /* --- 8. ISOMETRIC SPECIMEN HEADER TILE --- */
+  /* --- 8. ISOMETRIC SPECIMEN REFERENCE TILE --- */
   html body .engineering-top-layout {
     display: grid !important;
-    grid-template-columns: minmax(0, 1fr) 64px !important;
+    grid-template-columns: minmax(0, 1fr) 58px !important;
     column-gap: 5px !important;
     align-items: start !important;
     width: 100% !important;
@@ -325,8 +361,8 @@
   }
 
   html body .engineering-top-layout .engineering-specimen-top {
-    width: 64px !important;
-    height: 64px !important;
+    width: 58px !important;
+    height: 58px !important;
     position: relative !important;
     margin: 0 !important;
     padding: 0 !important;
@@ -335,8 +371,8 @@
   }
 
   html body .engineering-top-layout .engineering-specimen-top > * {
-    width: 64px !important;
-    height: 64px !important;
+    width: 58px !important;
+    height: 58px !important;
     transform: none !important;
   }
 
@@ -347,7 +383,7 @@
     display: none !important;
   }
 
-  /* --- 9. MARKETPLACE (COMPACT 4-COLUMN GRID) --- */
+  /* --- 9. MARKETPLACE (4-COLUMN COMPACT GRID) --- */
   .marketplace-page {
     width: 100% !important;
     max-width: 100% !important;
@@ -389,9 +425,9 @@
   }
 
   .marketplace-card .product-title {
-    font-size: 9px !important;
-    line-height: 1.12 !important;
-    margin: 2px 0 !important;
+    font-size: 8.5px !important;
+    line-height: 1.1 !important;
+    margin: 1px 0 !important;
     display: -webkit-box !important;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
@@ -399,62 +435,48 @@
   }
 
   .marketplace-card .supplier-name {
-    font-size: 8px !important;
+    font-size: 7.5px !important;
     color: #64748b !important;
   }
 
   .marketplace-card .product-price {
-    font-size: 9px !important;
+    font-size: 8.5px !important;
     font-weight: 800 !important;
     color: #15803d !important;
   }
 
   .marketplace-card .card-actions button {
     width: 100% !important;
-    min-height: 22px !important;
+    min-height: 20px !important;
     padding: 2px !important;
     font-size: 8px !important;
   }
 
-  /* --- 10. BUYER DASHBOARD TABS --- */
-  [class*="tabs"],
-  [class*="Tabs"],
-  [class*="tabList"],
-  [class*="TabList"] {
+  /* --- 10. ACTION BUTTONS --- */
+  .bm-uniform-action-row,
+  div[class*="action-row"] {
     display: grid !important;
-    grid-template-columns: repeat(auto-fit, minmax(85px, 1fr)) !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 4px !important;
     width: 100% !important;
-    margin-bottom: 4px !important;
+    margin: 4px 0 !important;
   }
 
-  [class*="tabs"] button,
-  [class*="Tabs"] button,
-  [class*="tabList"] button,
-  [class*="TabList"] button {
-    min-height: 30px !important;
-    font-size: 10px !important;
+  .bm-uniform-action-row button,
+  .bm-uniform-action-row [role="button"] {
+    width: 100% !important;
+    min-height: 32px !important;
+    font-size: 11px !important;
     padding: 4px !important;
   }
 
-  /* --- 11. REGISTRATION & LOGIN FULL-WIDTH SAFETY --- */
-  .bm-register-page {
-    width: 100vw !important;
-    padding: 10px !important;
-  }
-
-  .bm-register-card input,
-  .bm-register-card select {
-    min-height: 40px !important;
-  }
-
-  /* --- 12. MEDIA RESPONSIVENESS --- */
+  /* --- 11. MEDIA RESPONSIVENESS --- */
   img, video, svg, canvas {
     max-width: 100%;
   }
 }
 
-/* Very narrow devices (<= 360px) */
+/* Narrow mobile devices (<= 360px) */
 @media (max-width: 360px) {
   .bm-calc-result-strip,
   .bm-result-strip,
@@ -463,7 +485,17 @@
   [class*="summaryGrid"],
   [class*="cardContainer"] {
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-    gap: 3px !important;
+    gap: 2px !important;
+  }
+
+  .bm-calc-result-box .bm-res-label,
+  [class*="summaryGrid"] > * strong {
+    font-size: 8.5px !important;
+  }
+
+  .bm-calc-result-box .bm-res-value,
+  [class*="summaryGrid"] > * {
+    font-size: 11px !important;
   }
 
   .marketplace-page .marketplace-grid,
