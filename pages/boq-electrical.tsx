@@ -234,16 +234,16 @@ export default function ElectricalBOQPage() {
   };
 
   // Authoritative Admin Rate Master Lookups (with fallback seeds from rate sheet)
-  const el01Rate = getMasterRate(["CIV-ELE-01", "EL01", "ele-conn-01", "temporary & permanent electrical connection"], 50000);
-  const el02Rate = getMasterRate(["EL02", "ele-cnd-01", "pvc conduits"], 25);
-  const el03Rate = getMasterRate(["EL03", "ele-swt-01", "modular switches"], 140);
-  const el04Rate = getMasterRate(["EL04", "ele-wir-01", "copper wires"], 28);
-  const el05Rate = getMasterRate(["EL05", "ele-lgt-01", "led lights"], 220);
-  const el06Rate = getMasterRate(["CIV-ELE-02", "EL06", "ele-mcb-01", "distribution boards"], 3200);
-  const el07Rate = getMasterRate(["EL07", "ele-fit-01", "light fittings"], 550);
-  const el08Rate = getMasterRate(["CIV-ELE-03", "EL08", "ele-app-01", "electrical appliances"], 950);
-  const el09Rate = getMasterRate(["EL09", "ele-eth-01", "earthing"], 3500);
-  const el10Rate = getMasterRate(["EL10", "ele-ups-01", "inverter ups"], 21000);
+  const el01Rate = getMasterRate(["EL01"], 50000);
+  const el02Rate = getMasterRate(["EL02"], 25);
+  const el03Rate = getMasterRate(["EL03"], 140);
+  const el04Rate = getMasterRate(["EL04"], 28);
+  const el05Rate = getMasterRate(["EL05"], 220);
+  const el06Rate = getMasterRate(["EL06"], 3200);
+  const el07Rate = getMasterRate(["EL07"], 550);
+  const el08Rate = getMasterRate(["EL08"], 950);
+  const el09Rate = getMasterRate(["EL09"], 3500);
+  const el10Rate = getMasterRate(["EL10"], 21000);
 
   const calculations = useMemo(() => {
     const totalBUA = Math.round(plotLength * plotWidth * 0.9 * floors);
@@ -263,14 +263,14 @@ export default function ElectricalBOQPage() {
     const qty10 = Math.max(1, Math.ceil(totalBUA / 2500)); // Inverter/UPS & Battery (1 set per 2500 sqft BUA)
 
     const rawItems = [
-      { id: "EL01", slNo: 1, code: el01Rate.itemCode || "CIV-ELE-01", category: "Connection & Infrastructure", name: "Temporary & Permanent Electrical Connection", materials: "Service cable, meter board, cutouts", uom: "LS", qty: qty1, rateObj: el01Rate },
+      { id: "EL01", slNo: 1, code: el01Rate.itemCode || "EL01", category: "Connection & Infrastructure", name: "Temporary & Permanent Electrical Connection", materials: "Service cable, meter board, cutouts", uom: "LS", qty: qty1, rateObj: el01Rate },
       { id: "EL02", slNo: 2, code: el02Rate.itemCode || "EL02", category: "Conduiting & Accessories", name: "PVC Conduits & Accessories", materials: "PVC conduits, bends, junction boxes", uom: "m", qty: qty2, rateObj: el02Rate },
       { id: "EL03", slNo: 3, code: el03Rate.itemCode || "EL03", category: "Switches & Sockets", name: "Modular Switches, Plates & Sockets", materials: "Anchor/Northwest modular switches, plates, sockets", uom: "nos", qty: qty3, rateObj: el03Rate },
       { id: "EL04", slNo: 4, code: el04Rate.itemCode || "EL04", category: "Wiring & Cables", name: "All Wires (Lighting, Power, AC, Main)", materials: "FRLS copper wires (1.5, 2.5, 4, 6 sqmm)", uom: "m", qty: qty4, rateObj: el04Rate },
       { id: "EL05", slNo: 5, code: el05Rate.itemCode || "EL05", category: "Lighting Devices", name: "All Lights (Bulbs, Battens, Panels)", materials: "LED bulbs, battens, panel lights", uom: "nos", qty: qty5, rateObj: el05Rate },
-      { id: "EL06", slNo: 6, code: el06Rate.itemCode || "CIV-ELE-02", category: "Distribution & Protection", name: "Distribution Boards & MCBs", materials: "DB boxes, copper busbars, MCBs", uom: "nos", qty: qty6, rateObj: el06Rate },
+      { id: "EL06", slNo: 6, code: el06Rate.itemCode || "EL06", category: "Distribution & Protection", name: "Distribution Boards & MCBs", materials: "DB boxes, copper busbars, MCBs", uom: "nos", qty: qty6, rateObj: el06Rate },
       { id: "EL07", slNo: 7, code: el07Rate.itemCode || "EL07", category: "Luminaires & Fixtures", name: "Light Fittings (Decorative, Ceiling, Wall)", materials: "Chandeliers, ceiling lights, wall brackets", uom: "nos", qty: qty7, rateObj: el07Rate },
-      { id: "EL08", slNo: 8, code: el08Rate.itemCode || "CIV-ELE-03", category: "Electrical Appliances", name: "Electrical Appliances (Fans, Geysers, AC Units)", materials: "Ceiling fans, exhaust fans, geysers, AC units", uom: "nos", qty: qty8, rateObj: el08Rate },
+      { id: "EL08", slNo: 8, code: el08Rate.itemCode || "EL08", category: "Electrical Appliances", name: "Electrical Appliances (Fans, Geysers, AC Units)", materials: "Ceiling fans, exhaust fans, geysers, AC units", uom: "nos", qty: qty8, rateObj: el08Rate },
       { id: "EL09", slNo: 9, code: el09Rate.itemCode || "EL09", category: "Earthing System", name: "Earthing (Plate/Rod Type)", materials: "GI plate/rod, charcoal, salt", uom: "set", qty: qty9, rateObj: el09Rate },
       { id: "EL10", slNo: 10, code: el10Rate.itemCode || "EL10", category: "Power Backup & Storage", name: "Inverter/UPS & Battery", materials: "UPS unit, batteries", uom: "set", qty: qty10, rateObj: el10Rate }
     ];

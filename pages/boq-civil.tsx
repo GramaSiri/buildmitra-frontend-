@@ -194,8 +194,8 @@ const ALL_BOQ_ITEMS_DEF = [
   { id: "CIV-GRL-01", code: "CIV-GRL-01", name: "Grills & Railings (MS/SS)" },
   { id: "CIV-PNT-01", code: "CIV-PNT-01", name: "Painting Works (Interior + Exterior)" },
   { id: "CIV-FCL-01", code: "CIV-FCL-01", name: "False Ceiling Works" },
-  { id: "CIV-ELE-01", code: "CIV-ELE-01", name: "Electrical + External Lighting + MCBs" },
-  { id: "CIV-PLB-01", code: "CIV-PLB-01", name: "Plumbing Works (CP fittings + Piping)" },
+  { id: "CIV-ELE01", code: "CIV-ELE01", name: "Electrical + External Lighting + MCBs" },
+  { id: "CIV-PLB01", code: "CIV-PLB01", name: "Plumbing Works (CP fittings + Piping)" },
   { id: "CIV-WTP-01", code: "CIV-WTP-01", name: "Waterproofing Works" },
   { id: "CIV-SMP-01", code: "CIV-SMP-01", name: "Underground Sump (Concrete RCC)" },
   { id: "CIV-OHT-01", code: "CIV-OHT-01", name: "Overhead Tank" },
@@ -262,8 +262,8 @@ export default function CivilBOQPage() {
   const grillsRate = getMasterRate(["CIV-GRL-01", "grills & railings"], 120);
   const paintRate = getMasterRate(["CIV-PNT-01", "MAT-PNT-01", "painting works"], 35);
   const ceilingRate = getMasterRate(["CIV-FCL-01", "false ceiling works"], 65);
-  const elecRate = getMasterRate(["CIV-ELE-01", "electrical works"], 135);
-  const plbRate = getMasterRate(["CIV-PLB-01", "plumbing works"], 105);
+  const elecRate = getMasterRate(["CIV-ELE01"], 135);
+  const plbRate = getMasterRate(["CIV-PLB01"], 120);
   const wtpRate = getMasterRate(["CIV-WTP-01", "waterproofing works"], 42);
   const sumpRate = getMasterRate(["CIV-SMP-01", "underground sump"], 9.5);
   const ohtRate = getMasterRate(["CIV-OHT-01", "overhead tank"], 6.5);
@@ -327,8 +327,8 @@ export default function CivilBOQPage() {
       { id: "CIV-GRL-01", code: grillsRate.itemCode || "CIV-GRL-01", category: "Metal Fabrication", name: "Grills & Railings (MS Window Grills + SS Balcony Railings)", uom: "SQFT", qty: grillsSqft, rateObj: grillsRate },
       { id: "CIV-PNT-01", code: paintRate.itemCode || "CIV-PNT-01", category: "Painting & Protective Coatings", name: "Painting Works (Interior Emulsion + Exterior Weather Shield)", uom: "SQFT", qty: paintSqft, rateObj: paintRate },
       { id: "CIV-FCL-01", code: ceilingRate.itemCode || "CIV-FCL-01", category: "Ceiling & Joinery", name: "False Ceiling Works (Gypsum / POP Grid System)", uom: "SQFT", qty: ceilingSqft, rateObj: ceilingRate },
-      { id: "CIV-ELE-01", code: elecRate.itemCode || "CIV-ELE-01", category: "MEP Services - Electrical", name: "Electrical + External Lighting + Distribution Boards/MCBs", uom: "SQFT", qty: elecSqft, rateObj: elecRate },
-      { id: "CIV-PLB-01", code: plbRate.itemCode || "CIV-PLB-01", category: "MEP Services - Plumbing", name: "Plumbing Works (CP fittings + CPVC Piping + Sanitary)", uom: "SQFT", qty: plbsqft, rateObj: plbRate },
+      { id: "CIV-ELE01", code: elecRate.itemCode || "CIV-ELE01", category: "MEP Services - Electrical", name: "Electrical + External Lighting + Distribution Boards/MCBs", uom: "SQFT", qty: elecSqft, rateObj: elecRate },
+      { id: "CIV-PLB01", code: plbRate.itemCode || "CIV-PLB01", category: "MEP Services - Plumbing", name: "Plumbing Works (CP fittings + CPVC Piping + Sanitary)", uom: "SQFT", qty: plbsqft, rateObj: plbRate },
       { id: "CIV-WTP-01", code: wtpRate.itemCode || "CIV-WTP-01", category: "Waterproofing & Insulation", name: "Waterproofing Works (Terrace, Toilets & Sump Coating)", uom: "SQFT", qty: wtpSqft, rateObj: wtpRate },
       { id: "CIV-SMP-01", code: sumpRate.itemCode || "CIV-SMP-01", category: "Water Storage Systems", name: "Underground Sump (Concrete RCC Tank)", uom: "LTR", qty: sumpLtr, rateObj: sumpRate },
       { id: "CIV-OHT-01", code: ohtRate.itemCode || "CIV-OHT-01", category: "Water Storage Systems", name: "Overhead Tank (Triple Layer Storage)", uom: "LTR", qty: ohtLtr, rateObj: ohtRate },

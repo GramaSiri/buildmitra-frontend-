@@ -252,19 +252,19 @@ export default function PaintingBOQPage() {
 
   // Admin Master Rates Lookup for all 13 Items
   const rates = useMemo(() => ({
-    pnt01: getMasterRate(["PNT-01", "wall putty"], 28),
-    pnt02: getMasterRate(["PNT-02", "interior primer"], 120),
-    pnt03: getMasterRate(["PNT-03", "interior paint"], 220),
-    pnt04: getMasterRate(["PNT-04", "exterior paint"], 280),
-    pnt05: getMasterRate(["PNT-05", "ceiling paint"], 180),
-    pnt06: getMasterRate(["PNT-06", "enamel paint"], 260),
-    pnt07: getMasterRate(["PNT-07", "sand paper"], 12),
-    pnt08: getMasterRate(["PNT-08", "masking tape"], 80),
-    pnt09: getMasterRate(["PNT-09", "scaffolding"], 2500),
-    pnt10: getMasterRate(["PNT-10", "painting finishing"], 1500),
-    pnt11: getMasterRate(["PNT-11", "wood polishing"], 45),
-    pnt12: getMasterRate(["PNT-12", "texture paint"], 65),
-    pnt13: getMasterRate(["PNT-13", "royale paint"], 38)
+    pnt01: getMasterRate(["PNT01", "PNT-01"], 28),
+    pnt02: getMasterRate(["PNT02", "PNT-02"], 120),
+    pnt03: getMasterRate(["PNT03", "PNT-03"], 220),
+    pnt04: getMasterRate(["PNT04", "PNT-04"], 280),
+    pnt05: getMasterRate(["PNT05", "PNT-05"], 180),
+    pnt06: getMasterRate(["PNT06", "PNT-06"], 260),
+    pnt07: getMasterRate(["PNT07", "PNT-07"], 12),
+    pnt08: getMasterRate(["PNT08", "PNT-08"], 80),
+    pnt09: getMasterRate(["PNT09", "PNT-09"], 2500),
+    pnt10: getMasterRate(["PNT10", "PNT-10"], 1500),
+    pnt11: getMasterRate(["PNT11", "PNT-11"], 45),
+    pnt12: getMasterRate(["PNT12", "PNT-12"], 65),
+    pnt13: getMasterRate(["PNT13", "PNT-13"], 38)
   }), []);
 
   // Painting Calculation Engine

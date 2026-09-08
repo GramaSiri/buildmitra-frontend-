@@ -238,21 +238,21 @@ export default function PlumbingBOQPage() {
   };
 
   // Authoritative Admin Rate Master Lookups (with fallback seeds from rate sheet)
-  const plb01Rate = getMasterRate(["PLB01", "CIV-PLB-01", "water supply piping"], 26);
-  const plb02Rate = getMasterRate(["PLB02", "CIV-PLB-02", "sanitary piping"], 22);
-  const plb03Rate = getMasterRate(["PLB03", "CIV-PLB-03", "internal water supply points"], 1250);
-  const plb04Rate = getMasterRate(["PLB04", "CIV-PLB-04", "toilet fittings"], 11500);
-  const plb05Rate = getMasterRate(["PLB05", "CIV-PLB-05", "kitchen sink"], 6500);
-  const plb06Rate = getMasterRate(["PLB06", "CIV-PLB-06", "geyser & hot water line points"], 2800);
-  const plb07Rate = getMasterRate(["PLB07", "CIV-PLB-07", "overhead syntex tank"], 8.5);
-  const plb08Rate = getMasterRate(["PLB08", "CIV-PLB-08", "1 hp pump installation"], 11500);
-  const plb09Rate = getMasterRate(["PLB09", "CIV-PLB-09", "water level controller"], 3800);
-  const plb10Rate = getMasterRate(["PLB10", "CIV-PLB-10", "solar water heater"], 28000);
-  const plb11Rate = getMasterRate(["PLB11", "CIV-PLB-11", "cauvery water connection"], 25000);
-  const plb12Rate = getMasterRate(["PLB12", "CIV-PLB-12", "drainage lines"], 22);
-  const plb13Rate = getMasterRate(["PLB13", "CIV-PLB-13", "rainwater downpipes"], 14);
-  const plb14Rate = getMasterRate(["PLB14", "CIV-PLB-14", "manholes & chambers"], 1800);
-  const plb15Rate = getMasterRate(["PLB15", "CIV-PLB-15", "testing & commissioning"], 5000);
+  const plb01Rate = getMasterRate(["PLB01"], 26);
+  const plb02Rate = getMasterRate(["PLB02"], 22);
+  const plb03Rate = getMasterRate(["PLB03"], 1250);
+  const plb04Rate = getMasterRate(["PLB04"], 11500);
+  const plb05Rate = getMasterRate(["PLB05"], 6500);
+  const plb06Rate = getMasterRate(["PLB06"], 2800);
+  const plb07Rate = getMasterRate(["PLB07"], 8.5);
+  const plb08Rate = getMasterRate(["PLB08"], 11500);
+  const plb09Rate = getMasterRate(["PLB09"], 3800);
+  const plb10Rate = getMasterRate(["PLB10"], 28000);
+  const plb11Rate = getMasterRate(["PLB11"], 25000);
+  const plb12Rate = getMasterRate(["PLB12"], 22);
+  const plb13Rate = getMasterRate(["PLB13"], 14);
+  const plb14Rate = getMasterRate(["PLB14"], 1800);
+  const plb15Rate = getMasterRate(["PLB15"], 5000);
 
   const calculations = useMemo(() => {
     const totalBUA = Math.round(plotLength * plotWidth * 0.9 * floors);

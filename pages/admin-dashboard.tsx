@@ -5,7 +5,7 @@ import MarketRateTrend from "../components/ui/MarketRateTrend";
 import { normalizeImageUrl, resolveListingImage } from "../utils/imageUrl";
 import { getApiBase } from "../utils/apiConfig";
 import { getBuildMitraUser, logoutToLogin } from "../utils/session";
-import { syncApprovedRatesFromBackend } from "../utils/masterRates";
+import { syncApprovedRatesFromBackend, DEFAULT_CIVIL_MASTER_RATES } from "../utils/masterRates";
 
 const API = typeof window !== "undefined" ? getApiBase() + "/api" : "";
 
@@ -390,6 +390,32 @@ export default function AdminDashboard() {
       }
     });
 
+    (DEFAULT_CIVIL_MASTER_RATES || []).forEach((r: any) => {
+      const code = String(r.code || r.masterItemCode || r.itemCode || "").toUpperCase();
+      if (code) {
+        const existing = map.get(code);
+        const rateVal = Number(existing?.rate ?? existing?.currentRate ?? r.rate ?? r.currentRate ?? 0);
+        map.set(code, {
+          id: existing?.id || r.id || code,
+          code: code,
+          masterItemCode: code,
+          category: r.category || existing?.category || "MEP Services",
+          item: r.itemName || r.item || existing?.item || "Master Item",
+          itemName: r.itemName || r.item || existing?.itemName || "Master Item",
+          brand: existing?.brand || "BuildMitra Approved",
+          specification: r.materials || existing?.specification || "",
+          unit: r.unit || existing?.unit || "NOS",
+          rate: rateVal,
+          currentRate: rateVal,
+          referenceRate: rateVal,
+          status: r.isActive !== false && existing?.status !== "Inactive" ? "Active" : "Inactive",
+          primaryMasterItemCode: r.primaryMasterItemCode || existing?.primaryMasterItemCode,
+          linkedLabourItemCode: r.linkedLabourItemCode || existing?.linkedLabourItemCode,
+          rateComponent: r.rateComponent || existing?.rateComponent
+        });
+      }
+    });
+
     const combined = Array.from(map.values());
 
     return combined.filter((r: any) => {
@@ -397,7 +423,9 @@ export default function AdminDashboard() {
         r.code, r.masterItemCode, r.item, r.itemName, r.category, r.brand, r.specification
       ].some(field => String(field || "").toLowerCase().includes(masterSearch.trim().toLowerCase()));
 
-      const categoryMatch = masterCategoryFilter === "all" || String(r.category || "").toLowerCase() === masterCategoryFilter.toLowerCase();
+      const categoryMatch = masterCategoryFilter === "all" ||
+        String(r.category || "").toLowerCase().includes(masterCategoryFilter.toLowerCase()) ||
+        masterCategoryFilter.toLowerCase().includes(String(r.category || "").toLowerCase());
 
       return searchMatch && categoryMatch;
     });
@@ -1891,6 +1919,9 @@ const rejectRealEstate = async (propertyCode) => {
             style: { padding: "10px 14px", border: "1px solid #cbd5e1", borderRadius: "8px", fontSize: "13px" }
           },
             React.createElement("option", { value: "all" }, "All Categories"),
+            React.createElement("option", { value: "MEP Services - Electrical" }, "MEP Services - Electrical"),
+            React.createElement("option", { value: "MEP Services - Plumbing" }, "MEP Services - Plumbing"),
+            React.createElement("option", { value: "Painting & Protective Coatings" }, "Painting & Protective Coatings"),
             React.createElement("option", { value: "Sanitaryware & CP Fittings" }, "Sanitaryware & CP Fittings"),
             React.createElement("option", { value: "Hardware, Locks & Fasteners" }, "Hardware, Locks & Fasteners"),
             React.createElement("option", { value: "Plywood & Laminates" }, "Plywood & Laminates"),
