@@ -276,7 +276,7 @@
     font-size: 11px !important;
   }
 
-  /* --- 9. MOBILE TABLE SCROLL: UNLOCKED NATURAL VERTICAL FLOW --- */
+ /* --- 9. MOBILE TABLE SCROLL: FULL BOTTOM CLEARANCE FOR LAST LINE ITEM --- */
   .bm-boq-table-scroll,
   [class*="tableContainer" i] {
     display: block !important;
@@ -284,11 +284,13 @@
     max-width: 100% !important;
     height: auto !important;
     max-height: none !important;
-    overflow-y: visible !important; /* Let page handle vertical scroll naturally */
-    overflow-x: auto !important;  /* Horizontal swipe for wide tables */
+    overflow-y: visible !important;
+    overflow-x: auto !important;
     -webkit-overflow-scrolling: touch !important;
     margin-top: 6px !important;
-    padding-bottom: 40px !important; /* Extra touch clearance at bottom */
+    margin-bottom: 80px !important;     /* Creates a deep buffer below the table */
+    padding-bottom: 140px !important;   /* Ensures the 26th line item clears the mobile browser bar */
+    position: relative !important;
   }
 
   .bm-boq-table-scroll table,
@@ -297,6 +299,7 @@
     width: max-content !important;
     min-width: 480px !important;
     border-collapse: collapse !important;
+    margin-bottom: 40px !important;
   }
 
   .bm-boq-table-scroll thead,
@@ -320,7 +323,6 @@
     padding: 6px 8px !important;
     visibility: visible !important;
     white-space: nowrap !important;
-    /* Removed sticky top positioning on mobile to prevent touch-trap bugs */
   }
 
   .bm-boq-table-scroll td,
