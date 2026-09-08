@@ -442,12 +442,12 @@ export default function ColumnCalculator() {
 
       <div style={styles.container}>
         {/* Header */}
-        <div style={styles.header}>
+        <div style={styles.header} className="bm-boq-top-header">
           <div>
             <span style={styles.badge}>CONCRETE &amp; RCC ENGINE</span>
             <h1 style={styles.headerTitle}>🏛️ BuildMitra – RCC Column Estimator</h1>
           </div>
-          <button style={styles.backBtn} onClick={() => router.push("/contractor-dashboard")}>← Back to Dashboard</button>
+          <button style={styles.backBtn} className="bm-top-back-btn" onClick={() => router.push("/contractor-dashboard")}>← Back to Dashboard</button>
         </div>
 
         <MarketRateTrend />
@@ -537,7 +537,7 @@ export default function ColumnCalculator() {
           </div>
 
           {/* Action Buttons */}
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '14px' }}>
+          <div className="bm-boq-actions" style={{ marginTop: '12px' }}>
             <button style={styles.btnPrimary} onClick={handleCalculate}>⚡ Calculate Column</button>
             <button style={styles.btnReset} onClick={() => setColumnNos(4)}>🔄 Reset</button>
             <button style={styles.btnSecondary} onClick={handleExportExcel}>📊 Export Excel</button>
@@ -546,7 +546,7 @@ export default function ColumnCalculator() {
         </div>
 
         {/* Result Metric Cards */}
-        <div style={styles.summaryGrid}>
+        <div style={styles.summaryGrid} className="bm-boq-summary-scroll">
           <div style={{ ...styles.metricCard, ...styles.metricRed }}>
             <span style={styles.metricTitle}>Concrete Volume</span>
             <span style={{ ...styles.metricVal, color: isCalculatedBlue ? '#fecdd3' : '#ffffff' }}>{calcResults.totalVolCum} CUM</span>
@@ -585,15 +585,15 @@ export default function ColumnCalculator() {
         )}
 
         {/* Itemized BOQ Table */}
-        <div style={styles.tableContainer}>
+        <div style={styles.tableContainer} className="bm-boq-table-scroll">
           <div style={{ padding: '12px 16px', backgroundColor: '#7f1d1d', color: 'white', fontWeight: '800', fontSize: '16px' }}>
             📑 Itemized RCC Column BOQ (Admin Master Linked)
           </div>
           <table style={styles.table}>
             <thead>
               <tr>
-                <th style={styles.th}>Master Code</th>
-                <th style={styles.th}>Category</th>
+                <th style={styles.th} className="bm-hide-mobile">Master Code</th>
+                <th style={styles.th} className="bm-hide-mobile">Category</th>
                 <th style={styles.th}>Item Description</th>
                 <th style={styles.th}>Quantity</th>
                 <th style={styles.th}>UOM</th>
@@ -604,8 +604,8 @@ export default function ColumnCalculator() {
             <tbody>
               {calcResults.items.map(it => (
                 <tr key={it.code}>
-                  <td style={styles.td}><code>{it.code}</code></td>
-                  <td style={styles.td}>{it.category}</td>
+                  <td style={styles.td} className="bm-hide-mobile"><code>{it.code}</code></td>
+                  <td style={styles.td} className="bm-hide-mobile">{it.category}</td>
                   <td style={styles.td}><strong>{it.name}</strong></td>
                   <td style={styles.td}>{it.qty.toLocaleString()}</td>
                   <td style={styles.td}>{it.uom}</td>
@@ -628,3 +628,4 @@ export default function ColumnCalculator() {
     </>
   );
 }
+

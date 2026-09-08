@@ -905,7 +905,7 @@ export default function SteelCalculatorPage() {
       </Head>
 
       <div style={styles.container}>
-        <div style={styles.header}>
+        <div style={styles.header} className="bm-boq-top-header">
           <button onClick={handleBack} style={styles.backButton}>← Back to Dashboard</button>
           <h1 style={styles.headerTitle}>🔩 BuildMitra – RCC Steel Calculator &amp; BBS Estimator (IS 456:2000 &amp; SP 34)</h1>
         </div>
@@ -1400,7 +1400,7 @@ export default function SteelCalculatorPage() {
             )}
 
             {/* DETAILED BBS SCHEDULE TABLE */}
-            <div style={styles.tableContainer}>
+            <div style={styles.tableContainer} className="bm-boq-table-scroll">
               <div style={{ padding: '10px 14px', background: '#0284c7', color: 'white', fontWeight: '800', fontSize: '14px' }}>
                 📋 Detailed Bar Bending Schedule (BBS Table per IS 456 / SP 34)
               </div>
@@ -1439,7 +1439,7 @@ export default function SteelCalculatorPage() {
             </div>
 
             {/* DIAMETER WISE STOCK BAR SUMMARY */}
-            <div style={styles.tableContainer}>
+            <div style={styles.tableContainer} className="bm-boq-table-scroll">
               <div style={{ padding: '10px 14px', background: '#0f766e', color: 'white', fontWeight: '800', fontSize: '14px' }}>
                 📦 Rebar Diameter Summary &amp; 12m Commercial Stock Requirement
               </div>
@@ -1472,15 +1472,15 @@ export default function SteelCalculatorPage() {
             </div>
 
             {/* COST ESTIMATE BREAKDOWN TABLE */}
-            <div style={styles.tableContainer}>
+            <div style={styles.tableContainer} className="bm-boq-table-scroll">
               <div style={{ padding: '10px 14px', background: '#0f172a', color: 'white', fontWeight: '800', fontSize: '14px' }}>
                 💰 Admin Approved Rate (₹)s Cost Estimation
               </div>
               <table style={styles.table}>
                 <thead>
                   <tr>
-                    <th style={styles.th}>Master Code</th>
-                    <th style={styles.th}>Category</th>
+                    <th style={styles.th} className="bm-hide-mobile">Master Code</th>
+                    <th style={styles.th} className="bm-hide-mobile">Category</th>
                     <th style={styles.th}>Item Description</th>
                     <th style={styles.th}>Quantity</th>
                     <th style={styles.th}>UOM</th>
@@ -1491,8 +1491,8 @@ export default function SteelCalculatorPage() {
                 <tbody>
                   {results?.items?.map((it: any) => (
                     <tr key={it.code + it.name}>
-                      <td style={styles.td}><code>{it.code}</code></td>
-                      <td style={styles.td}>{it.category}</td>
+                      <td style={styles.td} className="bm-hide-mobile"><code>{it.code}</code></td>
+                      <td style={styles.td} className="bm-hide-mobile">{it.category}</td>
                       <td style={styles.td}><strong>{it.name}</strong></td>
                       <td style={styles.td}>{formatNumber(it.qty)}</td>
                       <td style={styles.td}>{it.uom}</td>
@@ -1527,3 +1527,4 @@ export default function SteelCalculatorPage() {
     </>
   );
 }
+

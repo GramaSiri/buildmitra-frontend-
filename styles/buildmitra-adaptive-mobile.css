@@ -503,3 +503,135 @@
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 }
+
+/* =========================================================================
+   UNIVERSAL BOQ & 18 CALCULATOR MOBILE ADAPTIVE ENGINE
+   - Desktop remains 100% untouched
+   - Zero impact on Login/Register screens
+   - 3 boxes per row, short labels, visible table headers, hidden code columns
+   ========================================================================= */
+@media (max-width: 768px) {
+
+  /* 1. Universal Mobile Hiding */
+  .bm-hide-mobile {
+    display: none !important;
+  }
+
+  /* 2. Top Header: Pin Back Button to Top-Right & Hide Long Breadcrumbs */
+  .bm-boq-top-header {
+    display: flex !important;
+    justify-content: flex-end !important;
+    padding: 8px 10px !important;
+    margin-bottom: 6px !important;
+    width: 100% !important;
+  }
+
+  .bm-boq-top-header > div:not(:has(.bm-top-back-btn)) {
+    display: none !important;
+  }
+
+  .bm-top-back-btn {
+    margin-left: auto !important;
+    font-size: 11px !important;
+    padding: 5px 10px !important;
+  }
+
+  /* 3. Action Buttons: Clean 4-Button Grid in 1 Single Row */
+  .bm-boq-actions {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 4px !important;
+    width: 100% !important;
+    margin: 6px 0 !important;
+  }
+
+  .bm-boq-actions button {
+    width: 100% !important;
+    min-height: 32px !important;
+    height: 32px !important;
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    padding: 2px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  /* 4. Selection Bar: 1 Horizontal Row (Select All / Deselect All / Filter) */
+  .bm-boq-select-bar,
+  .bm-select-actions {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    gap: 4px !important;
+    width: 100% !important;
+  }
+
+  .bm-select-actions button {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    padding: 4px 2px !important;
+    font-size: 10px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  /* 5. Summary & Metric Cards: Exactly 3 per Row Across All Tabs */
+  .bm-boq-summary-scroll,
+  [class*="summaryGrid"] {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 4px !important;
+    width: 100% !important;
+    margin: 4px 0 8px 0 !important;
+  }
+
+  .bm-boq-summary-scroll > div,
+  [class*="summaryGrid"] > div {
+    padding: 6px 3px !important;
+    min-height: 52px !important;
+    height: auto !important;
+    border-radius: 6px !important;
+    text-align: center !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+  }
+
+  /* 6. Table Polish: Visible Sticky Headers, Horizontal Swipe, Clean Widths */
+  .bm-boq-table-scroll {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 60vh !important;
+    overflow-x: auto !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    margin-top: 4px !important;
+    border-radius: 6px !important;
+  }
+
+  .bm-boq-table-scroll table {
+    width: max-content !important;
+    min-width: 480px !important;
+    border-collapse: collapse !important;
+  }
+
+  .bm-boq-table-scroll th {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 2 !important;
+    background-color: #800020 !important;
+    color: #ffffff !important;
+    font-size: 10.5px !important;
+    padding: 5px 6px !important;
+  }
+
+  .bm-boq-table-scroll td {
+    font-size: 10px !important;
+    padding: 4px 6px !important;
+    vertical-align: middle !important;
+  }
+}
