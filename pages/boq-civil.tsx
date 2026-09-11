@@ -213,15 +213,16 @@ export default function CivilBOQPage() {
     syncApprovedRatesFromBackend();
   }, []);
 
-  const [plotLength, setPlotLength] = useState(30);
-  const [plotWidth, setPlotWidth] = useState(40);
-  const [floors, setFloors] = useState(3);
+  const [plotLength, setPlotLength] = useState(0);
+  const [plotWidth, setPlotWidth] = useState(0);
+  const [floors, setFloors] = useState(0);
   const [wallType, setWallType] = useState('Concrete Blocks');
   const [packageTier, setPackageTier] = useState<'Standard' | 'Premium' | 'Ultra Premium'>('Standard');
   const [selectedItemIds, setSelectedItemIds] = useState<string[]>(ALL_BOQ_ITEMS_DEF.map(it => it.id));
   const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
   const [itemSearch, setItemSearch] = useState<string>('');
 
+  const [hasCalculated, setHasCalculated] = useState<boolean>(false);
   const [isInputModified, setIsInputModified] = useState<boolean>(false);
   const [isCalculatedBlue, setIsCalculatedBlue] = useState<boolean>(false);
 
@@ -392,6 +393,7 @@ export default function CivilBOQPage() {
   }, [selectedItemIds, plotLength, plotWidth, floors, wallType, packageTier, cementRate, steelRate, sandRate, aggRate, clearRate, fndRate, rccRate, masonryRate, plasterRate, flooringRate, doorsWinRate, grillsRate, paintRate, ceilingRate, elecRate, plbRate, wtpRate, sumpRate, ohtRate, cctvRate, compoundRate, canopyRate, interiorRate]);
 
   const handleCalculate = () => {
+    setHasCalculated(true);
     setIsInputModified(false);
     setIsCalculatedBlue(true);
     setTimeout(() => setIsCalculatedBlue(false), 2000);
@@ -492,17 +494,17 @@ export default function CivilBOQPage() {
           <div style={styles.gridCompact} className="bm-calc-input-grid">
             <div style={styles.fieldGroup}>
               <label style={styles.label}>Plot Length (ft)</label>
-              <input type="number" value={plotLength} onChange={(e) => handleInputChange(setPlotLength, Number(e.target.value))} style={{ ...styles.input, ...(isInputModified ? styles.inputModified : {}) }} />
+              <input type="number" placeholder="e.g. 30" value={plotLength || ''} onChange={(e) => handleInputChange(setPlotLength, Number(e.target.value))} style={{ ...styles.input, ...(isInputModified ? styles.inputModified : {}) }} />
             </div>
 
             <div style={styles.fieldGroup}>
               <label style={styles.label}>Plot Width (ft)</label>
-              <input type="number" value={plotWidth} onChange={(e) => handleInputChange(setPlotWidth, Number(e.target.value))} style={{ ...styles.input, ...(isInputModified ? styles.inputModified : {}) }} />
+              <input type="number" placeholder="e.g. 40" value={plotWidth || ''} onChange={(e) => handleInputChange(setPlotWidth, Number(e.target.value))} style={{ ...styles.input, ...(isInputModified ? styles.inputModified : {}) }} />
             </div>
 
             <div style={styles.fieldGroup}>
               <label style={styles.label}>Floors Count</label>
-              <input type="number" value={floors} onChange={(e) => handleInputChange(setFloors, Number(e.target.value))} style={styles.input} />
+              <input type="number" placeholder="e.g. 3" value={floors || ''} onChange={(e) => handleInputChange(setFloors, Number(e.target.value))} style={styles.input} />
             </div>
 
             <div style={styles.fieldGroup}>
@@ -636,7 +638,7 @@ export default function CivilBOQPage() {
               <span className="bm-desktop-only">⚡ Calculate Civil BOQ</span>
               <span className="bm-mobile-only">⚡ Calculate</span>
             </button>
-            <button style={styles.btnReset} onClick={() => { setPlotLength(30); setPackageTier('Standard'); selectAllItems(); }}>
+            <button style={styles.btnReset} onClick={() => { setPlotLength(0); setPlotWidth(0); setFloors(0); setHasCalculated(false); setPackageTier('Standard'); selectAllItems(); }}>
               <span className="bm-desktop-only">🔄 Reset</span>
               <span className="bm-mobile-only">🔄 Reset</span>
             </button>
@@ -651,7 +653,23 @@ export default function CivilBOQPage() {
           </div>
         </div>
 
-        {/* Result Cards: 3 per row on mobile with short text */}
+        {!hasCalculated ? (
+          <div style={{
+            backgroundColor: "#ffffff",
+            border: "2px dashed #800020",
+            borderRadius: "14px",
+            padding: "36px 20px",
+            textAlign: "center",
+            color: "#800020",
+            margin: "20px 0"
+          }}>
+            <div style={{ fontSize: "32px", marginBottom: "8px" }}>🏗️</div>
+            <div style={{ fontSize: "16px", fontWeight: "800", color: "#0f172a", marginBottom: "6px" }}>Ready for Civil Construction BOQ Calculation</div>
+            <div style={{ fontSize: "13px", color: "#475569" }}>Please enter plot length, width &amp; floor count above (e.g. 30ft × 40ft, 3 floors) and click <strong>"⚡ Calculate Civil BOQ"</strong> to generate itemized BOQ report.</div>
+          </div>
+        ) : (
+          <>
+            {/* Result Cards: 3 per row on mobile with short text */}
         <div style={styles.summaryGrid} className="bm-boq-summary-scroll">
           <div style={{ ...styles.metricCard, ...styles.metricMaroon }}>
             <span style={styles.metricTitle}>
@@ -752,6 +770,8 @@ export default function CivilBOQPage() {
             </tbody>
           </table>
         </div>
+          </>
+        )}
       </div>
 
       <style jsx>{`

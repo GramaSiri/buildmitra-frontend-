@@ -199,15 +199,16 @@ export default function ElectricalBOQPage() {
     syncApprovedRatesFromBackend();
   }, []);
 
-  const [plotLength, setPlotLength] = useState(30);
-  const [plotWidth, setPlotWidth] = useState(40);
-  const [floors, setFloors] = useState(3);
-  const [bedrooms, setBedrooms] = useState(3);
+  const [plotLength, setPlotLength] = useState(0);
+  const [plotWidth, setPlotWidth] = useState(0);
+  const [floors, setFloors] = useState(0);
+  const [bedrooms, setBedrooms] = useState(0);
   const [packageTier, setPackageTier] = useState<'Standard' | 'Premium' | 'Ultra Premium'>('Standard');
   const [selectedItemIds, setSelectedItemIds] = useState<string[]>(ALL_ELECTRICAL_ITEMS_DEF.map(it => it.id));
   const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(true);
   const [itemSearch, setItemSearch] = useState<string>('');
 
+  const [hasCalculated, setHasCalculated] = useState<boolean>(false);
   const [isInputModified, setIsInputModified] = useState<boolean>(false);
   const [isCalculatedBlue, setIsCalculatedBlue] = useState<boolean>(false);
 
@@ -315,6 +316,7 @@ export default function ElectricalBOQPage() {
   }, [selectedItemIds, plotLength, plotWidth, floors, bedrooms, packageTier, el01Rate, el02Rate, el03Rate, el04Rate, el05Rate, el06Rate, el07Rate, el08Rate, el09Rate, el10Rate]);
 
   const handleCalculate = () => {
+    setHasCalculated(true);
     setIsInputModified(false);
     setIsCalculatedBlue(true);
     setTimeout(() => setIsCalculatedBlue(false), 2000);
@@ -411,22 +413,22 @@ export default function ElectricalBOQPage() {
           <div style={styles.gridCompact}>
             <div style={styles.fieldGroup}>
               <label style={styles.label}>Plot Length (ft)</label>
-              <input type="number" value={plotLength} onChange={(e) => handleInputChange(setPlotLength, Number(e.target.value))} style={{ ...styles.input, ...(isInputModified ? styles.inputModified : {}) }} />
+              <input type="number" placeholder="e.g. 30" value={plotLength || ''} onChange={(e) => handleInputChange(setPlotLength, Number(e.target.value))} style={{ ...styles.input, ...(isInputModified ? styles.inputModified : {}) }} />
             </div>
 
             <div style={styles.fieldGroup}>
               <label style={styles.label}>Plot Width (ft)</label>
-              <input type="number" value={plotWidth} onChange={(e) => handleInputChange(setPlotWidth, Number(e.target.value))} style={{ ...styles.input, ...(isInputModified ? styles.inputModified : {}) }} />
+              <input type="number" placeholder="e.g. 40" value={plotWidth || ''} onChange={(e) => handleInputChange(setPlotWidth, Number(e.target.value))} style={{ ...styles.input, ...(isInputModified ? styles.inputModified : {}) }} />
             </div>
 
             <div style={styles.fieldGroup}>
               <label style={styles.label}>Floors Count</label>
-              <input type="number" value={floors} onChange={(e) => handleInputChange(setFloors, Number(e.target.value))} style={styles.input} />
+              <input type="number" placeholder="e.g. 3" value={floors || ''} onChange={(e) => handleInputChange(setFloors, Number(e.target.value))} style={styles.input} />
             </div>
 
             <div style={styles.fieldGroup}>
               <label style={styles.label}>Bedrooms Count</label>
-              <input type="number" value={bedrooms} onChange={(e) => handleInputChange(setBedrooms, Number(e.target.value))} style={styles.input} />
+              <input type="number" placeholder="e.g. 3" value={bedrooms || ''} onChange={(e) => handleInputChange(setBedrooms, Number(e.target.value))} style={styles.input} />
             </div>
 
             <div style={styles.fieldGroup}>
@@ -546,7 +548,7 @@ export default function ElectricalBOQPage() {
               <span className="bm-desktop-only">⚡ Calculate Electrical BOQ</span>
               <span className="bm-mobile-only">⚡ Calc</span>
             </button>
-            <button style={styles.btnReset} onClick={() => { setPlotLength(30); setPlotWidth(40); setFloors(3); setBedrooms(3); setPackageTier('Standard'); selectAllItems(); }}>
+            <button style={styles.btnReset} onClick={() => { setPlotLength(0); setPlotWidth(0); setFloors(0); setBedrooms(0); setHasCalculated(false); setPackageTier('Standard'); selectAllItems(); }}>
               <span className="bm-desktop-only">🔄 Reset</span>
               <span className="bm-mobile-only">🔄 Reset</span>
             </button>
@@ -561,7 +563,23 @@ export default function ElectricalBOQPage() {
           </div>
         </div>
 
-        {/* Result Metric Cards */}
+        {!hasCalculated ? (
+          <div style={{
+            backgroundColor: "#ffffff",
+            border: "2px dashed #d97706",
+            borderRadius: "14px",
+            padding: "36px 20px",
+            textAlign: "center",
+            color: "#d97706",
+            margin: "20px 0"
+          }}>
+            <div style={{ fontSize: "32px", marginBottom: "8px" }}>⚡</div>
+            <div style={{ fontSize: "16px", fontWeight: "800", color: "#0f172a", marginBottom: "6px" }}>Ready for Electrical BOQ Calculation</div>
+            <div style={{ fontSize: "13px", color: "#475569" }}>Please enter plot length, width &amp; bedroom count above (e.g. 30ft × 40ft, 3 bedrooms) and click <strong>"⚡ Calculate Electrical BOQ"</strong> to generate itemized BOQ report.</div>
+          </div>
+        ) : (
+          <>
+            {/* Result Metric Cards */}
         <div style={styles.summaryGrid} className="bm-boq-summary-scroll">
           <div style={{ ...styles.metricCard, ...styles.metricAmber }}>
             <span style={styles.metricTitle}>
@@ -656,6 +674,8 @@ export default function ElectricalBOQPage() {
             </tbody>
           </table>
         </div>
+          </>
+        )}
       </div>
     </>
   );

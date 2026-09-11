@@ -184,15 +184,16 @@ export default function WaterTankCalculator() {
     syncApprovedRatesFromBackend();
   }, []);
 
-  const [tankNos, setTankNos] = useState(1);
-  const [lengthFt, setLengthFt] = useState(10);
-  const [widthFt, setWidthFt] = useState(8);
-  const [heightFt, setHeightFt] = useState(6);
+  const [tankNos, setTankNos] = useState(0);
+  const [lengthFt, setLengthFt] = useState(0);
+  const [widthFt, setWidthFt] = useState(0);
+  const [heightFt, setHeightFt] = useState(0);
   const [grade, setGrade] = useState('M20');
   const [baseThickIn, setBaseThickIn] = useState(6);
   const [wallThickIn, setWallThickIn] = useState(6);
   const [coverThickIn, setCoverThickIn] = useState(6);
 
+  const [hasCalculated, setHasCalculated] = useState<boolean>(false);
   const [isInputModified, setIsInputModified] = useState<boolean>(false);
   const [isCalculatedBlue, setIsCalculatedBlue] = useState<boolean>(false);
 
@@ -372,6 +373,7 @@ export default function WaterTankCalculator() {
   }, [tankNos, lengthFt, widthFt, heightFt, grade, baseThickIn, wallThickIn, coverThickIn, cementRate, steelRate, sandRate, ca20Rate, ca12Rate, wprRate, wireRate, coverRate, shutteringRate, rccLabourRate]);
 
   const handleCalculate = () => {
+    setHasCalculated(true);
     setIsInputModified(false);
     setIsCalculatedBlue(true);
     setTimeout(() => setIsCalculatedBlue(false), 2000);
@@ -510,13 +512,29 @@ export default function WaterTankCalculator() {
           {/* Action Buttons */}
           <div className="bm-boq-actions" style={{ marginTop: '12px' }}>
             <button style={styles.btnPrimary} onClick={handleCalculate}>⚡ Calculate Water Tank</button>
-            <button style={styles.btnReset} onClick={() => setTankNos(1)}>🔄 Reset</button>
+            <button style={styles.btnReset} onClick={() => { setTankNos(0); setLengthFt(0); setWidthFt(0); setHeightFt(0); setHasCalculated(false); }}>🔄 Reset</button>
             <button style={styles.btnSecondary} onClick={handleExportExcel}>📊 Export Excel</button>
             <button style={styles.btnSuccess} onClick={handleExportPDF}>📄 Export PDF Report</button>
           </div>
         </div>
 
-        {/* Result Metric Cards */}
+        {!hasCalculated ? (
+          <div style={{
+            backgroundColor: "#ffffff",
+            border: "2px dashed #0284c7",
+            borderRadius: "14px",
+            padding: "36px 20px",
+            textAlign: "center",
+            color: "#0284c7",
+            margin: "20px 0"
+          }}>
+            <div style={{ fontSize: "32px", marginBottom: "8px" }}>💧</div>
+            <div style={{ fontSize: "16px", fontWeight: "800", color: "#0f172a", marginBottom: "6px" }}>Ready for Water Tank &amp; Sump Estimation</div>
+            <div style={{ fontSize: "13px", color: "#475569" }}>Please enter tank dimensions &amp; wall thickness above and click <strong>"⚡ Calculate Water Tank"</strong> to view capacity, material quantities &amp; itemized BOQ.</div>
+          </div>
+        ) : (
+          <>
+            {/* Result Metric Cards */}
         <div style={styles.summaryGrid} className="bm-boq-summary-scroll">
           <div style={{ ...styles.metricCard, ...styles.metricBlue }}>
             <span style={styles.metricTitle}>Water Capacity</span>
@@ -594,7 +612,9 @@ export default function WaterTankCalculator() {
             </tbody>
           </table>
         </div>
-      </div>
+      </>
+    )}
+  </div>
     </>
   );
 }

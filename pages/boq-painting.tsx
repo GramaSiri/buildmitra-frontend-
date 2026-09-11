@@ -210,21 +210,22 @@ export default function PaintingBOQPage() {
   }, []);
 
   // Building & Surface Inputs
-  const [plotLength, setPlotLength] = useState(30);
-  const [plotWidth, setPlotWidth] = useState(40);
-  const [floors, setFloors] = useState(3);
-  const [wallHeight, setWallHeight] = useState(10);
+  const [plotLength, setPlotLength] = useState(0);
+  const [plotWidth, setPlotWidth] = useState(0);
+  const [floors, setFloors] = useState(0);
+  const [wallHeight, setWallHeight] = useState(0);
   const [workType, setWorkType] = useState<'Fresh' | 'Repaint'>('Fresh');
   const [packageTier, setPackageTier] = useState<'Standard' | 'Premium' | 'Ultra Premium'>('Standard');
   const [paintType, setPaintType] = useState("Premium Emulsion");
   const [exteriorPercent, setExteriorPercent] = useState(25);
-  const [doors, setDoors] = useState(20);
-  const [windows, setWindows] = useState(12);
+  const [doors, setDoors] = useState(0);
+  const [windows, setWindows] = useState(0);
 
   const [selectedItemIds, setSelectedItemIds] = useState<string[]>(ALL_PAINTING_ITEMS_DEF.map(it => it.id));
   const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(true);
   const [itemSearch, setItemSearch] = useState<string>('');
 
+  const [hasCalculated, setHasCalculated] = useState<boolean>(false);
   const [isInputModified, setIsInputModified] = useState<boolean>(false);
   const [isCalculatedBlue, setIsCalculatedBlue] = useState<boolean>(false);
 
@@ -348,6 +349,7 @@ export default function PaintingBOQPage() {
   }, [selectedItemIds, workType, packageTier, paintType, plotLength, plotWidth, floors, wallHeight, exteriorPercent, doors, windows, rates]);
 
   const handleCalculate = () => {
+    setHasCalculated(true);
     setIsInputModified(false);
     setIsCalculatedBlue(true);
     setTimeout(() => setIsCalculatedBlue(false), 2000);
@@ -440,8 +442,9 @@ export default function PaintingBOQPage() {
   };
 
   const handleReset = () => {
-    setPlotLength(30); setPlotWidth(40); setFloors(3); setWallHeight(10); setWorkType('Fresh'); setPackageTier('Standard'); setPaintType("Premium Emulsion");
-    setExteriorPercent(25); setDoors(20); setWindows(12); selectAllItems();
+    setPlotLength(0); setPlotWidth(0); setFloors(0); setWallHeight(0); setDoors(0); setWindows(0);
+    setWorkType('Fresh'); setPackageTier('Standard'); setPaintType("Premium Emulsion"); setExteriorPercent(25);
+    setHasCalculated(false); selectAllItems();
   };
 
   return (
@@ -471,22 +474,22 @@ export default function PaintingBOQPage() {
           <div style={styles.gridCompact}>
             <div style={styles.fieldGroup}>
               <label style={styles.label}>Plot Length (ft)</label>
-              <input type="number" value={plotLength} onChange={(e) => handleInputChange(setPlotLength, Number(e.target.value))} style={{ ...styles.input, ...(isInputModified ? styles.inputModified : {}) }} />
+              <input type="number" placeholder="e.g. 30" value={plotLength || ''} onChange={(e) => handleInputChange(setPlotLength, Number(e.target.value))} style={{ ...styles.input, ...(isInputModified ? styles.inputModified : {}) }} />
             </div>
 
             <div style={styles.fieldGroup}>
               <label style={styles.label}>Plot Width (ft)</label>
-              <input type="number" value={plotWidth} onChange={(e) => handleInputChange(setPlotWidth, Number(e.target.value))} style={{ ...styles.input, ...(isInputModified ? styles.inputModified : {}) }} />
+              <input type="number" placeholder="e.g. 40" value={plotWidth || ''} onChange={(e) => handleInputChange(setPlotWidth, Number(e.target.value))} style={{ ...styles.input, ...(isInputModified ? styles.inputModified : {}) }} />
             </div>
 
             <div style={styles.fieldGroup}>
               <label style={styles.label}>Floors Count</label>
-              <input type="number" value={floors} onChange={(e) => handleInputChange(setFloors, Number(e.target.value))} style={styles.input} />
+              <input type="number" placeholder="e.g. 3" value={floors || ''} onChange={(e) => handleInputChange(setFloors, Number(e.target.value))} style={styles.input} />
             </div>
 
             <div style={styles.fieldGroup}>
               <label style={styles.label}>Clear Wall Height (ft)</label>
-              <input type="number" value={wallHeight} onChange={(e) => handleInputChange(setWallHeight, Number(e.target.value))} style={styles.input} />
+              <input type="number" placeholder="e.g. 10" value={wallHeight || ''} onChange={(e) => handleInputChange(setWallHeight, Number(e.target.value))} style={styles.input} />
             </div>
 
             <div style={styles.fieldGroup}>
@@ -528,17 +531,17 @@ export default function PaintingBOQPage() {
 
             <div style={styles.fieldGroup}>
               <label style={styles.label}>Exterior Wall Ratio (%)</label>
-              <input type="number" value={exteriorPercent} onChange={(e) => handleInputChange(setExteriorPercent, Number(e.target.value))} style={styles.input} />
+              <input type="number" placeholder="e.g. 25" value={exteriorPercent || ''} onChange={(e) => handleInputChange(setExteriorPercent, Number(e.target.value))} style={styles.input} />
             </div>
 
             <div style={styles.fieldGroup}>
               <label style={styles.label}>Doors Count (Nos)</label>
-              <input type="number" value={doors} onChange={(e) => handleInputChange(setDoors, Number(e.target.value))} style={styles.input} />
+              <input type="number" placeholder="e.g. 20" value={doors || ''} onChange={(e) => handleInputChange(setDoors, Number(e.target.value))} style={styles.input} />
             </div>
 
             <div style={styles.fieldGroup}>
               <label style={styles.label}>Windows Count (Nos)</label>
-              <input type="number" value={windows} onChange={(e) => handleInputChange(setWindows, Number(e.target.value))} style={styles.input} />
+              <input type="number" placeholder="e.g. 12" value={windows || ''} onChange={(e) => handleInputChange(setWindows, Number(e.target.value))} style={styles.input} />
             </div>
 
             <div style={styles.fieldGroup}>
@@ -666,11 +669,26 @@ export default function PaintingBOQPage() {
               <span className="bm-desktop-only">📄 Export PDF Report</span>
               <span className="bm-mobile-only">📄 PDF</span>
             </button>
-            <button style={{ backgroundColor: '#15803d', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '8px', cursor: 'pointer', fontSize: '15px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '6px' }} className="bm-desktop-only" onClick={handleShareWhatsApp}>💬 WhatsApp Share</button>
           </div>
         </div>
 
-        {/* Result Metric Cards */}
+        {!hasCalculated ? (
+          <div style={{
+            backgroundColor: "#ffffff",
+            border: "2px dashed #db2777",
+            borderRadius: "14px",
+            padding: "36px 20px",
+            textAlign: "center",
+            color: "#db2777",
+            margin: "20px 0"
+          }}>
+            <div style={{ fontSize: "32px", marginBottom: "8px" }}>🎨</div>
+            <div style={{ fontSize: "16px", fontWeight: "800", color: "#0f172a", marginBottom: "6px" }}>Ready for Painting BOQ Calculation</div>
+            <div style={{ fontSize: "13px", color: "#475569" }}>Please enter plot length, width &amp; wall height above (e.g. 30ft × 40ft, 10ft ht) and click <strong>"⚡ Calculate Painting BOQ"</strong> to generate itemized BOQ report.</div>
+          </div>
+        ) : (
+          <>
+            {/* Result Metric Cards */}
         <div style={styles.summaryGrid} className="bm-boq-summary-scroll">
           <div style={{ ...styles.metricCard, ...styles.metricMaroon }}>
             <span style={styles.metricTitle}>
@@ -756,6 +774,8 @@ export default function PaintingBOQPage() {
             </tbody>
           </table>
         </div>
+          </>
+        )}
       </div>
     </>
   );

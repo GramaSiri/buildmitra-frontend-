@@ -185,13 +185,14 @@ export default function RCCWallCalculator() {
     syncApprovedRatesFromBackend();
   }, []);
 
-  const [wallLengthFt, setWallLengthFt] = useState(40);
-  const [wallHeightFt, setWallHeightFt] = useState(10);
+  const [wallLengthFt, setWallLengthFt] = useState(0);
+  const [wallHeightFt, setWallHeightFt] = useState(0);
   const [wallThicknessMm, setWallThicknessMm] = useState(200);
-  const [wallCount, setWallCount] = useState(1);
+  const [wallCount, setWallCount] = useState(0);
   const [concreteGrade, setConcreteGrade] = useState('M25');
   const [steelRatioPct, setSteelRatioPct] = useState(1.0);
 
+  const [hasCalculated, setHasCalculated] = useState<boolean>(false);
   const [isInputModified, setIsInputModified] = useState<boolean>(false);
   const [isCalculatedBlue, setIsCalculatedBlue] = useState<boolean>(false);
 
@@ -313,6 +314,7 @@ export default function RCCWallCalculator() {
   }, [wallLengthFt, wallHeightFt, wallThicknessMm, wallCount, concreteGrade, steelRatioPct, cementRate, steelRate, sandRate, agg20Rate, shutteringRate, rccLabourRate]);
 
   const handleCalculate = () => {
+    setHasCalculated(true);
     setIsInputModified(false);
     setIsCalculatedBlue(true);
     setTimeout(() => setIsCalculatedBlue(false), 2000);
@@ -439,13 +441,29 @@ export default function RCCWallCalculator() {
           {/* Action Buttons */}
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '14px' }}>
             <button style={styles.btnPrimary} onClick={handleCalculate}>⚡ Calculate RCC Wall</button>
-            <button style={styles.btnReset} onClick={() => setWallLengthFt(40)}>🔄 Reset</button>
+            <button style={styles.btnReset} onClick={() => { setWallLengthFt(0); setWallHeightFt(0); setWallCount(0); setHasCalculated(false); }}>🔄 Reset</button>
             <button style={styles.btnSecondary} onClick={handleExportExcel}>📊 Export Excel</button>
             <button style={styles.btnSuccess} onClick={handleExportPDF}>📄 Export PDF Report</button>
           </div>
         </div>
 
-        {/* Result Cards */}
+        {!hasCalculated ? (
+          <div style={{
+            backgroundColor: "#ffffff",
+            border: "2px dashed #475569",
+            borderRadius: "14px",
+            padding: "36px 20px",
+            textAlign: "center",
+            color: "#475569",
+            margin: "20px 0"
+          }}>
+            <div style={{ fontSize: "32px", marginBottom: "8px" }}>🧱</div>
+            <div style={{ fontSize: "16px", fontWeight: "800", color: "#0f172a", marginBottom: "6px" }}>Ready for RCC Wall Estimation</div>
+            <div style={{ fontSize: "13px", color: "#475569" }}>Please enter wall dimensions above and click <strong>"⚡ Calculate RCC Wall"</strong> to view concrete volume, steel weight &amp; itemized BOQ.</div>
+          </div>
+        ) : (
+          <>
+            {/* Result Cards */}
         <div style={styles.summaryGrid}>
           <div style={{ ...styles.metricCard, ...styles.metricSlate }}>
             <span style={styles.metricTitle}>Total Wall Area</span>
@@ -524,6 +542,8 @@ export default function RCCWallCalculator() {
             </tbody>
           </table>
         </div>
+          </>
+        )}
       </div>
     </>
   );

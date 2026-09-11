@@ -184,10 +184,10 @@ export default function FootingCalculator() {
     syncApprovedRatesFromBackend();
   }, []);
 
-  const [footingNos, setFootingNos] = useState(4);
-  const [lengthFt, setLengthFt] = useState(5);
-  const [widthFt, setWidthFt] = useState(5);
-  const [depthFt, setDepthFt] = useState(1.5);
+  const [footingNos, setFootingNos] = useState(0);
+  const [lengthFt, setLengthFt] = useState(0);
+  const [widthFt, setWidthFt] = useState(0);
+  const [depthFt, setDepthFt] = useState(0);
   const [excDepthFt, setExcDepthFt] = useState(4);
   const [workSpaceFt, setWorkSpaceFt] = useState(1);
   const [pccThickMm, setPccThickMm] = useState(100);
@@ -200,6 +200,7 @@ export default function FootingCalculator() {
   const [coverMm, setCoverMm] = useState(50);
   const [bendLengthMm, setBendLengthMm] = useState(300);
 
+  const [hasCalculated, setHasCalculated] = useState<boolean>(false);
   const [isInputModified, setIsInputModified] = useState<boolean>(false);
   const [isCalculatedBlue, setIsCalculatedBlue] = useState<boolean>(false);
 
@@ -386,6 +387,7 @@ export default function FootingCalculator() {
   }, [footingNos, lengthFt, widthFt, depthFt, excDepthFt, workSpaceFt, pccThickMm, pccProjIn, grade, mainDia, mainSpacingMm, distDia, distSpacingMm, coverMm, bendLengthMm, cementRate, steelRate, sandRate, ca20Rate, ca12Rate, wireRate, coverRate, excRate, shutteringRate, rccLabourRate]);
 
   const handleCalculate = () => {
+    setHasCalculated(true);
     setIsInputModified(false);
     setIsCalculatedBlue(true);
     setTimeout(() => setIsCalculatedBlue(false), 2000);
@@ -552,13 +554,29 @@ export default function FootingCalculator() {
           {/* Action Buttons */}
           <div className="bm-boq-actions" style={{ marginTop: '12px' }}>
             <button style={styles.btnPrimary} onClick={handleCalculate}>⚡ Calculate Footing</button>
-            <button style={styles.btnReset} onClick={() => setFootingNos(4)}>🔄 Reset</button>
+            <button style={styles.btnReset} onClick={() => { setFootingNos(0); setLengthFt(0); setWidthFt(0); setDepthFt(0); setHasCalculated(false); }}>🔄 Reset</button>
             <button style={styles.btnSecondary} onClick={handleExportExcel}>📊 Export Excel</button>
             <button style={styles.btnSuccess} onClick={handleExportPDF}>📄 Export PDF Report</button>
           </div>
         </div>
 
-        {/* Result Metric Cards */}
+        {!hasCalculated ? (
+          <div style={{
+            backgroundColor: "#ffffff",
+            border: "2px dashed #0f766e",
+            borderRadius: "14px",
+            padding: "36px 20px",
+            textAlign: "center",
+            color: "#0f766e",
+            margin: "20px 0"
+          }}>
+            <div style={{ fontSize: "32px", marginBottom: "8px" }}>🦶</div>
+            <div style={{ fontSize: "16px", fontWeight: "800", color: "#0f172a", marginBottom: "6px" }}>Ready for Footing Estimation</div>
+            <div style={{ fontSize: "13px", color: "#475569" }}>Please enter footing dimensions &amp; mesh details above and click <strong>"⚡ Calculate Footing"</strong> to view material quantities and itemized BOQ.</div>
+          </div>
+        ) : (
+          <>
+            {/* Result Metric Cards */}
         <div style={styles.summaryGrid} className="bm-boq-summary-scroll">
           <div style={{ ...styles.metricCard, ...styles.metricTeal }}>
             <span style={styles.metricTitle}>RCC Concrete Volume</span>
@@ -636,7 +654,9 @@ export default function FootingCalculator() {
             </tbody>
           </table>
         </div>
-      </div>
+      </>
+    )}
+  </div>
     </>
   );
 }

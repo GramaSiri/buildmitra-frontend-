@@ -82,23 +82,14 @@ export default function InteriorBOQPage() {
   // Finish Profile & Item Add State
   const [finishProfile, setFinishProfile] = useState('Standard');
   const [selectedItem, setSelectedItem] = useState("Wardrobe (Sliding)");
-  const [length, setLength] = useState(6);
-  const [height, setHeight] = useState(7);
-  const [nos, setNos] = useState(1);
+  const [length, setLength] = useState(0);
+  const [height, setHeight] = useState(0);
+  const [nos, setNos] = useState(0);
 
-  // Default Preset Items
-  const [items, setItems] = useState<any[]>([
-    { id: 1, name: "Wardrobe (Sliding)", length: 6, depth: 1.5, height: 7, nos: 1, kind: "sliding", displayQty: 42, displayUnit: "sft", frontArea: 42, rft: 6, rate: 1800, labourRate: 220, amount: 75600, labourAmount: 9240, total: 84840, plywood18mm: 92.4, plywood12mm: 12.6, plywood6mm: 42, externalLaminate: 42, internalLaminate: 50.82, edgeBanding: 75.6, cornerBeads: 24, hinges: 0, handles: 2, locks: 1, drawerChannels: 0, slidingTrack: 6, ssBaskets: 0, countertop: 0, fevicol: 1.575, nails: 0.42, screws: 2, mirrors: 10.5 },
-    { id: 2, name: "Modular Kitchen", length: 10, depth: 1.5, height: 3, nos: 1, kind: "kitchen", displayQty: 10, displayUnit: "rft", frontArea: 30, rft: 10, rate: 2500, labourRate: 300, amount: 25000, labourAmount: 3000, total: 28000, plywood18mm: 180, plywood12mm: 50, plywood6mm: 60, externalLaminate: 50, internalLaminate: 115, edgeBanding: 80, cornerBeads: 30, hinges: 15, handles: 15, locks: 0, drawerChannels: 5, slidingTrack: 0, ssBaskets: 5, countertop: 10, fevicol: 3.45, nails: 0.3, screws: 1, mirrors: 0 },
-    { id: 3, name: "Loft Storage", length: 15, depth: 1.5, height: 2.5, nos: 1, kind: "loft", displayQty: 37.5, displayUnit: "sft", frontArea: 37.5, rft: 15, rate: 1200, labourRate: 150, amount: 45000, labourAmount: 5625, total: 50625, plywood18mm: 60, plywood12mm: 9.375, plywood6mm: 37.5, externalLaminate: 37.5, internalLaminate: 18.75, edgeBanding: 60, cornerBeads: 20, hinges: 5, handles: 4, locks: 1, drawerChannels: 0, slidingTrack: 0, ssBaskets: 0, countertop: 0, fevicol: 1.04, nails: 0.375, screws: 2, mirrors: 0 },
-    { id: 4, name: "TV Panel / Unit", length: 12, depth: 0.5, height: 7, nos: 1, kind: "tv", displayQty: 84, displayUnit: "sft", frontArea: 84, rft: 12, rate: 1200, labourRate: 120, amount: 100800, labourAmount: 10080, total: 110880, plywood18mm: 105, plywood12mm: 16.8, plywood6mm: 0, externalLaminate: 84, internalLaminate: 16.8, edgeBanding: 38, cornerBeads: 16, hinges: 0, handles: 0, locks: 0, drawerChannels: 0, slidingTrack: 0, ssBaskets: 0, countertop: 0, fevicol: 1.828, nails: 0.84, screws: 3, mirrors: 0 },
-    { id: 5, name: "Shoe Rack", length: 8, depth: 1, height: 4, nos: 1, kind: "shoe", displayQty: 32, displayUnit: "sft", frontArea: 32, rft: 8, rate: 800, labourRate: 120, amount: 25600, labourAmount: 3840, total: 29440, plywood18mm: 48, plywood12mm: 6.4, plywood6mm: 32, externalLaminate: 32, internalLaminate: 16, edgeBanding: 57.6, cornerBeads: 15, hinges: 4, handles: 3, locks: 1, drawerChannels: 0, slidingTrack: 0, ssBaskets: 0, countertop: 0, fevicol: 0.816, nails: 0.32, screws: 2, mirrors: 0 },
-    { id: 6, name: "Pooja Unit", length: 4, depth: 1.5, height: 7, nos: 1, kind: "pooja", displayQty: 28, displayUnit: "sft", frontArea: 28, rft: 4, rate: 1800, labourRate: 250, amount: 50400, labourAmount: 7000, total: 57400, plywood18mm: 50.4, plywood12mm: 7, plywood6mm: 14, externalLaminate: 28, internalLaminate: 14, edgeBanding: 42, cornerBeads: 10, hinges: 4, handles: 3, locks: 1, drawerChannels: 0, slidingTrack: 0, ssBaskets: 0, countertop: 0, fevicol: 0.861, nails: 0.28, screws: 1, mirrors: 0 },
-    { id: 7, name: "Study Table", length: 4, depth: 1.5, height: 3.5, nos: 1, kind: "study", displayQty: 14, displayUnit: "sft", frontArea: 14, rft: 4, rate: 1200, labourRate: 180, amount: 16800, labourAmount: 2520, total: 19320, plywood18mm: 25.2, plywood12mm: 3.5, plywood6mm: 7, externalLaminate: 14, internalLaminate: 7, edgeBanding: 21, cornerBeads: 8, hinges: 2, handles: 2, locks: 1, drawerChannels: 1, slidingTrack: 0, ssBaskets: 0, countertop: 0, fevicol: 0.43, nails: 0.14, screws: 1, mirrors: 0 },
-    { id: 8, name: "Bathroom Vanity", length: 4, depth: 1.5, height: 2.5, nos: 1, kind: "vanity", displayQty: 10, displayUnit: "sft", frontArea: 10, rft: 4, rate: 1800, labourRate: 220, amount: 18000, labourAmount: 2200, total: 20200, plywood18mm: 18, plywood12mm: 2.5, plywood6mm: 5, externalLaminate: 10, internalLaminate: 5, edgeBanding: 15, cornerBeads: 6, hinges: 2, handles: 2, locks: 1, drawerChannels: 0, slidingTrack: 0, ssBaskets: 0, countertop: 4, fevicol: 0.307, nails: 0.1, screws: 1, mirrors: 0 }
-  ]);
+  // Default Items
+  const [items, setItems] = useState<any[]>([]);
 
-  const [generated, setGenerated] = useState(true);
+  const [generated, setGenerated] = useState(false);
 
   // Admin Master Rates Lookup
   const baseRates = useMemo(() => ({
@@ -198,6 +189,7 @@ export default function InteriorBOQPage() {
     };
 
     setItems([...items, newItem]);
+    setGenerated(true);
   };
 
   const removeItem = (id: any) => setItems(items.filter(i => i.id !== id));
@@ -388,8 +380,9 @@ export default function InteriorBOQPage() {
             <label style={styles.label}>Length / RFT</label>
             <input
               type="number"
+              placeholder="e.g. 6"
               style={styles.input}
-              value={length}
+              value={length || ''}
               onChange={e => setLength(parseFloat(e.target.value) || 0)}
             />
           </div>
@@ -398,8 +391,9 @@ export default function InteriorBOQPage() {
             <label style={styles.label}>Height (Ft)</label>
             <input
               type="number"
+              placeholder="e.g. 7"
               style={styles.input}
-              value={height}
+              value={height || ''}
               onChange={e => setHeight(parseFloat(e.target.value) || 0)}
             />
           </div>
@@ -408,9 +402,10 @@ export default function InteriorBOQPage() {
             <label style={styles.label}>Nos / Quantity</label>
             <input
               type="number"
+              placeholder="e.g. 1"
               style={styles.input}
-              value={nos}
-              onChange={e => setNos(parseFloat(e.target.value) || 1)}
+              value={nos || ''}
+              onChange={e => setNos(parseFloat(e.target.value) || 0)}
             />
           </div>
 
@@ -459,12 +454,25 @@ export default function InteriorBOQPage() {
 
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '10px' }}>
           <button style={styles.btnReset} onClick={handleReset}>🔄 Reset Items</button>
-          <button style={styles.btnPrimary} onClick={() => setGenerated(true)}>🔨 Generate Interior BOQ</button>
+          <button style={styles.btnPrimary} onClick={() => { if(items.length === 0) { alert("Please add at least 1 interior item."); return; } setGenerated(true); }}>🔨 Generate Interior BOQ</button>
         </div>
       </div>
 
-      {/* 4. Detailed BOQ Summary & Material Breakdown */}
-      {generated && (
+      {(!generated || items.length === 0) ? (
+        <div style={{
+          backgroundColor: "#ffffff",
+          border: "2px dashed #b45309",
+          borderRadius: "14px",
+          padding: "36px 20px",
+          textAlign: "center",
+          color: "#b45309",
+          margin: "20px 0"
+        }}>
+          <div style={{ fontSize: "32px", marginBottom: "8px" }}>🛋️</div>
+          <div style={{ fontSize: "16px", fontWeight: "800", color: "#0f172a", marginBottom: "6px" }}>Ready for Interior BOQ Estimation</div>
+          <div style={{ fontSize: "13px", color: "#475569" }}>Please select interior items above (e.g. Wardrobe 6ft × 7ft) and click <strong>"➕ Add Item"</strong> then <strong>"🔨 Generate Interior BOQ"</strong> to calculate hardware, plywood &amp; laminates.</div>
+        </div>
+      ) : (
         <div style={styles.stepperCard}>
           <div style={styles.sectionHeader}>
             <span>📊 Interior BOQ Estimation Summary & Detailed Material Breakdown</span>

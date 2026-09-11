@@ -185,10 +185,10 @@ export default function ColumnCalculator() {
     syncApprovedRatesFromBackend();
   }, []);
 
-  const [columnNos, setColumnNos] = useState(4);
-  const [heightFt, setHeightFt] = useState(10);
-  const [widthIn, setWidthIn] = useState(9);
-  const [depthIn, setDepthIn] = useState(9);
+  const [columnNos, setColumnNos] = useState(0);
+  const [heightFt, setHeightFt] = useState(0);
+  const [widthIn, setWidthIn] = useState(0);
+  const [depthIn, setDepthIn] = useState(0);
   const [grade, setGrade] = useState('M20');
   const [cornerDia, setCornerDia] = useState(12);
   const [cornerNos, setCornerNos] = useState(4);
@@ -198,6 +198,7 @@ export default function ColumnCalculator() {
   const [tieSpacingMm, setTieSpacingMm] = useState(150);
   const [coverMm, setCoverMm] = useState(40);
 
+  const [hasCalculated, setHasCalculated] = useState<boolean>(false);
   const [isInputModified, setIsInputModified] = useState<boolean>(false);
   const [isCalculatedBlue, setIsCalculatedBlue] = useState<boolean>(false);
 
@@ -370,6 +371,7 @@ export default function ColumnCalculator() {
   }, [columnNos, heightFt, widthIn, depthIn, grade, cornerDia, cornerNos, middleDia, middleNos, tieDia, tieSpacingMm, coverMm, cementRate, steelRate, sandRate, ca20Rate, ca12Rate, wireRate, coverRate, shutteringBoxRate, rccLabourRate]);
 
   const handleCalculate = () => {
+    setHasCalculated(true);
     setIsInputModified(false);
     setIsCalculatedBlue(true);
     setTimeout(() => setIsCalculatedBlue(false), 2000);
@@ -539,13 +541,29 @@ export default function ColumnCalculator() {
           {/* Action Buttons */}
           <div className="bm-boq-actions" style={{ marginTop: '12px' }}>
             <button style={styles.btnPrimary} onClick={handleCalculate}>⚡ Calculate Column</button>
-            <button style={styles.btnReset} onClick={() => setColumnNos(4)}>🔄 Reset</button>
+            <button style={styles.btnReset} onClick={() => { setColumnNos(0); setHeightFt(0); setWidthIn(0); setDepthIn(0); setHasCalculated(false); }}>🔄 Reset</button>
             <button style={styles.btnSecondary} onClick={handleExportExcel}>📊 Export Excel</button>
             <button style={styles.btnSuccess} onClick={handleExportPDF}>📄 Export PDF Report</button>
           </div>
         </div>
 
-        {/* Result Metric Cards */}
+        {!hasCalculated ? (
+          <div style={{
+            backgroundColor: "#ffffff",
+            border: "2px dashed #7f1d1d",
+            borderRadius: "14px",
+            padding: "36px 20px",
+            textAlign: "center",
+            color: "#7f1d1d",
+            margin: "20px 0"
+          }}>
+            <div style={{ fontSize: "32px", marginBottom: "8px" }}>🏛️</div>
+            <div style={{ fontSize: "16px", fontWeight: "800", color: "#0f172a", marginBottom: "6px" }}>Ready for RCC Column Estimation</div>
+            <div style={{ fontSize: "13px", color: "#475569" }}>Please enter column dimensions &amp; rebar details above and click <strong>"⚡ Calculate Column"</strong> to view material quantities and itemized BOQ.</div>
+          </div>
+        ) : (
+          <>
+            {/* Result Metric Cards */}
         <div style={styles.summaryGrid} className="bm-boq-summary-scroll">
           <div style={{ ...styles.metricCard, ...styles.metricRed }}>
             <span style={styles.metricTitle}>Concrete Volume</span>
@@ -624,7 +642,9 @@ export default function ColumnCalculator() {
             </tbody>
           </table>
         </div>
-      </div>
+      </>
+    )}
+  </div>
     </>
   );
 }

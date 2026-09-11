@@ -115,7 +115,11 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: '700',
     color: '#334155',
     textTransform: 'uppercase',
-    letterSpacing: '0.4px'
+    letterSpacing: '0.4px',
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    display: 'block'
   },
   input: {
     width: '100%',
@@ -259,9 +263,9 @@ export default function PEBBuildingBOQPage() {
 
   // ---------------- INPUT STATES ----------------
   // 1. Core Plot Dimensions & Specs (User enters only plot size Length x Width, Height, Slope)
-  const [lengthFt, setLengthFt] = useState<number>(150);      // 150 ft
-  const [widthFt, setWidthFt] = useState<number>(80);         // 80 ft
-  const [heightFt, setHeightFt] = useState<number>(24);       // 24 ft clear height
+  const [lengthFt, setLengthFt] = useState<number>(0);
+  const [widthFt, setWidthFt] = useState<number>(0);
+  const [heightFt, setHeightFt] = useState<number>(0);
   const [roofSlope, setRoofSlope] = useState<string>("1:10"); // 1:10 slope
   const [buildingType, setBuildingType] = useState<string>("Industrial Shed");
 
@@ -272,7 +276,7 @@ export default function PEBBuildingBOQPage() {
   const [craneRequired, setCraneRequired] = useState<boolean>(true);
   const [craneCapacity, setCraneCapacity] = useState<string>("10 Ton");
   const [mezzanineRequired, setMezzanineRequired] = useState<boolean>(true);
-  const [mezzanineAreaSqft, setMezzanineAreaSqft] = useState<number>(2000);
+  const [mezzanineAreaSqft, setMezzanineAreaSqft] = useState<number>(0);
   const [windZone, setWindZone] = useState<string>("44 m/s (Zone 3 - Standard)");
   const [seismicZone, setSeismicZone] = useState<string>("Zone III");
   const [roofSheeting, setRoofSheeting] = useState<string>("0.47mm Galvalume Color Coated Profile");
@@ -280,13 +284,15 @@ export default function PEBBuildingBOQPage() {
   const [insulation, setInsulation] = useState<string>("50mm Glasswool Insulation with Aluminum Foil");
   const [canopyRequired, setCanopyRequired] = useState<boolean>(true);
   const [canopyWidthFt, setCanopyWidthFt] = useState<number>(10);
-  const [turboVentilatorsQty, setTurboVentilatorsQty] = useState<number>(8);
+  const [turboVentilatorsQty, setTurboVentilatorsQty] = useState<number>(0);
   const [skylightPercent, setSkylightPercent] = useState<number>(8);
-  const [doorsQty, setDoorsQty] = useState<number>(4);
-  const [rollingShuttersQty, setRollingShuttersQty] = useState<number>(2);
-  const [windowsQty, setWindowsQty] = useState<number>(12);
+  const [doorsQty, setDoorsQty] = useState<number>(0);
+  const [rollingShuttersQty, setRollingShuttersQty] = useState<number>(0);
+  const [windowsQty, setWindowsQty] = useState<number>(0);
   const [guttersType, setGuttersType] = useState<string>("GI Color Coated Eaves Gutter & PVC Downpipes");
   const [anchorBoltsType, setAnchorBoltsType] = useState<string>("High Tensile Grade 8.8 Anchor Bolts");
+
+  const [hasCalculated, setHasCalculated] = useState<boolean>(false);
 
   // Detailed Unit Rates
   const masterSteelRate = getMasterRate(["MAT-STL-PEB", "peb steel", "structural steel"], 88);
@@ -1072,15 +1078,15 @@ export default function PEBBuildingBOQPage() {
                 <div className="bm-final-boq-input-grid" style={styles.grid4}>
                   <div style={styles.fieldGroup}>
                     <label style={styles.label}>Building Length (L in ft)</label>
-                    <input type="number" value={lengthFt} onChange={(e) => setLengthFt(Number(e.target.value))} style={styles.input} min={20} />
+                    <input type="number" placeholder="e.g. 150" value={lengthFt || ''} onChange={(e) => setLengthFt(Number(e.target.value))} style={styles.input} />
                   </div>
                   <div style={styles.fieldGroup}>
                     <label style={styles.label}>Building Width / Span (W in ft)</label>
-                    <input type="number" value={widthFt} onChange={(e) => setWidthFt(Number(e.target.value))} style={styles.input} min={20} />
+                    <input type="number" placeholder="e.g. 80" value={widthFt || ''} onChange={(e) => setWidthFt(Number(e.target.value))} style={styles.input} />
                   </div>
                   <div style={styles.fieldGroup}>
                     <label style={styles.label}>Clear Height (H in ft)</label>
-                    <input type="number" value={heightFt} onChange={(e) => setHeightFt(Number(e.target.value))} style={styles.input} min={10} />
+                    <input type="number" placeholder="e.g. 24" value={heightFt || ''} onChange={(e) => setHeightFt(Number(e.target.value))} style={styles.input} />
                   </div>
                   <div style={styles.fieldGroup}>
                     <label style={styles.label}>Roof Slope</label>
@@ -1093,8 +1099,30 @@ export default function PEBBuildingBOQPage() {
                   </div>
                 </div>
 
-                {/* Derived Engineering Geometry & Member Sections Card */}
-                <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px', padding: '16px', marginTop: '12px' }}>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '14px' }}>
+                  <button style={styles.btnPrimary} onClick={() => setHasCalculated(true)}>⚡ Calculate PEB BOQ</button>
+                  <button style={styles.btnReset} onClick={() => { setLengthFt(0); setWidthFt(0); setHeightFt(0); setHasCalculated(false); }}>🔄 Reset</button>
+                </div>
+              </div>
+
+              {!hasCalculated ? (
+                <div style={{
+                  backgroundColor: "#ffffff",
+                  border: "2px dashed #800020",
+                  borderRadius: "14px",
+                  padding: "36px 20px",
+                  textAlign: "center",
+                  color: "#800020",
+                  margin: "20px 0"
+                }}>
+                  <div style={{ fontSize: "32px", marginBottom: "8px" }}>🏗️</div>
+                  <div style={{ fontSize: "16px", fontWeight: "800", color: "#0f172a", marginBottom: "6px" }}>Ready for PEB Building BOQ Calculation</div>
+                  <div style={{ fontSize: "13px", color: "#475569" }}>Please enter building length, width &amp; clear height above (e.g. 150ft × 80ft, 24ft height) and click <strong>"⚡ Calculate PEB BOQ"</strong> to generate structural steel tonnage &amp; BOQ.</div>
+                </div>
+              ) : (
+                <>
+                  {/* Derived Engineering Geometry & Member Sections Card */}
+                  <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px', padding: '16px', marginTop: '12px' }}>
                   <div style={{ fontWeight: '800', fontSize: '14px', color: '#166534', marginBottom: '10px' }}>
                     ⚡ Derived Engineering Geometry & Member Sections (IS 800:2007 & MBMA)
                   </div>
@@ -1109,7 +1137,6 @@ export default function PEBBuildingBOQPage() {
                     <div><strong>Openings:</strong> {quickBOQEngine.quickDoorsQty} Exit Door, {quickBOQEngine.quickShuttersQty} Shutter, {quickBOQEngine.quickWindowsQty} Windows</div>
                   </div>
                 </div>
-              </div>
 
               {/* Quick BOQ Metric Summary */}
               <div className="bm-final-boq-summary" style={styles.summaryGrid}>
@@ -1215,13 +1242,12 @@ export default function PEBBuildingBOQPage() {
                       </li>
                     ))}
                   </ul>
-                  <div style={{ fontSize: '11px', marginTop: '10px', fontStyle: 'italic', color: '#be123c' }}>
-                    💡 Please log into the BuildMitra Admin Rate Master dashboard to approve or update prices for these master codes.
-                  </div>
                 </div>
               )}
-            </div>
+            </>
           )}
+        </div>
+      )}
 
           {/* ========================================================================= */}
           {/* MODE 2: DETAILED BOQ (EXISTING FULL PARAMETER BOQ)                         */}

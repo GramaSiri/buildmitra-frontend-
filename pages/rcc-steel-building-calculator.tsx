@@ -185,13 +185,14 @@ export default function FullBuildingCalculator() {
     syncApprovedRatesFromBackend();
   }, []);
 
-  const [plotLength, setPlotLength] = useState(30);
-  const [plotWidth, setPlotWidth] = useState(40);
-  const [floors, setFloors] = useState(2);
+  const [plotLength, setPlotLength] = useState(0);
+  const [plotWidth, setPlotWidth] = useState(0);
+  const [floors, setFloors] = useState(0);
   const [buaFactor, setBuaFactor] = useState(0.85);
   const [floorHeight, setFloorHeight] = useState(10);
   const [qualityGrade, setQualityGrade] = useState('Standard');
 
+  const [hasCalculated, setHasCalculated] = useState<boolean>(false);
   const [isInputModified, setIsInputModified] = useState<boolean>(false);
   const [isCalculatedBlue, setIsCalculatedBlue] = useState<boolean>(false);
 
@@ -342,6 +343,7 @@ export default function FullBuildingCalculator() {
   }, [plotLength, plotWidth, floors, buaFactor, floorHeight, qualityGrade, cementRate, steelRate, sandRate, ca20Rate, ca12Rate, block6Rate, block4Rate, civilLabourRate]);
 
   const handleCalculate = () => {
+    setHasCalculated(true);
     setIsInputModified(false);
     setIsCalculatedBlue(true);
     setTimeout(() => setIsCalculatedBlue(false), 2000);
@@ -469,13 +471,29 @@ export default function FullBuildingCalculator() {
           {/* Action Buttons */}
           <div className="bm-boq-actions" style={{ marginTop: '12px' }}>
             <button style={styles.btnPrimary} onClick={handleCalculate}>⚡ Calculate Composite Building</button>
-            <button style={styles.btnReset} onClick={() => setPlotLength(30)}>🔄 Reset</button>
+            <button style={styles.btnReset} onClick={() => { setPlotLength(0); setPlotWidth(0); setFloors(0); setHasCalculated(false); }}>🔄 Reset</button>
             <button style={styles.btnSecondary} onClick={handleExportExcel}>📊 Export Excel</button>
             <button style={styles.btnSuccess} onClick={handleExportPDF}>📄 Export PDF Report</button>
           </div>
         </div>
 
-        {/* Result Metric Cards */}
+        {!hasCalculated ? (
+          <div style={{
+            backgroundColor: "#ffffff",
+            border: "2px dashed #800020",
+            borderRadius: "14px",
+            padding: "36px 20px",
+            textAlign: "center",
+            color: "#800020",
+            margin: "20px 0"
+          }}>
+            <div style={{ fontSize: "32px", marginBottom: "8px" }}>🏢</div>
+            <div style={{ fontSize: "16px", fontWeight: "800", color: "#0f172a", marginBottom: "6px" }}>Ready for Full Composite Building Cost Estimation</div>
+            <div style={{ fontSize: "13px", color: "#475569" }}>Please enter plot dimensions, floor count &amp; BUA factor above and click <strong>"⚡ Calculate Composite Building"</strong> to view total BUA, material breakdown &amp; itemized BOQ.</div>
+          </div>
+        ) : (
+          <>
+            {/* Result Metric Cards */}
         <div style={styles.summaryGrid} className="bm-boq-summary-scroll">
           <div style={{ ...styles.metricCard, ...styles.metricMaroon }}>
             <span style={styles.metricTitle}>Built-up Area</span>
@@ -553,7 +571,9 @@ export default function FullBuildingCalculator() {
             </tbody>
           </table>
         </div>
-      </div>
+      </>
+    )}
+  </div>
     </>
   );
 }

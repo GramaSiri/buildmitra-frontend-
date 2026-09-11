@@ -184,13 +184,14 @@ export default function RCCSlabCalculatorPage() {
     syncApprovedRatesFromBackend();
   }, []);
 
-  const [plotLength, setPlotLength] = useState(30);
-  const [plotWidth, setPlotWidth] = useState(40);
-  const [floors, setFloors] = useState(1);
+  const [plotLength, setPlotLength] = useState(0);
+  const [plotWidth, setPlotWidth] = useState(0);
+  const [floors, setFloors] = useState(0);
   const [slabThicknessMm, setSlabThicknessMm] = useState(150);
   const [concreteGrade, setConcreteGrade] = useState('M20');
   const [steelRatioPct, setSteelRatioPct] = useState(1.0);
 
+  const [hasCalculated, setHasCalculated] = useState<boolean>(false);
   const [isInputModified, setIsInputModified] = useState<boolean>(false);
   const [isCalculatedBlue, setIsCalculatedBlue] = useState<boolean>(false);
 
@@ -336,6 +337,7 @@ export default function RCCSlabCalculatorPage() {
   }, [plotLength, plotWidth, floors, slabThicknessMm, concreteGrade, steelRatioPct, cementRate, steelRate, sandRate, agg20Rate, agg12Rate, bindingRate, coverBlockRate, labourRccRate]);
 
   const handleCalculate = () => {
+    setHasCalculated(true);
     setIsInputModified(false);
     setIsCalculatedBlue(true);
     setTimeout(() => setIsCalculatedBlue(false), 2000);
@@ -462,13 +464,29 @@ export default function RCCSlabCalculatorPage() {
           {/* Action Buttons */}
           <div className="bm-boq-actions" style={{ marginTop: '12px' }}>
             <button style={styles.btnPrimary} onClick={handleCalculate}>⚡ Calculate RCC Slab</button>
-            <button style={styles.btnReset} onClick={() => setPlotLength(30)}>🔄 Reset</button>
+            <button style={styles.btnReset} onClick={() => { setPlotLength(0); setPlotWidth(0); setFloors(0); setHasCalculated(false); }}>🔄 Reset</button>
             <button style={styles.btnSecondary} onClick={handleExportExcel}>📊 Export Excel</button>
             <button style={styles.btnSuccess} onClick={handleExportPDF}>📄 Export PDF Report</button>
           </div>
         </div>
 
-        {/* Result Cards */}
+        {!hasCalculated ? (
+          <div style={{
+            backgroundColor: "#ffffff",
+            border: "2px dashed #1e3a8a",
+            borderRadius: "14px",
+            padding: "36px 20px",
+            textAlign: "center",
+            color: "#1e3a8a",
+            margin: "20px 0"
+          }}>
+            <div style={{ fontSize: "32px", marginBottom: "8px" }}>🏗️</div>
+            <div style={{ fontSize: "16px", fontWeight: "800", color: "#0f172a", marginBottom: "6px" }}>Ready for RCC Slab &amp; Beam Estimation</div>
+            <div style={{ fontSize: "13px", color: "#475569" }}>Please enter your slab dimensions above and click <strong>"⚡ Calculate RCC Slab"</strong> to view material quantities and itemized BOQ.</div>
+          </div>
+        ) : (
+          <>
+            {/* Result Cards */}
         <div style={styles.summaryGrid} className="bm-boq-summary-scroll">
           <div style={{ ...styles.metricCard, ...styles.metricBlue }}>
             <span style={styles.metricTitle}>Total Slab Area</span>
@@ -547,7 +565,9 @@ export default function RCCSlabCalculatorPage() {
             </tbody>
           </table>
         </div>
-      </div>
+      </>
+    )}
+  </div>
     </>
   );
 }

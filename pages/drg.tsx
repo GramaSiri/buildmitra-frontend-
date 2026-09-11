@@ -45,8 +45,8 @@ const defaultInputs: DRGInputs = {
   projectNotes: "Architectural residential building with modern structural framing and optimal parking.",
 
   // Section 2 — Plot Information
-  plotWidth: 30,
-  plotLength: 40,
+  plotWidth: 0,
+  plotLength: 0,
   plotUnit: "ft",
   plotShape: "Rectangle",
   facing: "South",
@@ -220,6 +220,7 @@ export default function ProfessionalDRGPage() {
   const [structuralSubview, setStructuralSubview] = useState<StructuralSubview>("column_grid");
   const [selectedCandidateId, setSelectedCandidateId] = useState<string>("cand_1");
   const [showCadSheet, setShowCadSheet] = useState<boolean>(false);
+  const [hasGenerated, setHasGenerated] = useState<boolean>(false);
 
   // Persistent Single Source of Truth Calculation Engine Reports
   const phase0Report = useMemo(() => analyzePlotPhase0(inputs), [inputs]);
@@ -255,11 +256,11 @@ export default function ProfessionalDRGPage() {
   const qaReport = useMemo(() => runBuildingModelQA(buildingModel), [buildingModel]);
 
   const vastuPlan = useMemo(
-    () => generateVastuFloorPlan(inputs.plotWidth || 40, inputs.plotLength || 60, inputs.facing || "SOUTH", activeFloorLevel, inputs.setbacks),
+    () => generateVastuFloorPlan(inputs.plotWidth || 40, inputs.plotLength || 60, (inputs.facing || "SOUTH") as Facing, activeFloorLevel, inputs.setbacks),
     [inputs.plotWidth, inputs.plotLength, inputs.facing, activeFloorLevel, inputs.setbacks]
   );
 
-  const updateInput = <K extends keyof DRGInputs>(key: K, value: DRGInputs[K]) => {
+  const updateInput = (key: keyof DRGInputs, value: any) => {
     setInputs((prev) => ({ ...prev, [key]: value }));
   };
 
@@ -304,6 +305,9 @@ export default function ProfessionalDRGPage() {
           </p>
         </div>
         <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+          <button onClick={() => setHasGenerated(true)} style={{ padding: "10px 18px", background: "#2563eb", color: "#fff", border: 0, borderRadius: "8px", fontWeight: "bold", cursor: "pointer", boxShadow: "0 2px 8px rgba(37,99,235,0.4)" }}>
+            ⚡ Generate CAD Blueprint Set
+          </button>
           <button onClick={() => exportDrawingAsPdf("drg-architectural-svg", `BuildMitra-Architectural-Drawing-${inputs.plotWidth}x${inputs.plotLength}.pdf`)} style={{ padding: "10px 16px", background: "#16a34a", color: "#fff", border: 0, borderRadius: "8px", fontWeight: "bold", cursor: "pointer", boxShadow: "0 2px 8px rgba(22,163,74,0.3)" }}>
             📥 Download PDF Drawing
           </button>
@@ -478,90 +482,31 @@ export default function ProfessionalDRGPage() {
               </div>
             </div>
           </div>
-
         </div>
       </div>
 
-      {/* Permanent Navigation Header Tabs */}
-      <div style={{ display: "flex", gap: "8px", background: "#ffffff", padding: "8px", borderRadius: "10px", border: "1px solid #cbd5e1", marginBottom: "16px", flexWrap: "wrap" }}>
-        <button onClick={() => setPrimaryTab("phase0")} style={{ padding: "8px 16px", borderRadius: "6px", border: 0, fontWeight: "bold", background: primaryTab === "phase0" ? "#0284c7" : "#f1f5f9", color: primaryTab === "phase0" ? "#fff" : "#475569", cursor: "pointer" }}>
-          📍 Plot Analysis
-        </button>
-        <button onClick={() => setPrimaryTab("structural_planning")} style={{ padding: "8px 16px", borderRadius: "6px", border: 0, fontWeight: "bold", background: primaryTab === "structural_planning" ? "#0284c7" : "#f1f5f9", color: primaryTab === "structural_planning" ? "#fff" : "#475569", cursor: "pointer" }}>
-          🏗️ Structural Planning
-        </button>
-        <button onClick={() => setPrimaryTab("ground_floor")} style={{ padding: "8px 16px", borderRadius: "6px", border: 0, fontWeight: "bold", background: primaryTab === "ground_floor" ? "#16a34a" : "#f1f5f9", color: primaryTab === "ground_floor" ? "#fff" : "#475569", cursor: "pointer" }}>
-          🏠 Ground Floor
-        </button>
-        <button onClick={() => { setPrimaryTab("first_floor"); setActiveFloorLevel(1); }} style={{ padding: "8px 16px", borderRadius: "6px", border: 0, fontWeight: "bold", background: primaryTab === "first_floor" ? "#16a34a" : "#f1f5f9", color: primaryTab === "first_floor" ? "#fff" : "#475569", cursor: "pointer" }}>
-          🏢 First Floor
-        </button>
-        <button onClick={() => setPrimaryTab("architectural")} style={{ padding: "8px 16px", borderRadius: "6px", border: 0, fontWeight: "bold", background: primaryTab === "architectural" ? "#0f172a" : "#f1f5f9", color: primaryTab === "architectural" ? "#fff" : "#475569", cursor: "pointer" }}>
-          📐 Architectural Drawing
-        </button>
-        <button onClick={() => setPrimaryTab("elevation")} style={{ padding: "8px 16px", borderRadius: "6px", border: 0, fontWeight: "bold", background: primaryTab === "elevation" ? "#0f172a" : "#f1f5f9", color: primaryTab === "elevation" ? "#fff" : "#475569", cursor: "pointer" }}>
-          🏢 Front Elevation
-        </button>
-        <button onClick={() => setPrimaryTab("section")} style={{ padding: "8px 16px", borderRadius: "6px", border: 0, fontWeight: "bold", background: primaryTab === "section" ? "#0f172a" : "#f1f5f9", color: primaryTab === "section" ? "#fff" : "#475569", cursor: "pointer" }}>
-          ✂️ Cross Section
-        </button>
-        <button onClick={() => setPrimaryTab("boq")} style={{ padding: "8px 16px", borderRadius: "6px", border: 0, fontWeight: "bold", background: primaryTab === "boq" ? "#0f172a" : "#f1f5f9", color: primaryTab === "boq" ? "#fff" : "#475569", cursor: "pointer" }}>
-          📄 Civil BOQ &amp; QA Audit
-        </button>
-      </div>
-
-      {/* ========================================================================= */}
-      {/* TAB 1: PLOT ANALYSIS MODULE — FULL 100% WIDTH (NO SIDEBAR!) */}
-      {/* ========================================================================= */}
-      {primaryTab === "phase0" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          <div style={{ borderBottom: "2px solid #e2e8f0", paddingBottom: "12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      {!hasGenerated ? (
+        <div style={{
+          backgroundColor: "#ffffff",
+          border: "2px dashed #2563eb",
+          borderRadius: "14px",
+          padding: "48px 24px",
+          textAlign: "center",
+          color: "#1e40af",
+          fontSize: "16px",
+          fontWeight: "700",
+          marginTop: "20px",
+          boxShadow: "0 4px 12px rgba(37,99,235,0.08)"
+        }}>
+          <div style={{ fontSize: "36px", marginBottom: "10px" }}>📐</div>
+          <div style={{ fontSize: "18px", fontWeight: "800", color: "#1e3a8a", marginBottom: "8px" }}>Ready for Architectural &amp; Structural CAD Generation</div>
+          <div>Enter your project plot parameters above and click <strong>"⚡ Generate CAD Blueprint Set"</strong> to generate architectural sanction plans, structural column grid &amp; civil BOQ.</div>
+        </div>
+      ) : (
+        <>
+          {primaryTab === "phase0" && (
             <div>
-              <h2 style={{ margin: "0 0 4px", fontSize: "18px", color: "#0f172a" }}>📍 PLOT ANALYSIS &amp; PROJECT BRIEF REPORT</h2>
-              <p style={{ margin: 0, fontSize: "12px", color: "#64748b" }}>
-                Pure Site Analysis • Statutory Regulations • Dynamic Objectives • Structural Recommendations
-              </p>
-            </div>
-            <button onClick={handleProceedToStructuralPlanning} style={{ padding: "10px 20px", background: "#16a34a", color: "#fff", border: 0, borderRadius: "8px", fontWeight: "bold", cursor: "pointer", fontSize: "12px" }}>
-              Proceed to Structural Planning →
-            </button>
-          </div>
-
-          {/* Main Layout Container: Left Compact Diagram Widget + Right Multi-Column Grid Cards */}
-          <div style={{ display: "grid", gridTemplateColumns: "340px 1fr", gap: "20px", alignItems: "start" }}>
-            
-            {/* LEFT SIDEBAR: COMPACT DIAGRAM WIDGET (MAX-WIDTH 340px) */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-              <div style={{ background: "#ffffff", padding: "14px", borderRadius: "12px", border: "1px solid #cbd5e1", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                  <h3 style={{ margin: 0, fontSize: "13px", color: "#0f172a", fontWeight: "bold" }}>
-                    📐 1. Site Envelope &amp; Setback Diagram
-                  </h3>
-                  <span style={{ fontSize: "9px", background: "#e0f2fe", color: "#0369a1", padding: "2px 6px", borderRadius: "4px", fontWeight: "bold" }}>
-                    Boundary &amp; Setbacks
-                  </span>
-                </div>
-                <div style={{ width: "100%", overflow: "hidden", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
-                  <ArchitecturalSvgRenderer
-                    primaryTab="phase0"
-                    activeFloorLevel={0}
-                    structuralSubview={structuralSubview}
-                    candidate={activeCandidate}
-                    inputs={inputs}
-                    buildable={{ x: inputs.setbacks.left, y: inputs.setbacks.front, w: inputs.plotWidth - inputs.setbacks.left - inputs.setbacks.right, h: inputs.plotLength - inputs.setbacks.front - inputs.setbacks.rear }}
-                    columns={buildingModel.columns}
-                    areaStatement={buildingModel.areaStatement}
-                    structuralPlanningReport={structuralPlanningReport}
-                    groundFloorReport={groundFloorReport}
-                  />
-                </div>
-                <div style={{ marginTop: "10px", fontSize: "10px", color: "#64748b", fontStyle: "italic", textAlign: "center" }}>
-                  * Showing Plot Boundary ({inputs.plotWidth}′ × {inputs.plotLength}′), {inputs.facing} Road, Setbacks, &amp; Buildable Footprint ({inputs.plotWidth - inputs.setbacks.left - inputs.setbacks.right}′ × {inputs.plotLength - inputs.setbacks.front - inputs.setbacks.rear}′).
-                </div>
-              </div>
-
-              {/* Direct Floor Plan View Quick Jump Box */}
-              <div style={{ background: "#f0fdf4", padding: "14px", borderRadius: "12px", border: "1px solid #bbf7d0" }}>
+              <div style={{ background: "#f0fdf4", padding: "14px", borderRadius: "12px", border: "1px solid #bbf7d0", marginBottom: "16px" }}>
                 <h4 style={{ margin: "0 0 6px", fontSize: "12px", color: "#166534", fontWeight: "bold" }}>⚡ Jump Directly to Detailed Floor Plans</h4>
                 <p style={{ margin: "0 0 10px", fontSize: "11px", color: "#15803d" }}>
                   View full room layouts, furniture, doors, windows, staircase, parking &amp; UGT:
@@ -578,7 +523,6 @@ export default function ProfessionalDRGPage() {
                   </button>
                 </div>
               </div>
-            </div>
 
             {/* RIGHT MAIN SECTION: MULTI-COLUMN RESPONSIVE GRID FOR 10 STATUTORY ANALYSIS HEADERS */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(310px, 1fr))", gap: "14px" }}>
@@ -710,8 +654,7 @@ export default function ProfessionalDRGPage() {
 
             </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* OTHER TABS (Structural, Ground Floor, Architectural, etc.) RENDER BELOW */}
       {primaryTab !== "phase0" && (
@@ -1109,6 +1052,8 @@ export default function ProfessionalDRGPage() {
             </div>
           )}
         </div>
+      )}
+        </>
       )}
 
     </div>

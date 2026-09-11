@@ -235,20 +235,42 @@ export default function ConcretePage() {
 
   const [memberType, setMemberType] = useState<MemberType>('slab');
   const [unit, setUnit] = useState<'feet' | 'meters'>('feet');
-  const [length, setLength] = useState(26);
-  const [width, setWidth] = useState(37);
-  const [thickness, setThickness] = useState(150); // mm
-  const [height, setHeight] = useState(10); // ft
-  const [quantityCount, setQuantityCount] = useState(1);
+  const [length, setLength] = useState<number>(0);
+  const [width, setWidth] = useState<number>(0);
+  const [thickness, setThickness] = useState<number>(0); // mm
+  const [height, setHeight] = useState<number>(0); // ft
+  const [quantityCount, setQuantityCount] = useState<number>(1);
   const [concreteGrade, setConcreteGrade] = useState('M20');
   const [wastage, setWastage] = useState(3);
 
+  const [hasCalculated, setHasCalculated] = useState<boolean>(false);
   const [isInputModified, setIsInputModified] = useState<boolean>(false);
   const [isCalculatedBlue, setIsCalculatedBlue] = useState<boolean>(false);
 
   const handleInputChange = (setter: (val: any) => void, value: any) => {
     setter(value);
     setIsInputModified(true);
+  };
+
+  const handleMemberTypeChange = (type: MemberType) => {
+    setMemberType(type);
+    setIsInputModified(true);
+    setLength(0);
+    setWidth(0);
+    setThickness(0);
+    setHeight(0);
+    setQuantityCount(1);
+    setHasCalculated(false);
+  };
+
+  const handleReset = () => {
+    setLength(0);
+    setWidth(0);
+    setThickness(0);
+    setHeight(0);
+    setQuantityCount(1);
+    setHasCalculated(false);
+    setIsInputModified(false);
   };
 
   // Authoritative Admin Rate Master Lookups (0 fallback)
@@ -261,17 +283,18 @@ export default function ConcretePage() {
   const rccLabourRes = getMasterRate(["SRV-RCC-LAY", "rcc casting labour", "concrete labour"], 0);
   const shutteringLabourRes = getMasterRate(["SRV-COL-SHT", "shuttering labour", "formwork"], 0);
 
-  // Concrete Mix Data
+  // Concrete Mix Data (IS 456 / CPWD Standard Quantities per CUM of Finished Concrete)
   const concreteMix: Record<string, { cementBags: number; sandCft: number; agg20Cft: number; agg12Cft: number; waterLtr: number }> = {
-    M15: { cementBags: 6.34, sandCft: 15.54, agg20Cft: 18.65, agg12Cft: 12.43, waterLtr: 175 },
-    M20: { cementBags: 8.06, sandCft: 14.83, agg20Cft: 17.80, agg12Cft: 11.87, waterLtr: 195 },
-    M25: { cementBags: 8.70, sandCft: 13.80, agg20Cft: 17.00, agg12Cft: 11.30, waterLtr: 165 },
-    M30: { cementBags: 9.30, sandCft: 12.70, agg20Cft: 16.20, agg12Cft: 10.80, waterLtr: 160 }
+    M15: { cementBags: 6.30, sandCft: 15.00, agg20Cft: 18.00, agg12Cft: 12.00, waterLtr: 175 },
+    M20: { cementBags: 6.80, sandCft: 14.50, agg20Cft: 17.40, agg12Cft: 11.60, waterLtr: 195 },
+    M25: { cementBags: 7.60, sandCft: 13.50, agg20Cft: 16.20, agg12Cft: 10.80, waterLtr: 165 },
+    M30: { cementBags: 8.20, sandCft: 12.50, agg20Cft: 15.00, agg12Cft: 10.00, waterLtr: 160 }
   };
 
   const calculations = useMemo(() => {
     const toFt = (val: number) => unit === 'feet' ? val : val * 3.28084;
-    const lFt = toFt(length), wFt = toFt(width), tFt = thickness / 304.8, hFt = toFt(height);
+    const lFt = toFt(length), wFt = toFt(width), hFt = toFt(height);
+    const tFt = thickness / 304.8;
 
     let volumeCft = 0;
     let shutteringSqft = 0;
@@ -279,20 +302,55 @@ export default function ConcretePage() {
 
     if (memberType === 'slab') {
       volumeCft = lFt * wFt * tFt * quantityCount;
-      shutteringSqft = ((lFt * wFt) + (2 * (lFt + wFt) * tFt)) * quantityCount;
-      steelKg = (volumeCft / 35.3147) * 78.5;
+      shutteringSqft = (lFt * wFt + 2 * (lFt + wFt) * tFt) * quantityCount;
+      steelKg = (volumeCft / 35.3147) * 80;
     } else if (memberType === 'column') {
       volumeCft = lFt * wFt * hFt * quantityCount;
       shutteringSqft = (2 * (lFt + wFt) * hFt) * quantityCount;
-      steelKg = (volumeCft / 35.3147) * 141.3;
+      steelKg = (volumeCft / 35.3147) * 160;
     } else if (memberType === 'beam') {
-      volumeCft = tFt * (height / 304.8) * lFt * quantityCount;
-      shutteringSqft = (tFt + 2 * (height / 304.8)) * lFt * quantityCount;
-      steelKg = (volumeCft / 35.3147) * 117.8;
-    } else {
+      const wBeamFt = width / 304.8;
+      const tBeamFt = thickness / 304.8;
+      volumeCft = lFt * wBeamFt * tBeamFt * quantityCount;
+      shutteringSqft = (wBeamFt + 2 * tBeamFt) * lFt * quantityCount;
+      steelKg = (volumeCft / 35.3147) * 135;
+    } else if (memberType === 'footing') {
       volumeCft = lFt * wFt * tFt * quantityCount;
-      shutteringSqft = (2 * (lFt + wFt) * tFt) * quantityCount;
+      shutteringSqft = 2 * (lFt + wFt) * tFt * quantityCount;
+      steelKg = (volumeCft / 35.3147) * 70;
+    } else if (memberType === 'staircase') {
+      const lInc = Math.sqrt(lFt * lFt + hFt * hFt);
+      const vWaist = lInc * wFt * tFt;
+      const vSteps = 0.5 * hFt * lFt * wFt;
+      const vLanding = wFt * wFt * tFt;
+      volumeCft = (vWaist + vSteps + vLanding) * quantityCount;
+      shutteringSqft = (lInc * wFt + hFt * wFt + lFt * hFt) * quantityCount;
+      steelKg = (volumeCft / 35.3147) * 110;
+    } else if (memberType === 'lintel') {
+      const wLintelFt = width / 304.8;
+      const tLintelFt = thickness / 304.8;
+      volumeCft = lFt * wLintelFt * tLintelFt * quantityCount;
+      shutteringSqft = (wLintelFt + 2 * tLintelFt) * lFt * quantityCount;
       steelKg = (volumeCft / 35.3147) * 90;
+    } else if (memberType === 'chajja') {
+      volumeCft = lFt * wFt * tFt * quantityCount;
+      shutteringSqft = (lFt * wFt + (lFt + 2 * wFt) * tFt) * quantityCount;
+      steelKg = (volumeCft / 35.3147) * 75;
+    } else if (memberType === 'retaining_wall') {
+      const vStem = lFt * hFt * tFt;
+      const vBase = lFt * (0.6 * hFt) * (1.2 * tFt);
+      volumeCft = (vStem + vBase) * quantityCount;
+      shutteringSqft = (2 * lFt * hFt + 2 * lFt * (1.2 * tFt)) * quantityCount;
+      steelKg = (volumeCft / 35.3147) * 125;
+    } else if (memberType === 'raft') {
+      volumeCft = lFt * wFt * tFt * quantityCount;
+      shutteringSqft = 2 * (lFt + wFt) * tFt * quantityCount;
+      steelKg = (volumeCft / 35.3147) * 110;
+    } else {
+      const depthFt = hFt > 0 ? hFt : tFt;
+      volumeCft = lFt * wFt * depthFt * quantityCount;
+      shutteringSqft = 2 * (lFt * wFt + lFt * depthFt + wFt * depthFt) * quantityCount;
+      steelKg = (volumeCft / 35.3147) * 100;
     }
 
     const volumeCum = volumeCft / 35.3147;
@@ -405,6 +463,7 @@ export default function ConcretePage() {
   }, [memberType, unit, length, width, thickness, height, quantityCount, concreteGrade, wastage, cementRateRes, sandRateRes, agg20RateRes, agg12RateRes, rebarRateRes, rccLabourRes, shutteringLabourRes]);
 
   const handleCalculate = () => {
+    setHasCalculated(true);
     setIsInputModified(false);
     setIsCalculatedBlue(true);
     setTimeout(() => setIsCalculatedBlue(false), 2000);
@@ -496,7 +555,7 @@ export default function ConcretePage() {
             {MEMBER_TYPES.map(m => (
               <button
                 key={m.id}
-                onClick={() => setMemberType(m.id)}
+                onClick={() => handleMemberTypeChange(m.id)}
                 style={styles.memberTab(memberType === m.id)}
               >
                 <span>{m.icon}</span>
@@ -515,20 +574,71 @@ export default function ConcretePage() {
               </select>
             </div>
 
+            {/* Dynamic Length Input */}
             <div style={styles.fieldGroup}>
-              <label style={styles.label}>Length ({unit === 'feet' ? 'ft' : 'm'})</label>
-              <input type="number" value={length} onChange={(e) => handleInputChange(setLength, Number(e.target.value))} style={{ ...styles.input, ...(isInputModified ? styles.inputModified : {}) }} />
+              <label style={styles.label}>
+                {memberType === 'slab' && `Length (${unit === 'feet' ? 'ft' : 'm'})`}
+                {memberType === 'column' && `Column Size X (${unit === 'feet' ? 'ft' : 'm'})`}
+                {memberType === 'beam' && `Beam Span / Length (${unit === 'feet' ? 'ft' : 'm'})`}
+                {memberType === 'footing' && `Footing Length (${unit === 'feet' ? 'ft' : 'm'})`}
+                {memberType === 'staircase' && `Flight Span / Horiz. Length (${unit === 'feet' ? 'ft' : 'm'})`}
+                {memberType === 'lintel' && `Lintel Span / Length (${unit === 'feet' ? 'ft' : 'm'})`}
+                {memberType === 'chajja' && `Length along Wall (${unit === 'feet' ? 'ft' : 'm'})`}
+                {memberType === 'retaining_wall' && `Wall Length (${unit === 'feet' ? 'ft' : 'm'})`}
+                {memberType === 'raft' && `Raft Length (${unit === 'feet' ? 'ft' : 'm'})`}
+                {memberType === 'custom' && `Length (${unit === 'feet' ? 'ft' : 'm'})`}
+              </label>
+              <input type="number" value={length === 0 ? '' : length} placeholder={unit === 'feet' ? "e.g. 30" : "e.g. 9.1"} onChange={(e) => handleInputChange(setLength, e.target.value === '' ? 0 : Number(e.target.value))} style={{ ...styles.input, ...(isInputModified ? styles.inputModified : {}) }} />
             </div>
 
-            <div style={styles.fieldGroup}>
-              <label style={styles.label}>Width ({unit === 'feet' ? 'ft' : 'm'})</label>
-              <input type="number" value={width} onChange={(e) => handleInputChange(setWidth, Number(e.target.value))} style={{ ...styles.input, ...(isInputModified ? styles.inputModified : {}) }} />
-            </div>
+            {/* Dynamic Width Input */}
+            {memberType !== 'retaining_wall' && (
+              <div style={styles.fieldGroup}>
+                <label style={styles.label}>
+                  {memberType === 'beam' && 'Beam Width (mm)'}
+                  {memberType === 'lintel' && 'Wall / Lintel Width (mm)'}
+                  {memberType === 'column' && `Column Size Y (${unit === 'feet' ? 'ft' : 'm'})`}
+                  {memberType === 'footing' && `Footing Width (${unit === 'feet' ? 'ft' : 'm'})`}
+                  {memberType === 'staircase' && `Staircase Width (${unit === 'feet' ? 'ft' : 'm'})`}
+                  {memberType === 'chajja' && `Projection Width (${unit === 'feet' ? 'ft' : 'm'})`}
+                  {memberType === 'raft' && `Raft Width (${unit === 'feet' ? 'ft' : 'm'})`}
+                  {memberType === 'slab' && `Width (${unit === 'feet' ? 'ft' : 'm'})`}
+                  {memberType === 'custom' && `Width (${unit === 'feet' ? 'ft' : 'm'})`}
+                </label>
+                <input type="number" value={width === 0 ? '' : width} placeholder={memberType === 'beam' || memberType === 'lintel' ? "e.g. 230" : (unit === 'feet' ? "e.g. 45" : "e.g. 13.7")} onChange={(e) => handleInputChange(setWidth, e.target.value === '' ? 0 : Number(e.target.value))} style={{ ...styles.input, ...(isInputModified ? styles.inputModified : {}) }} />
+              </div>
+            )}
 
-            <div style={styles.fieldGroup}>
-              <label style={styles.label}>Thickness / Depth (mm)</label>
-              <input type="number" value={thickness} onChange={(e) => handleInputChange(setThickness, Number(e.target.value))} style={{ ...styles.input, ...(isInputModified ? styles.inputModified : {}) }} />
-            </div>
+            {/* Dynamic Height Input */}
+            {(memberType === 'column' || memberType === 'staircase' || memberType === 'retaining_wall' || memberType === 'custom') && (
+              <div style={styles.fieldGroup}>
+                <label style={styles.label}>
+                  {memberType === 'column' && `Column Height (${unit === 'feet' ? 'ft' : 'm'})`}
+                  {memberType === 'staircase' && `Flight Total Height (${unit === 'feet' ? 'ft' : 'm'})`}
+                  {memberType === 'retaining_wall' && `Stem Height (${unit === 'feet' ? 'ft' : 'm'})`}
+                  {memberType === 'custom' && `Height (${unit === 'feet' ? 'ft' : 'm'})`}
+                </label>
+                <input type="number" value={height === 0 ? '' : height} placeholder={unit === 'feet' ? "e.g. 10" : "e.g. 3.0"} onChange={(e) => handleInputChange(setHeight, e.target.value === '' ? 0 : Number(e.target.value))} style={{ ...styles.input, ...(isInputModified ? styles.inputModified : {}) }} />
+              </div>
+            )}
+
+            {/* Dynamic Thickness / Depth Input */}
+            {memberType !== 'column' && (
+              <div style={styles.fieldGroup}>
+                <label style={styles.label}>
+                  {memberType === 'slab' && 'Slab Thickness (mm)'}
+                  {memberType === 'beam' && 'Beam Depth (mm)'}
+                  {memberType === 'footing' && 'Footing Depth (mm)'}
+                  {memberType === 'staircase' && 'Waist Slab Thickness (mm)'}
+                  {memberType === 'lintel' && 'Lintel Depth (mm)'}
+                  {memberType === 'chajja' && 'Avg. Thickness (mm)'}
+                  {memberType === 'retaining_wall' && 'Stem Thickness (mm)'}
+                  {memberType === 'raft' && 'Raft Thickness (mm)'}
+                  {memberType === 'custom' && 'Thickness / Depth (mm)'}
+                </label>
+                <input type="number" value={thickness === 0 ? '' : thickness} placeholder="e.g. 125" onChange={(e) => handleInputChange(setThickness, e.target.value === '' ? 0 : Number(e.target.value))} style={{ ...styles.input, ...(isInputModified ? styles.inputModified : {}) }} />
+              </div>
+            )}
 
             <div style={styles.fieldGroup}>
               <label style={styles.label}>Member Quantity (Nos)</label>
@@ -557,7 +667,7 @@ export default function ConcretePage() {
               <span className="bm-desktop-only">⚡ Calculate Concrete</span>
               <span className="bm-mobile-only">⚡ Calc</span>
             </button>
-            <button style={styles.btnReset} onClick={() => setLength(26)}>
+            <button style={styles.btnReset} onClick={handleReset}>
               <span className="bm-desktop-only">🔄 Reset</span>
               <span className="bm-mobile-only">🔄 Reset</span>
             </button>
@@ -572,100 +682,121 @@ export default function ConcretePage() {
           </div>
         </div>
 
-        {/* Result Metric Cards */}
-        <div style={styles.summaryGrid} className="bm-boq-summary-scroll">
-          <div style={{ ...styles.metricCard, ...styles.metricMaroon }}>
-            <span style={styles.metricTitle}>
-              <span className="bm-desktop-only">Concrete Volume</span>
-              <span className="bm-mobile-only">Conc Vol</span>
-            </span>
-            <span style={{ ...styles.metricVal, color: isCalculatedBlue ? '#93c5fd' : '#ffffff' }}>{calculations.volumeCum} CUM</span>
-            <span style={{ fontSize: '11px', opacity: 0.9 }}>({calculations.volumeCft} CFT)</span>
+        {!hasCalculated ? (
+          <div style={{
+            backgroundColor: '#eff6ff',
+            border: '2px dashed #3b82f6',
+            borderRadius: '12px',
+            padding: '32px 20px',
+            textAlign: 'center',
+            color: '#1e40af',
+            fontSize: '16px',
+            fontWeight: '700',
+            marginTop: '16px',
+            boxShadow: '0 2px 8px rgba(59,130,246,0.08)'
+          }}>
+            <div style={{ fontSize: '32px', marginBottom: '8px' }}>🧱</div>
+            <div style={{ fontSize: '18px', fontWeight: '800', color: '#1e3a8a', marginBottom: '6px' }}>Ready for Concrete &amp; Structural Calculations</div>
+            <div>Enter your structural member dimensions above and click <strong>"⚡ Calculate Concrete"</strong> to display detailed material quantities, cement bags, sand, aggregate, shuttering &amp; BOQ estimation.</div>
           </div>
-          <div style={{ ...styles.metricCard, ...styles.metricTeal }}>
-            <span style={styles.metricTitle}>
-              <span className="bm-desktop-only">Cement Bags</span>
-              <span className="bm-mobile-only">Cement</span>
-            </span>
-            <span style={styles.metricVal}>{calculations.totalCementBags} Bags</span>
-          </div>
-          <div style={{ ...styles.metricCard, ...styles.metricOrange }}>
-            <span style={styles.metricTitle}>
-              <span className="bm-desktop-only">M-Sand Quantity</span>
-              <span className="bm-mobile-only">Sand</span>
-            </span>
-            <span style={styles.metricVal}>{calculations.totalSandCft} CFT</span>
-          </div>
-          <div style={{ ...styles.metricCard, ...styles.metricBlue }}>
-            <span style={styles.metricTitle}>
-              <span className="bm-desktop-only">Material Subtotal</span>
-              <span className="bm-mobile-only">Mat ₹</span>
-            </span>
-            <span style={styles.metricVal}>{formatCurrency(calculations.totalMaterialCost)}</span>
-          </div>
-          <div style={{ ...styles.metricCard, ...styles.metricGreen }}>
-            <span style={styles.metricTitle}>
-              <span className="bm-desktop-only">GRAND ESTIMATED TOTAL</span>
-              <span className="bm-mobile-only">Grand ₹</span>
-            </span>
-            <span style={{ ...styles.metricValGrand, color: isCalculatedBlue ? '#60a5fa' : '#ffffff' }}>{formatCurrency(calculations.grandTotalCost)}</span>
-          </div>
-        </div>
+        ) : (
+          <>
+            {/* Result Metric Cards */}
+            <div style={styles.summaryGrid} className="bm-boq-summary-scroll">
+              <div style={{ ...styles.metricCard, ...styles.metricMaroon }}>
+                <span style={styles.metricTitle}>
+                  <span className="bm-desktop-only">Concrete Volume</span>
+                  <span className="bm-mobile-only">Conc Vol</span>
+                </span>
+                <span style={{ ...styles.metricVal, color: isCalculatedBlue ? '#93c5fd' : '#ffffff' }}>{calculations.volumeCum} CUM</span>
+                <span style={{ fontSize: '11px', opacity: 0.9 }}>({calculations.volumeCft} CFT)</span>
+              </div>
+              <div style={{ ...styles.metricCard, ...styles.metricTeal }}>
+                <span style={styles.metricTitle}>
+                  <span className="bm-desktop-only">Cement Bags</span>
+                  <span className="bm-mobile-only">Cement</span>
+                </span>
+                <span style={styles.metricVal}>{calculations.totalCementBags} Bags</span>
+              </div>
+              <div style={{ ...styles.metricCard, ...styles.metricOrange }}>
+                <span style={styles.metricTitle}>
+                  <span className="bm-desktop-only">M-Sand Quantity</span>
+                  <span className="bm-mobile-only">Sand</span>
+                </span>
+                <span style={styles.metricVal}>{calculations.totalSandCft} CFT</span>
+              </div>
+              <div style={{ ...styles.metricCard, ...styles.metricBlue }}>
+                <span style={styles.metricTitle}>
+                  <span className="bm-desktop-only">Material Subtotal</span>
+                  <span className="bm-mobile-only">Mat ₹</span>
+                </span>
+                <span style={styles.metricVal}>{formatCurrency(calculations.totalMaterialCost)}</span>
+              </div>
+              <div style={{ ...styles.metricCard, ...styles.metricGreen }}>
+                <span style={styles.metricTitle}>
+                  <span className="bm-desktop-only">GRAND ESTIMATED TOTAL</span>
+                  <span className="bm-mobile-only">Grand ₹</span>
+                </span>
+                <span style={{ ...styles.metricValGrand, color: isCalculatedBlue ? '#60a5fa' : '#ffffff' }}>{formatCurrency(calculations.grandTotalCost)}</span>
+              </div>
+            </div>
 
-        {/* Missing Master Rates Warning Banner */}
-        {calculations.missingItems.length > 0 && (
-          <div style={styles.warnBanner}>
-            ⚠️ <strong>Master Mapping Required / Approved Rate Unavailable ({calculations.missingItems.length} Line Items)</strong>
-            <ul style={{ margin: '6px 0 0 0', paddingLeft: '20px', fontSize: '13px' }}>
-              {calculations.missingItems.map(it => (
-                <li key={it.code}>
-                  <code>{it.code}</code>: {it.name} — Quantity: <strong>{it.qty.toLocaleString()} {it.uom}</strong> (Status: <em>Master Mapping Required</em>)
-                </li>
-              ))}
-            </ul>
-          </div>
+            {/* Missing Master Rates Warning Banner */}
+            {calculations.missingItems.length > 0 && (
+              <div style={styles.warnBanner}>
+                ⚠️ <strong>Master Mapping Required / Approved Rate Unavailable ({calculations.missingItems.length} Line Items)</strong>
+                <ul style={{ margin: '6px 0 0 0', paddingLeft: '20px', fontSize: '13px' }}>
+                  {calculations.missingItems.map(it => (
+                    <li key={it.code}>
+                      <code>{it.code}</code>: {it.name} — Quantity: <strong>{it.qty.toLocaleString()} {it.uom}</strong> (Status: <em>Master Mapping Required</em>)
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Detailed Itemized BOQ Table */}
+            <div style={styles.tableContainer} className="bm-boq-table-scroll">
+              <div style={{ padding: '12px 16px', backgroundColor: '#7f1d1d', color: 'white', fontWeight: '800', fontSize: '16px' }}>
+                📑 Itemized Concrete &amp; Structural BOQ (Admin Master Linked)
+              </div>
+              <table style={styles.table}>
+                <thead>
+                  <tr>
+                    <th style={styles.th} className="bm-hide-mobile">Master Code</th>
+                    <th style={styles.th} className="bm-hide-mobile">Category</th>
+                    <th style={styles.th}>Item Description</th>
+                    <th style={styles.th}>Quantity</th>
+                    <th style={styles.th}>UOM</th>
+                    <th style={styles.th}>Approved Rate (₹)</th>
+                    <th style={styles.th}>Total Amount (₹)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {calculations.items.map(it => (
+                    <tr key={it.code}>
+                      <td style={styles.td} className="bm-hide-mobile"><code>{it.code}</code></td>
+                      <td style={styles.td} className="bm-hide-mobile">{it.category}</td>
+                      <td style={styles.td}><strong>{it.name}</strong></td>
+                      <td style={styles.td}>{it.qty.toLocaleString()}</td>
+                      <td style={styles.td}>{it.uom}</td>
+                      <td style={styles.td}>
+                        {it.isFound ? formatCurrency(it.rateVal) : <span style={{ color: '#dc2626', fontWeight: '700' }}>Master Mapping Required / Approved Rate Unavailable</span>}
+                      </td>
+                      <td style={styles.td}>
+                        {it.isFound ? <strong>{formatCurrency(it.amountVal)}</strong> : <span style={{ color: '#94a3b8' }}>—</span>}
+                      </td>
+                    </tr>
+                  ))}
+                  <tr style={{ backgroundColor: '#7f1d1d', color: 'white', fontWeight: '800' }}>
+                    <td colSpan={6} style={{ padding: '12px 14px', fontSize: '16px' }}>GRAND TOTAL ESTIMATED COST</td>
+                    <td style={{ padding: '12px 14px', fontSize: '18px' }}>{formatCurrency(calculations.grandTotalCost)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
-
-        {/* Detailed Itemized BOQ Table */}
-        <div style={styles.tableContainer} className="bm-boq-table-scroll">
-          <div style={{ padding: '12px 16px', backgroundColor: '#7f1d1d', color: 'white', fontWeight: '800', fontSize: '16px' }}>
-            📑 Itemized Concrete &amp; Structural BOQ (Admin Master Linked)
-          </div>
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th style={styles.th} className="bm-hide-mobile">Master Code</th>
-                <th style={styles.th} className="bm-hide-mobile">Category</th>
-                <th style={styles.th}>Item Description</th>
-                <th style={styles.th}>Quantity</th>
-                <th style={styles.th}>UOM</th>
-                <th style={styles.th}>Approved Rate (₹)</th>
-                <th style={styles.th}>Total Amount (₹)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {calculations.items.map(it => (
-                <tr key={it.code}>
-                  <td style={styles.td} className="bm-hide-mobile"><code>{it.code}</code></td>
-                  <td style={styles.td} className="bm-hide-mobile">{it.category}</td>
-                  <td style={styles.td}><strong>{it.name}</strong></td>
-                  <td style={styles.td}>{it.qty.toLocaleString()}</td>
-                  <td style={styles.td}>{it.uom}</td>
-                  <td style={styles.td}>
-                    {it.isFound ? formatCurrency(it.rateVal) : <span style={{ color: '#dc2626', fontWeight: '700' }}>Master Mapping Required / Approved Rate Unavailable</span>}
-                  </td>
-                  <td style={styles.td}>
-                    {it.isFound ? <strong>{formatCurrency(it.amountVal)}</strong> : <span style={{ color: '#94a3b8' }}>—</span>}
-                  </td>
-                </tr>
-              ))}
-              <tr style={{ backgroundColor: '#7f1d1d', color: 'white', fontWeight: '800' }}>
-                <td colSpan={6} style={{ padding: '12px 14px', fontSize: '16px' }}>GRAND TOTAL ESTIMATED COST</td>
-                <td style={{ padding: '12px 14px', fontSize: '18px' }}>{formatCurrency(calculations.grandTotalCost)}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
       </div>
     </>
   );

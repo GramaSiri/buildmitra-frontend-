@@ -184,10 +184,10 @@ export default function LintelCalculator() {
     syncApprovedRatesFromBackend();
   }, []);
 
-  const [lintelNos, setLintelNos] = useState(4);
-  const [clearLenFt, setClearLenFt] = useState(5);
-  const [widthIn, setWidthIn] = useState(9);
-  const [depthIn, setDepthIn] = useState(6);
+  const [lintelNos, setLintelNos] = useState(0);
+  const [clearLenFt, setClearLenFt] = useState(0);
+  const [widthIn, setWidthIn] = useState(0);
+  const [depthIn, setDepthIn] = useState(0);
   const [grade, setGrade] = useState('M20');
   const [mainDia, setMainDia] = useState(12);
   const [mainNos, setMainNos] = useState(4);
@@ -196,6 +196,7 @@ export default function LintelCalculator() {
   const [bearingMm, setBearingMm] = useState(150);
   const [coverMm, setCoverMm] = useState(25);
 
+  const [hasCalculated, setHasCalculated] = useState<boolean>(false);
   const [isInputModified, setIsInputModified] = useState<boolean>(false);
   const [isCalculatedBlue, setIsCalculatedBlue] = useState<boolean>(false);
 
@@ -365,6 +366,7 @@ export default function LintelCalculator() {
   }, [lintelNos, clearLenFt, widthIn, depthIn, grade, mainDia, mainNos, stirrupDia, stirrupSpacingMm, bearingMm, coverMm, cementRate, steelRate, sandRate, ca20Rate, ca12Rate, wireRate, coverRate, shutteringRate, rccLabourRate]);
 
   const handleCalculate = () => {
+    setHasCalculated(true);
     setIsInputModified(false);
     setIsCalculatedBlue(true);
     setTimeout(() => setIsCalculatedBlue(false), 2000);
@@ -519,13 +521,29 @@ export default function LintelCalculator() {
           {/* Action Buttons */}
           <div className="bm-boq-actions" style={{ marginTop: '12px' }}>
             <button style={styles.btnPrimary} onClick={handleCalculate}>⚡ Calculate Lintel</button>
-            <button style={styles.btnReset} onClick={() => setLintelNos(4)}>🔄 Reset</button>
+            <button style={styles.btnReset} onClick={() => { setLintelNos(0); setClearLenFt(0); setWidthIn(0); setDepthIn(0); setHasCalculated(false); }}>🔄 Reset</button>
             <button style={styles.btnSecondary} onClick={handleExportExcel}>📊 Export Excel</button>
             <button style={styles.btnSuccess} onClick={handleExportPDF}>📄 Export PDF Report</button>
           </div>
         </div>
 
-        {/* Result Metric Cards */}
+        {!hasCalculated ? (
+          <div style={{
+            backgroundColor: "#ffffff",
+            border: "2px dashed #0284c7",
+            borderRadius: "14px",
+            padding: "36px 20px",
+            textAlign: "center",
+            color: "#0284c7",
+            margin: "20px 0"
+          }}>
+            <div style={{ fontSize: "32px", marginBottom: "8px" }}>🚪</div>
+            <div style={{ fontSize: "16px", fontWeight: "800", color: "#0f172a", marginBottom: "6px" }}>Ready for Lintel Beam Estimation</div>
+            <div style={{ fontSize: "13px", color: "#475569" }}>Please enter lintel clear opening &amp; dimensions above and click <strong>"⚡ Calculate Lintel"</strong> to view concrete volume, rebar weight &amp; itemized BOQ.</div>
+          </div>
+        ) : (
+          <>
+            {/* Result Metric Cards */}
         <div style={styles.summaryGrid} className="bm-boq-summary-scroll">
           <div style={{ ...styles.metricCard, ...styles.metricBlue }}>
             <span style={styles.metricTitle}>Concrete Volume</span>
@@ -604,7 +622,9 @@ export default function LintelCalculator() {
             </tbody>
           </table>
         </div>
-      </div>
+      </>
+    )}
+  </div>
     </>
   );
 }

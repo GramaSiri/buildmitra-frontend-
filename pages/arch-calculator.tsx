@@ -77,9 +77,9 @@ export default function ArchPage() {
 const router = useRouter();
   const { rates, loading } = useRates();
   
-  const [archNos, setArchNos] = useState(1);
-  const [span, setSpan] = useState(6);
-  const [rise, setRise] = useState(3);
+  const [archNos, setArchNos] = useState(0);
+  const [span, setSpan] = useState(0);
+  const [rise, setRise] = useState(0);
   const [archType, setArchType] = useState('Semi-circular');
   const [thickness, setThickness] = useState(0.3);
   const [width, setWidth] = useState(0.75);
@@ -296,7 +296,23 @@ const router = useRouter();
       )
     ),
     
-    generated && results && React.createElement('div', null,
+    !generated ? (
+      React.createElement('div', {
+        style: {
+          backgroundColor: "#ffffff",
+          border: "2px dashed #0284c7",
+          borderRadius: "14px",
+          padding: "36px 20px",
+          textAlign: "center",
+          color: "#0284c7",
+          margin: "20px 0"
+        }
+      },
+        React.createElement('div', { style: { fontSize: "32px", marginBottom: "8px" } }, '⛩️'),
+        React.createElement('div', { style: { fontSize: "16px", fontWeight: "800", color: "#0f172a", marginBottom: "6px" } }, 'Ready for Arch Masonry & Cost Estimation'),
+        React.createElement('div', { style: { fontSize: "13px", color: "#475569" } }, 'Please enter arch span, rise & thickness above and click "🔨 Generate" to view concrete volume, rebar & itemized BOQ.')
+      )
+    ) : results && React.createElement('div', null,
       React.createElement('div', { style: styles.cardContainer },
         React.createElement('div', { style: { ...styles.card, ...styles.cardBlue } }, React.createElement('div', null, '📦'), React.createElement('div', null, 'Concrete'), React.createElement('div', { style: styles.cardValue }, `${results.concrete.volumeCft} CFT`)),
         React.createElement('div', { style: { ...styles.card, ...styles.cardLightGreen } }, React.createElement('div', null, '🪣'), React.createElement('div', null, 'Cement'), React.createElement('div', { style: styles.cardValue }, `${results.concrete.cement} bags`)),

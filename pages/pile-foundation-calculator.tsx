@@ -184,9 +184,9 @@ export default function PileFoundationCalculator() {
     syncApprovedRatesFromBackend();
   }, []);
 
-  const [pileNos, setPileNos] = useState(1);
-  const [diameterFt, setDiameterFt] = useState(1);
-  const [lengthFt, setLengthFt] = useState(15);
+  const [pileNos, setPileNos] = useState(0);
+  const [diameterFt, setDiameterFt] = useState(0);
+  const [lengthFt, setLengthFt] = useState(0);
   const [grade, setGrade] = useState('M20');
   const [mainDia, setMainDia] = useState(16);
   const [mainNos, setMainNos] = useState(8);
@@ -194,6 +194,7 @@ export default function PileFoundationCalculator() {
   const [tieSpacingMm, setTieSpacingMm] = useState(150);
   const [coverMm, setCoverMm] = useState(50);
 
+  const [hasCalculated, setHasCalculated] = useState<boolean>(false);
   const [isInputModified, setIsInputModified] = useState<boolean>(false);
   const [isCalculatedBlue, setIsCalculatedBlue] = useState<boolean>(false);
 
@@ -358,6 +359,7 @@ export default function PileFoundationCalculator() {
   }, [pileNos, diameterFt, lengthFt, grade, mainDia, mainNos, tieDia, tieSpacingMm, coverMm, cementRate, steelRate, sandRate, ca20Rate, ca12Rate, wireRate, coverRate, boringRate, rccLabourRate]);
 
   const handleCalculate = () => {
+    setHasCalculated(true);
     setIsInputModified(false);
     setIsCalculatedBlue(true);
     setTimeout(() => setIsCalculatedBlue(false), 2000);
@@ -509,13 +511,29 @@ export default function PileFoundationCalculator() {
           {/* Action Buttons */}
           <div className="bm-boq-actions" style={{ marginTop: '12px' }}>
             <button style={styles.btnPrimary} onClick={handleCalculate}>⚡ Calculate Pile Foundation</button>
-            <button style={styles.btnReset} onClick={() => setPileNos(1)}>🔄 Reset</button>
+            <button style={styles.btnReset} onClick={() => { setPileNos(0); setDiameterFt(0); setLengthFt(0); setHasCalculated(false); }}>🔄 Reset</button>
             <button style={styles.btnSecondary} onClick={handleExportExcel}>📊 Export Excel</button>
             <button style={styles.btnSuccess} onClick={handleExportPDF}>📄 Export PDF Report</button>
           </div>
         </div>
 
-        {/* Result Metric Cards */}
+        {!hasCalculated ? (
+          <div style={{
+            backgroundColor: "#ffffff",
+            border: "2px dashed #0f766e",
+            borderRadius: "14px",
+            padding: "36px 20px",
+            textAlign: "center",
+            color: "#0f766e",
+            margin: "20px 0"
+          }}>
+            <div style={{ fontSize: "32px", marginBottom: "8px" }}>⛏️</div>
+            <div style={{ fontSize: "16px", fontWeight: "800", color: "#0f172a", marginBottom: "6px" }}>Ready for Pile Foundation Estimation</div>
+            <div style={{ fontSize: "13px", color: "#475569" }}>Please enter pile diameter, depth &amp; cage details above and click <strong>"⚡ Calculate Pile Foundation"</strong> to view concrete volume, steel weight &amp; itemized BOQ.</div>
+          </div>
+        ) : (
+          <>
+            {/* Result Metric Cards */}
         <div style={styles.summaryGrid} className="bm-boq-summary-scroll">
           <div style={{ ...styles.metricCard, ...styles.metricTeal }}>
             <span style={styles.metricTitle}>Concrete Volume</span>
@@ -594,7 +612,9 @@ export default function PileFoundationCalculator() {
             </tbody>
           </table>
         </div>
-      </div>
+      </>
+    )}
+  </div>
     </>
   );
 }

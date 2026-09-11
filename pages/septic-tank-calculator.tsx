@@ -185,13 +185,14 @@ export default function SepticTankCalculator() {
     syncApprovedRatesFromBackend();
   }, []);
 
-  const [lengthFt, setLengthFt] = useState(8);
-  const [widthFt, setWidthFt] = useState(4);
-  const [depthFt, setDepthFt] = useState(5);
+  const [lengthFt, setLengthFt] = useState(0);
+  const [widthFt, setWidthFt] = useState(0);
+  const [depthFt, setDepthFt] = useState(0);
   const [wallMaterial, setWallMaterial] = useState('Size Stones');
   const [coverThickMm, setCoverThickMm] = useState(200);
   const [grade, setGrade] = useState('M20');
 
+  const [hasCalculated, setHasCalculated] = useState<boolean>(false);
   const [isInputModified, setIsInputModified] = useState<boolean>(false);
   const [isCalculatedBlue, setIsCalculatedBlue] = useState<boolean>(false);
 
@@ -337,6 +338,7 @@ export default function SepticTankCalculator() {
   }, [lengthFt, widthFt, depthFt, wallMaterial, coverThickMm, grade, sizeStoneRate, blockRate, cementRate, steelRate, sandRate, ca20Rate, shutteringRate, rccLabourRate]);
 
   const handleCalculate = () => {
+    setHasCalculated(true);
     setIsInputModified(false);
     setIsCalculatedBlue(true);
     setTimeout(() => setIsCalculatedBlue(false), 2000);
@@ -465,13 +467,29 @@ export default function SepticTankCalculator() {
           {/* Action Buttons */}
           <div className="bm-boq-actions" style={{ marginTop: '12px' }}>
             <button style={styles.btnPrimary} onClick={handleCalculate}>⚡ Calculate Septic Tank</button>
-            <button style={styles.btnReset} onClick={() => setLengthFt(8)}>🔄 Reset</button>
+            <button style={styles.btnReset} onClick={() => { setLengthFt(0); setWidthFt(0); setDepthFt(0); setHasCalculated(false); }}>🔄 Reset</button>
             <button style={styles.btnSecondary} onClick={handleExportExcel}>📊 Export Excel</button>
             <button style={styles.btnSuccess} onClick={handleExportPDF}>📄 Export PDF Report</button>
           </div>
         </div>
 
-        {/* Result Metric Cards */}
+        {!hasCalculated ? (
+          <div style={{
+            backgroundColor: "#ffffff",
+            border: "2px dashed #831843",
+            borderRadius: "14px",
+            padding: "36px 20px",
+            textAlign: "center",
+            color: "#831843",
+            margin: "20px 0"
+          }}>
+            <div style={{ fontSize: "32px", marginBottom: "8px" }}>🪠</div>
+            <div style={{ fontSize: "16px", fontWeight: "800", color: "#0f172a", marginBottom: "6px" }}>Ready for Septic Tank Design &amp; Cost Estimation</div>
+            <div style={{ fontSize: "13px", color: "#475569" }}>Please enter septic tank dimensions &amp; material type above and click <strong>"⚡ Calculate Septic Tank"</strong> to view capacity, user volume &amp; itemized BOQ.</div>
+          </div>
+        ) : (
+          <>
+            {/* Result Metric Cards */}
         <div style={styles.summaryGrid} className="bm-boq-summary-scroll">
           <div style={{ ...styles.metricCard, ...styles.metricMaroon }}>
             <span style={styles.metricTitle}>Septic Capacity</span>
@@ -550,7 +568,9 @@ export default function SepticTankCalculator() {
             </tbody>
           </table>
         </div>
-      </div>
+      </>
+    )}
+  </div>
     </>
   );
 }

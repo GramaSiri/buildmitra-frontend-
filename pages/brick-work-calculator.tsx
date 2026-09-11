@@ -235,25 +235,22 @@ export default function BrickWorkCalculatorPage() {
   }, []);
 
   const [calcMode, setCalcMode] = useState<'quick' | 'detailed'>('quick');
+  const [hasCalculated, setHasCalculated] = useState<boolean>(false);
   const [isInputModified, setIsInputModified] = useState<boolean>(false);
   const [isCalculatedBlue, setIsCalculatedBlue] = useState<boolean>(false);
 
   // Quick Mode Inputs
-  const [totalArea, setTotalArea] = useState(1000);
+  const [totalArea, setTotalArea] = useState(0);
   const [masonryType, setMasonryType] = useState('Clay Brick (9" Wall)');
   const [mortarRatio, setMortarRatio] = useState('1:6');
   const [wastagePct, setWastagePct] = useState(5);
 
   // Detailed Mode Inputs
   const [wallRows, setWallRows] = useState<BrickWallRow[]>([
-    { id: 'bw1', name: 'External Outer Wall (9")', length: 40, height: 10, thicknessIn: 9, masonryType: 'Clay Brick (9" Wall)', nos: 2 },
-    { id: 'bw2', name: 'Internal Partition Wall (4.5")', length: 30, height: 10, thicknessIn: 4.5, masonryType: 'Clay Brick (4.5" Wall)', nos: 2 }
+    { id: 'bw1', name: 'External Outer Wall (9")', length: 0, height: 0, thicknessIn: 9, masonryType: 'Clay Brick (9" Wall)', nos: 1 }
   ]);
 
-  const [deductionRows, setDeductionRows] = useState<BrickDeductionRow[]>([
-    { id: 'bd1', name: 'Main Door & Doors', height: 7, width: 3, thicknessIn: 9, nos: 4 },
-    { id: 'bd2', name: 'Windows & Ventilators', height: 4, width: 4, thicknessIn: 9, nos: 4 }
-  ]);
+  const [deductionRows, setDeductionRows] = useState<BrickDeductionRow[]>([]);
 
   const handleAddWallRow = () => {
     setWallRows(prev => [...prev, { id: `bw_${Date.now()}`, name: `Wall ${prev.length + 1}`, length: 20, height: 10, thicknessIn: 9, masonryType: 'Clay Brick (9" Wall)', nos: 1 }]);
@@ -506,9 +503,18 @@ export default function BrickWorkCalculatorPage() {
   }, [calcMode, totalArea, masonryType, mortarRatio, wastagePct, wallRows, deductionRows, clayBrickRate, concreteBlock4Rate, concreteBlock6Rate, aacBlockRate, cementRate, sandRate, labourRate]);
 
   const handleCalculate = () => {
+    setHasCalculated(true);
     setIsInputModified(false);
     setIsCalculatedBlue(true);
     setTimeout(() => setIsCalculatedBlue(false), 2000);
+  };
+
+  const handleReset = () => {
+    setWallRows([{ id: 'bw1', name: 'External Outer Wall (9")', length: 0, height: 0, thicknessIn: 9, masonryType: 'Clay Brick (9" Wall)', nos: 1 }]);
+    setDeductionRows([]);
+    setTotalArea(0);
+    setHasCalculated(false);
+    setIsInputModified(false);
   };
 
   const handleExportExcel = () => {
@@ -784,8 +790,8 @@ export default function BrickWorkCalculatorPage() {
                   <span className="bm-desktop-only">⚡ Calculate Detailed Brickwork BOQ</span>
                   <span className="bm-mobile-only">⚡ Calc</span>
                 </button>
-                <button style={styles.btnReset} onClick={() => { setWallRows([]); setDeductionRows([]); }}>
-                  <span className="bm-desktop-only">🔄 Reset All</span>
+                <button style={styles.btnReset} onClick={handleReset}>
+                  <span className="bm-desktop-only">🔄 Reset</span>
                   <span className="bm-mobile-only">🔄 Reset</span>
                 </button>
                 <button style={styles.btnSecondary} onClick={handleExportExcel}>
@@ -801,101 +807,121 @@ export default function BrickWorkCalculatorPage() {
           </>
         )}
 
-        {/* Result Metrics */}
-        <div style={styles.summaryGrid} className="bm-boq-summary-scroll">
-          <div style={{ ...styles.metricCard, ...styles.metricAmber }}>
-            <span style={styles.metricTitle}>
-              <span className="bm-desktop-only">Bricks / Blocks</span>
-              <span className="bm-mobile-only">Bricks</span>
-            </span>
-            <span style={{ ...styles.metricVal, color: isCalculatedBlue ? '#fef3c7' : '#ffffff' }}>{calcResults.grossUnits.toLocaleString()} Nos</span>
+        {!hasCalculated ? (
+          <div style={{
+            backgroundColor: '#fffbeb',
+            border: '2px dashed #b45309',
+            borderRadius: '12px',
+            padding: '32px 20px',
+            textAlign: 'center',
+            color: '#b45309',
+            fontSize: '16px',
+            fontWeight: '700',
+            marginTop: '16px',
+            boxShadow: '0 2px 8px rgba(180,83,9,0.08)'
+          }}>
+            <div style={{ fontSize: '32px', marginBottom: '8px' }}>🧱</div>
+            <div style={{ fontSize: '18px', fontWeight: '800', color: '#78350f', marginBottom: '6px' }}>Ready for Brickwork &amp; Masonry Calculations</div>
+            <div>Enter wall dimensions and select brick/block masonry type above, then click <strong>"⚡ Calculate Brickwork"</strong> to view brick count, mortar cement bags, M-sand &amp; BOQ estimation.</div>
           </div>
-          <div style={{ ...styles.metricCard, ...styles.metricTeal }}>
-            <span style={styles.metricTitle}>
-              <span className="bm-desktop-only">Net Masonry Volume</span>
-              <span className="bm-mobile-only">Masonry Vol</span>
-            </span>
-            <span style={styles.metricVal}>{calcResults.netVolCum} CUM</span>
-          </div>
-          <div style={{ ...styles.metricCard, ...styles.metricOrange }}>
-            <span style={styles.metricTitle}>
-              <span className="bm-desktop-only">Cement Required</span>
-              <span className="bm-mobile-only">Cement</span>
-            </span>
-            <span style={styles.metricVal}>{calcResults.cementBags} Bags</span>
-          </div>
-          <div style={{ ...styles.metricCard, ...styles.metricBlue }}>
-            <span style={styles.metricTitle}>
-              <span className="bm-desktop-only">Material Subtotal</span>
-              <span className="bm-mobile-only">Mat ₹</span>
-            </span>
-            <span style={styles.metricVal}>{formatCurrency(calcResults.totalMaterialCost)}</span>
-          </div>
-          <div style={{ ...styles.metricCard, ...styles.metricGreen }}>
-            <span style={styles.metricTitle}>
-              <span className="bm-desktop-only">GRAND ESTIMATED TOTAL</span>
-              <span className="bm-mobile-only">Grand ₹</span>
-            </span>
-            <span style={{ ...styles.metricValGrand, color: isCalculatedBlue ? '#60a5fa' : '#ffffff' }}>{formatCurrency(calcResults.grandTotalCost)}</span>
-          </div>
-        </div>
+        ) : (
+          <>
+            {/* Result Metrics */}
+            <div style={styles.summaryGrid} className="bm-boq-summary-scroll">
+              <div style={{ ...styles.metricCard, ...styles.metricAmber }}>
+                <span style={styles.metricTitle}>
+                  <span className="bm-desktop-only">Bricks / Blocks</span>
+                  <span className="bm-mobile-only">Bricks</span>
+                </span>
+                <span style={{ ...styles.metricVal, color: isCalculatedBlue ? '#fef3c7' : '#ffffff' }}>{calcResults.grossUnits.toLocaleString()} Nos</span>
+              </div>
+              <div style={{ ...styles.metricCard, ...styles.metricTeal }}>
+                <span style={styles.metricTitle}>
+                  <span className="bm-desktop-only">Net Masonry Volume</span>
+                  <span className="bm-mobile-only">Masonry Vol</span>
+                </span>
+                <span style={styles.metricVal}>{calcResults.netVolCum} CUM</span>
+              </div>
+              <div style={{ ...styles.metricCard, ...styles.metricOrange }}>
+                <span style={styles.metricTitle}>
+                  <span className="bm-desktop-only">Cement Required</span>
+                  <span className="bm-mobile-only">Cement</span>
+                </span>
+                <span style={styles.metricVal}>{calcResults.cementBags} Bags</span>
+              </div>
+              <div style={{ ...styles.metricCard, ...styles.metricBlue }}>
+                <span style={styles.metricTitle}>
+                  <span className="bm-desktop-only">Material Subtotal</span>
+                  <span className="bm-mobile-only">Mat ₹</span>
+                </span>
+                <span style={styles.metricVal}>{formatCurrency(calcResults.totalMaterialCost)}</span>
+              </div>
+              <div style={{ ...styles.metricCard, ...styles.metricGreen }}>
+                <span style={styles.metricTitle}>
+                  <span className="bm-desktop-only">GRAND ESTIMATED TOTAL</span>
+                  <span className="bm-mobile-only">Grand ₹</span>
+                </span>
+                <span style={{ ...styles.metricValGrand, color: isCalculatedBlue ? '#60a5fa' : '#ffffff' }}>{formatCurrency(calcResults.grandTotalCost)}</span>
+              </div>
+            </div>
 
-        {/* Missing Master Items Warning */}
-        {calcResults.missingItems.length > 0 && (
-          <div style={styles.warnBanner}>
-            ⚠️ <strong>Master Mapping Required / Approved Rate Unavailable ({calcResults.missingItems.length} Line Items)</strong>
-            <ul style={{ margin: '6px 0 0 0', paddingLeft: '20px', fontSize: '13px' }}>
-              {calcResults.missingItems.map(it => (
-                <li key={it.code}>
-                  <code>{it.code}</code>: {it.name} — Quantity: <strong>{it.qty.toLocaleString()} {it.uom}</strong> (Status: <em>Master Mapping Required</em>)
-                </li>
-              ))}
-            </ul>
-          </div>
+            {/* Missing Master Items Warning */}
+            {calcResults.missingItems.length > 0 && (
+              <div style={styles.warnBanner}>
+                ⚠️ <strong>Master Mapping Required / Approved Rate Unavailable ({calcResults.missingItems.length} Line Items)</strong>
+                <ul style={{ margin: '6px 0 0 0', paddingLeft: '20px', fontSize: '13px' }}>
+                  {calcResults.missingItems.map(it => (
+                    <li key={it.code}>
+                      <code>{it.code}</code>: {it.name} — Quantity: <strong>{it.qty.toLocaleString()} {it.uom}</strong> (Status: <em>Master Mapping Required</em>)
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Itemized BOQ Table */}
+            <div style={styles.tableContainer} className="bm-boq-table-scroll">
+              <div style={{ padding: '12px 16px', backgroundColor: '#b45309', color: 'white', fontWeight: '800', fontSize: '16px' }}>
+                📑 Itemized Brickwork &amp; Masonry BOQ ({calcMode.toUpperCase()} MODE - Admin Master Linked)
+              </div>
+              <table style={styles.table}>
+                <thead>
+                  <tr>
+                    <th style={styles.th} className="bm-hide-mobile">Master Code</th>
+                    <th style={styles.th} className="bm-hide-mobile">Category</th>
+                    <th style={styles.th}>Item Description</th>
+                    <th style={styles.th}>Quantity</th>
+                    <th style={styles.th}>UOM</th>
+                    <th style={styles.th}>Approved Rate (₹)</th>
+                    <th style={styles.th}>Total Amount (₹)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {calcResults.items.map(it => (
+                    <tr key={it.code}>
+                      <td style={styles.td} className="bm-hide-mobile"><code>{it.code}</code></td>
+                      <td style={styles.td} className="bm-hide-mobile">{it.category}</td>
+                      <td style={styles.td}><strong>{it.name}</strong></td>
+                      <td style={styles.td}>{it.qty.toLocaleString()}</td>
+                      <td style={styles.td}>{it.uom}</td>
+                      <td style={styles.td}>
+                        {it.isFound ? formatCurrency(it.rateVal) : <span style={{ color: '#dc2626', fontWeight: '700' }}>Master Mapping Required / Approved Rate Unavailable</span>}
+                      </td>
+                      <td style={styles.td}>
+                        {it.isFound ? <strong>{formatCurrency(it.amountVal)}</strong> : <span style={{ color: '#94a3b8' }}>—</span>}
+                      </td>
+                    </tr>
+                  ))}
+                  <tr style={{ backgroundColor: '#b45309', color: 'white', fontWeight: '800' }}>
+                    <td colSpan={6} style={{ padding: '12px 14px', fontSize: '16px' }}>GRAND TOTAL ESTIMATED COST</td>
+                    <td style={{ padding: '12px 14px', fontSize: '18px' }}>{formatCurrency(calcResults.grandTotalCost)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
-
-        {/* Itemized BOQ Table */}
-        <div style={styles.tableContainer} className="bm-boq-table-scroll">
-          <div style={{ padding: '12px 16px', backgroundColor: '#b45309', color: 'white', fontWeight: '800', fontSize: '16px' }}>
-            📑 Itemized Brickwork &amp; Masonry BOQ ({calcMode.toUpperCase()} MODE - Admin Master Linked)
-          </div>
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th style={styles.th} className="bm-hide-mobile">Master Code</th>
-                <th style={styles.th} className="bm-hide-mobile">Category</th>
-                <th style={styles.th}>Item Description</th>
-                <th style={styles.th}>Quantity</th>
-                <th style={styles.th}>UOM</th>
-                <th style={styles.th}>Approved Rate (₹)</th>
-                <th style={styles.th}>Total Amount (₹)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {calcResults.items.map(it => (
-                <tr key={it.code}>
-                  <td style={styles.td} className="bm-hide-mobile"><code>{it.code}</code></td>
-                  <td style={styles.td} className="bm-hide-mobile">{it.category}</td>
-                  <td style={styles.td}><strong>{it.name}</strong></td>
-                  <td style={styles.td}>{it.qty.toLocaleString()}</td>
-                  <td style={styles.td}>{it.uom}</td>
-                  <td style={styles.td}>
-                    {it.isFound ? formatCurrency(it.rateVal) : <span style={{ color: '#dc2626', fontWeight: '700' }}>Master Mapping Required / Approved Rate Unavailable</span>}
-                  </td>
-                  <td style={styles.td}>
-                    {it.isFound ? <strong>{formatCurrency(it.amountVal)}</strong> : <span style={{ color: '#94a3b8' }}>—</span>}
-                  </td>
-                </tr>
-              ))}
-              <tr style={{ backgroundColor: '#b45309', color: 'white', fontWeight: '800' }}>
-                <td colSpan={6} style={{ padding: '12px 14px', fontSize: '16px' }}>GRAND TOTAL ESTIMATED COST</td>
-                <td style={{ padding: '12px 14px', fontSize: '18px' }}>{formatCurrency(calcResults.grandTotalCost)}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
       </div>
     </>
   );
 }
-

@@ -184,11 +184,11 @@ export default function StaircaseCalculator() {
     syncApprovedRatesFromBackend();
   }, []);
 
-  const [floors, setFloors] = useState(3);
-  const [floorHeightFt, setFloorHeightFt] = useState(10);
+  const [floors, setFloors] = useState(0);
+  const [floorHeightFt, setFloorHeightFt] = useState(0);
   const [riserIn, setRiserIn] = useState(7);
   const [treadIn, setTreadIn] = useState(10);
-  const [widthFt, setWidthFt] = useState(4);
+  const [widthFt, setWidthFt] = useState(0);
   const [waistThickMm, setWaistThickMm] = useState(150);
   const [landingLFt, setLandingLFt] = useState(4);
   const [landingWFt, setLandingWFt] = useState(4);
@@ -200,6 +200,7 @@ export default function StaircaseCalculator() {
   const [distSpacingMm, setDistSpacingMm] = useState(200);
   const [coverMm, setCoverMm] = useState(20);
 
+  const [hasCalculated, setHasCalculated] = useState<boolean>(false);
   const [isInputModified, setIsInputModified] = useState<boolean>(false);
   const [isCalculatedBlue, setIsCalculatedBlue] = useState<boolean>(false);
 
@@ -386,6 +387,7 @@ export default function StaircaseCalculator() {
   }, [floors, floorHeightFt, riserIn, treadIn, widthFt, waistThickMm, landingLFt, landingWFt, landingsPerFloor, grade, mainDia, mainSpacingMm, distDia, distSpacingMm, coverMm, cementRate, steelRate, sandRate, ca20Rate, ca12Rate, wireRate, coverRate, shutteringRate, rccLabourRate]);
 
   const handleCalculate = () => {
+    setHasCalculated(true);
     setIsInputModified(false);
     setIsCalculatedBlue(true);
     setTimeout(() => setIsCalculatedBlue(false), 2000);
@@ -551,13 +553,29 @@ export default function StaircaseCalculator() {
           {/* Action Buttons */}
           <div className="bm-boq-actions" style={{ marginTop: '12px' }}>
             <button style={styles.btnPrimary} onClick={handleCalculate}>⚡ Calculate Staircase</button>
-            <button style={styles.btnReset} onClick={() => setFloors(3)}>🔄 Reset</button>
+            <button style={styles.btnReset} onClick={() => { setFloors(0); setFloorHeightFt(0); setWidthFt(0); setHasCalculated(false); }}>🔄 Reset</button>
             <button style={styles.btnSecondary} onClick={handleExportExcel}>📊 Export Excel</button>
             <button style={styles.btnSuccess} onClick={handleExportPDF}>📄 Export PDF Report</button>
           </div>
         </div>
 
-        {/* Result Metric Cards */}
+        {!hasCalculated ? (
+          <div style={{
+            backgroundColor: "#ffffff",
+            border: "2px dashed #2563eb",
+            borderRadius: "14px",
+            padding: "36px 20px",
+            textAlign: "center",
+            color: "#2563eb",
+            margin: "20px 0"
+          }}>
+            <div style={{ fontSize: "32px", marginBottom: "8px" }}>🪜</div>
+            <div style={{ fontSize: "16px", fontWeight: "800", color: "#0f172a", marginBottom: "6px" }}>Ready for Staircase Estimation</div>
+            <div style={{ fontSize: "13px", color: "#475569" }}>Please enter floor height, riser/tread &amp; flight details above and click <strong>"⚡ Calculate Staircase"</strong> to view material quantities and itemized BOQ.</div>
+          </div>
+        ) : (
+          <>
+            {/* Result Metric Cards */}
         <div style={styles.summaryGrid} className="bm-boq-summary-scroll">
           <div style={{ ...styles.metricCard, ...styles.metricBlue }}>
             <span style={styles.metricTitle}>Concrete Volume</span>
@@ -636,7 +654,9 @@ export default function StaircaseCalculator() {
             </tbody>
           </table>
         </div>
-      </div>
+      </>
+    )}
+  </div>
     </>
   );
 }

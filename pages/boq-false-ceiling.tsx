@@ -66,13 +66,13 @@ export default function FalseCeilingBOQPage() {
 
   // Ceiling Details Inputs
   const [ceilingType, setCeilingType] = useState("Gypsum Board Ceiling");
-  const [length, setLength] = useState(30);
-  const [width, setWidth] = useState(40);
-  const [rooms, setRooms] = useState(1);
-  const [coveLength, setCoveLength] = useState(60);
-  const [lightPoints, setLightPoints] = useState(12);
+  const [length, setLength] = useState(0);
+  const [width, setWidth] = useState(0);
+  const [rooms, setRooms] = useState(0);
+  const [coveLength, setCoveLength] = useState(0);
+  const [lightPoints, setLightPoints] = useState(0);
 
-  const [generated, setGenerated] = useState(true);
+  const [generated, setGenerated] = useState(false);
 
   // Derived Geometry & Material Calculations
   const area = length * width * rooms;
@@ -192,7 +192,7 @@ export default function FalseCeilingBOQPage() {
   };
 
   const handleReset = () => {
-    setCeilingType("Gypsum Board Ceiling"); setLength(30); setWidth(40); setRooms(1); setCoveLength(60); setLightPoints(12);
+    setCeilingType("Gypsum Board Ceiling"); setLength(0); setWidth(0); setRooms(0); setCoveLength(0); setLightPoints(0);
     setGenerated(false);
   };
 
@@ -237,8 +237,9 @@ export default function FalseCeilingBOQPage() {
             <label style={styles.label}>Length (Ft)</label>
             <input
               type="number"
+              placeholder="e.g. 30"
               style={styles.input}
-              value={length}
+              value={length || ''}
               onChange={e => setLength(parseFloat(e.target.value) || 0)}
             />
           </div>
@@ -247,8 +248,9 @@ export default function FalseCeilingBOQPage() {
             <label style={styles.label}>Width (Ft)</label>
             <input
               type="number"
+              placeholder="e.g. 40"
               style={styles.input}
-              value={width}
+              value={width || ''}
               onChange={e => setWidth(parseFloat(e.target.value) || 0)}
             />
           </div>
@@ -257,9 +259,10 @@ export default function FalseCeilingBOQPage() {
             <label style={styles.label}>No. of Rooms</label>
             <input
               type="number"
+              placeholder="e.g. 1"
               style={styles.input}
-              value={rooms}
-              onChange={e => setRooms(parseFloat(e.target.value) || 1)}
+              value={rooms || ''}
+              onChange={e => setRooms(parseFloat(e.target.value) || 0)}
             />
           </div>
 
@@ -267,8 +270,9 @@ export default function FalseCeilingBOQPage() {
             <label style={styles.label}>Cove / Tray Length (Rft)</label>
             <input
               type="number"
+              placeholder="e.g. 60"
               style={styles.input}
-              value={coveLength}
+              value={coveLength || ''}
               onChange={e => setCoveLength(parseFloat(e.target.value) || 0)}
             />
           </div>
@@ -277,8 +281,9 @@ export default function FalseCeilingBOQPage() {
             <label style={styles.label}>Light Point Cutouts</label>
             <input
               type="number"
+              placeholder="e.g. 12"
               style={styles.input}
-              value={lightPoints}
+              value={lightPoints || ''}
               onChange={e => setLightPoints(parseFloat(e.target.value) || 0)}
             />
           </div>
@@ -315,8 +320,21 @@ export default function FalseCeilingBOQPage() {
         </div>
       </div>
 
-      {/* 4. Detailed Results BOQ Cards & Table */}
-      {generated && (
+      {!generated ? (
+        <div style={{
+          backgroundColor: "#ffffff",
+          border: "2px dashed #db2777",
+          borderRadius: "14px",
+          padding: "36px 20px",
+          textAlign: "center",
+          color: "#db2777",
+          margin: "20px 0"
+        }}>
+          <div style={{ fontSize: "32px", marginBottom: "8px" }}>⬇️</div>
+          <div style={{ fontSize: "16px", fontWeight: "800", color: "#0f172a", marginBottom: "6px" }}>Ready for False Ceiling BOQ Estimation</div>
+          <div style={{ fontSize: "13px", color: "#475569" }}>Please enter ceiling dimensions &amp; room parameters above (e.g. 30ft × 40ft, 1 room) and click <strong>"🔨 Generate False Ceiling BOQ"</strong> to view framing materials &amp; cost analysis.</div>
+        </div>
+      ) : (
         <div style={styles.stepperCard}>
           <div style={styles.sectionHeader}>
             <span>📊 False Ceiling BOQ Estimation Summary & Itemized BOQ</span>

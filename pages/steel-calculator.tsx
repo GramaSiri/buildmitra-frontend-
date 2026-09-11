@@ -112,10 +112,10 @@ export default function SteelCalculatorPage() {
   const [lapSetting, setLapSetting] = useState("Auto");
   const [matType, setMatType] = useState("Single Mat");
 
-  const [memberNos, setMemberNos] = useState(1);
-  const [length, setLength] = useState(30);
-  const [width, setWidth] = useState(20);
-  const [depth, setDepth] = useState(150);
+  const [memberNos, setMemberNos] = useState(0);
+  const [length, setLength] = useState(0);
+  const [width, setWidth] = useState(0);
+  const [depth, setDepth] = useState(0);
   const [coverMm, setCoverMm] = useState(20);
 
   // Slab State
@@ -1359,7 +1359,21 @@ export default function SteelCalculatorPage() {
           )}
         </div>
 
-        {generated && results && (
+        {!generated ? (
+          <div style={{
+            backgroundColor: "#ffffff",
+            border: "2px dashed #0284c7",
+            borderRadius: "14px",
+            padding: "36px 20px",
+            textAlign: "center",
+            color: "#0369a1",
+            margin: "20px 0"
+          }}>
+            <div style={{ fontSize: "32px", marginBottom: "8px" }}>🔩</div>
+            <div style={{ fontSize: "16px", fontWeight: "800", color: "#0f172a", marginBottom: "6px" }}>Ready for Steel Rebar BBS &amp; Cost Estimation</div>
+            <div style={{ fontSize: "13px", color: "#475569" }}>Please enter member dimensions and reinforcement details above and click <strong>"🔨 Calculate Rebar BBS &amp; Quantities"</strong> to generate the bar bending schedule and material cost breakdown.</div>
+          </div>
+        ) : results && (
           <div>
             {results.warnings.length > 0 ? (
               <div style={styles.warningBox} className="bm-hide-mobile">

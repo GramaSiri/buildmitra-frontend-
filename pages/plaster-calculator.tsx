@@ -229,12 +229,13 @@ export default function PlasterCalculatorPage() {
     syncApprovedRatesFromBackend();
   }, []);
 
-  const [calcMode, setCalcMode] = useState<'quick' | 'detailed'>('quick');
+  const [calcMode, setCalcMode] = useState<'quick' | 'detailed'>('detailed');
+  const [hasCalculated, setHasCalculated] = useState<boolean>(false);
   const [isInputModified, setIsInputModified] = useState<boolean>(false);
   const [isCalculatedBlue, setIsCalculatedBlue] = useState<boolean>(false);
 
   // Quick Mode State
-  const [totalArea, setTotalArea] = useState(1000);
+  const [totalArea, setTotalArea] = useState(0);
   const [thicknessMm, setThicknessMm] = useState(12);
   const [mortarRatio, setMortarRatio] = useState('1:4');
   const [wastagePct, setWastagePct] = useState(5);
@@ -246,20 +247,13 @@ export default function PlasterCalculatorPage() {
   const [includeChickenMesh, setIncludeChickenMesh] = useState(true);
   const [includeWaterproofing, setIncludeWaterproofing] = useState(false);
 
-  const [areaRows, setAreaRows] = useState<PlasterAreaRow[]>([
-    { id: 'pa1', name: 'Internal Wall Plaster', length: 30, height: 10, nos: 2 },
-    { id: 'pa2', name: 'Staircase Wall Plaster', length: 15, height: 10, nos: 1 }
-  ]);
+  const [areaRows, setAreaRows] = useState<PlasterAreaRow[]>([]);
 
   const [roomRows, setRoomRows] = useState<PlasterRoomRow[]>([
-    { id: 'pr1', name: 'Living Room', length: 20, width: 15, height: 10, nos: 1, includeCeiling: true },
-    { id: 'pr2', name: 'Master Bedroom', length: 15, width: 12, height: 10, nos: 1, includeCeiling: true }
+    { id: 'pr1', name: 'Living Room', length: 0, width: 0, height: 0, nos: 1, includeCeiling: true }
   ]);
 
-  const [deductionRows, setDeductionRows] = useState<PlasterDeductionRow[]>([
-    { id: 'pd1', name: 'Main Door & Doors', height: 7, width: 3, nos: 4 },
-    { id: 'pd2', name: 'Windows & Ventilators', height: 4, width: 4, nos: 4 }
-  ]);
+  const [deductionRows, setDeductionRows] = useState<PlasterDeductionRow[]>([]);
 
   const handleAddAreaRow = () => {
     setAreaRows(prev => [...prev, { id: `pa_${Date.now()}`, name: `Wall Area ${prev.length + 1}`, length: 15, height: 10, nos: 1 }]);
@@ -516,9 +510,19 @@ export default function PlasterCalculatorPage() {
   }, [calcMode, totalArea, thicknessMm, mortarRatio, wastagePct, plasterLocation, detailedThickMm, detailedRatio, includeChickenMesh, includeWaterproofing, areaRows, roomRows, deductionRows, cementRate, sandRate, meshRate, wprRate, labourRate]);
 
   const handleCalculate = () => {
+    setHasCalculated(true);
     setIsInputModified(false);
     setIsCalculatedBlue(true);
     setTimeout(() => setIsCalculatedBlue(false), 2000);
+  };
+
+  const handleReset = () => {
+    setRoomRows([{ id: 'pr1', name: 'Living Room', length: 0, width: 0, height: 0, nos: 1, includeCeiling: true }]);
+    setAreaRows([]);
+    setDeductionRows([]);
+    setTotalArea(0);
+    setHasCalculated(false);
+    setIsInputModified(false);
   };
 
   const handleExportExcel = () => {
@@ -891,7 +895,7 @@ export default function PlasterCalculatorPage() {
 
               <div className="bm-boq-actions" style={{ marginTop: '12px' }}>
                 <button style={styles.btnPrimary} onClick={handleCalculate}>⚡ Calculate Detailed Plaster BOQ</button>
-                <button style={styles.btnReset} onClick={() => { setAreaRows([]); setRoomRows([]); setDeductionRows([]); }}>🔄 Reset All</button>
+                <button style={styles.btnReset} onClick={handleReset}>🔄 Reset All</button>
                 <button style={styles.btnSecondary} onClick={handleExportExcel}>📊 Export Excel</button>
                 <button style={styles.btnSuccess} onClick={handleExportPDF}>📄 Export PDF Report</button>
               </div>
@@ -899,84 +903,105 @@ export default function PlasterCalculatorPage() {
           </>
         )}
 
-        {/* Result Metrics */}
-        <div style={styles.summaryGrid} className="bm-boq-summary-scroll">
-          <div style={{ ...styles.metricCard, ...styles.metricTeal }}>
-            <span style={styles.metricTitle}>Net Plaster Area</span>
-            <span style={{ ...styles.metricVal, color: isCalculatedBlue ? '#99f6e4' : '#ffffff' }}>{calcResults.netArea.toLocaleString()} Sq.ft</span>
+        {!hasCalculated ? (
+          <div style={{
+            backgroundColor: '#f0fdf4',
+            border: '2px dashed #0f766e',
+            borderRadius: '12px',
+            padding: '32px 20px',
+            textAlign: 'center',
+            color: '#0f766e',
+            fontSize: '16px',
+            fontWeight: '700',
+            marginTop: '16px',
+            boxShadow: '0 2px 8px rgba(15,118,110,0.08)'
+          }}>
+            <div style={{ fontSize: '32px', marginBottom: '8px' }}>🏗️</div>
+            <div style={{ fontSize: '18px', fontWeight: '800', color: '#134e4a', marginBottom: '6px' }}>Ready for Plastering Calculations</div>
+            <div>Enter wall/room dimensions and mortar ratios above, then click <strong>"⚡ Calculate Plaster BOQ"</strong> to view cement bags, M-sand, chicken mesh &amp; BOQ estimation.</div>
           </div>
-          <div style={{ ...styles.metricCard, ...styles.metricOrange }}>
-            <span style={styles.metricTitle}>Cement Bags</span>
-            <span style={styles.metricVal}>{calcResults.cementBags} Bags</span>
-          </div>
-          <div style={{ ...styles.metricCard, ...styles.metricBlue }}>
-            <span style={styles.metricTitle}>Sand Quantity</span>
-            <span style={styles.metricVal}>{calcResults.sandCft.toLocaleString()} CFT</span>
-          </div>
-          <div style={{ ...styles.metricCard, ...styles.metricBlue }}>
-            <span style={styles.metricTitle}>Material Subtotal</span>
-            <span style={styles.metricVal}>{formatCurrency(calcResults.totalMaterialCost)}</span>
-          </div>
-          <div style={{ ...styles.metricCard, ...styles.metricGreen }}>
-            <span style={styles.metricTitle}>GRAND ESTIMATED TOTAL</span>
-            <span style={{ ...styles.metricValGrand, color: isCalculatedBlue ? '#60a5fa' : '#ffffff' }}>{formatCurrency(calcResults.grandTotalCost)}</span>
-          </div>
-        </div>
+        ) : (
+          <>
+            {/* Result Metrics */}
+            <div style={styles.summaryGrid} className="bm-boq-summary-scroll">
+              <div style={{ ...styles.metricCard, ...styles.metricTeal }}>
+                <span style={styles.metricTitle}>Net Plaster Area</span>
+                <span style={{ ...styles.metricVal, color: isCalculatedBlue ? '#99f6e4' : '#ffffff' }}>{calcResults.netArea.toLocaleString()} Sq.ft</span>
+              </div>
+              <div style={{ ...styles.metricCard, ...styles.metricOrange }}>
+                <span style={styles.metricTitle}>Cement Bags</span>
+                <span style={styles.metricVal}>{calcResults.cementBags} Bags</span>
+              </div>
+              <div style={{ ...styles.metricCard, ...styles.metricBlue }}>
+                <span style={styles.metricTitle}>Sand Quantity</span>
+                <span style={styles.metricVal}>{calcResults.sandCft.toLocaleString()} CFT</span>
+              </div>
+              <div style={{ ...styles.metricCard, ...styles.metricBlue }}>
+                <span style={styles.metricTitle}>Material Subtotal</span>
+                <span style={styles.metricVal}>{formatCurrency(calcResults.totalMaterialCost)}</span>
+              </div>
+              <div style={{ ...styles.metricCard, ...styles.metricGreen }}>
+                <span style={styles.metricTitle}>GRAND ESTIMATED TOTAL</span>
+                <span style={{ ...styles.metricValGrand, color: isCalculatedBlue ? '#60a5fa' : '#ffffff' }}>{formatCurrency(calcResults.grandTotalCost)}</span>
+              </div>
+            </div>
 
-        {/* Missing Master Items Warning */}
-        {calcResults.missingItems.length > 0 && (
-          <div style={styles.warnBanner}>
-            ⚠️ <strong>Master Mapping Required / Approved Rate Unavailable ({calcResults.missingItems.length} Line Items)</strong>
-            <ul style={{ margin: '6px 0 0 0', paddingLeft: '20px', fontSize: '13px' }}>
-              {calcResults.missingItems.map(it => (
-                <li key={it.code}>
-                  <code>{it.code}</code>: {it.name} — Quantity: <strong>{it.qty.toLocaleString()} {it.uom}</strong> (Status: <em>Master Mapping Required</em>)
-                </li>
-              ))}
-            </ul>
-          </div>
+            {/* Missing Master Items Warning */}
+            {calcResults.missingItems.length > 0 && (
+              <div style={styles.warnBanner}>
+                ⚠️ <strong>Master Mapping Required / Approved Rate Unavailable ({calcResults.missingItems.length} Line Items)</strong>
+                <ul style={{ margin: '6px 0 0 0', paddingLeft: '20px', fontSize: '13px' }}>
+                  {calcResults.missingItems.map(it => (
+                    <li key={it.code}>
+                      <code>{it.code}</code>: {it.name} — Quantity: <strong>{it.qty.toLocaleString()} {it.uom}</strong> (Status: <em>Master Mapping Required</em>)
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Itemized BOQ Table */}
+            <div style={styles.tableContainer} className="bm-boq-table-scroll">
+              <div style={{ padding: '12px 16px', backgroundColor: '#0f766e', color: 'white', fontWeight: '800', fontSize: '16px' }}>
+                📑 Itemized Plastering BOQ ({calcMode.toUpperCase()} MODE - Admin Master Linked)
+              </div>
+              <table style={styles.table}>
+                <thead>
+                  <tr>
+                    <th style={styles.th} className="bm-hide-mobile">Master Code</th>
+                    <th style={styles.th} className="bm-hide-mobile">Category</th>
+                    <th style={styles.th}>Item Description</th>
+                    <th style={styles.th}>Quantity</th>
+                    <th style={styles.th}>UOM</th>
+                    <th style={styles.th}>Approved Rate (₹)</th>
+                    <th style={styles.th}>Total Amount (₹)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {calcResults.items.map(it => (
+                    <tr key={it.code}>
+                      <td style={styles.td} className="bm-hide-mobile"><code>{it.code}</code></td>
+                      <td style={styles.td} className="bm-hide-mobile">{it.category}</td>
+                      <td style={styles.td}><strong>{it.name}</strong></td>
+                      <td style={styles.td}>{it.qty.toLocaleString()}</td>
+                      <td style={styles.td}>{it.uom}</td>
+                      <td style={styles.td}>
+                        {it.isFound ? formatCurrency(it.rateVal) : <span style={{ color: '#dc2626', fontWeight: '700' }}>Master Mapping Required / Approved Rate Unavailable</span>}
+                      </td>
+                      <td style={styles.td}>
+                        {it.isFound ? <strong>{formatCurrency(it.amountVal)}</strong> : <span style={{ color: '#94a3b8' }}>—</span>}
+                      </td>
+                    </tr>
+                  ))}
+                  <tr style={{ backgroundColor: '#0f766e', color: 'white', fontWeight: '800' }}>
+                    <td colSpan={6} style={{ padding: '12px 14px', fontSize: '16px' }}>GRAND TOTAL ESTIMATED COST</td>
+                    <td style={{ padding: '12px 14px', fontSize: '18px' }}>{formatCurrency(calcResults.grandTotalCost)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
-
-        {/* Itemized BOQ Table */}
-        <div style={styles.tableContainer} className="bm-boq-table-scroll">
-          <div style={{ padding: '12px 16px', backgroundColor: '#0f766e', color: 'white', fontWeight: '800', fontSize: '16px' }}>
-            📑 Itemized Plastering BOQ ({calcMode.toUpperCase()} MODE - Admin Master Linked)
-          </div>
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th style={styles.th} className="bm-hide-mobile">Master Code</th>
-                <th style={styles.th} className="bm-hide-mobile">Category</th>
-                <th style={styles.th}>Item Description</th>
-                <th style={styles.th}>Quantity</th>
-                <th style={styles.th}>UOM</th>
-                <th style={styles.th}>Approved Rate (₹)</th>
-                <th style={styles.th}>Total Amount (₹)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {calcResults.items.map(it => (
-                <tr key={it.code}>
-                  <td style={styles.td} className="bm-hide-mobile"><code>{it.code}</code></td>
-                  <td style={styles.td} className="bm-hide-mobile">{it.category}</td>
-                  <td style={styles.td}><strong>{it.name}</strong></td>
-                  <td style={styles.td}>{it.qty.toLocaleString()}</td>
-                  <td style={styles.td}>{it.uom}</td>
-                  <td style={styles.td}>
-                    {it.isFound ? formatCurrency(it.rateVal) : <span style={{ color: '#dc2626', fontWeight: '700' }}>Master Mapping Required / Approved Rate Unavailable</span>}
-                  </td>
-                  <td style={styles.td}>
-                    {it.isFound ? <strong>{formatCurrency(it.amountVal)}</strong> : <span style={{ color: '#94a3b8' }}>—</span>}
-                  </td>
-                </tr>
-              ))}
-              <tr style={{ backgroundColor: '#0f766e', color: 'white', fontWeight: '800' }}>
-                <td colSpan={6} style={{ padding: '12px 14px', fontSize: '16px' }}>GRAND TOTAL ESTIMATED COST</td>
-                <td style={{ padding: '12px 14px', fontSize: '18px' }}>{formatCurrency(calcResults.grandTotalCost)}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
       </div>
     </>
   );

@@ -107,7 +107,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '4px'
   },
   label: {
-    fontSize: '15px',
+    fontSize: '14px',
     fontWeight: '700',
     color: '#334155',
     marginBottom: '2px'
@@ -115,8 +115,8 @@ const styles: Record<string, React.CSSProperties> = {
   input: {
     width: '100%',
     height: '38px',
-    padding: '8px 12px',
-    fontSize: '16px',
+    padding: '6px 10px',
+    fontSize: '14px',
     fontWeight: '600',
     color: '#0f172a',
     backgroundColor: '#ffffff',
@@ -134,8 +134,8 @@ const styles: Record<string, React.CSSProperties> = {
   select: {
     width: '100%',
     height: '38px',
-    padding: '8px 12px',
-    fontSize: '16px',
+    padding: '6px 10px',
+    fontSize: '13px',
     fontWeight: '600',
     color: '#0f172a',
     backgroundColor: '#ffffff',
@@ -176,9 +176,9 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: '#ffffff',
     marginBottom: '16px'
   },
-  table: { width: '100%', borderCollapse: 'collapse', fontSize: '15px' },
-  th: { backgroundColor: '#0f766e', color: 'white', padding: '10px 14px', textAlign: 'left', fontWeight: '700', fontSize: '15px' },
-  td: { padding: '10px 14px', borderBottom: '1px solid #f1f5f9', color: '#334155', fontSize: '15px' },
+  table: { width: '100%', borderCollapse: 'collapse', fontSize: '14px' },
+  th: { backgroundColor: '#0f766e', color: 'white', padding: '10px 12px', textAlign: 'left', fontWeight: '700', fontSize: '14px', whiteSpace: 'nowrap' },
+  td: { padding: '8px 12px', borderBottom: '1px solid #f1f5f9', color: '#334155', fontSize: '14px' },
 
   btnPrimary: { backgroundColor: '#0f766e', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '8px', cursor: 'pointer', fontSize: '15px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '6px' },
   btnSecondary: { backgroundColor: '#2563eb', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '8px', cursor: 'pointer', fontSize: '15px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '6px' },
@@ -198,23 +198,20 @@ const formatCurrency = (val: number | null | undefined): string => {
 const DETAILED_MATERIALS = [
   'Vitrified Tiles',
   'Ceramic Tiles',
-  'Porcelain Tiles',
   'Anti-Skid Tiles',
   'Parking Tiles',
-  'Staircase Tiles / Step Tiles',
   'Granite',
   'Marble',
   'Kota Stone',
   'Tandur Stone',
+  'Designer / Mosaic Tiles',
   'Wooden Flooring',
   'Laminate Flooring',
   'Vinyl Flooring',
   'SPC Flooring',
   'Internal Wall Cladding',
   'External Wall Cladding',
-  'Bathroom Wall Tiles',
-  'Kitchen Dado Tiles',
-  'Other / Custom Material'
+  'Staircase Tiles / Step Tiles'
 ];
 
 const INSTALLATION_METHODS = [
@@ -237,19 +234,15 @@ const TILE_SIZES: Record<string, { label: string; sqft: number; pcsPerBox: numbe
   '600x1200': { label: '600 × 1200 mm (24" × 48")', sqft: 7.75, pcsPerBox: 2 },
   '800x800': { label: '800 × 800 mm (32" × 32")', sqft: 6.89, pcsPerBox: 3 },
   '800x1600': { label: '800 × 1600 mm (32" × 64")', sqft: 13.78, pcsPerBox: 2 },
-  '900x900': { label: '900 × 900 mm (36" × 36")', sqft: 8.72, pcsPerBox: 2 },
-  '900x1800': { label: '900 × 1800 mm (36" × 72")', sqft: 17.44, pcsPerBox: 2 },
-  '1000x1000': { label: '1000 × 1000 mm (40" × 40")', sqft: 10.76, pcsPerBox: 2 },
   '1200x1200': { label: '1200 × 1200 mm (48" × 48")', sqft: 15.50, pcsPerBox: 2 },
-  '1200x1800': { label: '1200 × 1800 mm (48" × 72")', sqft: 23.25, pcsPerBox: 1 },
-  '1200x2400': { label: '1200 × 2400 mm (48" × 96")', sqft: 31.00, pcsPerBox: 1 },
-  '1600x3200': { label: '1600 × 3200 mm (64" × 128")', sqft: 55.11, pcsPerBox: 1 },
-  'Custom': { label: 'Custom Tile / Slab Size...', sqft: 1.0, pcsPerBox: 1 }
+  'Custom': { label: 'Slab / Custom Size', sqft: 1.0, pcsPerBox: 1 }
 };
 
 export interface FloorRow {
   id: string;
   name: string;
+  material: string;
+  tileSize: string;
   length: number;
   width: number;
   nos: number;
@@ -260,6 +253,10 @@ export interface FloorRow {
 export interface BathRow {
   id: string;
   name: string;
+  floorMaterial: string;
+  floorTileSize: string;
+  wallMaterial: string;
+  wallTileSize: string;
   length: number;
   width: number;
   wallHeightFt: number;
@@ -278,6 +275,8 @@ export interface DeductionRow {
 export interface StairRow {
   id: string;
   name: string;
+  material: string;
+  tileSize: string;
   stepWidthFt: number;
   treadIn: number;
   riserIn: number;
@@ -290,6 +289,8 @@ export interface StairRow {
 export interface CladdingRow {
   id: string;
   name: string;
+  material: string;
+  tileSize: string;
   length: number;
   height: number;
   nos: number;
@@ -303,18 +304,19 @@ export default function FlooringCalculator() {
     syncApprovedRatesFromBackend();
   }, []);
 
-  const [calcMode, setCalcMode] = useState<'quick' | 'detailed'>('quick');
+  const [calcMode, setCalcMode] = useState<'quick' | 'detailed'>('detailed');
+  const [hasCalculated, setHasCalculated] = useState<boolean>(false);
   const [isInputModified, setIsInputModified] = useState<boolean>(false);
   const [isCalculatedBlue, setIsCalculatedBlue] = useState<boolean>(false);
 
   // Quick Mode State
   const [quickInputs, setQuickInputs] = useState({
-    totalArea: 2500,
+    totalArea: 0,
     mainMat: 'Vitrified Tiles',
     mainTileSize: '600x600',
     wastagePct: 5,
     includeSkirting: true,
-    skirtingRft: 178
+    skirtingRft: 0
   });
 
   const handleQuickInputChange = (field: string, value: any) => {
@@ -322,47 +324,26 @@ export default function FlooringCalculator() {
     setIsInputModified(true);
   };
 
-  // Detailed Mode Main State
-  const [detailedMat, setDetailedMat] = useState('Vitrified Tiles');
+  // Detailed Mode General Controls
   const [installMethod, setInstallMethod] = useState('Ready-Mix Tile Adhesive');
-  const [detailedTileSize, setDetailedTileSize] = useState('600x600');
   const [detailedWastagePct, setDetailedWastagePct] = useState(5);
 
-  // Custom Size State
-  const [customTileLenIn, setCustomTileLenIn] = useState(24);
-  const [customTileWidIn, setCustomTileWidIn] = useState(24);
-  const [customTileThkMm, setCustomTileThkMm] = useState(8);
-  const [customPcsPerBox, setCustomPcsPerBox] = useState(4);
-
-  // Dynamic Rows
+  // Dynamic Rows with In-Table Material and Size Selection
   const [floorRows, setFloorRows] = useState<FloorRow[]>([
-    { id: 'f1', name: 'Living Room', length: 20, width: 15, nos: 1, includeSkirting: true, skirtingHeightIn: 4 },
-    { id: 'f2', name: 'Master Bedroom', length: 15, width: 12, nos: 1, includeSkirting: true, skirtingHeightIn: 4 }
+    { id: 'f1', name: 'Living Room', material: 'Vitrified Tiles', tileSize: '600x600', length: 0, width: 0, nos: 1, includeSkirting: true, skirtingHeightIn: 4 }
   ]);
 
-  const [bathRows, setBathRows] = useState<BathRow[]>([
-    { id: 'b1', name: 'Master Bathroom', length: 8, width: 6, wallHeightFt: 7, nos: 1 }
-  ]);
+  const [bathRows, setBathRows] = useState<BathRow[]>([]);
 
-  const [deductionRows, setDeductionRows] = useState<DeductionRow[]>([
-    { id: 'd1', name: 'Main Door Opening', height: 7, width: 3, nos: 2, appliesTo: 'Wall Tiles' }
-  ]);
+  const [deductionRows, setDeductionRows] = useState<DeductionRow[]>([]);
 
-  const [stairRows, setStairRows] = useState<StairRow[]>([
-    { id: 'st1', name: 'Main Internal Staircase', stepWidthFt: 3.5, treadIn: 11, riserIn: 6, stepsCount: 16, landingLenFt: 7, landingWidFt: 3.5, landingsCount: 1 }
-  ]);
+  const [stairRows, setStairRows] = useState<StairRow[]>([]);
 
-  const [claddingRows, setCladdingRows] = useState<CladdingRow[]>([
-    { id: 'c1', name: 'Elevation Wall Cladding', length: 30, height: 12, nos: 1 }
-  ]);
-
-  const [claddingDeductions, setCladdingDeductions] = useState<DeductionRow[]>([
-    { id: 'cd1', name: 'Elevation Window', height: 5, width: 4, nos: 2, appliesTo: 'Wall Tiles' }
-  ]);
+  const [claddingRows, setCladdingRows] = useState<CladdingRow[]>([]);
 
   // Handlers for Row Mutations
   const handleAddFloorRow = () => {
-    setFloorRows(prev => [...prev, { id: `f_${Date.now()}`, name: `Room ${prev.length + 1}`, length: 12, width: 10, nos: 1, includeSkirting: true, skirtingHeightIn: 4 }]);
+    setFloorRows(prev => [...prev, { id: `f_${Date.now()}`, name: `Room ${prev.length + 1}`, material: 'Vitrified Tiles', tileSize: '600x600', length: 12, width: 10, nos: 1, includeSkirting: true, skirtingHeightIn: 4 }]);
     setIsInputModified(true);
   };
   const handleUpdateFloorRow = (id: string, field: keyof FloorRow, value: any) => {
@@ -375,7 +356,7 @@ export default function FlooringCalculator() {
   };
 
   const handleAddBathRow = () => {
-    setBathRows(prev => [...prev, { id: `b_${Date.now()}`, name: `Bathroom ${prev.length + 1}`, length: 7, width: 5, wallHeightFt: 7, nos: 1 }]);
+    setBathRows(prev => [...prev, { id: `b_${Date.now()}`, name: `Bathroom ${prev.length + 1}`, floorMaterial: 'Anti-Skid Tiles', floorTileSize: '300x300', wallMaterial: 'Ceramic Tiles', wallTileSize: '300x450', length: 7, width: 5, wallHeightFt: 7, nos: 1 }]);
     setIsInputModified(true);
   };
   const handleUpdateBathRow = (id: string, field: keyof BathRow, value: any) => {
@@ -401,7 +382,7 @@ export default function FlooringCalculator() {
   };
 
   const handleAddStairRow = () => {
-    setStairRows(prev => [...prev, { id: `st_${Date.now()}`, name: `Flight ${prev.length + 1}`, stepWidthFt: 3.5, treadIn: 11, riserIn: 6, stepsCount: 10, landingLenFt: 7, landingWidFt: 3.5, landingsCount: 1 }]);
+    setStairRows(prev => [...prev, { id: `st_${Date.now()}`, name: `Flight ${prev.length + 1}`, material: 'Granite', tileSize: 'Custom', stepWidthFt: 3.5, treadIn: 11, riserIn: 6, stepsCount: 10, landingLenFt: 7, landingWidFt: 3.5, landingsCount: 1 }]);
     setIsInputModified(true);
   };
   const handleUpdateStairRow = (id: string, field: keyof StairRow, value: any) => {
@@ -414,7 +395,7 @@ export default function FlooringCalculator() {
   };
 
   const handleAddCladdingRow = () => {
-    setCladdingRows(prev => [...prev, { id: `c_${Date.now()}`, name: `Cladding Wall ${prev.length + 1}`, length: 20, height: 10, nos: 1 }]);
+    setCladdingRows(prev => [...prev, { id: `c_${Date.now()}`, name: `Cladding Wall ${prev.length + 1}`, material: 'External Wall Cladding', tileSize: '300x600', length: 20, height: 10, nos: 1 }]);
     setIsInputModified(true);
   };
   const handleUpdateCladdingRow = (id: string, field: keyof CladdingRow, value: any) => {
@@ -487,7 +468,7 @@ export default function FlooringCalculator() {
     return tileLabourRate;
   };
 
-  // Calculations Engine
+  // Multi-Material Calculations Engine
   const calcResults = useMemo(() => {
     if (calcMode === 'quick') {
       const mainArea = Math.max(0, quickInputs.totalArea);
@@ -582,76 +563,96 @@ export default function FlooringCalculator() {
         missingItems: processedItems.filter(it => !it.isFound)
       };
     } else {
-      // Detailed Mode Calculations based on selected material type
-      const isStaircase = detailedMat === 'Staircase Tiles / Step Tiles';
-      const isCladding = detailedMat === 'Internal Wall Cladding' || detailedMat === 'External Wall Cladding';
-      const isWoodenOrFloating = ['Wooden Flooring', 'Laminate Flooring', 'Vinyl Flooring', 'SPC Flooring'].includes(detailedMat);
-      const isStone = ['Granite', 'Marble', 'Kota Stone', 'Tandur Stone'].includes(detailedMat);
+      // Detailed Mode Multi-Material Calculations
+      interface MatGroup {
+        material: string;
+        tileSize: string;
+        engSqft: number;
+        roomNames: string[];
+      }
 
+      const matMap: Record<string, MatGroup> = {};
       let grossSqft = 0;
       let totalDeductionSqft = 0;
       let totalSkirtingRft = 0;
-      let totalSkirtingSqft = 0;
 
-      if (isStaircase) {
-        stairRows.forEach(row => {
-          const treadSqft = (row.stepWidthFt * (row.treadIn / 12)) * row.stepsCount;
-          const riserSqft = (row.stepWidthFt * (row.riserIn / 12)) * row.stepsCount;
-          const landingSqft = row.landingLenFt * row.landingWidFt * row.landingsCount;
-          grossSqft += treadSqft + riserSqft + landingSqft;
-        });
-      } else if (isCladding) {
-        claddingRows.forEach(row => {
-          grossSqft += row.length * row.height * row.nos;
-        });
-        claddingDeductions.forEach(row => {
-          totalDeductionSqft += row.height * row.width * row.nos;
-        });
-      } else {
-        // Normal Floor / Room / Bath Tiling
-        floorRows.forEach(row => {
-          const area = row.length * row.width * row.nos;
-          grossSqft += area;
-          if (row.includeSkirting) {
-            const perim = 2 * (row.length + row.width) * row.nos;
-            totalSkirtingRft += perim;
-            totalSkirtingSqft += perim * (row.skirtingHeightIn / 12);
-          }
-        });
+      // 1. Process Floor / Room Rows
+      floorRows.forEach(row => {
+        const area = row.length * row.width * row.nos;
+        grossSqft += area;
+        const key = `${row.material}||${row.tileSize}`;
+        if (!matMap[key]) {
+          matMap[key] = { material: row.material, tileSize: row.tileSize, engSqft: 0, roomNames: [] };
+        }
+        matMap[key].engSqft += area;
+        if (!matMap[key].roomNames.includes(row.name)) matMap[key].roomNames.push(row.name);
 
-        bathRows.forEach(row => {
-          grossSqft += row.length * row.width * row.nos; // Bath floor
-          grossSqft += 2 * (row.length + row.width) * row.wallHeightFt * row.nos; // Bath wall
-        });
+        if (row.includeSkirting) {
+          const perim = 2 * (row.length + row.width) * row.nos;
+          totalSkirtingRft += perim;
+        }
+      });
 
-        deductionRows.forEach(row => {
-          totalDeductionSqft += row.height * row.width * row.nos;
-        });
-      }
+      // 2. Process Bathroom Rows (Floor + Wall)
+      bathRows.forEach(row => {
+        const floorSqft = row.length * row.width * row.nos;
+        const wallSqft = 2 * (row.length + row.width) * row.wallHeightFt * row.nos;
+        grossSqft += floorSqft + wallSqft;
 
-      const netSqft = Math.max(0, grossSqft - totalDeductionSqft + totalSkirtingSqft);
-      const totalProcurementSqft = Math.round(netSqft * (1 + detailedWastagePct / 100));
+        // Bathroom Floor
+        const fKey = `${row.floorMaterial}||${row.floorTileSize}`;
+        if (!matMap[fKey]) {
+          matMap[fKey] = { material: row.floorMaterial, tileSize: row.floorTileSize, engSqft: 0, roomNames: [] };
+        }
+        matMap[fKey].engSqft += floorSqft;
+        const fName = `${row.name} (Floor)`;
+        if (!matMap[fKey].roomNames.includes(fName)) matMap[fKey].roomNames.push(fName);
 
-      // Calculate Tile / Box specs
-      let sqftPerPiece = 1.0;
-      let pcsPerBox = 1;
+        // Bathroom Wall / Dado
+        const wKey = `${row.wallMaterial}||${row.wallTileSize}`;
+        if (!matMap[wKey]) {
+          matMap[wKey] = { material: row.wallMaterial, tileSize: row.wallTileSize, engSqft: 0, roomNames: [] };
+        }
+        matMap[wKey].engSqft += wallSqft;
+        const wName = `${row.name} (Wall Dado)`;
+        if (!matMap[wKey].roomNames.includes(wName)) matMap[wKey].roomNames.push(wName);
+      });
 
-      if (detailedTileSize === 'Custom') {
-        sqftPerPiece = (customTileLenIn * customTileWidIn) / 144;
-        pcsPerBox = Math.max(1, customPcsPerBox);
-      } else {
-        const spec = TILE_SIZES[detailedTileSize] || TILE_SIZES['600x600'];
-        sqftPerPiece = spec.sqft;
-        pcsPerBox = spec.pcsPerBox;
-      }
+      // 3. Process Staircase Rows
+      stairRows.forEach(row => {
+        const treadArea = (row.stepWidthFt * (row.treadIn / 12)) * row.stepsCount;
+        const riserArea = (row.stepWidthFt * (row.riserIn / 12)) * row.stepsCount;
+        const landingArea = row.landingLenFt * row.landingWidFt * row.landingsCount;
+        const totalArea = treadArea + riserArea + landingArea;
+        grossSqft += totalArea;
 
-      const totalPiecesReq = Math.ceil(totalProcurementSqft / sqftPerPiece);
-      const totalBoxes = Math.ceil(totalPiecesReq / pcsPerBox);
+        const key = `${row.material}||${row.tileSize}`;
+        if (!matMap[key]) {
+          matMap[key] = { material: row.material, tileSize: row.tileSize, engSqft: 0, roomNames: [] };
+        }
+        matMap[key].engSqft += totalArea;
+        if (!matMap[key].roomNames.includes(row.name)) matMap[key].roomNames.push(row.name);
+      });
 
-      // Materials & Ancillaries Selection
-      const mainMatObj = getMaterialRateObj(detailedMat);
-      const mainLabourObj = getLabourRateObj(detailedMat);
-      const mainMatCost = mainMatObj.found ? totalProcurementSqft * mainMatObj.rate : 0;
+      // 4. Process Cladding Rows
+      claddingRows.forEach(row => {
+        const area = row.length * row.height * row.nos;
+        grossSqft += area;
+
+        const key = `${row.material}||${row.tileSize}`;
+        if (!matMap[key]) {
+          matMap[key] = { material: row.material, tileSize: row.tileSize, engSqft: 0, roomNames: [] };
+        }
+        matMap[key].engSqft += area;
+        if (!matMap[key].roomNames.includes(row.name)) matMap[key].roomNames.push(row.name);
+      });
+
+      // 5. Process Deductions
+      deductionRows.forEach(row => {
+        totalDeductionSqft += row.height * row.width * row.nos;
+      });
+
+      const netSqft = Math.max(0, grossSqft - totalDeductionSqft);
 
       const items: Array<{
         code: string;
@@ -661,31 +662,49 @@ export default function FlooringCalculator() {
         engQty: number;
         procQty: number;
         rateObj: MasterRateResult;
-      }> = [
-        {
-          code: mainMatObj.itemCode || "MAT-VIT-01",
-          category: isCladding ? "Wall Cladding Material" : isStaircase ? "Step Tiling Material" : "Flooring Material",
-          name: `${detailedMat} (${detailedTileSize === 'Custom' ? `${customTileLenIn}"x${customTileWidIn}" Custom Slab` : TILE_SIZES[detailedTileSize]?.label || detailedTileSize})`,
+      }> = [];
+
+      let totalProcurementSqftAll = 0;
+      let totalBoxesAll = 0;
+      let hasStone = false;
+      let hasWooden = false;
+
+      // Generate Material Line Items per Material/Size Group
+      Object.values(matMap).forEach(grp => {
+        const engQty = Math.round(grp.engSqft);
+        const procQty = Math.round(grp.engSqft * (1 + detailedWastagePct / 100));
+        totalProcurementSqftAll += procQty;
+
+        const spec = TILE_SIZES[grp.tileSize] || TILE_SIZES['600x600'];
+        const sqftPerPiece = spec.sqft;
+        const pcsPerBox = spec.pcsPerBox;
+        const boxes = Math.ceil(procQty / (sqftPerPiece * pcsPerBox));
+        totalBoxesAll += boxes;
+
+        const matObj = getMaterialRateObj(grp.material);
+        if (['Granite', 'Marble', 'Kota Stone', 'Tandur Stone'].includes(grp.material)) hasStone = true;
+        if (['Wooden Flooring', 'Laminate Flooring', 'Vinyl Flooring', 'SPC Flooring'].includes(grp.material)) hasWooden = true;
+
+        items.push({
+          code: matObj.itemCode || "MAT-VIT-01",
+          category: grp.material.includes("Cladding") ? "Wall Cladding Material" : "Flooring & Tiling Material",
+          name: `${grp.material} (${spec.label}) — Consolidated Total (${boxes} ${boxes === 1 ? 'Box/Pack' : 'Boxes/Packs'})`,
           uom: "SQFT",
-          engQty: Math.round(netSqft),
-          procQty: totalProcurementSqft,
-          rateObj: mainMatObj
-        }
-      ];
+          engQty,
+          procQty,
+          rateObj: matObj
+        });
+      });
 
-      let totalMaterialCost = mainMatCost;
-      let totalLabourCost = 0;
-
-      // Conditional Bedding & Accessories
-      if (isWoodenOrFloating) {
-        const underlayBags = Math.ceil(totalProcurementSqft / 100);
+      // Ancillaries & Accessories Line Items
+      if (hasWooden) {
         items.push({
           code: underlayRate.itemCode || "MAT-UND-01",
           category: "Floating Accessories",
           name: "Acoustic Foam Underlay Pad (2mm)",
           uom: "SQFT",
           engQty: Math.round(netSqft),
-          procQty: totalProcurementSqft,
+          procQty: totalProcurementSqftAll,
           rateObj: underlayRate
         });
         items.push({
@@ -698,14 +717,14 @@ export default function FlooringCalculator() {
           rateObj: trimRate
         });
       } else if (installMethod === 'Cement-Sand Mortar Bed') {
-        const cementBags = Math.ceil((totalProcurementSqft * 0.05 * 1.33 * 1440) / 50); // 50mm bed
-        const sandCft = Math.round(totalProcurementSqft * 0.16);
-        const groutKg = Math.ceil(totalProcurementSqft / 100);
+        const cementBags = Math.ceil(totalProcurementSqftAll * 0.0254);
+        const sandCft = Math.round(totalProcurementSqftAll * 0.267);
+        const groutKg = Math.ceil(totalProcurementSqftAll / 100);
 
         items.push({
           code: cementRate.itemCode || "MAT-CEM-01",
           category: "Mortar Bed",
-          name: "Cement (OPC 53 Grade for 2\" Mortar Bed)",
+          name: "Cement (OPC 53 Grade for 2\" Mortar Bed - 1:6 Mix)",
           uom: "BAG",
           engQty: cementBags,
           procQty: cementBags,
@@ -714,7 +733,7 @@ export default function FlooringCalculator() {
         items.push({
           code: sandRate.itemCode || "MAT-MSND-01",
           category: "Mortar Bed",
-          name: "M-Sand (Screened Bedding Sand)",
+          name: "M-Sand (Screened Bedding Sand for 2\" Mortar Bed)",
           uom: "CFT",
           engQty: sandCft,
           procQty: sandCft,
@@ -723,22 +742,21 @@ export default function FlooringCalculator() {
         items.push({
           code: groutRate.itemCode || "MAT-GRT-01",
           category: "Grout",
-          name: "Tile Joint Grout",
+          name: "Tile Joint Epoxy Grout",
           uom: "KG",
           engQty: groutKg,
           procQty: groutKg,
           rateObj: groutRate
         });
       } else {
-        // Adhesive Systems (Ready-Mix / Polymer / Stone)
-        const adhesiveBags = Math.ceil(totalProcurementSqft / 50);
-        const groutKg = Math.ceil(totalProcurementSqft / 100);
-        const activeAdhesiveObj = isStone ? stoneAdhesiveRate : adhesiveRate;
+        const adhesiveBags = Math.ceil(totalProcurementSqftAll / 50);
+        const groutKg = Math.ceil(totalProcurementSqftAll / 100);
+        const activeAdhesiveObj = hasStone ? stoneAdhesiveRate : adhesiveRate;
 
         items.push({
           code: activeAdhesiveObj.itemCode || "MAT-ADH-01",
           category: "Adhesive System",
-          name: isStone ? "High Bond Stone Adhesive (20kg Bags)" : "Polymer Tile Adhesive (20kg Bags)",
+          name: hasStone ? "High Bond Stone Adhesive (20kg Bags)" : "Polymer Tile Adhesive (20kg Bags)",
           uom: "BAG",
           engQty: adhesiveBags,
           procQty: adhesiveBags,
@@ -755,19 +773,34 @@ export default function FlooringCalculator() {
         });
       }
 
-      // Labour Services
-      const mainLabourCost = mainLabourObj.found ? netSqft * mainLabourObj.rate : 0;
-      items.push({
-        code: mainLabourObj.itemCode || "SRV-TIL-LAY",
-        category: "Labour Services",
-        name: `${detailedMat} Installation & Laying Labour`,
-        uom: "SQFT",
-        engQty: Math.round(netSqft),
-        procQty: Math.round(netSqft),
-        rateObj: mainLabourObj
+      // Labour Line Items (Grouped by Labour Category)
+      const labourMap: Record<string, { name: string; rateObj: MasterRateResult; engQty: number }> = {};
+      Object.values(matMap).forEach(grp => {
+        const lObj = getLabourRateObj(grp.material);
+        const key = lObj.itemCode || "SRV-TIL-LAY";
+        if (!labourMap[key]) {
+          labourMap[key] = {
+            name: `${grp.material.includes("Granite") || grp.material.includes("Marble") ? "Stone Slab Fitting & Polishing" : grp.material.includes("Cladding") ? "Wall Cladding Installation" : "Tile Laying & Fixing"} Labour`,
+            rateObj: lObj,
+            engQty: 0
+          };
+        }
+        labourMap[key].engQty += Math.round(grp.engSqft);
       });
 
-      if (totalSkirtingRft > 0 && !isWoodenOrFloating) {
+      Object.values(labourMap).forEach(lItem => {
+        items.push({
+          code: lItem.rateObj.itemCode || "SRV-TIL-LAY",
+          category: "Labour Services",
+          name: lItem.name,
+          uom: "SQFT",
+          engQty: lItem.engQty,
+          procQty: lItem.engQty,
+          rateObj: lItem.rateObj
+        });
+      });
+
+      if (totalSkirtingRft > 0 && !hasWooden) {
         items.push({
           code: skirtingLabourRate.itemCode || "SRV-SKT-LAY",
           category: "Labour Services",
@@ -778,6 +811,9 @@ export default function FlooringCalculator() {
           rateObj: skirtingLabourRate
         });
       }
+
+      let totalMaterialCost = 0;
+      let totalLabourCost = 0;
 
       const processedItems = items.map(it => {
         const isFound = it.rateObj.found && Number(it.rateObj.rate) > 0;
@@ -799,7 +835,7 @@ export default function FlooringCalculator() {
         grossArea: Math.round(grossSqft),
         netArea: Math.round(netSqft),
         deductionArea: Math.round(totalDeductionSqft),
-        mainTileBoxes: totalBoxes,
+        mainTileBoxes: totalBoxesAll,
         skirtingRft: Math.round(totalSkirtingRft),
         totalMaterialCost,
         totalLabourCost,
@@ -808,21 +844,32 @@ export default function FlooringCalculator() {
         missingItems: processedItems.filter(it => !it.isFound)
       };
     }
-  }, [calcMode, quickInputs, floorRows, bathRows, deductionRows, stairRows, claddingRows, claddingDeductions, detailedMat, installMethod, detailedTileSize, detailedWastagePct, customTileLenIn, customTileWidIn, customTileThkMm, customPcsPerBox, vitrifiedRate, ceramicRate, porcelainRate, antiSkidRate, parkingRate, stepTileRate, graniteRate, marbleRate, kotaRate, tandurRate, woodenRate, laminateRate, vinylRate, spcRate, claddingRate, adhesiveRate, stoneAdhesiveRate, cementRate, sandRate, groutRate, underlayRate, trimRate, tileLabourRate, stoneLabourRate, woodenLabourRate, claddingLabourRate, skirtingLabourRate]);
+  }, [calcMode, quickInputs, floorRows, bathRows, deductionRows, stairRows, claddingRows, installMethod, detailedWastagePct, vitrifiedRate, ceramicRate, porcelainRate, antiSkidRate, parkingRate, stepTileRate, graniteRate, marbleRate, kotaRate, tandurRate, woodenRate, laminateRate, vinylRate, spcRate, claddingRate, adhesiveRate, stoneAdhesiveRate, cementRate, sandRate, groutRate, underlayRate, trimRate, tileLabourRate, stoneLabourRate, woodenLabourRate, claddingLabourRate, skirtingLabourRate]);
 
   const handleCalculate = () => {
+    setHasCalculated(true);
     setIsInputModified(false);
     setIsCalculatedBlue(true);
     setTimeout(() => setIsCalculatedBlue(false), 2000);
   };
 
+  const handleReset = () => {
+    setFloorRows([{ id: 'f1', name: 'Living Room', material: 'Vitrified Tiles', tileSize: '600x600', length: 0, width: 0, nos: 1, includeSkirting: true, skirtingHeightIn: 4 }]);
+    setBathRows([]);
+    setDeductionRows([]);
+    setStairRows([]);
+    setCladdingRows([]);
+    setQuickInputs(prev => ({ ...prev, totalArea: 0, skirtingRft: 0 }));
+    setHasCalculated(false);
+    setIsInputModified(false);
+  };
+
   const handleExportExcel = () => {
     checkAndRun("flooring_calc_export", "FLOORING-CALC", () => {
       const data = [
-        ["BUILDMITRA TILE & FLOORING ESTIMATION REPORT"],
+        ["BUILDMITRA MULTI-MATERIAL TILE & FLOORING ESTIMATION REPORT"],
         ["Generated Date", new Date().toLocaleDateString('en-IN')],
         ["Calculation Mode", calcMode.toUpperCase()],
-        ["Material Type", detailedMat],
         ["Net Area Required", `${calcResults.netArea} Sq.ft`],
         ["Procurement Boxes", `${calcResults.mainTileBoxes} Boxes / Packs`],
         ["GRAND TOTAL ESTIMATED COST", formatCurrency(calcResults.grandTotalCost)],
@@ -863,14 +910,13 @@ export default function FlooringCalculator() {
       ]);
 
       downloadBuildMitraPDF(
-        `BuildMitra – Tile & Flooring Report (${calcMode.toUpperCase()})`,
+        `BuildMitra – Multi-Material Tile & Flooring Report (${calcMode.toUpperCase()})`,
         [
           ["Mode:", calcMode.toUpperCase()],
-          ["Material:", detailedMat],
           ["Gross Area:", `${calcResults.grossArea} Sq.ft`],
           ["Net Area:", `${calcResults.netArea} Sq.ft`],
           ["Deductions:", `${calcResults.deductionArea} Sq.ft`],
-          ["Boxes Required:", `${calcResults.mainTileBoxes} Boxes`],
+          ["Total Boxes Required:", `${calcResults.mainTileBoxes} Boxes / Packs`],
           ["GRAND TOTAL ESTIMATED COST:", formatCurrency(calcResults.grandTotalCost)]
         ],
         headers,
@@ -915,7 +961,7 @@ export default function FlooringCalculator() {
             border: calcMode === 'detailed' ? '2px solid #0f766e' : '1px solid #cbd5e1'
           }}
         >
-          📐 Detailed Tile &amp; Flooring Calculator
+          📐 Detailed Multi-Material Tile Calculator
         </button>
       </div>
 
@@ -994,24 +1040,15 @@ export default function FlooringCalculator() {
           </div>
         </div>
       ) : (
-        /* DETAILED MODE ENHANCED INPUTS */
+        /* DETAILED MODE MULTI-MATERIAL INPUTS */
         <>
-          {/* Main Specifications Card */}
+          {/* General Installation Controls */}
           <div style={styles.card}>
             <div style={styles.sectionHeader}>
-              <span>⚙️ Detailed Material, Installation Bed &amp; Tile Size</span>
+              <span>⚙️ General Bedding &amp; Wastage Settings</span>
             </div>
 
             <div style={styles.gridCompact}>
-              <div style={styles.fieldGroup}>
-                <label style={styles.label}>Surface / Material Category</label>
-                <select value={detailedMat} onChange={(e) => { setDetailedMat(e.target.value); setIsInputModified(true); }} style={styles.select}>
-                  {DETAILED_MATERIALS.map(m => (
-                    <option key={m} value={m}>{m}</option>
-                  ))}
-                </select>
-              </div>
-
               <div style={styles.fieldGroup}>
                 <label style={styles.label}>Bedding / Installation Method</label>
                 <select value={installMethod} onChange={(e) => { setInstallMethod(e.target.value); setIsInputModified(true); }} style={styles.select}>
@@ -1022,415 +1059,471 @@ export default function FlooringCalculator() {
               </div>
 
               <div style={styles.fieldGroup}>
-                <label style={styles.label}>Tile / Slab Size</label>
-                <select value={detailedTileSize} onChange={(e) => { setDetailedTileSize(e.target.value); setIsInputModified(true); }} style={styles.select}>
-                  {Object.entries(TILE_SIZES).map(([key, val]) => (
-                    <option key={key} value={key}>{val.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div style={styles.fieldGroup}>
-                <label style={styles.label}>Wastage %</label>
+                <label style={styles.label}>Wastage &amp; Cutting Allowance %</label>
                 <input type="number" value={detailedWastagePct} onChange={(e) => { setDetailedWastagePct(Number(e.target.value)); setIsInputModified(true); }} style={styles.input} />
               </div>
             </div>
-
-            {/* Custom Size Dynamic Input Fields */}
-            {detailedTileSize === 'Custom' && (
-              <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', padding: '14px', borderRadius: '10px', marginTop: '12px' }}>
-                <strong style={{ color: '#166534', fontSize: '14px', display: 'block', marginBottom: '8px' }}>📏 Custom Tile / Slab Dimensions</strong>
-                <div style={styles.gridCompact}>
-                  <div style={styles.fieldGroup}>
-                    <label style={styles.label}>Tile Length (inches)</label>
-                    <input type="number" value={customTileLenIn} onChange={(e) => { setCustomTileLenIn(Number(e.target.value)); setIsInputModified(true); }} style={styles.input} />
-                  </div>
-                  <div style={styles.fieldGroup}>
-                    <label style={styles.label}>Tile Width (inches)</label>
-                    <input type="number" value={customTileWidIn} onChange={(e) => { setCustomTileWidIn(Number(e.target.value)); setIsInputModified(true); }} style={styles.input} />
-                  </div>
-                  <div style={styles.fieldGroup}>
-                    <label style={styles.label}>Thickness (mm)</label>
-                    <input type="number" value={customTileThkMm} onChange={(e) => { setCustomTileThkMm(Number(e.target.value)); setIsInputModified(true); }} style={styles.input} />
-                  </div>
-                  <div style={styles.fieldGroup}>
-                    <label style={styles.label}>Pieces per Box / Pack</label>
-                    <input type="number" value={customPcsPerBox} onChange={(e) => { setCustomPcsPerBox(Number(e.target.value)); setIsInputModified(true); }} style={styles.input} />
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
 
-          {/* Conditional Input Section: Staircase Mode */}
-          {detailedMat === 'Staircase Tiles / Step Tiles' ? (
-            <div style={styles.card}>
-              <div style={styles.sectionHeader}>
-                <span>🪜 Staircase Step &amp; Landing Measurements</span>
-                <button style={styles.btnAdd} onClick={handleAddStairRow}>+ Add Stair Flight</button>
-              </div>
-
-              <div style={styles.tableContainer}>
-                <table style={styles.table}>
-                  <thead>
-                    <tr>
-                      <th style={styles.th}>Flight Description</th>
-                      <th style={styles.th}>Step Width (ft)</th>
-                      <th style={styles.th}>Tread (in)</th>
-                      <th style={styles.th}>Riser (in)</th>
-                      <th style={styles.th}>Steps Count</th>
-                      <th style={styles.th}>Landing (L × W)</th>
-                      <th style={styles.th}>Total Area</th>
-                      <th style={styles.th}>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {stairRows.map((row) => {
-                      const treadArea = (row.stepWidthFt * (row.treadIn / 12)) * row.stepsCount;
-                      const riserArea = (row.stepWidthFt * (row.riserIn / 12)) * row.stepsCount;
-                      const landingArea = row.landingLenFt * row.landingWidFt * row.landingsCount;
-                      const totalArea = treadArea + riserArea + landingArea;
-                      return (
-                        <tr key={row.id}>
-                          <td style={styles.td}>
-                            <input type="text" value={row.name} onChange={(e) => handleUpdateStairRow(row.id, 'name', e.target.value)} style={{ ...styles.input, height: '32px' }} />
-                          </td>
-                          <td style={styles.td}>
-                            <input type="number" value={row.stepWidthFt} onChange={(e) => handleUpdateStairRow(row.id, 'stepWidthFt', Number(e.target.value))} style={{ ...styles.input, height: '32px' }} />
-                          </td>
-                          <td style={styles.td}>
-                            <input type="number" value={row.treadIn} onChange={(e) => handleUpdateStairRow(row.id, 'treadIn', Number(e.target.value))} style={{ ...styles.input, height: '32px' }} />
-                          </td>
-                          <td style={styles.td}>
-                            <input type="number" value={row.riserIn} onChange={(e) => handleUpdateStairRow(row.id, 'riserIn', Number(e.target.value))} style={{ ...styles.input, height: '32px' }} />
-                          </td>
-                          <td style={styles.td}>
-                            <input type="number" value={row.stepsCount} onChange={(e) => handleUpdateStairRow(row.id, 'stepsCount', Number(e.target.value))} style={{ ...styles.input, height: '32px' }} />
-                          </td>
-                          <td style={styles.td}>
-                            {row.landingLenFt}′ × {row.landingWidFt}′ ({row.landingsCount})
-                          </td>
-                          <td style={styles.td}><strong>{Math.round(totalArea)} Sq.ft</strong></td>
-                          <td style={styles.td}>
-                            <button style={styles.btnDelete} onClick={() => handleDeleteStairRow(row.id)}>🗑️</button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+          {/* Floor / Room Rows */}
+          <div style={styles.card}>
+            <div style={styles.sectionHeader}>
+              <span>🏠 Floor / Room Measurements &amp; In-Table Tile Selection</span>
+              <button style={styles.btnAdd} onClick={handleAddFloorRow}>+ Add Floor Area / Room</button>
             </div>
-          ) : detailedMat.includes('Cladding') ? (
-            /* Conditional Input Section: Wall Cladding Mode */
-            <div style={styles.card}>
-              <div style={styles.sectionHeader}>
-                <span>🧱 Wall Cladding Measurements &amp; Openings</span>
-                <button style={styles.btnAdd} onClick={handleAddCladdingRow}>+ Add Cladding Wall</button>
-              </div>
 
-              <div style={styles.tableContainer}>
-                <table style={styles.table}>
-                  <thead>
-                    <tr>
-                      <th style={styles.th}>Cladding Wall Description</th>
-                      <th style={styles.th}>Length (ft)</th>
-                      <th style={styles.th}>Height (ft)</th>
-                      <th style={styles.th}>Nos</th>
-                      <th style={styles.th}>Calculated Area</th>
-                      <th style={styles.th}>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {claddingRows.map((row) => {
-                      const areaSqft = row.length * row.height * row.nos;
-                      return (
-                        <tr key={row.id}>
-                          <td style={styles.td}>
-                            <input type="text" value={row.name} onChange={(e) => handleUpdateCladdingRow(row.id, 'name', e.target.value)} style={{ ...styles.input, height: '32px' }} />
-                          </td>
-                          <td style={styles.td}>
-                            <input type="number" value={row.length} onChange={(e) => handleUpdateCladdingRow(row.id, 'length', Number(e.target.value))} style={{ ...styles.input, height: '32px' }} />
-                          </td>
-                          <td style={styles.td}>
-                            <input type="number" value={row.height} onChange={(e) => handleUpdateCladdingRow(row.id, 'height', Number(e.target.value))} style={{ ...styles.input, height: '32px' }} />
-                          </td>
-                          <td style={styles.td}>
-                            <input type="number" value={row.nos} onChange={(e) => handleUpdateCladdingRow(row.id, 'nos', Number(e.target.value))} style={{ ...styles.input, height: '32px' }} />
-                          </td>
-                          <td style={styles.td}><strong>{areaSqft.toLocaleString()} Sq.ft</strong></td>
-                          <td style={styles.td}>
-                            <button style={styles.btnDelete} onClick={() => handleDeleteCladdingRow(row.id)}>🗑️</button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+            <div style={styles.tableContainer}>
+              <table style={styles.table}>
+                <thead>
+                  <tr>
+                    <th style={styles.th}>Room Description</th>
+                    <th style={styles.th}>Material Category</th>
+                    <th style={styles.th}>Tile / Slab Size</th>
+                    <th style={styles.th}>Length (ft)</th>
+                    <th style={styles.th}>Width (ft)</th>
+                    <th style={styles.th}>Nos</th>
+                    <th style={styles.th}>Skirting</th>
+                    <th style={styles.th}>Skirting Ht (in)</th>
+                    <th style={styles.th}>Calculated Area</th>
+                    <th style={styles.th}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {floorRows.map((row) => {
+                    const areaSqft = row.length * row.width * row.nos;
+                    return (
+                      <tr key={row.id}>
+                        <td style={styles.td}>
+                          <input type="text" value={row.name} onChange={(e) => handleUpdateFloorRow(row.id, 'name', e.target.value)} style={{ ...styles.input, height: '32px' }} />
+                        </td>
+                        <td style={styles.td}>
+                          <select value={row.material} onChange={(e) => handleUpdateFloorRow(row.id, 'material', e.target.value)} style={{ ...styles.select, height: '32px' }}>
+                            {DETAILED_MATERIALS.map(m => (
+                              <option key={m} value={m}>{m}</option>
+                            ))}
+                          </select>
+                        </td>
+                        <td style={styles.td}>
+                          <select value={row.tileSize} onChange={(e) => handleUpdateFloorRow(row.id, 'tileSize', e.target.value)} style={{ ...styles.select, height: '32px' }}>
+                            {Object.entries(TILE_SIZES).map(([key, val]) => (
+                              <option key={key} value={key}>{val.label}</option>
+                            ))}
+                          </select>
+                        </td>
+                        <td style={styles.td}>
+                          <input type="number" value={row.length} onChange={(e) => handleUpdateFloorRow(row.id, 'length', Number(e.target.value))} style={{ ...styles.input, height: '32px', ...(isInputModified ? styles.inputModified : {}) }} />
+                        </td>
+                        <td style={styles.td}>
+                          <input type="number" value={row.width} onChange={(e) => handleUpdateFloorRow(row.id, 'width', Number(e.target.value))} style={{ ...styles.input, height: '32px' }} />
+                        </td>
+                        <td style={styles.td}>
+                          <input type="number" value={row.nos} onChange={(e) => handleUpdateFloorRow(row.id, 'nos', Number(e.target.value))} style={{ ...styles.input, height: '32px' }} />
+                        </td>
+                        <td style={styles.td}>
+                          <input type="checkbox" checked={row.includeSkirting} onChange={(e) => handleUpdateFloorRow(row.id, 'includeSkirting', e.target.checked)} style={{ width: '18px', height: '18px' }} />
+                        </td>
+                        <td style={styles.td}>
+                          <input type="number" value={row.skirtingHeightIn} disabled={!row.includeSkirting} onChange={(e) => handleUpdateFloorRow(row.id, 'skirtingHeightIn', Number(e.target.value))} style={{ ...styles.input, height: '32px' }} />
+                        </td>
+                        <td style={styles.td}><strong>{areaSqft.toLocaleString()} Sq.ft</strong></td>
+                        <td style={styles.td}>
+                          <button style={styles.btnDelete} onClick={() => handleDeleteFloorRow(row.id)}>🗑️</button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-          ) : (
-            /* Standard Floor / Room / Bath Tiling Rows */
-            <>
-              {/* Floor / Room Rows */}
-              <div style={styles.card}>
-                <div style={styles.sectionHeader}>
-                  <span>🏠 Floor / Room Measurements</span>
-                  <button style={styles.btnAdd} onClick={handleAddFloorRow}>+ Add Floor Area / Room</button>
-                </div>
+          </div>
 
-                <div style={styles.tableContainer}>
-                  <table style={styles.table}>
-                    <thead>
-                      <tr>
-                        <th style={styles.th}>Room Description</th>
-                        <th style={styles.th}>Length (ft)</th>
-                        <th style={styles.th}>Width (ft)</th>
-                        <th style={styles.th}>Nos</th>
-                        <th style={styles.th}>Skirting</th>
-                        <th style={styles.th}>Skirting Ht (in)</th>
-                        <th style={styles.th}>Calculated Area</th>
-                        <th style={styles.th}>Action</th>
+          {/* Bathroom Rows */}
+          <div style={styles.card}>
+            <div style={styles.sectionHeader}>
+              <span>🚿 Bathroom / Toilet Tiling (Floor &amp; Wall Dado Selection)</span>
+              <button style={styles.btnAdd} onClick={handleAddBathRow}>+ Add Bathroom / Toilet</button>
+            </div>
+
+            <div style={styles.tableContainer}>
+              <table style={styles.table}>
+                <thead>
+                  <tr>
+                    <th style={styles.th}>Bathroom Name</th>
+                    <th style={styles.th}>Floor Tile &amp; Size</th>
+                    <th style={styles.th}>Wall Dado Tile &amp; Size</th>
+                    <th style={styles.th}>Length (ft)</th>
+                    <th style={styles.th}>Width (ft)</th>
+                    <th style={styles.th}>Wall Ht (ft)</th>
+                    <th style={styles.th}>Nos</th>
+                    <th style={styles.th}>Floor Area</th>
+                    <th style={styles.th}>Wall Area</th>
+                    <th style={styles.th}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {bathRows.map((row) => {
+                    const floorSqft = row.length * row.width * row.nos;
+                    const wallSqft = 2 * (row.length + row.width) * row.wallHeightFt * row.nos;
+                    return (
+                      <tr key={row.id}>
+                        <td style={styles.td}>
+                          <input type="text" value={row.name} onChange={(e) => handleUpdateBathRow(row.id, 'name', e.target.value)} style={{ ...styles.input, height: '32px' }} />
+                        </td>
+                        <td style={styles.td}>
+                          <div style={{ display: 'flex', gap: '4px' }}>
+                            <select value={row.floorMaterial} onChange={(e) => handleUpdateBathRow(row.id, 'floorMaterial', e.target.value)} style={{ ...styles.select, height: '32px' }}>
+                              {DETAILED_MATERIALS.map(m => (
+                                <option key={m} value={m}>{m}</option>
+                              ))}
+                            </select>
+                            <select value={row.floorTileSize} onChange={(e) => handleUpdateBathRow(row.id, 'floorTileSize', e.target.value)} style={{ ...styles.select, height: '32px' }}>
+                              {Object.entries(TILE_SIZES).map(([key, val]) => (
+                                <option key={key} value={key}>{val.label}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </td>
+                        <td style={styles.td}>
+                          <div style={{ display: 'flex', gap: '4px' }}>
+                            <select value={row.wallMaterial} onChange={(e) => handleUpdateBathRow(row.id, 'wallMaterial', e.target.value)} style={{ ...styles.select, height: '32px' }}>
+                              {DETAILED_MATERIALS.map(m => (
+                                <option key={m} value={m}>{m}</option>
+                              ))}
+                            </select>
+                            <select value={row.wallTileSize} onChange={(e) => handleUpdateBathRow(row.id, 'wallTileSize', e.target.value)} style={{ ...styles.select, height: '32px' }}>
+                              {Object.entries(TILE_SIZES).map(([key, val]) => (
+                                <option key={key} value={key}>{val.label}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </td>
+                        <td style={styles.td}>
+                          <input type="number" value={row.length} onChange={(e) => handleUpdateBathRow(row.id, 'length', Number(e.target.value))} style={{ ...styles.input, height: '32px' }} />
+                        </td>
+                        <td style={styles.td}>
+                          <input type="number" value={row.width} onChange={(e) => handleUpdateBathRow(row.id, 'width', Number(e.target.value))} style={{ ...styles.input, height: '32px' }} />
+                        </td>
+                        <td style={styles.td}>
+                          <input type="number" value={row.wallHeightFt} onChange={(e) => handleUpdateBathRow(row.id, 'wallHeightFt', Number(e.target.value))} style={{ ...styles.input, height: '32px' }} />
+                        </td>
+                        <td style={styles.td}>
+                          <input type="number" value={row.nos} onChange={(e) => handleUpdateBathRow(row.id, 'nos', Number(e.target.value))} style={{ ...styles.input, height: '32px' }} />
+                        </td>
+                        <td style={styles.td}>{floorSqft.toLocaleString()} Sq.ft</td>
+                        <td style={styles.td}><strong>{wallSqft.toLocaleString()} Sq.ft</strong></td>
+                        <td style={styles.td}>
+                          <button style={styles.btnDelete} onClick={() => handleDeleteBathRow(row.id)}>🗑️</button>
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {floorRows.map((row) => {
-                        const areaSqft = row.length * row.width * row.nos;
-                        return (
-                          <tr key={row.id}>
-                            <td style={styles.td}>
-                              <input type="text" value={row.name} onChange={(e) => handleUpdateFloorRow(row.id, 'name', e.target.value)} style={{ ...styles.input, height: '32px' }} />
-                            </td>
-                            <td style={styles.td}>
-                              <input type="number" value={row.length} onChange={(e) => handleUpdateFloorRow(row.id, 'length', Number(e.target.value))} style={{ ...styles.input, height: '32px', ...(isInputModified ? styles.inputModified : {}) }} />
-                            </td>
-                            <td style={styles.td}>
-                              <input type="number" value={row.width} onChange={(e) => handleUpdateFloorRow(row.id, 'width', Number(e.target.value))} style={{ ...styles.input, height: '32px' }} />
-                            </td>
-                            <td style={styles.td}>
-                              <input type="number" value={row.nos} onChange={(e) => handleUpdateFloorRow(row.id, 'nos', Number(e.target.value))} style={{ ...styles.input, height: '32px' }} />
-                            </td>
-                            <td style={styles.td}>
-                              <input type="checkbox" checked={row.includeSkirting} onChange={(e) => handleUpdateFloorRow(row.id, 'includeSkirting', e.target.checked)} style={{ width: '18px', height: '18px' }} />
-                            </td>
-                            <td style={styles.td}>
-                              <input type="number" value={row.skirtingHeightIn} disabled={!row.includeSkirting} onChange={(e) => handleUpdateFloorRow(row.id, 'skirtingHeightIn', Number(e.target.value))} style={{ ...styles.input, height: '32px' }} />
-                            </td>
-                            <td style={styles.td}><strong>{areaSqft.toLocaleString()} Sq.ft</strong></td>
-                            <td style={styles.td}>
-                              <button style={styles.btnDelete} onClick={() => handleDeleteFloorRow(row.id)}>🗑️</button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
 
-              {/* Bathroom Rows */}
-              <div style={styles.card}>
-                <div style={styles.sectionHeader}>
-                  <span>🚿 Bathroom / Toilet Tiling (Floor + Dado Wall)</span>
-                  <button style={styles.btnAdd} onClick={handleAddBathRow}>+ Add Bathroom / Toilet</button>
-                </div>
+          {/* Staircase Steps */}
+          <div style={styles.card}>
+            <div style={styles.sectionHeader}>
+              <span>🪜 Staircase Step &amp; Landing Measurements</span>
+              <button style={styles.btnAdd} onClick={handleAddStairRow}>+ Add Stair Flight</button>
+            </div>
 
-                <div style={styles.tableContainer}>
-                  <table style={styles.table}>
-                    <thead>
-                      <tr>
-                        <th style={styles.th}>Bathroom Name</th>
-                        <th style={styles.th}>Length (ft)</th>
-                        <th style={styles.th}>Width (ft)</th>
-                        <th style={styles.th}>Wall Tile Ht (ft)</th>
-                        <th style={styles.th}>Nos</th>
-                        <th style={styles.th}>Floor Area</th>
-                        <th style={styles.th}>Wall Area</th>
-                        <th style={styles.th}>Action</th>
+            <div style={styles.tableContainer}>
+              <table style={styles.table}>
+                <thead>
+                  <tr>
+                    <th style={styles.th}>Flight Description</th>
+                    <th style={styles.th}>Material Category</th>
+                    <th style={styles.th}>Tile / Slab Size</th>
+                    <th style={styles.th}>Step Width (ft)</th>
+                    <th style={styles.th}>Tread (in)</th>
+                    <th style={styles.th}>Riser (in)</th>
+                    <th style={styles.th}>Steps Count</th>
+                    <th style={styles.th}>Total Area</th>
+                    <th style={styles.th}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stairRows.map((row) => {
+                    const treadArea = (row.stepWidthFt * (row.treadIn / 12)) * row.stepsCount;
+                    const riserArea = (row.stepWidthFt * (row.riserIn / 12)) * row.stepsCount;
+                    const landingArea = row.landingLenFt * row.landingWidFt * row.landingsCount;
+                    const totalArea = treadArea + riserArea + landingArea;
+                    return (
+                      <tr key={row.id}>
+                        <td style={styles.td}>
+                          <input type="text" value={row.name} onChange={(e) => handleUpdateStairRow(row.id, 'name', e.target.value)} style={{ ...styles.input, height: '32px' }} />
+                        </td>
+                        <td style={styles.td}>
+                          <select value={row.material} onChange={(e) => handleUpdateStairRow(row.id, 'material', e.target.value)} style={{ ...styles.select, height: '32px' }}>
+                            {DETAILED_MATERIALS.map(m => (
+                              <option key={m} value={m}>{m}</option>
+                            ))}
+                          </select>
+                        </td>
+                        <td style={styles.td}>
+                          <select value={row.tileSize} onChange={(e) => handleUpdateStairRow(row.id, 'tileSize', e.target.value)} style={{ ...styles.select, height: '32px' }}>
+                            {Object.entries(TILE_SIZES).map(([key, val]) => (
+                              <option key={key} value={key}>{val.label}</option>
+                            ))}
+                          </select>
+                        </td>
+                        <td style={styles.td}>
+                          <input type="number" value={row.stepWidthFt} onChange={(e) => handleUpdateStairRow(row.id, 'stepWidthFt', Number(e.target.value))} style={{ ...styles.input, height: '32px' }} />
+                        </td>
+                        <td style={styles.td}>
+                          <input type="number" value={row.treadIn} onChange={(e) => handleUpdateStairRow(row.id, 'treadIn', Number(e.target.value))} style={{ ...styles.input, height: '32px' }} />
+                        </td>
+                        <td style={styles.td}>
+                          <input type="number" value={row.riserIn} onChange={(e) => handleUpdateStairRow(row.id, 'riserIn', Number(e.target.value))} style={{ ...styles.input, height: '32px' }} />
+                        </td>
+                        <td style={styles.td}>
+                          <input type="number" value={row.stepsCount} onChange={(e) => handleUpdateStairRow(row.id, 'stepsCount', Number(e.target.value))} style={{ ...styles.input, height: '32px' }} />
+                        </td>
+                        <td style={styles.td}><strong>{Math.round(totalArea)} Sq.ft</strong></td>
+                        <td style={styles.td}>
+                          <button style={styles.btnDelete} onClick={() => handleDeleteStairRow(row.id)}>🗑️</button>
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {bathRows.map((row) => {
-                        const floorSqft = row.length * row.width * row.nos;
-                        const wallSqft = 2 * (row.length + row.width) * row.wallHeightFt * row.nos;
-                        return (
-                          <tr key={row.id}>
-                            <td style={styles.td}>
-                              <input type="text" value={row.name} onChange={(e) => handleUpdateBathRow(row.id, 'name', e.target.value)} style={{ ...styles.input, height: '32px' }} />
-                            </td>
-                            <td style={styles.td}>
-                              <input type="number" value={row.length} onChange={(e) => handleUpdateBathRow(row.id, 'length', Number(e.target.value))} style={{ ...styles.input, height: '32px' }} />
-                            </td>
-                            <td style={styles.td}>
-                              <input type="number" value={row.width} onChange={(e) => handleUpdateBathRow(row.id, 'width', Number(e.target.value))} style={{ ...styles.input, height: '32px' }} />
-                            </td>
-                            <td style={styles.td}>
-                              <input type="number" value={row.wallHeightFt} onChange={(e) => handleUpdateBathRow(row.id, 'wallHeightFt', Number(e.target.value))} style={{ ...styles.input, height: '32px' }} />
-                            </td>
-                            <td style={styles.td}>
-                              <input type="number" value={row.nos} onChange={(e) => handleUpdateBathRow(row.id, 'nos', Number(e.target.value))} style={{ ...styles.input, height: '32px' }} />
-                            </td>
-                            <td style={styles.td}>{floorSqft.toLocaleString()} Sq.ft</td>
-                            <td style={styles.td}><strong>{wallSqft.toLocaleString()} Sq.ft</strong></td>
-                            <td style={styles.td}>
-                              <button style={styles.btnDelete} onClick={() => handleDeleteBathRow(row.id)}>🗑️</button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
 
-              {/* Deductions Section */}
-              <div style={styles.card}>
-                <div style={styles.sectionHeader}>
-                  <span>🚪 Door &amp; Window Opening Deductions</span>
-                  <button style={styles.btnAdd} onClick={handleAddDeductionRow}>+ Add Deduction</button>
-                </div>
+          {/* Wall Cladding */}
+          <div style={styles.card}>
+            <div style={styles.sectionHeader}>
+              <span>🧱 Wall Cladding &amp; Feature Walls</span>
+              <button style={styles.btnAdd} onClick={handleAddCladdingRow}>+ Add Cladding Wall</button>
+            </div>
 
-                <div style={styles.tableContainer}>
-                  <table style={styles.table}>
-                    <thead>
-                      <tr>
-                        <th style={styles.th}>Opening Type</th>
-                        <th style={styles.th}>Height (ft)</th>
-                        <th style={styles.th}>Width (ft)</th>
-                        <th style={styles.th}>Nos</th>
-                        <th style={styles.th}>Applies To</th>
-                        <th style={styles.th}>Deduction Area</th>
-                        <th style={styles.th}>Action</th>
+            <div style={styles.tableContainer}>
+              <table style={styles.table}>
+                <thead>
+                  <tr>
+                    <th style={styles.th}>Cladding Description</th>
+                    <th style={styles.th}>Material Category</th>
+                    <th style={styles.th}>Tile / Slab Size</th>
+                    <th style={styles.th}>Length (ft)</th>
+                    <th style={styles.th}>Height (ft)</th>
+                    <th style={styles.th}>Nos</th>
+                    <th style={styles.th}>Calculated Area</th>
+                    <th style={styles.th}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {claddingRows.map((row) => {
+                    const areaSqft = row.length * row.height * row.nos;
+                    return (
+                      <tr key={row.id}>
+                        <td style={styles.td}>
+                          <input type="text" value={row.name} onChange={(e) => handleUpdateCladdingRow(row.id, 'name', e.target.value)} style={{ ...styles.input, height: '32px' }} />
+                        </td>
+                        <td style={styles.td}>
+                          <select value={row.material} onChange={(e) => handleUpdateCladdingRow(row.id, 'material', e.target.value)} style={{ ...styles.select, height: '32px' }}>
+                            {DETAILED_MATERIALS.map(m => (
+                              <option key={m} value={m}>{m}</option>
+                            ))}
+                          </select>
+                        </td>
+                        <td style={styles.td}>
+                          <select value={row.tileSize} onChange={(e) => handleUpdateCladdingRow(row.id, 'tileSize', e.target.value)} style={{ ...styles.select, height: '32px' }}>
+                            {Object.entries(TILE_SIZES).map(([key, val]) => (
+                              <option key={key} value={key}>{val.label}</option>
+                            ))}
+                          </select>
+                        </td>
+                        <td style={styles.td}>
+                          <input type="number" value={row.length} onChange={(e) => handleUpdateCladdingRow(row.id, 'length', Number(e.target.value))} style={{ ...styles.input, height: '32px' }} />
+                        </td>
+                        <td style={styles.td}>
+                          <input type="number" value={row.height} onChange={(e) => handleUpdateCladdingRow(row.id, 'height', Number(e.target.value))} style={{ ...styles.input, height: '32px' }} />
+                        </td>
+                        <td style={styles.td}>
+                          <input type="number" value={row.nos} onChange={(e) => handleUpdateCladdingRow(row.id, 'nos', Number(e.target.value))} style={{ ...styles.input, height: '32px' }} />
+                        </td>
+                        <td style={styles.td}><strong>{areaSqft.toLocaleString()} Sq.ft</strong></td>
+                        <td style={styles.td}>
+                          <button style={styles.btnDelete} onClick={() => handleDeleteCladdingRow(row.id)}>🗑️</button>
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {deductionRows.map((row) => {
-                        const dedSqft = row.height * row.width * row.nos;
-                        return (
-                          <tr key={row.id}>
-                            <td style={styles.td}>
-                              <input type="text" value={row.name} onChange={(e) => handleUpdateDeductionRow(row.id, 'name', e.target.value)} style={{ ...styles.input, height: '32px' }} />
-                            </td>
-                            <td style={styles.td}>
-                              <input type="number" value={row.height} onChange={(e) => handleUpdateDeductionRow(row.id, 'height', Number(e.target.value))} style={{ ...styles.input, height: '32px' }} />
-                            </td>
-                            <td style={styles.td}>
-                              <input type="number" value={row.width} onChange={(e) => handleUpdateDeductionRow(row.id, 'width', Number(e.target.value))} style={{ ...styles.input, height: '32px' }} />
-                            </td>
-                            <td style={styles.td}>
-                              <input type="number" value={row.nos} onChange={(e) => handleUpdateDeductionRow(row.id, 'nos', Number(e.target.value))} style={{ ...styles.input, height: '32px' }} />
-                            </td>
-                            <td style={styles.td}>
-                              <select value={row.appliesTo} onChange={(e) => handleUpdateDeductionRow(row.id, 'appliesTo', e.target.value as any)} style={{ ...styles.select, height: '32px' }}>
-                                <option value="Wall Tiles">Wall Tiles</option>
-                                <option value="Skirting">Skirting</option>
-                                <option value="All">All</option>
-                              </select>
-                            </td>
-                            <td style={styles.td}><strong>{dedSqft.toLocaleString()} Sq.ft</strong></td>
-                            <td style={styles.td}>
-                              <button style={styles.btnDelete} onClick={() => handleDeleteDeductionRow(row.id)}>🗑️</button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </>
-          )}
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Deductions Section */}
+          <div style={styles.card}>
+            <div style={styles.sectionHeader}>
+              <span>🚪 Door &amp; Window Opening Deductions</span>
+              <button style={styles.btnAdd} onClick={handleAddDeductionRow}>+ Add Deduction</button>
+            </div>
+
+            <div style={styles.tableContainer}>
+              <table style={styles.table}>
+                <thead>
+                  <tr>
+                    <th style={styles.th}>Opening Type</th>
+                    <th style={styles.th}>Height (ft)</th>
+                    <th style={styles.th}>Width (ft)</th>
+                    <th style={styles.th}>Nos</th>
+                    <th style={styles.th}>Applies To</th>
+                    <th style={styles.th}>Deduction Area</th>
+                    <th style={styles.th}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {deductionRows.map((row) => {
+                    const dedSqft = row.height * row.width * row.nos;
+                    return (
+                      <tr key={row.id}>
+                        <td style={styles.td}>
+                          <input type="text" value={row.name} onChange={(e) => handleUpdateDeductionRow(row.id, 'name', e.target.value)} style={{ ...styles.input, height: '32px' }} />
+                        </td>
+                        <td style={styles.td}>
+                          <input type="number" value={row.height} onChange={(e) => handleUpdateDeductionRow(row.id, 'height', Number(e.target.value))} style={{ ...styles.input, height: '32px' }} />
+                        </td>
+                        <td style={styles.td}>
+                          <input type="number" value={row.width} onChange={(e) => handleUpdateDeductionRow(row.id, 'width', Number(e.target.value))} style={{ ...styles.input, height: '32px' }} />
+                        </td>
+                        <td style={styles.td}>
+                          <input type="number" value={row.nos} onChange={(e) => handleUpdateDeductionRow(row.id, 'nos', Number(e.target.value))} style={{ ...styles.input, height: '32px' }} />
+                        </td>
+                        <td style={styles.td}>
+                          <select value={row.appliesTo} onChange={(e) => handleUpdateDeductionRow(row.id, 'appliesTo', e.target.value as any)} style={{ ...styles.select, height: '32px' }}>
+                            <option value="Wall Tiles">Wall Tiles</option>
+                            <option value="Skirting">Skirting</option>
+                            <option value="All">All</option>
+                          </select>
+                        </td>
+                        <td style={styles.td}><strong>{dedSqft.toLocaleString()} Sq.ft</strong></td>
+                        <td style={styles.td}>
+                          <button style={styles.btnDelete} onClick={() => handleDeleteDeductionRow(row.id)}>🗑️</button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
 
           {/* Action Bar */}
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}>
             <button style={styles.btnPrimary} onClick={handleCalculate}>⚡ Calculate Detailed Tile BOQ</button>
-            <button style={styles.btnReset} onClick={() => { setFloorRows([]); setBathRows([]); setDeductionRows([]); setStairRows([]); setCladdingRows([]); }}>🔄 Reset All</button>
+            <button style={styles.btnReset} onClick={handleReset}>🔄 Reset All</button>
             <button style={styles.btnSecondary} onClick={handleExportExcel}>📊 Export Excel</button>
             <button style={styles.btnSuccess} onClick={handleExportPDF}>📄 Export PDF Report</button>
           </div>
         </>
       )}
 
-      {/* Summary Cards */}
-      <div style={styles.summaryGrid}>
-        <div style={{ ...styles.metricCard, ...styles.metricTeal }}>
-          <span style={styles.metricTitle}>Gross Surface Area</span>
-          <span style={{ ...styles.metricVal, color: isCalculatedBlue ? '#93c5fd' : '#ffffff' }}>{calcResults.grossArea.toLocaleString()} Sq.ft</span>
+      {!hasCalculated ? (
+        <div style={{
+          backgroundColor: '#f0fdf4',
+          border: '2px dashed #0f766e',
+          borderRadius: '12px',
+          padding: '32px 20px',
+          textAlign: 'center',
+          color: '#0f766e',
+          fontSize: '16px',
+          fontWeight: '700',
+          marginTop: '16px',
+          boxShadow: '0 2px 8px rgba(15,118,110,0.08)'
+        }}>
+          <div style={{ fontSize: '32px', marginBottom: '8px' }}>📐</div>
+          <div style={{ fontSize: '18px', fontWeight: '800', color: '#134e4a', marginBottom: '6px' }}>Ready for Tile &amp; Flooring Calculations</div>
+          <div>Enter room dimensions and select tile categories above, then click <strong>"⚡ Calculate Tile BOQ"</strong> to view consolidated tile box counts, adhesive, grout &amp; BOQ estimation.</div>
         </div>
-        <div style={{ ...styles.metricCard, ...styles.metricOrange }}>
-          <span style={styles.metricTitle}>Procurement Boxes</span>
-          <span style={styles.metricVal}>{calcResults.mainTileBoxes} Boxes / Packs</span>
-        </div>
-        <div style={{ ...styles.metricCard, ...styles.metricBlue }}>
-          <span style={styles.metricTitle}>Skirting / Trims</span>
-          <span style={styles.metricVal}>{calcResults.skirtingRft} RFT</span>
-        </div>
-        <div style={{ ...styles.metricCard, ...styles.metricBlue }}>
-          <span style={styles.metricTitle}>Material Subtotal</span>
-          <span style={styles.metricVal}>{formatCurrency(calcResults.totalMaterialCost)}</span>
-        </div>
-        <div style={{ ...styles.metricCard, ...styles.metricGreen }}>
-          <span style={styles.metricTitle}>GRAND ESTIMATED TOTAL</span>
-          <span style={{ ...styles.metricValGrand, color: isCalculatedBlue ? '#60a5fa' : '#ffffff' }}>{formatCurrency(calcResults.grandTotalCost)}</span>
-        </div>
-      </div>
+      ) : (
+        <>
+          {/* Summary Cards */}
+          <div style={styles.summaryGrid}>
+            <div style={{ ...styles.metricCard, ...styles.metricTeal }}>
+              <span style={styles.metricTitle}>Gross Surface Area</span>
+              <span style={{ ...styles.metricVal, color: isCalculatedBlue ? '#93c5fd' : '#ffffff' }}>{calcResults.grossArea.toLocaleString()} Sq.ft</span>
+            </div>
+            <div style={{ ...styles.metricCard, ...styles.metricOrange }}>
+              <span style={styles.metricTitle}>Procurement Boxes</span>
+              <span style={styles.metricVal}>{calcResults.mainTileBoxes} Boxes / Packs</span>
+            </div>
+            <div style={{ ...styles.metricCard, ...styles.metricBlue }}>
+              <span style={styles.metricTitle}>Skirting / Trims</span>
+              <span style={styles.metricVal}>{calcResults.skirtingRft} RFT</span>
+            </div>
+            <div style={{ ...styles.metricCard, ...styles.metricBlue }}>
+              <span style={styles.metricTitle}>Material Subtotal</span>
+              <span style={styles.metricVal}>{formatCurrency(calcResults.totalMaterialCost)}</span>
+            </div>
+            <div style={{ ...styles.metricCard, ...styles.metricGreen }}>
+              <span style={styles.metricTitle}>GRAND ESTIMATED TOTAL</span>
+              <span style={{ ...styles.metricValGrand, color: isCalculatedBlue ? '#60a5fa' : '#ffffff' }}>{formatCurrency(calcResults.grandTotalCost)}</span>
+            </div>
+          </div>
 
-      {/* Missing Master Items Warning Banner */}
-      {calcResults.missingItems.length > 0 && (
-        <div style={styles.warnBanner}>
-          ⚠️ <strong>Master Mapping Required / Approved Rate Unavailable ({calcResults.missingItems.length} Line Items)</strong>
-          <ul style={{ margin: '6px 0 0 0', paddingLeft: '20px', fontSize: '13px' }}>
-            {calcResults.missingItems.map(it => (
-              <li key={it.code}>
-                <code>{it.code}</code>: {it.name} — Quantity: <strong>{it.procQty.toLocaleString()} {it.uom}</strong> (Status: <em>Master Mapping Required</em>)
-              </li>
-            ))}
-          </ul>
-        </div>
+          {/* Missing Master Items Warning Banner */}
+          {calcResults.missingItems.length > 0 && (
+            <div style={styles.warnBanner}>
+              ⚠️ <strong>Master Mapping Required / Approved Rate Unavailable ({calcResults.missingItems.length} Line Items)</strong>
+              <ul style={{ margin: '6px 0 0 0', paddingLeft: '20px', fontSize: '13px' }}>
+                {calcResults.missingItems.map(it => (
+                  <li key={it.code}>
+                    <code>{it.code}</code>: {it.name} — Quantity: <strong>{it.procQty.toLocaleString()} {it.uom}</strong> (Status: <em>Master Mapping Required</em>)
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Detailed Result Table */}
+          <div style={styles.tableContainer}>
+            <div style={{ padding: '12px 16px', backgroundColor: '#0f766e', color: 'white', fontWeight: '800', fontSize: '16px' }}>
+              📑 Itemized Tile &amp; Flooring BOQ ({calcMode.toUpperCase()} MODE - Admin Master Linked)
+            </div>
+            <table style={styles.table}>
+              <thead>
+                <tr>
+                  <th style={styles.th}>Master Code</th>
+                  <th style={styles.th}>Category</th>
+                  <th style={styles.th}>Item Description</th>
+                  <th style={styles.th}>Engineering Qty</th>
+                  <th style={styles.th}>Procurement Qty</th>
+                  <th style={styles.th}>UOM</th>
+                  <th style={styles.th}>Approved Rate (₹)</th>
+                  <th style={styles.th}>Total Amount (₹)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {calcResults.items.map(it => (
+                  <tr key={it.code + '_' + it.name}>
+                    <td style={styles.td}><code>{it.code}</code></td>
+                    <td style={styles.td}>{it.category}</td>
+                    <td style={styles.td}><strong>{it.name}</strong></td>
+                    <td style={styles.td}>{it.engQty.toLocaleString()}</td>
+                    <td style={styles.td}>{it.procQty.toLocaleString()}</td>
+                    <td style={styles.td}>{it.uom}</td>
+                    <td style={styles.td}>
+                      {it.isFound ? formatCurrency(it.rateVal) : <span style={{ color: '#dc2626', fontWeight: '700' }}>Master Mapping Required / Approved Rate Unavailable</span>}
+                    </td>
+                    <td style={styles.td}>
+                      {it.isFound ? <strong>{formatCurrency(it.amountVal)}</strong> : <span style={{ color: '#94a3b8' }}>—</span>}
+                    </td>
+                  </tr>
+                ))}
+                <tr style={{ backgroundColor: '#0f766e', color: 'white', fontWeight: '800' }}>
+                  <td colSpan={7} style={{ padding: '12px 14px', fontSize: '16px' }}>GRAND TOTAL ESTIMATED COST</td>
+                  <td style={{ padding: '12px 14px', fontSize: '18px' }}>{formatCurrency(calcResults.grandTotalCost)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
-
-      {/* Detailed Result Table */}
-      <div style={styles.tableContainer}>
-        <div style={{ padding: '12px 16px', backgroundColor: '#0f766e', color: 'white', fontWeight: '800', fontSize: '16px' }}>
-          📑 Itemized Tile &amp; Flooring BOQ ({calcMode.toUpperCase()} MODE - Admin Master Linked)
-        </div>
-        <table style={styles.table}>
-          <thead>
-            <tr>
-              <th style={styles.th}>Master Code</th>
-              <th style={styles.th}>Category</th>
-              <th style={styles.th}>Item Description</th>
-              <th style={styles.th}>Engineering Qty</th>
-              <th style={styles.th}>Procurement Qty</th>
-              <th style={styles.th}>UOM</th>
-              <th style={styles.th}>Approved Rate (₹)</th>
-              <th style={styles.th}>Total Amount (₹)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {calcResults.items.map(it => (
-              <tr key={it.code}>
-                <td style={styles.td}><code>{it.code}</code></td>
-                <td style={styles.td}>{it.category}</td>
-                <td style={styles.td}><strong>{it.name}</strong></td>
-                <td style={styles.td}>{it.engQty.toLocaleString()}</td>
-                <td style={styles.td}>{it.procQty.toLocaleString()}</td>
-                <td style={styles.td}>{it.uom}</td>
-                <td style={styles.td}>
-                  {it.isFound ? formatCurrency(it.rateVal) : <span style={{ color: '#dc2626', fontWeight: '700' }}>Master Mapping Required / Approved Rate Unavailable</span>}
-                </td>
-                <td style={styles.td}>
-                  {it.isFound ? <strong>{formatCurrency(it.amountVal)}</strong> : <span style={{ color: '#94a3b8' }}>—</span>}
-                </td>
-              </tr>
-            ))}
-            <tr style={{ backgroundColor: '#0f766e', color: 'white', fontWeight: '800' }}>
-              <td colSpan={7} style={{ padding: '12px 14px', fontSize: '16px' }}>GRAND TOTAL ESTIMATED COST</td>
-              <td style={{ padding: '12px 14px', fontSize: '18px' }}>{formatCurrency(calcResults.grandTotalCost)}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
     </div>
   );
 }

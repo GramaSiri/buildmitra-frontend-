@@ -186,10 +186,11 @@ export default function WaterproofingCalculatorPage() {
 
   const [location, setLocation] = useState("Terrace / Roof");
   const [system, setSystem] = useState("Two Component Cementitious Waterproofing");
-  const [lengthFt, setLengthFt] = useState(30);
-  const [widthFt, setWidthFt] = useState(40);
+  const [lengthFt, setLengthFt] = useState(0);
+  const [widthFt, setWidthFt] = useState(0);
   const [coats, setCoats] = useState(2);
 
+  const [hasCalculated, setHasCalculated] = useState<boolean>(false);
   const [isInputModified, setIsInputModified] = useState<boolean>(false);
   const [isCalculatedBlue, setIsCalculatedBlue] = useState<boolean>(false);
 
@@ -287,6 +288,7 @@ export default function WaterproofingCalculatorPage() {
   }, [lengthFt, widthFt, coats, location, system, primerRate, coatingRate, membraneRate, labourRate]);
 
   const handleCalculate = () => {
+    setHasCalculated(true);
     setIsInputModified(false);
     setIsCalculatedBlue(true);
     setTimeout(() => setIsCalculatedBlue(false), 2000);
@@ -416,13 +418,29 @@ export default function WaterproofingCalculatorPage() {
           {/* Action Buttons */}
           <div className="bm-boq-actions" style={{ marginTop: '12px' }}>
             <button style={styles.btnPrimary} onClick={handleCalculate}>⚡ Calculate Waterproofing</button>
-            <button style={styles.btnReset} onClick={() => setLengthFt(30)}>🔄 Reset</button>
+            <button style={styles.btnReset} onClick={() => { setLengthFt(0); setWidthFt(0); setHasCalculated(false); }}>🔄 Reset</button>
             <button style={styles.btnSecondary} onClick={handleExportExcel}>📊 Export Excel</button>
             <button style={styles.btnSuccess} onClick={handleExportPDF}>📄 Export PDF Report</button>
           </div>
         </div>
 
-        {/* Result Metric Cards */}
+        {!hasCalculated ? (
+          <div style={{
+            backgroundColor: "#ffffff",
+            border: "2px dashed #0284c7",
+            borderRadius: "14px",
+            padding: "36px 20px",
+            textAlign: "center",
+            color: "#0284c7",
+            margin: "20px 0"
+          }}>
+            <div style={{ fontSize: "32px", marginBottom: "8px" }}>💧</div>
+            <div style={{ fontSize: "16px", fontWeight: "800", color: "#0f172a", marginBottom: "6px" }}>Ready for Waterproofing Estimation</div>
+            <div style={{ fontSize: "13px", color: "#475569" }}>Please enter treatment dimensions above and click <strong>"⚡ Calculate Waterproofing"</strong> to view chemical chemical quantities &amp; itemized BOQ.</div>
+          </div>
+        ) : (
+          <>
+            {/* Result Metric Cards */}
         <div style={styles.summaryGrid} className="bm-boq-summary-scroll">
           <div style={{ ...styles.metricCard, ...styles.metricBlue }}>
             <span style={styles.metricTitle}>Treatment Area</span>
@@ -501,7 +519,9 @@ export default function WaterproofingCalculatorPage() {
             </tbody>
           </table>
         </div>
-      </div>
+      </>
+    )}
+  </div>
     </>
   );
 }

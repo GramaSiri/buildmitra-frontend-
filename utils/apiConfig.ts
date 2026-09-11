@@ -1,4 +1,4 @@
-const PRODUCTION_API = "https://buildmitra-backend-beta.onrender.com";
+const DEFAULT_LOCAL_API = "http://localhost:5000";
 
 export function getApiBase(): string {
   if (typeof window !== "undefined") {
@@ -9,18 +9,22 @@ export function getApiBase(): string {
 
     const host = window.location.hostname;
 
-    // Local laptop / localhost dev environment
-    if (host === "localhost" || host === "127.0.0.1") {
+    // Local laptop / dev / LAN test environment
+    if (
+      host === "localhost" ||
+      host === "127.0.0.1" ||
+      host.startsWith("192.168.") ||
+      host.startsWith("10.") ||
+      host.endsWith(".local")
+    ) {
       const localBase =
         process.env.NEXT_PUBLIC_API_URL ||
         process.env.NEXT_PUBLIC_API_BASE ||
-        "http://localhost:5000";
+        DEFAULT_LOCAL_API;
       return localBase.replace(/\/+$/, "");
     }
 
-    // Any remote hostname (Vercel deployment, mobile browser, LAN testing, custom domain)
-    // Force base URL to the production Render backend
-    return PRODUCTION_API;
+    return process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE || DEFAULT_LOCAL_API;
   }
 
   // Server-side rendering / Node environment fallback
@@ -28,11 +32,7 @@ export function getApiBase(): string {
     process.env.NEXT_PUBLIC_API_URL ||
     process.env.NEXT_PUBLIC_API_BASE ||
     process.env.BACKEND_API_URL ||
-    PRODUCTION_API;
-
-  if (configured.includes("localhost") || configured.includes("127.0.0.1")) {
-    return PRODUCTION_API;
-  }
+    DEFAULT_LOCAL_API;
 
   return configured.replace(/\/+$/, "");
 }
