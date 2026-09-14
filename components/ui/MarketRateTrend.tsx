@@ -81,7 +81,7 @@ export default function MarketRateTrend() {
           gap: 16px;
           white-space: nowrap;
           width: max-content;
-          animation: tickerScroll 85s linear infinite;
+          animation: tickerScroll 142s linear infinite;
         }
         .ticker-container:hover .ticker-track,
         .ticker-track-paused {

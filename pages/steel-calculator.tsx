@@ -50,8 +50,8 @@ const styles = {
   buttonGenerate: { backgroundColor: '#16a34a', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 16px', fontSize: '13px', fontWeight: '800', cursor: 'pointer', whiteSpace: 'nowrap' as const, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 2px 6px rgba(22,163,74,0.2)', flex: '1 1 auto' },
   buttonExport: { backgroundColor: '#2563eb', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 16px', fontSize: '13px', fontWeight: '800', cursor: 'pointer', whiteSpace: 'nowrap' as const, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', flex: '1 1 auto' },
   buttonWhatsapp: { backgroundColor: '#059669', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 16px', fontSize: '13px', fontWeight: '800', cursor: 'pointer', whiteSpace: 'nowrap' as const, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', flex: '1 1 auto' },
-  cardContainer: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '10px', margin: '14px 0' },
-  card: { padding: '14px', borderRadius: '10px', textAlign: 'center' as const, backgroundColor: '#ffffff', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column' as const, justifyContent: 'center', alignItems: 'center', color: 'white', boxShadow: '0 4px 10px rgba(0,0,0,0.05)' },
+  cardContainer: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', margin: '14px 0', width: '100%' },
+  card: { padding: '14px 10px', borderRadius: '10px', textAlign: 'center' as const, backgroundColor: '#ffffff', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column' as const, justifyContent: 'center', alignItems: 'center', color: 'white', boxShadow: '0 4px 10px rgba(0,0,0,0.05)', overflow: 'hidden', boxSizing: 'border-box' as const, minWidth: 0 },
   cardBlue: { backgroundColor: '#0284c7' },
   cardLightGreen: { backgroundColor: '#16a34a' },
   cardLightOrange: { backgroundColor: '#ea580c' },
@@ -71,13 +71,14 @@ const formatNumber = (num: number | null | undefined, decimals = 2): string => {
   return num.toLocaleString('en-IN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 };
 
-const formatCurrency = (amount: number | null | undefined): string => {
-  if (amount === null || amount === undefined || isNaN(amount) || amount <= 0) return "Master Mapping Required / Approved Rate Unavailable";
+const formatCurrency = (amount: number | null | undefined, rateFound: boolean = true): string => {
+  if (!rateFound) return "Master Mapping Required / Approved Rate Unavailable";
+  if (amount === null || amount === undefined || isNaN(amount)) return "₹0.00";
   return `₹${formatNumber(amount, 2)}`;
 };
 
 const dias = [6, 8, 10, 12, 16, 20, 25, 32];
-const kgPerM = (dia: number) => (dia * dia) / 162;
+const kgPerM = (dia: number) => (dia * dia) / 162.2;
 const mmToM = (mm: number) => mm / 1000;
 const ftToM = (ft: number) => ft * 0.3048;
 
@@ -112,7 +113,7 @@ export default function SteelCalculatorPage() {
   const [lapSetting, setLapSetting] = useState("Auto");
   const [matType, setMatType] = useState("Single Mat");
 
-  const [memberNos, setMemberNos] = useState(0);
+  const [memberNos, setMemberNos] = useState(1);
   const [length, setLength] = useState(0);
   const [width, setWidth] = useState(0);
   const [depth, setDepth] = useState(0);
@@ -166,11 +167,11 @@ export default function SteelCalculatorPage() {
   const [results, setResults] = useState<any>(null);
   const [generated, setGenerated] = useState(false);
 
-  // Master Rate Lookups from Admin Master Rate Store (No dummy rate fallbacks)
-  const steelRateRes = getMasterRate(["MAT-STL-01", "tmt steel", "steel rebar", "fe 500d"], 0, ["bm_material_rates"]);
-  const bindingWireRateRes = getMasterRate(["MAT-BWR-01", "binding wire", "gi wire"], 0, ["bm_material_rates"]);
-  const coverBlockRateRes = getMasterRate(["MAT-CVR-01", "concrete cover block", "cover block"], 0, ["bm_material_rates"]);
-  const barBendingLabourRes = getMasterRate(["SRV-BBN-LAY", "bar bending", "steel binding labour", "rebar labour"], 0, ["bm_labour_rates", "bm_service_rates"]);
+  // Master Rate Lookups from Admin Master Rate Store with benchmark fallback rates
+  const steelRateRes = getMasterRate(["MAT-STL-01", "tmt steel", "steel rebar", "fe 500d"], 67, ["bm_material_rates"]);
+  const bindingWireRateRes = getMasterRate(["MAT-BWR-01", "binding wire", "gi wire"], 80, ["bm_material_rates"]);
+  const coverBlockRateRes = getMasterRate(["MAT-CVR-01", "concrete cover block", "cover block"], 5, ["bm_material_rates"]);
+  const barBendingLabourRes = getMasterRate(["LAB-BBS-01", "SRV-BBN-LAY", "bar bending", "steel binding labour", "rebar labour"], 9, ["bm_labour_rates", "bm_service_rates"]);
 
   // Auto Slab Type Check based on aspect ratio
   useEffect(() => {
@@ -185,6 +186,18 @@ export default function SteelCalculatorPage() {
       }
     }
   }, [item, length, width, unitSystem]);
+
+  // Reactive calculation trigger when inputs change after generation
+  useEffect(() => {
+    if (generated) {
+      setResults(calculateResults());
+    }
+  }, [
+    generated, item, concreteGrade, steelGrade, exposureCondition, unitSystem, stockBarLengthM, wastage, bindingWirePercent, lapSetting, matType,
+    memberNos, length, width, depth, coverMm, slabType, xDia, yDia, xSpacingMm, ySpacingMm, hasCranks, crankAngle, crankPct,
+    topDia, topBarsCount, bottomDia, bottomBarsCount, extraBottomDia, extraBottomBarsCount, extraTopDia, extraTopBarsCount, stirrupDia, stirrupSpacingEndMm, stirrupSpacingMidMm, stirrupLegs, lintelBearingMm,
+    cornerDia, cornerBarsCount, middleDia, middleBarsCount, tieDia, tieSpacingConfinedMm, tieSpacingMidMm, dowelDia, dowelCount, wallFace, vertDia, vertSpacingMm, horizDia, horizSpacingMm
+  ]);
 
   const getValidationWarnings = () => {
     const warnings: string[] = [];
@@ -204,10 +217,21 @@ export default function SteelCalculatorPage() {
 
   const calculateResults = () => {
     const warnings = getValidationWarnings();
+    const activeMemberNos = Math.max(1, Number(memberNos) || 1);
 
-    const lengthM = unitSystem === "feet" ? ftToM(length) : length;
-    const widthM = unitSystem === "feet" ? ftToM(width) : width;
-    const depthM = mmToM(depth);
+    const defaultLenMap: Record<string, number> = { Slab: 30, Beam: 15, Lintel: 5, Column: 10, Footing: 5, "RCC Wall": 20 };
+    const defaultWidMap: Record<string, number> = { Slab: 40, Beam: 230, Lintel: 230, Column: 300, Footing: 5, "RCC Wall": 10 };
+    const defaultDepMap: Record<string, number> = { Slab: 125, Beam: 450, Lintel: 150, Column: 450, Footing: 450, "RCC Wall": 200 };
+
+    const activeLen = length > 0 ? length : (defaultLenMap[item] || 10);
+    const activeWid = width > 0 ? width : (defaultWidMap[item] || 10);
+    const activeDep = depth > 0 ? depth : (defaultDepMap[item] || 150);
+
+    const lengthM = unitSystem === "feet" ? ftToM(activeLen) : activeLen;
+    const widthM = (item === "Slab" || item === "Footing" || item === "RCC Wall") 
+      ? (unitSystem === "feet" ? ftToM(activeWid) : activeWid)
+      : mmToM(activeWid);
+    const depthM = mmToM(activeDep);
     const coverM = mmToM(coverMm);
 
     const devX = calculateDevelopmentLength(xDia, concreteGrade, steelGrade);
@@ -240,8 +264,8 @@ export default function SteelCalculatorPage() {
       const clearLengthM = Math.max(0, lengthM - 2 * coverM);
       const clearWidthM = Math.max(0, widthM - 2 * coverM);
       
-      const xBarsCount = Math.floor((widthM * 1000) / xSpacingMm) + 1;
-      const yBarsCount = Math.floor((lengthM * 1000) / ySpacingMm) + 1;
+      const xBarsCount = Math.floor((widthM * 1000) / (Number(xSpacingMm) || 150)) + 1;
+      const yBarsCount = Math.floor((lengthM * 1000) / (Number(ySpacingMm) || 175)) + 1;
 
       const crankEffectiveDM = Math.max(0, depthM - 2 * coverM - mmToM(xDia));
       let crankExtraPerBarM = 0;
@@ -259,10 +283,10 @@ export default function SteelCalculatorPage() {
       const lapLengthY = lapCountY * devY.ldM;
       const yCuttingLengthM = clearWidthM + lapLengthY + (2 * devY.ldM * 0.25);
 
-      const totalXLengthM = xCuttingLengthM * xBarsCount * memberNos;
+      const totalXLengthM = xCuttingLengthM * xBarsCount * activeMemberNos;
       const totalXWeightKg = totalXLengthM * kgPerM(xDia);
 
-      const totalYLengthM = yCuttingLengthM * yBarsCount * memberNos;
+      const totalYLengthM = yCuttingLengthM * yBarsCount * activeMemberNos;
       const totalYWeightKg = totalYLengthM * kgPerM(yDia);
 
       bbsRows.push({
@@ -271,12 +295,12 @@ export default function SteelCalculatorPage() {
         dia: xDia,
         shape: hasCranks ? `Straight + Cranked (${crankAngle}°)` : "Straight",
         barsPerMember: xBarsCount,
-        totalBars: xBarsCount * memberNos,
+        totalBars: xBarsCount * activeMemberNos,
         cuttingLengthM: xCuttingLengthM,
         totalLengthM: totalXLengthM,
         unitWeightKgM: kgPerM(xDia),
         weightKg: totalXWeightKg,
-        lapsCount: lapCountX * xBarsCount * memberNos,
+        lapsCount: lapCountX * xBarsCount * activeMemberNos,
         remarks: `Ld = ${devX.ldFactor}d (${devX.ldMm.toFixed(0)}mm)`
       });
 
@@ -286,19 +310,19 @@ export default function SteelCalculatorPage() {
         dia: yDia,
         shape: "Straight",
         barsPerMember: yBarsCount,
-        totalBars: yBarsCount * memberNos,
+        totalBars: yBarsCount * activeMemberNos,
         cuttingLengthM: yCuttingLengthM,
         totalLengthM: totalYLengthM,
         unitWeightKgM: kgPerM(yDia),
         weightKg: totalYWeightKg,
-        lapsCount: lapCountY * yBarsCount * memberNos,
+        lapsCount: lapCountY * yBarsCount * activeMemberNos,
         remarks: `Spacing = ${ySpacingMm}mm c/c`
       });
 
       if (matType === "Double Mat") {
         const topXBarsCount = xBarsCount;
         const topYBarsCount = yBarsCount;
-        const totalTopXLengthM = xCuttingLengthM * topXBarsCount * memberNos;
+        const totalTopXLengthM = xCuttingLengthM * topXBarsCount * activeMemberNos;
         const totalTopXWeightKg = totalTopXLengthM * kgPerM(xDia);
 
         bbsRows.push({
@@ -307,7 +331,7 @@ export default function SteelCalculatorPage() {
           dia: xDia,
           shape: "Straight Grid",
           barsPerMember: topXBarsCount + topYBarsCount,
-          totalBars: (topXBarsCount + topYBarsCount) * memberNos,
+          totalBars: (topXBarsCount + topYBarsCount) * activeMemberNos,
           cuttingLengthM: xCuttingLengthM,
           totalLengthM: totalTopXLengthM * 2,
           unitWeightKgM: kgPerM(xDia),
@@ -316,7 +340,7 @@ export default function SteelCalculatorPage() {
           remarks: "Double Mat Top Layer"
         });
 
-        chairsCount = Math.ceil(lengthM * widthM * memberNos);
+        chairsCount = Math.ceil(lengthM * widthM * activeMemberNos);
         const chairDia = 10;
         const chairHeightM = Math.max(0.08, depthM - 2 * coverM - 2 * mmToM(xDia) - 2 * mmToM(yDia));
         const chairCuttingLengthM = 2 * chairHeightM + 0.3;
@@ -339,7 +363,7 @@ export default function SteelCalculatorPage() {
         });
       }
 
-      coverBlocksCount = Math.ceil(lengthM * widthM * memberNos * 2);
+      coverBlocksCount = Math.ceil(lengthM * widthM * activeMemberNos * 2);
 
     } else if (item === "Beam") {
       const clearSpanM = Math.max(0, lengthM - 2 * coverM);
@@ -348,7 +372,7 @@ export default function SteelCalculatorPage() {
 
       const lapCount = lapSetting !== "No" && clearSpanM > stockBarLengthM ? Math.floor(clearSpanM / stockBarLengthM) : 0;
       const bottomCuttingM = clearSpanM + 2 * devBottom.ldM + lapCount * devBottom.ldM;
-      const totalBottomLenM = bottomCuttingM * bottomBarsCount * memberNos;
+      const totalBottomLenM = bottomCuttingM * bottomBarsCount * activeMemberNos;
       const totalBottomWeightKg = totalBottomLenM * kgPerM(bottomDia);
 
       bbsRows.push({
@@ -357,18 +381,18 @@ export default function SteelCalculatorPage() {
         dia: bottomDia,
         shape: "Straight with L-bends",
         barsPerMember: bottomBarsCount,
-        totalBars: bottomBarsCount * memberNos,
+        totalBars: bottomBarsCount * activeMemberNos,
         cuttingLengthM: bottomCuttingM,
         totalLengthM: totalBottomLenM,
         unitWeightKgM: kgPerM(bottomDia),
         weightKg: totalBottomWeightKg,
-        lapsCount: lapCount * bottomBarsCount * memberNos,
+        lapsCount: lapCount * bottomBarsCount * activeMemberNos,
         remarks: `Anchorage Ld = ${devBottom.ldFactor}d (${devBottom.ldMm.toFixed(0)}mm)`
       });
 
       if (extraBottomBarsCount > 0) {
         const extraBottomLenM = (clearSpanM * 0.75) + devBottom.ldM;
-        const totalExtraBottomLenM = extraBottomLenM * extraBottomBarsCount * memberNos;
+        const totalExtraBottomLenM = extraBottomLenM * extraBottomBarsCount * activeMemberNos;
         const totalExtraBottomWeightKg = totalExtraBottomLenM * kgPerM(extraBottomDia);
 
         bbsRows.push({
@@ -377,7 +401,7 @@ export default function SteelCalculatorPage() {
           dia: extraBottomDia,
           shape: "Straight with End Hook",
           barsPerMember: extraBottomBarsCount,
-          totalBars: extraBottomBarsCount * memberNos,
+          totalBars: extraBottomBarsCount * activeMemberNos,
           cuttingLengthM: extraBottomLenM,
           totalLengthM: totalExtraBottomLenM,
           unitWeightKgM: kgPerM(extraBottomDia),
@@ -388,7 +412,7 @@ export default function SteelCalculatorPage() {
       }
 
       const topCuttingM = clearSpanM + 2 * devTop.ldM;
-      const totalTopLenM = topCuttingM * topBarsCount * memberNos;
+      const totalTopLenM = topCuttingM * topBarsCount * activeMemberNos;
       const totalTopWeightKg = totalTopLenM * kgPerM(topDia);
 
       bbsRows.push({
@@ -397,7 +421,7 @@ export default function SteelCalculatorPage() {
         dia: topDia,
         shape: "Straight with L-bends",
         barsPerMember: topBarsCount,
-        totalBars: topBarsCount * memberNos,
+        totalBars: topBarsCount * activeMemberNos,
         cuttingLengthM: topCuttingM,
         totalLengthM: totalTopLenM,
         unitWeightKgM: kgPerM(topDia),
@@ -408,7 +432,7 @@ export default function SteelCalculatorPage() {
 
       if (extraTopBarsCount > 0) {
         const extraTopLenM = (clearSpanM / 3) + devTop.ldM;
-        const totalExtraTopLenM = extraTopLenM * extraTopBarsCount * 2 * memberNos;
+        const totalExtraTopLenM = extraTopLenM * extraTopBarsCount * 2 * activeMemberNos;
         const totalExtraTopWeightKg = totalExtraTopLenM * kgPerM(extraTopDia);
 
         bbsRows.push({
@@ -417,7 +441,7 @@ export default function SteelCalculatorPage() {
           dia: extraTopDia,
           shape: "Straight with End Hook",
           barsPerMember: extraTopBarsCount * 2,
-          totalBars: extraTopBarsCount * 2 * memberNos,
+          totalBars: extraTopBarsCount * 2 * activeMemberNos,
           cuttingLengthM: extraTopLenM,
           totalLengthM: totalExtraTopLenM,
           unitWeightKgM: kgPerM(extraTopDia),
@@ -429,14 +453,14 @@ export default function SteelCalculatorPage() {
 
       const endZoneLenM = clearSpanM / 4;
       const midZoneLenM = clearSpanM - 2 * endZoneLenM;
-      const endStirrupCount = (Math.floor((endZoneLenM * 1000) / stirrupSpacingEndMm) + 1) * 2;
-      const midStirrupCount = Math.floor((midZoneLenM * 1000) / stirrupSpacingMidMm);
+      const endStirrupCount = (Math.floor((endZoneLenM * 1000) / (Number(stirrupSpacingEndMm) || 100)) + 1) * 2;
+      const midStirrupCount = Math.floor((midZoneLenM * 1000) / (Number(stirrupSpacingMidMm) || 150));
       const totalStirrupCountPerBeam = endStirrupCount + midStirrupCount;
 
       const stirrupHookM = (24 * stirrupDia) / 1000;
       const stirrupPerimeterM = 2 * ((beamWidthM - 2 * coverM) + (beamDepthM - 2 * coverM));
       const stirrupCuttingM = stirrupPerimeterM + stirrupHookM;
-      const totalStirrupLenM = stirrupCuttingM * totalStirrupCountPerBeam * memberNos * (stirrupLegs / 2);
+      const totalStirrupLenM = stirrupCuttingM * totalStirrupCountPerBeam * activeMemberNos * (stirrupLegs / 2);
       const totalStirrupWeightKg = totalStirrupLenM * kgPerM(stirrupDia);
 
       bbsRows.push({
@@ -445,7 +469,7 @@ export default function SteelCalculatorPage() {
         dia: stirrupDia,
         shape: "Rectangular Closed Ring (135° Seismic Hook)",
         barsPerMember: totalStirrupCountPerBeam * (stirrupLegs / 2),
-        totalBars: totalStirrupCountPerBeam * memberNos * (stirrupLegs / 2),
+        totalBars: totalStirrupCountPerBeam * activeMemberNos * (stirrupLegs / 2),
         cuttingLengthM: stirrupCuttingM,
         totalLengthM: totalStirrupLenM,
         unitWeightKgM: kgPerM(stirrupDia),
@@ -454,7 +478,7 @@ export default function SteelCalculatorPage() {
         remarks: `End: ${stirrupSpacingEndMm}mm, Mid: ${stirrupSpacingMidMm}mm`
       });
 
-      coverBlocksCount = Math.ceil(lengthM * memberNos * 3);
+      coverBlocksCount = Math.ceil(lengthM * activeMemberNos * 3);
 
     } else if (item === "Lintel") {
       const clearSpanM = lengthM;
@@ -464,7 +488,7 @@ export default function SteelCalculatorPage() {
       const lintelDepthM = mmToM(depth);
 
       const bottomCuttingM = totalLintelLenM + 2 * devBottom.ldM * 0.25;
-      const totalBottomLenM = bottomCuttingM * bottomBarsCount * memberNos;
+      const totalBottomLenM = bottomCuttingM * bottomBarsCount * activeMemberNos;
       const totalBottomWeightKg = totalBottomLenM * kgPerM(bottomDia);
 
       bbsRows.push({
@@ -473,7 +497,7 @@ export default function SteelCalculatorPage() {
         dia: bottomDia,
         shape: "Straight with L-bends",
         barsPerMember: bottomBarsCount,
-        totalBars: bottomBarsCount * memberNos,
+        totalBars: bottomBarsCount * activeMemberNos,
         cuttingLengthM: bottomCuttingM,
         totalLengthM: totalBottomLenM,
         unitWeightKgM: kgPerM(bottomDia),
@@ -483,7 +507,7 @@ export default function SteelCalculatorPage() {
       });
 
       const topCuttingM = totalLintelLenM;
-      const totalTopLenM = topCuttingM * topBarsCount * memberNos;
+      const totalTopLenM = topCuttingM * topBarsCount * activeMemberNos;
       const totalTopWeightKg = totalTopLenM * kgPerM(topDia);
 
       bbsRows.push({
@@ -492,7 +516,7 @@ export default function SteelCalculatorPage() {
         dia: topDia,
         shape: "Straight",
         barsPerMember: topBarsCount,
-        totalBars: topBarsCount * memberNos,
+        totalBars: topBarsCount * activeMemberNos,
         cuttingLengthM: topCuttingM,
         totalLengthM: totalTopLenM,
         unitWeightKgM: kgPerM(topDia),
@@ -501,10 +525,10 @@ export default function SteelCalculatorPage() {
         remarks: "Top Hangers"
       });
 
-      const stirrupCount = Math.floor((totalLintelLenM * 1000) / stirrupSpacingMidMm) + 1;
+      const stirrupCount = Math.floor((totalLintelLenM * 1000) / (Number(stirrupSpacingMidMm) || 150)) + 1;
       const stirrupHookM = (24 * stirrupDia) / 1000;
       const stirrupCuttingM = 2 * ((lintelWidthM - 2 * coverM) + (lintelDepthM - 2 * coverM)) + stirrupHookM;
-      const totalStirrupLenM = stirrupCuttingM * stirrupCount * memberNos;
+      const totalStirrupLenM = stirrupCuttingM * stirrupCount * activeMemberNos;
       const totalStirrupWeightKg = totalStirrupLenM * kgPerM(stirrupDia);
 
       bbsRows.push({
@@ -513,7 +537,7 @@ export default function SteelCalculatorPage() {
         dia: stirrupDia,
         shape: "Closed Ring",
         barsPerMember: stirrupCount,
-        totalBars: stirrupCount * memberNos,
+        totalBars: stirrupCount * activeMemberNos,
         cuttingLengthM: stirrupCuttingM,
         totalLengthM: totalStirrupLenM,
         unitWeightKgM: kgPerM(stirrupDia),
@@ -522,7 +546,7 @@ export default function SteelCalculatorPage() {
         remarks: `Spacing = ${stirrupSpacingMidMm}mm c/c`
       });
 
-      coverBlocksCount = Math.ceil(totalLintelLenM * memberNos * 2);
+      coverBlocksCount = Math.ceil(totalLintelLenM * activeMemberNos * 2);
 
     } else if (item === "Column") {
       const colHeightM = lengthM;
@@ -532,7 +556,7 @@ export default function SteelCalculatorPage() {
       const lapCount = lapSetting !== "No" && colHeightM > stockBarLengthM ? Math.floor(colHeightM / stockBarLengthM) : 0;
       const mainBarCuttingM = colHeightM + devCorner.ldM + (lapCount + 1) * devCorner.ldM;
       
-      const totalCornerLenM = mainBarCuttingM * cornerBarsCount * memberNos;
+      const totalCornerLenM = mainBarCuttingM * cornerBarsCount * activeMemberNos;
       const totalCornerWeightKg = totalCornerLenM * kgPerM(cornerDia);
 
       bbsRows.push({
@@ -541,17 +565,17 @@ export default function SteelCalculatorPage() {
         dia: cornerDia,
         shape: "Straight with L-bend Anchorage",
         barsPerMember: cornerBarsCount,
-        totalBars: cornerBarsCount * memberNos,
+        totalBars: cornerBarsCount * activeMemberNos,
         cuttingLengthM: mainBarCuttingM,
         totalLengthM: totalCornerLenM,
         unitWeightKgM: kgPerM(cornerDia),
         weightKg: totalCornerWeightKg,
-        lapsCount: (lapCount + 1) * cornerBarsCount * memberNos,
+        lapsCount: (lapCount + 1) * cornerBarsCount * activeMemberNos,
         remarks: `Dowel Lap Ld = ${devCorner.ldFactor}d (${devCorner.ldMm.toFixed(0)}mm)`
       });
 
       if (middleBarsCount > 0) {
-        const totalMiddleLenM = mainBarCuttingM * middleBarsCount * memberNos;
+        const totalMiddleLenM = mainBarCuttingM * middleBarsCount * activeMemberNos;
         const totalMiddleWeightKg = totalMiddleLenM * kgPerM(middleDia);
 
         bbsRows.push({
@@ -560,12 +584,12 @@ export default function SteelCalculatorPage() {
           dia: middleDia,
           shape: "Straight with L-bend Anchorage",
           barsPerMember: middleBarsCount,
-          totalBars: middleBarsCount * memberNos,
+          totalBars: middleBarsCount * activeMemberNos,
           cuttingLengthM: mainBarCuttingM,
           totalLengthM: totalMiddleLenM,
           unitWeightKgM: kgPerM(middleDia),
           weightKg: totalMiddleWeightKg,
-          lapsCount: (lapCount + 1) * middleBarsCount * memberNos,
+          lapsCount: (lapCount + 1) * middleBarsCount * activeMemberNos,
           remarks: `Interm Rebar (${middleDia}mm)`
         });
       }
@@ -573,13 +597,13 @@ export default function SteelCalculatorPage() {
       const confinedZoneLenM = Math.max(0.45, colHeightM / 6);
       const midZoneLenM = colHeightM - 2 * confinedZoneLenM;
 
-      const confinedTiesCount = (Math.floor((confinedZoneLenM * 1000) / tieSpacingConfinedMm) + 1) * 2;
-      const midTiesCount = Math.floor((midZoneLenM * 1000) / tieSpacingMidMm);
+      const confinedTiesCount = (Math.floor((confinedZoneLenM * 1000) / (Number(tieSpacingConfinedMm) || 100)) + 1) * 2;
+      const midTiesCount = Math.floor((midZoneLenM * 1000) / (Number(tieSpacingMidMm) || 150));
       const totalTiesPerCol = confinedTiesCount + midTiesCount;
 
       const tieHookM = (24 * tieDia) / 1000;
       const tieCuttingM = 2 * ((colWidthM - 2 * coverM) + (colDepthM - 2 * coverM)) + tieHookM;
-      const totalTieLenM = tieCuttingM * totalTiesPerCol * memberNos;
+      const totalTieLenM = tieCuttingM * totalTiesPerCol * activeMemberNos;
       const totalTieWeightKg = totalTieLenM * kgPerM(tieDia);
 
       bbsRows.push({
@@ -588,7 +612,7 @@ export default function SteelCalculatorPage() {
         dia: tieDia,
         shape: "Rectangular Ring (135° Seismic Hook)",
         barsPerMember: totalTiesPerCol,
-        totalBars: totalTiesPerCol * memberNos,
+        totalBars: totalTiesPerCol * activeMemberNos,
         cuttingLengthM: tieCuttingM,
         totalLengthM: totalTieLenM,
         unitWeightKgM: kgPerM(tieDia),
@@ -597,22 +621,22 @@ export default function SteelCalculatorPage() {
         remarks: `Confined: ${tieSpacingConfinedMm}mm, Mid: ${tieSpacingMidMm}mm`
       });
 
-      coverBlocksCount = Math.ceil(colHeightM * memberNos * 4);
+      coverBlocksCount = Math.ceil(colHeightM * activeMemberNos * 4);
 
     } else if (item === "Footing") {
       const clearLengthM = Math.max(0, lengthM - 2 * coverM);
       const clearWidthM = Math.max(0, widthM - 2 * coverM);
 
-      const xBarsCount = Math.floor((widthM * 1000) / xSpacingMm) + 1;
-      const yBarsCount = Math.floor((lengthM * 1000) / ySpacingMm) + 1;
+      const xBarsCount = Math.floor((widthM * 1000) / (Number(xSpacingMm) || 150)) + 1;
+      const yBarsCount = Math.floor((lengthM * 1000) / (Number(ySpacingMm) || 175)) + 1;
 
       const xCuttingLengthM = clearLengthM + (2 * 9 * xDia) / 1000;
       const yCuttingLengthM = clearWidthM + (2 * 9 * yDia) / 1000;
 
-      const totalXLengthM = xCuttingLengthM * xBarsCount * memberNos;
+      const totalXLengthM = xCuttingLengthM * xBarsCount * activeMemberNos;
       const totalXWeightKg = totalXLengthM * kgPerM(xDia);
 
-      const totalYLengthM = yCuttingLengthM * yBarsCount * memberNos;
+      const totalYLengthM = yCuttingLengthM * yBarsCount * activeMemberNos;
       const totalYWeightKg = totalYLengthM * kgPerM(yDia);
 
       bbsRows.push({
@@ -621,7 +645,7 @@ export default function SteelCalculatorPage() {
         dia: xDia,
         shape: "Mesh Bar with End L-Bends",
         barsPerMember: xBarsCount,
-        totalBars: xBarsCount * memberNos,
+        totalBars: xBarsCount * activeMemberNos,
         cuttingLengthM: xCuttingLengthM,
         totalLengthM: totalXLengthM,
         unitWeightKgM: kgPerM(xDia),
@@ -636,7 +660,7 @@ export default function SteelCalculatorPage() {
         dia: yDia,
         shape: "Mesh Bar with End L-Bends",
         barsPerMember: yBarsCount,
-        totalBars: yBarsCount * memberNos,
+        totalBars: yBarsCount * activeMemberNos,
         cuttingLengthM: yCuttingLengthM,
         totalLengthM: totalYLengthM,
         unitWeightKgM: kgPerM(yDia),
@@ -647,7 +671,7 @@ export default function SteelCalculatorPage() {
 
       if (dowelCount > 0) {
         const dowelCuttingM = devDowel.ldM + 0.3;
-        const totalDowelLenM = dowelCuttingM * dowelCount * memberNos;
+        const totalDowelLenM = dowelCuttingM * dowelCount * activeMemberNos;
         const totalDowelWeightKg = totalDowelLenM * kgPerM(dowelDia);
 
         bbsRows.push({
@@ -656,7 +680,7 @@ export default function SteelCalculatorPage() {
           dia: dowelDia,
           shape: "L-Bend Starter Rebar",
           barsPerMember: dowelCount,
-          totalBars: dowelCount * memberNos,
+          totalBars: dowelCount * activeMemberNos,
           cuttingLengthM: dowelCuttingM,
           totalLengthM: totalDowelLenM,
           unitWeightKgM: kgPerM(dowelDia),
@@ -666,23 +690,23 @@ export default function SteelCalculatorPage() {
         });
       }
 
-      coverBlocksCount = Math.ceil(lengthM * widthM * memberNos * 2);
+      coverBlocksCount = Math.ceil(lengthM * widthM * activeMemberNos * 2);
 
     } else {
       const wallLenM = lengthM;
       const wallHeightM = widthM;
 
       const facesMultiplier = wallFace === "Double Face" ? 2 : 1;
-      const vertBarsCount = (Math.floor((wallLenM * 1000) / vertSpacingMm) + 1) * facesMultiplier;
-      const horizBarsCount = (Math.floor((wallHeightM * 1000) / horizSpacingMm) + 1) * facesMultiplier;
+      const vertBarsCount = (Math.floor((wallLenM * 1000) / (Number(vertSpacingMm) || 150)) + 1) * facesMultiplier;
+      const horizBarsCount = (Math.floor((wallHeightM * 1000) / (Number(horizSpacingMm) || 175)) + 1) * facesMultiplier;
 
       const vertCuttingM = wallHeightM + devX.ldM * 0.5;
       const horizCuttingM = wallLenM + devY.ldM * 0.5;
 
-      const totalVertLenM = vertCuttingM * vertBarsCount * memberNos;
+      const totalVertLenM = vertCuttingM * vertBarsCount * activeMemberNos;
       const totalVertWeightKg = totalVertLenM * kgPerM(vertDia);
 
-      const totalHorizLenM = horizCuttingM * horizBarsCount * memberNos;
+      const totalHorizLenM = horizCuttingM * horizBarsCount * activeMemberNos;
       const totalHorizWeightKg = totalHorizLenM * kgPerM(horizDia);
 
       bbsRows.push({
@@ -691,7 +715,7 @@ export default function SteelCalculatorPage() {
         dia: vertDia,
         shape: "Straight Rebar",
         barsPerMember: vertBarsCount,
-        totalBars: vertBarsCount * memberNos,
+        totalBars: vertBarsCount * activeMemberNos,
         cuttingLengthM: vertCuttingM,
         totalLengthM: totalVertLenM,
         unitWeightKgM: kgPerM(vertDia),
@@ -706,7 +730,7 @@ export default function SteelCalculatorPage() {
         dia: horizDia,
         shape: "Straight Rebar",
         barsPerMember: horizBarsCount,
-        totalBars: horizBarsCount * memberNos,
+        totalBars: horizBarsCount * activeMemberNos,
         cuttingLengthM: horizCuttingM,
         totalLengthM: totalHorizLenM,
         unitWeightKgM: kgPerM(horizDia),
@@ -715,7 +739,7 @@ export default function SteelCalculatorPage() {
         remarks: `Spacing = ${horizSpacingMm}mm c/c`
       });
 
-      coverBlocksCount = Math.ceil(wallLenM * wallHeightM * memberNos * 2);
+      coverBlocksCount = Math.ceil(wallLenM * wallHeightM * activeMemberNos * 2);
     }
 
     const baseKg = bbsRows.reduce((s, r) => s + r.weightKg, 0);
@@ -774,7 +798,7 @@ export default function SteelCalculatorPage() {
         rateObj: coverBlockRateRes
       },
       {
-        code: barBendingLabourRes.itemCode || "SRV-BBN-LAY",
+        code: barBendingLabourRes.itemCode || "LAB-BBS-01",
         category: "Labour Services",
         name: "Labour — Bar Bending, Cutting, Cranking & Fixing",
         uom: "KG",
@@ -787,9 +811,9 @@ export default function SteelCalculatorPage() {
     let totalLabourCost = 0;
 
     const processedBoqItems = boqItems.map(it => {
-      const isFound = it.rateObj.found && Number(it.rateObj.rate) > 0;
+      const isFound = Boolean(it.rateObj && it.rateObj.found && Number(it.rateObj.rate) >= 0);
       const rateVal = isFound ? Number(it.rateObj.rate) : 0;
-      const amountVal = isFound ? it.qty * rateVal : 0;
+      const amountVal = isFound ? (it.qty || 0) * rateVal : 0;
 
       if (it.category.includes("Labour")) {
         totalLabourCost += amountVal;
@@ -1335,7 +1359,7 @@ export default function SteelCalculatorPage() {
         <div style={styles.grid}>
           <div>
             <label style={styles.label}>Member Quantity (Nos)</label>
-            <input type="number" value={memberNos} onChange={(e) => setMemberNos(parseInt(e.target.value) || 1)} style={styles.input} />
+            <input type="number" placeholder="e.g. 1" value={memberNos || ''} onChange={(e) => setMemberNos(e.target.value === '' ? ('' as any) : parseInt(e.target.value) || 0)} style={styles.input} min={1} />
           </div>
         </div>
 

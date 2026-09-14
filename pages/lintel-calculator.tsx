@@ -217,13 +217,14 @@ export default function LintelCalculator() {
   const rccLabourRate = getMasterRate(["SRV-RCC-LAY", "rcc labour", "lintel labour"], 0);
 
   const calcResults = useMemo(() => {
+    const activeLintelNos = Math.max(1, Number(lintelNos) || 1);
     const bearingFt = bearingMm / 304.8;
     const totalLenFt = clearLenFt + (2 * bearingFt);
     const widthFt = widthIn / 12;
     const depthFt = depthIn / 12;
 
     const volPerLintelCft = totalLenFt * widthFt * depthFt;
-    const totalVolCft = volPerLintelCft * lintelNos;
+    const totalVolCft = volPerLintelCft * activeLintelNos;
     const totalVolCum = Number((totalVolCft / 35.3147).toFixed(2));
 
     const cementFactor = grade === 'M25' ? 11.10 : grade === 'M30' ? 12.50 : 8.07;
@@ -238,18 +239,18 @@ export default function LintelCalculator() {
 
     // Reinforcement Steel Engine (IS 456)
     const mainBarLenM = (totalLenFt * 0.3048) + (2 * 50 * mainDia / 1000);
-    const totalMainSteelKg = lintelNos * mainNos * mainBarLenM * ((mainDia * mainDia) / 162.2);
+    const totalMainSteelKg = activeLintelNos * mainNos * mainBarLenM * ((mainDia * mainDia) / 162.2);
 
     const coreW_m = Math.max((widthIn * 25.4 - 2 * coverMm) / 1000, 0);
     const coreD_m = Math.max((depthIn * 25.4 - 2 * coverMm) / 1000, 0);
     const stirrupCircumM = 2 * (coreW_m + coreD_m) + (24 * stirrupDia / 1000);
     const stirrupNosPerLintel = Math.ceil((totalLenFt * 304.8) / stirrupSpacingMm) + 1;
-    const totalStirrupSteelKg = lintelNos * stirrupNosPerLintel * stirrupCircumM * ((stirrupDia * stirrupDia) / 162.2);
+    const totalStirrupSteelKg = activeLintelNos * stirrupNosPerLintel * stirrupCircumM * ((stirrupDia * stirrupDia) / 162.2);
 
     const totalSteelKg = Math.round((totalMainSteelKg + totalStirrupSteelKg) * 1.03); // 3% wastage
     const bindingWireKg = Math.ceil(totalSteelKg * 0.015);
-    const shutteringSqft = Math.round((widthFt + 2 * depthFt) * totalLenFt * lintelNos);
-    const coverBlockPcs = Math.ceil(lintelNos * stirrupNosPerLintel * 2);
+    const shutteringSqft = Math.round((widthFt + 2 * depthFt) * totalLenFt * activeLintelNos);
+    const coverBlockPcs = Math.ceil(activeLintelNos * stirrupNosPerLintel * 2);
 
     const items = [
       {

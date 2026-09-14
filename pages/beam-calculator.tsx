@@ -218,12 +218,13 @@ export default function BeamCalculator() {
   const rccLabourRate = getMasterRate(["SRV-RCC-LAY", "rcc labour", "beam labour"], 0);
 
   const calcResults = useMemo(() => {
+    const activeBeamNos = Math.max(1, Number(beamNos) || 1);
     const H_m = lengthFt * 0.3048;
     const W_m = (widthIn * 25.4) / 1000;
     const D_m = (depthIn * 25.4) / 1000;
 
     const volPerBeamCum = H_m * W_m * D_m;
-    const totalVolCum = Number((volPerBeamCum * beamNos).toFixed(2));
+    const totalVolCum = Number((volPerBeamCum * activeBeamNos).toFixed(2));
     const totalVolCft = Math.round(totalVolCum * 35.3147);
 
     const cementFactor = grade === 'M25' ? 11.10 : grade === 'M30' ? 12.50 : 8.07;
@@ -240,21 +241,21 @@ export default function BeamCalculator() {
     const L_topM = H_m + (2 * 50 * topDia / 1000);
     const L_botM = H_m + (2 * 50 * bottomDia / 1000);
 
-    const topWeightKg = beamNos * topNos * L_topM * ((topDia * topDia) / 162.2);
-    const botWeightKg = beamNos * bottomNos * L_botM * ((bottomDia * bottomDia) / 162.2);
+    const topWeightKg = activeBeamNos * topNos * L_topM * ((topDia * topDia) / 162.2);
+    const botWeightKg = activeBeamNos * bottomNos * L_botM * ((bottomDia * bottomDia) / 162.2);
 
     const W_coreM = Math.max((widthIn * 25.4 - 2 * coverMm) / 1000, 0);
     const D_coreM = Math.max((depthIn * 25.4 - 2 * coverMm) / 1000, 0);
     const cuttingLengthStirrupM = (2 * (W_coreM + D_coreM)) + (24 * stirrupDia / 1000);
 
     const stirrupNosPerBeam = Math.ceil((lengthFt * 304.8) / spacingMm) + 1;
-    const totalStirrupNos = stirrupNosPerBeam * beamNos;
+    const totalStirrupNos = stirrupNosPerBeam * activeBeamNos;
     const stirrupWeightKg = totalStirrupNos * cuttingLengthStirrupM * ((stirrupDia * stirrupDia) / 162.2);
 
     const totalSteelKg = Math.round((topWeightKg + botWeightKg + stirrupWeightKg) * 1.03); // 3% wastage
     const bindingWireKg = Math.ceil(totalSteelKg * 0.015);
-    const shutteringSqft = Math.round((widthIn + 2 * depthIn) / 12 * lengthFt * beamNos);
-    const coverBlockPcs = Math.ceil(beamNos * stirrupNosPerBeam * 4);
+    const shutteringSqft = Math.round((widthIn + 2 * depthIn) / 12 * lengthFt * activeBeamNos);
+    const coverBlockPcs = Math.ceil(activeBeamNos * stirrupNosPerBeam * 4);
 
     const items = [
       {

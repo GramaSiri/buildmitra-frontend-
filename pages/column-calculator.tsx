@@ -219,12 +219,13 @@ export default function ColumnCalculator() {
   const rccLabourRate = getMasterRate(["SRV-RCC-LAY", "rcc labour", "column labour"], 0);
 
   const calcResults = useMemo(() => {
+    const activeColumnNos = Math.max(1, Number(columnNos) || 1);
     const H_m = heightFt * 0.3048;
     const W_m = (widthIn * 25.4) / 1000;
     const D_m = (depthIn * 25.4) / 1000;
 
     const volPerColCum = H_m * W_m * D_m;
-    const totalVolCum = Number((volPerColCum * columnNos).toFixed(2));
+    const totalVolCum = Number((volPerColCum * activeColumnNos).toFixed(2));
     const totalVolCft = Math.round(totalVolCum * 35.3147);
 
     const cementFactor = grade === 'M25' ? 11.10 : grade === 'M30' ? 12.50 : 8.07;
@@ -241,19 +242,19 @@ export default function ColumnCalculator() {
     const L_cornerM = H_m + (50 * cornerDia / 1000);
     const L_middleM = H_m + (50 * middleDia / 1000);
 
-    const cornerWeightKg = columnNos * cornerNos * L_cornerM * ((cornerDia * cornerDia) / 162.2);
-    const middleWeightKg = columnNos * middleNos * L_middleM * ((middleDia * middleDia) / 162.2);
+    const cornerWeightKg = activeColumnNos * cornerNos * L_cornerM * ((cornerDia * cornerDia) / 162.2);
+    const middleWeightKg = activeColumnNos * middleNos * L_middleM * ((middleDia * middleDia) / 162.2);
 
     const W_coreM = Math.max((widthIn * 25.4 - 2 * coverMm) / 1000, 0);
     const D_coreM = Math.max((depthIn * 25.4 - 2 * coverMm) / 1000, 0);
     const cuttingLengthTieM = (2 * (W_coreM + D_coreM)) + (24 * tieDia / 1000);
     const tieNosPerCol = Math.ceil((H_m * 1000) / tieSpacingMm) + 1;
-    const tieWeightKg = columnNos * tieNosPerCol * cuttingLengthTieM * ((tieDia * tieDia) / 162.2);
+    const tieWeightKg = activeColumnNos * tieNosPerCol * cuttingLengthTieM * ((tieDia * tieDia) / 162.2);
 
     const totalSteelKg = Math.round((cornerWeightKg + middleWeightKg + tieWeightKg) * 1.03); // 3% wastage
     const bindingWireKg = Math.ceil(totalSteelKg * 0.015);
-    const shutteringSqft = Math.round(2 * (widthIn + depthIn) / 12 * heightFt * columnNos);
-    const coverBlockPcs = Math.ceil(columnNos * tieNosPerCol * 4);
+    const shutteringSqft = Math.round(2 * (widthIn + depthIn) / 12 * heightFt * activeColumnNos);
+    const coverBlockPcs = Math.ceil(activeColumnNos * tieNosPerCol * 4);
 
     const items = [
       {

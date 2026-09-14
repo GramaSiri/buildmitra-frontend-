@@ -121,8 +121,9 @@ const router = useRouter();
   };
 
   const calculateResults = () => {
+    const activeArchNos = Math.max(1, Number(archNos) || 1);
     const archLength = calculateArchLength();
-    const archVolume = archLength * thickness * width * archNos;
+    const archVolume = archLength * thickness * width * activeArchNos;
     const volumeCum = archVolume / 35.315;
     const volumeCft = archVolume;
     
@@ -132,17 +133,17 @@ const router = useRouter();
     const aggregate20Cft = aggregateTotalCft * 0.6;
     const aggregate12Cft = aggregateTotalCft * 0.4;
     
-    const mainTotalLengthM = archLength / 3.28084 * mainBarNos * archNos;
+    const mainTotalLengthM = archLength / 3.28084 * mainBarNos * activeArchNos;
     const mainSteelWeight = mainTotalLengthM * getWeightPerMeter(mainBarDia);
     
     const archWidthInM = width / 3.28084;
     const distBarsNos = Math.floor(archWidthInM * 1000 / distBarSpacing) + 1;
-    const distTotalLengthM = archLength / 3.28084 * distBarsNos * archNos;
+    const distTotalLengthM = archLength / 3.28084 * distBarsNos * activeArchNos;
     const distSteelWeight = distTotalLengthM * getWeightPerMeter(distBarDia);
     
     const stirrupPerimeterM = 2 * (thickness + width) - (8 * cover / 1000) + (24 * stirrupDia / 1000);
     const stirrupNosPerM = Math.ceil(archLength / (stirrupSpacing / 1000)) + 1;
-    const totalStirrupNos = stirrupNosPerM * archNos;
+    const totalStirrupNos = stirrupNosPerM * activeArchNos;
     const stirrupTotalLengthM = stirrupPerimeterM * totalStirrupNos;
     const stirrupWeight = stirrupTotalLengthM * getWeightPerMeter(stirrupDia);
     

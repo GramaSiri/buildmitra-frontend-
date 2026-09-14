@@ -222,18 +222,19 @@ export default function FootingCalculator() {
   const rccLabourRate = getMasterRate(["SRV-RCC-LAY", "rcc labour", "footing labour"], 0);
 
   const calcResults = useMemo(() => {
+    const activeFootingNos = Math.max(1, Number(footingNos) || 1);
     const pitLengthFt = lengthFt + 2 * workSpaceFt;
     const pitWidthFt = widthFt + 2 * workSpaceFt;
-    const excVolCft = footingNos * pitLengthFt * pitWidthFt * excDepthFt;
+    const excVolCft = activeFootingNos * pitLengthFt * pitWidthFt * excDepthFt;
     const excVolCum = Number((excVolCft / 35.3147).toFixed(2));
 
     const pccLengthFt = lengthFt + 2 * (pccProjIn / 12);
     const pccWidthFt = widthFt + 2 * (pccProjIn / 12);
-    const pccVolCft = footingNos * pccLengthFt * pccWidthFt * (pccThickMm / 304.8);
+    const pccVolCft = activeFootingNos * pccLengthFt * pccWidthFt * (pccThickMm / 304.8);
     const pccVolCum = pccVolCft / 35.3147;
     const pccCementBags = pccVolCum * 3.40;
 
-    const rccVolCft = footingNos * lengthFt * widthFt * depthFt;
+    const rccVolCft = activeFootingNos * lengthFt * widthFt * depthFt;
     const rccVolCum = Number((rccVolCft / 35.3147).toFixed(2));
     const totalVolCft = Math.round((pccVolCum + rccVolCum) * 35.3147);
 
@@ -251,16 +252,16 @@ export default function FootingCalculator() {
     // Reinforcement Mesh Engine (IS 456)
     const mainBarLenM = (lengthFt * 0.3048 - 2 * (coverMm / 1000)) + 2 * (bendLengthMm / 1000);
     const mainBarCount = Math.ceil((widthFt * 304.8 - 2 * coverMm) / mainSpacingMm) + 1;
-    const mainWeightKg = footingNos * mainBarCount * mainBarLenM * ((mainDia * mainDia) / 162.2);
+    const mainWeightKg = activeFootingNos * mainBarCount * mainBarLenM * ((mainDia * mainDia) / 162.2);
 
     const distBarLenM = (widthFt * 0.3048 - 2 * (coverMm / 1000)) + 2 * (bendLengthMm / 1000);
     const distBarCount = Math.ceil((lengthFt * 304.8 - 2 * coverMm) / distSpacingMm) + 1;
-    const distWeightKg = footingNos * distBarCount * distBarLenM * ((distDia * distDia) / 162.2);
+    const distWeightKg = activeFootingNos * distBarCount * distBarLenM * ((distDia * distDia) / 162.2);
 
     const totalSteelKg = Math.round((mainWeightKg + distWeightKg) * 1.03); // 3% wastage
     const bindingWireKg = Math.ceil(totalSteelKg * 0.015);
-    const shutteringSqft = Math.round(2 * (lengthFt + widthFt) * depthFt * footingNos);
-    const coverBlockPcs = Math.ceil(footingNos * 8);
+    const shutteringSqft = Math.round(2 * (lengthFt + widthFt) * depthFt * activeFootingNos);
+    const coverBlockPcs = Math.ceil(activeFootingNos * 8);
 
     const items = [
       {
