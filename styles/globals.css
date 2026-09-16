@@ -4798,33 +4798,39 @@ svg tspan {
 /* BUILDMITRA-CONCRETE-TRUE-SINGLE-ROW-END */
 
 
-/* BUILDMITRA-MOBILE-VERTICAL-SCROLL-FIX
-   Mobile only: restore normal page vertical scrolling.
-   Do not change desktop/layout/calculator behaviour.
+/* BUILDMITRA-MOBILE-VERTICAL-SCROLL-V2
+   Mobile document scrolling only.
+   Allows normal upward + downward touch scrolling.
 */
 @media (max-width: 768px) {
-  html {
-    height: auto !important;
+
+  html,
+  body {
+    width: 100% !important;
     min-height: 100% !important;
+    height: auto !important;
+
     overflow-x: hidden !important;
     overflow-y: auto !important;
+
+    position: relative !important;
+
+    touch-action: pan-x pan-y !important;
+    overscroll-behavior-y: auto !important;
+
     -webkit-overflow-scrolling: touch !important;
   }
 
-  body,
   #__next {
+    width: 100% !important;
+    min-height: 100vh !important;
     height: auto !important;
-    min-height: 100% !important;
-    max-height: none !important;
-    overflow-x: hidden !important;
-    overflow-y: visible !important;
-    position: static !important;
-  }
 
-  body {
+    overflow: visible !important;
+    position: relative !important;
+
     touch-action: pan-y !important;
-    overscroll-behavior-y: auto !important;
   }
 }
-/* END BUILDMITRA-MOBILE-VERTICAL-SCROLL-FIX */
+/* END BUILDMITRA-MOBILE-VERTICAL-SCROLL-V2 */
 
