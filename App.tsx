@@ -107,7 +107,7 @@ export default function BuildMitraUnified() {
   };
 
   return (
-    <div className="flex h-screen bg-slate-100 font-sans overflow-hidden">
+    <div className="flex flex-col md:flex-row min-h-screen md:h-screen bg-slate-100 font-sans overflow-y-auto md:overflow-hidden">
       
       {/* --- MASTER SIDEBAR --- */}
       <div className="w-64 bg-slate-900 text-slate-300 flex flex-col shadow-2xl z-10">
