@@ -6,3 +6,4 @@ export default function DashboardLayout({ children, currentPath }) {
     React.createElement("div", { style: { width: "100%" } }, children)
   );
 }
+
