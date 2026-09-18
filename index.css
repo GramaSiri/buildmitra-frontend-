@@ -1,3 +1,56 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* === Mobile Full-Height Vertical Scroll Fix === */
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden !important; /* Locks background window from rubberbanding */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Master container matches exact viewport */
+.flex.h-screen {
+  height: 100% !important;
+  height: 100dvh !important;
+  width: 100vw !important;
+  max-width: 100vw !important;
+  overflow: hidden !important;
+}
+
+@media (max-width: 768px) {
+  /* Stack sidebar and main canvas vertically */
+  .flex.h-screen {
+    flex-direction: column !important;
+  }
+
+  /* Keep sidebar compact on mobile so canvas gets full view */
+  .w-64 {
+    width: 100% !important;
+    max-height: 220px !important;
+    overflow-y: auto !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Dedicated smooth vertical scroll engine for the entire canvas */
+  .flex-1.overflow-y-auto {
+    width: 100% !important;
+    max-width: 100vw !important;
+    flex: 1 1 auto !important;
+    overflow-y: scroll !important; /* Enforces native vertical scrollbar */
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important; /* Inertial iOS/Android touch scroll */
+    overscroll-behavior-y: contain !important;
+    touch-action: pan-y !important; /* Restricts touch to strict vertical movement */
+    padding-bottom: 120px !important; /* Ensures the very last card/table is reachable */
+  }
+
+  /* Prevent oversized tables or cards from blocking the scroll flow */
+  .flex-1.overflow-y-auto * {
+    max-width: 100% !important;
+  }
+}
