@@ -215,20 +215,20 @@ const styles = {
 };
 
 export const mainNavigationItems = [
-  { name: "Hands-Free Voice Guide", icon: "🎙️", path: "/hands-free", badge: "AI" },
-  { name: "Weather & Pouring Safety", icon: "🌤️", path: "/weather-safety", badge: "SAFETY" },
+  { name: "Hands Free", icon: "🎙️", path: "/hands-free", badge: "" },
+  { name: "Weather Rep", icon: "🌤️", path: "/weather-safety", badge: "" },
   { name: "Marketplace", icon: "🛒", path: "/marketplace" },
-  { name: "Bulk Buying", icon: "⚡", path: "/bulk-buying", badge: "AUCTION" },
-  { name: "Labour Net", icon: "👥", path: "/labour-net", badge: "NEW" },
+  { name: "Reverse Auction", icon: "⚡", path: "/bulk-buying", badge: "" },
+  { name: "Labour Net", icon: "👥", path: "/labour-net", badge: "" },
   { name: "DRG", icon: "📐", path: "/drg" },
   { name: "Pre Floor Plan DRG", icon: "🏠", path: "/pre-floor-plan-drg" },
   { name: "Layout Plans", icon: "🗺️", path: "/layout-plans" },
   { name: "Learn & Earn", icon: "📚", path: "/learn-earn" },
   { name: "Real Estate Hub", icon: "🏘️", path: "/realestate-hub" },
-  { name: "Affiliate & Marketing", icon: "📢", path: "/affiliate-marketing", badge: "NEW" },
-  { name: "Electrical & Utility", icon: "⚡", path: "/electrical", badge: "NEW" },
-  { name: "Plumbing & Utility", icon: "🚰", path: "/plumbing", badge: "NEW" },
-  { name: "Housing Loan Finance", icon: "🏦", path: "/housing-loan-finance" },
+  { name: "Affiliate Markt", icon: "📢", path: "/affiliate-marketing", badge: "" },
+  { name: "Elect Utality", icon: "⚡", path: "/electrical", badge: "" },
+  { name: "Plumb Utality", icon: "🚰", path: "/plumbing", badge: "" },
+  { name: "Loan Calculator", icon: "🏦", path: "/housing-loan-finance" },
   { name: "Live Rates", icon: "📈", path: "/live-rates" },
 ];
 
@@ -300,8 +300,8 @@ export default function Sidebar({ children, currentPath }: { children?: any; cur
     { name: "Waterproofing BOQ", path: "/boq-waterproofing", icon: "💧" },
     { name: "Civil BOQ", path: "/boq-civil", icon: "📄" },
     { name: "Interior BOQ", path: "/boq-interior", icon: "🪑" },
-    { name: "Electrical BOQ", path: "/boq-electrical", icon: "⚡" },
-    { name: "Plumbing BOQ", path: "/boq-plumbing", icon: "🔧" },
+    { name: "Elect Utality", path: "/boq-electrical", icon: "⚡" },
+    { name: "Plumb Utality", path: "/boq-plumbing", icon: "🔧" },
     { name: "Painting BOQ", path: "/boq-painting", icon: "🎨" },
   ];
 
@@ -362,7 +362,7 @@ const mobileDashboardPath =
 
 const mobileTabs = [
   {
-    name: "Electrical & Utility",
+    name: "Elect Utality",
     icon: "⚡",
     path: "/electrical",
   },
@@ -533,6 +533,8 @@ const handleMobileBack = () => {
           padding: 0,
           background: "#f6f7f9",
           overflowX: "hidden",
+            overflowY: "auto",
+            WebkitOverflowScrolling: "touch",
           boxSizing: "border-box",
         }}
       >
@@ -612,6 +614,8 @@ const handleMobileBack = () => {
             margin: 0,
             boxSizing: "border-box",
             overflowX: "hidden",
+            overflowY: "visible",
+            touchAction: "pan-y",
           }}
         >
           {children}
@@ -842,6 +846,11 @@ const handleMobileBack = () => {
     </div>
   );
 }
+
+
+
+
+
 
 
 
