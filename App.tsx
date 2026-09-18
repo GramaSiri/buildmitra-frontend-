@@ -116,7 +116,7 @@ export default function BuildMitraUnified() {
           <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Construction ERP</p>
         </div>
         
-        <div className="flex-1 overflow-y-auto py-4">
+        <div className="flex-1 overflow-y-visible md:overflow-y-auto py-4">
           <div className="px-4 mb-2"><p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Main Dashboard</p></div>
           <button onClick={() => setActiveModule('master')} className={`w-full flex items-center px-6 py-3 text-sm font-medium transition-colors ${activeModule === 'master' ? 'bg-blue-600 text-white border-l-4 border-blue-400' : 'hover:bg-slate-800 border-l-4 border-transparent'}`}>
             <LayoutDashboard size={18} className="mr-3" /> Unified Master BOQ
@@ -144,7 +144,7 @@ export default function BuildMitraUnified() {
       </div>
 
       {/* --- DYNAMIC CANVAS AREA --- */}
-      <div className="flex-1 overflow-y-auto bg-slate-100">
+      <div className="flex-1 overflow-y-visible md:overflow-y-auto bg-slate-100 min-h-screen">
         
         {/* Render Master BOQ */}
         {activeModule === 'master' && (
@@ -258,3 +258,4 @@ export default function BuildMitraUnified() {
     </div>
   );
 }
+
