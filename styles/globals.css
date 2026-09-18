@@ -1650,9 +1650,9 @@ div[class*="table-wrapper"] {
   .bm-calc-result-strip,
   .bm-scroll-x-container {
     overflow-x: auto !important;
-    overflow-y: hidden !important;
+    overflow-y: auto !important;
     -webkit-overflow-scrolling: touch !important;
-    touch-action: pan-x !important;
+    touch-action: pan-y !important;
     overscroll-behavior-x: contain !important;
   }
 
@@ -1783,10 +1783,10 @@ div[class*="table-wrapper"] {
     max-width: 100% !important;
 
     overflow-x: auto !important;
-    overflow-y: hidden !important;
+    overflow-y: auto !important;
 
     -webkit-overflow-scrolling: touch !important;
-    touch-action: pan-x !important;
+    touch-action: pan-y !important;
     overscroll-behavior-x: contain !important;
 
     gap: 6px !important;
@@ -1843,7 +1843,7 @@ div[class*="table-wrapper"] {
     overflow-y: visible !important;
 
     -webkit-overflow-scrolling: touch !important;
-    touch-action: pan-x !important;
+    touch-action: pan-y !important;
     overscroll-behavior-x: contain !important;
 
     padding-bottom: 8px !important;
@@ -1943,10 +1943,10 @@ body,
   max-width: 100% !important;
 
   overflow-x: scroll !important;
-  overflow-y: hidden !important;
+  overflow-y: auto !important;
 
   -webkit-overflow-scrolling: touch !important;
-  touch-action: pan-x !important;
+  touch-action: pan-y !important;
 
   scrollbar-width: auto !important;
 }
@@ -1967,7 +1967,7 @@ body,
   overflow-y: visible !important;
 
   -webkit-overflow-scrolling: touch !important;
-  touch-action: pan-x !important;
+  touch-action: pan-y !important;
 
   scrollbar-width: auto !important;
 }
@@ -1991,7 +1991,7 @@ body,
   .bm-calc-table-scroll {
     overflow-x: scroll !important;
     overscroll-behavior-x: auto !important;
-    touch-action: pan-x !important;
+    touch-action: pan-y !important;
   }
 
 }
@@ -2018,11 +2018,11 @@ body,
   max-width: 100% !important;
 
   overflow-x: scroll !important;
-  overflow-y: hidden !important;
+  overflow-y: auto !important;
 
   -webkit-overflow-scrolling: touch !important;
 
-  touch-action: pan-x !important;
+  touch-action: pan-y !important;
   overscroll-behavior-x: contain !important;
 
   box-sizing: border-box !important;
@@ -2132,9 +2132,9 @@ body,
     max-width: calc(100vw - 16px) !important;
 
     overflow-x: scroll !important;
-    overflow-y: hidden !important;
+    overflow-y: auto !important;
 
-    touch-action: pan-x !important;
+    touch-action: pan-y !important;
 
     -webkit-overflow-scrolling: touch !important;
 
@@ -2315,10 +2315,10 @@ body,
   max-width: 100% !important;
 
   overflow-x: auto !important;
-  overflow-y: hidden !important;
+  overflow-y: auto !important;
 
   -webkit-overflow-scrolling: touch !important;
-  touch-action: pan-x !important;
+  touch-action: pan-y !important;
 
   gap: 6px !important;
 
@@ -2370,10 +2370,10 @@ body,
   max-width: 100% !important;
 
   overflow-x: scroll !important;
-  overflow-y: hidden !important;
+  overflow-y: auto !important;
 
   -webkit-overflow-scrolling: touch !important;
-  touch-action: pan-x !important;
+  touch-action: pan-y !important;
   overscroll-behavior-x: contain !important;
 
   margin: 2px 0 7px !important;
@@ -2585,11 +2585,11 @@ body,
 
   overflow-x: auto !important;
 
-  overflow-y: hidden !important;
+  overflow-y: auto !important;
 
   -webkit-overflow-scrolling: touch !important;
 
-  touch-action: pan-x !important;
+  touch-action: pan-y !important;
 
   overscroll-behavior-x: contain !important;
 
@@ -2655,11 +2655,11 @@ body,
 
   overflow-x: scroll !important;
 
-  overflow-y: hidden !important;
+  overflow-y: auto !important;
 
   -webkit-overflow-scrolling: touch !important;
 
-  touch-action: pan-x !important;
+  touch-action: pan-y !important;
 
   overscroll-behavior-x: contain !important;
 
@@ -2775,7 +2775,7 @@ body,
 
     overflow-x: scroll !important;
 
-    touch-action: pan-x !important;
+    touch-action: pan-y !important;
   }
 
 
@@ -2801,7 +2801,7 @@ body,
 
     overflow-x: scroll !important;
 
-    touch-action: pan-x !important;
+    touch-action: pan-y !important;
   }
 
 
@@ -2875,10 +2875,10 @@ body,
   max-width: 100% !important;
 
   overflow-x: scroll !important;
-  overflow-y: hidden !important;
+  overflow-y: auto !important;
 
   -webkit-overflow-scrolling: touch !important;
-  touch-action: pan-x !important;
+  touch-action: pan-y !important;
   overscroll-behavior-x: contain !important;
 
   box-sizing: border-box !important;
@@ -2981,10 +2981,10 @@ body,
     max-width: calc(100vw - 14px) !important;
 
     overflow-x: scroll !important;
-    overflow-y: hidden !important;
+    overflow-y: auto !important;
 
     -webkit-overflow-scrolling: touch !important;
-    touch-action: pan-x !important;
+    touch-action: pan-y !important;
 
     padding-bottom: 12px !important;
   }
@@ -4798,39 +4798,7 @@ svg tspan {
 /* BUILDMITRA-CONCRETE-TRUE-SINGLE-ROW-END */
 
 
-/* BUILDMITRA-MOBILE-VERTICAL-SCROLL-V2
-   Mobile document scrolling only.
-   Allows normal upward + downward touch scrolling.
-*/
-@media (max-width: 768px) {
 
-  html,
-  body {
-    width: 100% !important;
-    min-height: 100% !important;
-    height: auto !important;
 
-    overflow-x: hidden !important;
-    overflow-y: auto !important;
 
-    position: relative !important;
-
-    touch-action: pan-x pan-y !important;
-    overscroll-behavior-y: auto !important;
-
-    -webkit-overflow-scrolling: touch !important;
-  }
-
-  #__next {
-    width: 100% !important;
-    min-height: 100vh !important;
-    height: auto !important;
-
-    overflow: visible !important;
-    position: relative !important;
-
-    touch-action: pan-y !important;
-  }
-}
-/* END BUILDMITRA-MOBILE-VERTICAL-SCROLL-V2 */
 
