@@ -68,16 +68,16 @@ export default function AffiliateMarketingPage() {
 
   if (!isLoaded) {
     return (
-      <Sidebar currentPath="/affiliate-marketing">
+      <>
         <div style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>
           Loading Real Estate Affiliate & Direct Marketing Engine...
         </div>
-      </Sidebar>
+      </>
     );
   }
 
   return (
-    <Sidebar currentPath="/affiliate-marketing">
+    <>
       <div style={{ padding: "24px", maxWidth: "1400px", margin: "0 auto" }}>
         {/* MODULE HEADER BAR */}
         <div
@@ -312,7 +312,8 @@ export default function AffiliateMarketingPage() {
           setSelectedProjectId={setSelectedProjectId}
         />
       </div>
-    </Sidebar>
+    </>
   );
 }
+
 

@@ -13,12 +13,13 @@ export default function LandSurveyCalculatorPage() {
           content="Land survey calculator for 20x30 ft plots up to 200+ Acres. Calculate area in Acres, Cents, Sq.Ft, Sq.Meters, Sq.Yards using boundary segments, bearing traverse and live GPS satellite pins."
         />
       </Head>
-      <Sidebar currentPath="/land-survey-calculator">
+      <>
         <div style={{ padding: "16px" }}>
           <SurveyCalculator />
         </div>
-      </Sidebar>
+      </>
     </>
   );
 }
+
 

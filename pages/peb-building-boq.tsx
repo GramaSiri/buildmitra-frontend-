@@ -1022,7 +1022,7 @@ export default function PEBBuildingBOQPage() {
         <meta name="description" content="Generate complete Pre-Engineered Building (PEB) BOQ, Structural Steel Tonnage, Sheeting, Foundation & Erection Cost Estimates with BuildMitra." />
       </Head>
 
-      <Sidebar currentPath="/peb-building-boq">
+      <>
         <div className="bm-final-boq-page" style={styles.container}>
           {/* Header */}
           <div style={styles.header}>
@@ -2093,7 +2093,8 @@ export default function PEBBuildingBOQPage() {
             </div>
           )}
         </div>
-      </Sidebar>
+      </>
     </>
   );
 }
+

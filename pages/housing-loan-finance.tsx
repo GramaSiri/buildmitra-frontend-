@@ -416,7 +416,7 @@ export default function HousingLoanFinance() {
   // --------------------------------------------------------------------------
   const exportToExcel = () => {
     const wsData = [
-      ["BUILDMITRA HOUSING LOAN FINANCE REPORT"],
+      ["BUILDMITRA Loan Calculator REPORT"],
       ["Loan Type", selectedLoanType ? selectedLoanType.toUpperCase() : "NONE"],
       ["Property Cost", propertyValue],
       ["Sanctioned Loan Amount", loanSummary.loanAmount],
@@ -462,12 +462,12 @@ export default function HousingLoanFinance() {
 
     const ws = XLSX.utils.aoa_to_sheet(wsData);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Housing Loan Report");
+    XLSX.utils.book_append_sheet(wb, ws, "Loan Calculator Report");
     XLSX.writeFile(wb, "Housing_Loan_Finance_Report.xlsx");
   };
 
   const shareOnWhatsApp = () => {
-    const text = `🏦 *BUILDMITRA HOUSING LOAN REPORT*
+    const text = `🏦 *BUILDMITRA Loan Calculator REPORT*
 💰 *Sanctioned Loan:* ₹${loanSummary.loanAmount.toLocaleString("en-IN")}
 🏗️ *CLP Disbursed Balance:* ₹${clpCalculations.totalDisbursedBalance.toLocaleString("en-IN")}
 📈 *Interest Rate:* ${interestRate}% p.a. (${tenureYears} Yrs)
@@ -484,21 +484,21 @@ Generated using BuildMitra Financial Engine.`;
   return (
     <>
       <Head>
-        <title>BuildMitra — Housing Loan Finance Hub</title>
-        <meta name="description" content="Housing Loan Finance calculator with date-based progressive cumulative disbursals, Month-Year date tags (Jun-26, Sep-26), total interest paid & total paid (principal + interest) metrics." />
+        <title>BuildMitra — Loan Calculator Hub</title>
+        <meta name="description" content="Loan Calculator calculator with date-based progressive cumulative disbursals, Month-Year date tags (Jun-26, Sep-26), total interest paid & total paid (principal + interest) metrics." />
       </Head>
 
-      <Sidebar currentPath="/housing-loan-finance">
+      <>
         <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "20px", color: "#1e293b", fontFamily: "system-ui, -apple-system, sans-serif" }}>
           
           {/* HEADER BANNER */}
           <div style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)", color: "#ffffff", padding: "24px", borderRadius: "16px", marginBottom: "24px", boxShadow: "0 10px 25px rgba(0,0,0,0.15)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
             <div>
               <span style={{ background: "#ff7a00", color: "#fff", padding: "4px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "1px" }}>
-                🏦 Housing Loan Finance Hub
+                🏦 Loan Calculator Hub
               </span>
               <h1 style={{ margin: "8px 0 4px", fontSize: "24px", fontWeight: "900" }}>
-                Housing Loan Finance &amp; Disbursal Calculator
+                Loan Calculator &amp; Disbursal Calculator
               </h1>
               <p style={{ margin: 0, fontSize: "13px", color: "#94a3b8" }}>
                 Enter property cost, interest rate &amp; tenure to calculate monthly EMI, CLP progressive releases, pre-EMI interest, and month-wise amortization.
@@ -549,7 +549,7 @@ Generated using BuildMitra Financial Engine.`;
           {/* LOAN TYPE SELECTION CARDS — SWITCHING TYPES RESETS INPUTS & TOP BOXES TO 0 */}
           <div style={{ background: "#ffffff", padding: "20px", borderRadius: "16px", border: "1px solid #cbd5e1", marginBottom: "20px", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
             <h3 style={{ margin: "0 0 14px", fontSize: "15px", color: "#0f172a", fontWeight: "bold" }}>
-              📌 Select Housing Loan Category (Switching Resets Inputs to ₹0)
+              📌 Select Loan Calculator Category (Switching Resets Inputs to ₹0)
             </h3>
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "14px" }}>
@@ -987,7 +987,9 @@ Generated using BuildMitra Financial Engine.`;
           </div>
 
         </div>
-      </Sidebar>
+      </>
     </>
   );
 }
+
+

@@ -949,9 +949,10 @@ export default function LabourAttendancePage() {
       <Head>
         <title>Master Labour DB & 30-Day Payroll | BuildMitra</title>
       </Head>
-      <Sidebar currentPath="/labour-attendance">
+      <>
         {mainContent}
-      </Sidebar>
+      </>
     </>
   );
 }
+
