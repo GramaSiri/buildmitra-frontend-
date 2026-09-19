@@ -1170,7 +1170,7 @@ export default function LabourNet() {
         />
       </Head>
 
-      <Sidebar currentPath="/labour-net">
+      <>
         <main className="page">
           {/* HERO BANNER */}
           <section className="hero">
@@ -1427,7 +1427,7 @@ export default function LabourNet() {
             </section>
           )}
         </main>
-      </Sidebar>
+      </>
 
       {/* DETAILS MODAL */}
       {selected && (
@@ -1960,3 +1960,4 @@ export default function LabourNet() {
     </>
   );
 }
+
