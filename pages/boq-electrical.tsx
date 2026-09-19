@@ -444,9 +444,9 @@ export default function ElectricalBOQPage() {
                   backgroundColor: packageTier === 'Ultra Premium' ? '#f5f3ff' : packageTier === 'Premium' ? '#eff6ff' : '#fffbe0'
                 }}
               >
-                <option value="Standard">Standard (Baseline ~₹135/sqft)</option>
-                <option value="Premium">Premium (+25% Tier Multiplier)</option>
-                <option value="Ultra Premium">Ultra Premium (+50% Tier Multiplier)</option>
+                <option value="Standard">Standard Package</option>
+                <option value="Premium">Premium Package (+25%)</option>
+                <option value="Ultra Premium">Ultra Premium Package (+50%)</option>
               </select>
             </div>
           </div>

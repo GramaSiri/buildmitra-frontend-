@@ -50,7 +50,7 @@ export default function DashboardHeader({
             cursor: "pointer"
           }}
         >
-          ⚡ Electrical & Utility
+          ⚡ Elect Utality
         </button>
         <button
           onClick={() => router.push("/marketplace")}
@@ -86,3 +86,4 @@ export default function DashboardHeader({
     </div>
   );
 }
+

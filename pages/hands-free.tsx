@@ -768,7 +768,7 @@ export default function HandsFreeVoiceGuide() {
             </button>
           </div>
           <h1 style={{ fontSize: "22px", fontWeight: 800, margin: "0 0 6px 0" }}>
-            BuildMitra Hands-Free Voice Assistant &amp; Module Guide
+            BuildMitra Hands Free &amp; Module Guide
           </h1>
           <p style={{ fontSize: "13px", color: "#e2e8f0", margin: 0 }}>
             ⚡ Live Admin Approved Rates &amp; Complete App Explanation (Why, Where, When, Whom &amp; How) across English, Hindi, Kannada, Telugu, Tamil, Malayalam, Bengali &amp; Odia

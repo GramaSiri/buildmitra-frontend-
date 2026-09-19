@@ -373,7 +373,7 @@ export default function CivilBOQPage() {
     });
 
     const grandTotalCost = processedItems.reduce((sum, item) => sum + item.amountVal, 0);
-    const costPerSqft = totalBUA > 0 ? grandTotalCost / totalBUA : (1800 * packageMultiplier);
+    const costPerSqft = totalBUA > 0 ? grandTotalCost / totalBUA : 0;
     const missingItems = processedItems.filter(it => !it.isFound);
 
     return {
@@ -527,9 +527,9 @@ export default function CivilBOQPage() {
                   color: packageTier === 'Ultra Premium' ? '#7c3aed' : (packageTier === 'Premium' ? '#2563eb' : '#0f766e')
                 }}
               >
-                <option value="Standard">Standard (₹1,800 / Sq.ft)</option>
-                <option value="Premium">Premium (+25% — ₹2,250 / Sq.ft)</option>
-                <option value="Ultra Premium">Ultra Premium (+50% — ₹2,700 / Sq.ft)</option>
+                <option value="Standard">Standard Package</option>
+                <option value="Premium">Premium Package (+25%)</option>
+                <option value="Ultra Premium">Ultra Premium Package (+50%)</option>
               </select>
             </div>
           </div>
