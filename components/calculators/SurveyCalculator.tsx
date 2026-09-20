@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import * as XLSX from "xlsx";

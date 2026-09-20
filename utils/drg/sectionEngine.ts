@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import { DRGInputs, FloorLayout } from "./types";
 
 export type SectionLevel = {

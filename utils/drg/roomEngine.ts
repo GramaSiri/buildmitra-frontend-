@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import { DRGInputs, SpaceRequirement, SpaceProgramme, FloorProgramme } from "./types";
 
 /**

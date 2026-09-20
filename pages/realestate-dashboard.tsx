@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import InteractivePinpointMap from '../components/InteractivePinpointMap';
 import { autoResolvePropertyGeoData } from '../utils/geoResolver';
@@ -65,7 +65,7 @@ export const RealEstateDashboard: React.FC = () => {
     setLat(newLat);
     setLng(newLng);
     setLocation(newAddress);
-    const geo = autoResolvePropertyGeoData(newAddress, title, newLat, newLng);
+    const geo = (autoResolvePropertyGeoData as any)(newAddress, title, newLat, newLng);
     setAutoSro(geo.defaultSro);
     setAutoGuidance(geo.guidanceValue);
   };

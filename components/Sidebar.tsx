@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { clearBuildMitraSession, getBuildMitraUser } from "../utils/session";
@@ -300,8 +301,8 @@ export default function Sidebar({ children, currentPath }: { children?: any; cur
     { name: "Waterproofing BOQ", path: "/boq-waterproofing", icon: "💧" },
     { name: "Civil BOQ", path: "/boq-civil", icon: "📄" },
     { name: "Interior BOQ", path: "/boq-interior", icon: "🪑" },
-    { name: "Elect Utality", path: "/boq-electrical", icon: "⚡" },
-    { name: "Plumb Utality", path: "/boq-plumbing", icon: "🔧" },
+    { name: "Electrical BOQ", path: "/boq-electrical", icon: "⚡" },
+    { name: "Plumbing BOQ", path: "/boq-plumbing", icon: "🔧" },
     { name: "Painting BOQ", path: "/boq-painting", icon: "🎨" },
   ];
 

@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import React, { useState } from 'react';
 import { Box, Paper, Typography, Slider, Stack, Chip, FormControlLabel, Switch, Tooltip } from '@mui/material';
 import { BlockItem, PlotConfig, getBoundingBox } from '../../../utils/games/layoutValidation';

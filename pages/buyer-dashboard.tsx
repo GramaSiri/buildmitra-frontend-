@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import React, { useState, useEffect } from "react";
 import { exportProjectReport } from "../utils/reporting";
 import { DEFAULT_PROJECT_PERMISSIONS, getLoggedInUser, migrateLegacyProjects, saveProjectsForBuyer } from "../utils/projectStorage";

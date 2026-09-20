@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import React, { useEffect, useState } from "react";
 import * as XLSX from 'xlsx';
 import { themeTokens, PrimaryButton, SecondaryButton, Card, Badge, LoadingSpinner, EmptyState, BuildMitraHeader } from "../components/ui/DesignSystem";

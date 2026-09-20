@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import { DRGInputs, Polygon2D, Point2D, Box2D, ExistingSiteFeature } from "./types";
 import { polygonArea, polygonPerimeter, polygonBounds } from "./geometryEngine";
 

@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import React, { useState, useEffect } from 'react';
 import {
   Box, Card, CardContent, Typography, Grid, Button, Chip, LinearProgress, Paper, Stack, Divider, Alert

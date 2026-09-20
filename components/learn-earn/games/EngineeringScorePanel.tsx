@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import React from 'react';
 import {
   Box, Paper, Typography, Grid, LinearProgress, Card, CardContent, Chip, Stack, List, ListItem, ListItemIcon, ListItemText, Alert

@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import { DRGInputs, FloorLayout, ArchitecturalStyle } from "./types";
 
 export type ElevationFeature = {

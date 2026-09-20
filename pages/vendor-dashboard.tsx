@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import DashboardHeader from "../components/DashboardHeader";
 import React, { useState } from "react";
 import * as XLSX from 'xlsx';

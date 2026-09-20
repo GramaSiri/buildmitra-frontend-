@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 
@@ -1568,7 +1568,7 @@ export default function ArchitecturalStudioIS456Engine() {
           </div>
 
           {/* LUXURY ARCHITECTURAL AMENITY CHECKBOXES */}
-          <div style={{ display: 'flex', gap: '16px', alignItems: 'center', marginTop: '10px', pt: '8px', borderTop: '1px solid #1e293b', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '16px', alignItems: 'center', marginTop: '10px', paddingTop: '8px', borderTop: '1px solid #1e293b', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '11px', color: '#00ff9d', fontWeight: 800 }}>AMENITY TOGGLES:</span>
             {[
               { label: 'Inner Courtyards', state: hasCourtyard, toggle: () => setHasCourtyard(!hasCourtyard) },

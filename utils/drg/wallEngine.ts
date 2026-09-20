@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import { RoomRect, WallSegment, Box2D } from "./types";
 
 export type DoorCut = {

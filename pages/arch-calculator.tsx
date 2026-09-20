@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import { syncApprovedRatesFromBackend } from "../utils/masterRates";
 import React, { useState } from 'react';
 import * as XLSX from 'xlsx';

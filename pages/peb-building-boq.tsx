@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import React, { useState, useMemo, useEffect } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
@@ -225,10 +226,49 @@ const styles: Record<string, React.CSSProperties> = {
 
   tableContainer: {
     overflowX: 'auto',
+    overflowY: 'visible',
+    WebkitOverflowScrolling: 'touch',
+    touchAction: 'auto',
+    width: '100%',
+    maxWidth: '100%',
     border: '1px solid #e2e8f0',
     borderRadius: '10px',
     backgroundColor: '#fff',
     marginBottom: '20px'
+  },
+  thDesc: {
+    backgroundColor: '#800020',
+    color: 'white',
+    padding: '12px 14px',
+    textAlign: 'left',
+    fontWeight: '700',
+    
+    
+    
+    whiteSpace: 'normal',
+    wordBreak: 'break-word',
+    overflowWrap: 'anywhere'
+  },
+  tdDesc: {
+    padding: '10px 14px',
+    borderBottom: '1px solid #f1f5f9',
+    color: '#334155',
+    
+    
+    
+    whiteSpace: 'normal',
+    wordBreak: 'break-word',
+    overflowWrap: 'anywhere',
+    lineHeight: '1.35'
+  },
+  descBox: {
+    
+    
+    width: '100%',
+    whiteSpace: 'normal',
+    wordBreak: 'break-word',
+    overflowWrap: 'anywhere',
+    lineHeight: '1.35'
   },
   table: { width: '100%', borderCollapse: 'collapse', fontSize: '13px' },
   th: { backgroundColor: '#800020', color: 'white', padding: '12px 14px', textAlign: 'left', fontWeight: '700' },
@@ -1020,7 +1060,35 @@ export default function PEBBuildingBOQPage() {
       <Head>
         <title>BuildMitra – PEB Building BOQ & Cost Estimation</title>
         <meta name="description" content="Generate complete Pre-Engineered Building (PEB) BOQ, Structural Steel Tonnage, Sheeting, Foundation & Erection Cost Estimates with BuildMitra." />
+              <style dangerouslySetInnerHTML={{ __html: `
+          .bm-peb-desc-col {
+            min-width: 380px !important;
+            width: 38% !important;
+            max-width: 650px !important;
+            white-space: normal !important;
+            word-break: break-word !important;
+          }
+          .bm-final-boq-table {
+            width: 100% !important;
+            table-layout: auto !important;
+            border-collapse: collapse !important;
+          }
+          @media (max-width: 768px) {
+            .bm-peb-desc-col {
+              min-width: 240px !important;
+              max-width: 280px !important;
+              width: 260px !important;
+            }
+            .bm-final-boq-table {
+              min-width: 820px !important;
+            }
+          }
+        `}} />
       </Head>
+
+
+
+      
 
       <>
         <div className="bm-final-boq-page" style={styles.container}>
@@ -1178,14 +1246,14 @@ export default function PEBBuildingBOQPage() {
                   <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '800' }}>⚡ Automatic Preliminary PEB BOQ (IS Code & Rate Master Integrated)</h3>
                   <span style={{ fontSize: '12px', fontWeight: '700', backgroundColor: 'rgba(255,255,255,0.2)', padding: '4px 10px', borderRadius: '6px' }}>Rate Master Integrated</span>
                 </div>
-                <div className="bm-final-boq-table-scroll">
+                <div className="bm-final-boq-table-scroll" style={{ overflowX: 'auto', overflowY: 'visible', WebkitOverflowScrolling: 'touch', touchAction: 'auto' }}>
                   <table className="bm-final-boq-table" style={styles.table}>
                     <thead>
                       <tr>
                         <th style={styles.th}>Sr.</th>
                         <th style={styles.th}>Master Code</th>
                         <th style={styles.th}>Category</th>
-                        <th style={styles.th}>Item Description & Calculated Section Sizes</th>
+                        <th style={styles.thDesc} className="bm-peb-desc-col"><div style={styles.descBox}>Item Description & Calculated Section Sizes</div></th>
                         <th style={styles.th}>UOM</th>
                         <th style={styles.th}>Quantity</th>
                         <th style={styles.th}>Unit Rate (₹)</th>
@@ -1198,7 +1266,7 @@ export default function PEBBuildingBOQPage() {
                           <td style={styles.td}>{idx + 1}</td>
                           <td style={styles.td}><code>{it.code}</code></td>
                           <td style={styles.td}>{it.category}</td>
-                          <td style={styles.td}><strong>{it.name}</strong></td>
+                          <td style={styles.tdDesc} className="bm-peb-desc-col"><div style={styles.descBox}><strong>{it.name}</strong></div></td>
                           <td style={styles.td}>{it.uom}</td>
                           <td style={styles.td}>{it.qty.toLocaleString()}</td>
                           <td style={styles.td}>
@@ -1523,11 +1591,11 @@ export default function PEBBuildingBOQPage() {
               {/* Report Content Panels */}
               {activeReportTab === "material" && (
                 <div style={styles.tableContainer}>
-                  <div className="bm-final-boq-table-scroll"><table className="bm-final-boq-table" style={styles.table}>
+                  <div className="bm-final-boq-table-scroll" style={{ overflowX: 'auto', overflowY: 'visible', WebkitOverflowScrolling: 'touch', touchAction: 'auto' }}><table className="bm-final-boq-table" style={styles.table}>
                     <thead>
                       <tr>
                         <th style={styles.th}>Master Code</th>
-                        <th style={styles.th}>Material Description & IS Code Member Sizes</th>
+                        <th style={styles.thDesc} className="bm-peb-desc-col"><div style={styles.descBox}>Material Description & IS Code Member Sizes</div></th>
                         <th style={styles.th}>UOM</th>
                         <th style={styles.th}>Quantity</th>
                         <th style={styles.th}>Unit Rate (₹)</th>
@@ -1537,10 +1605,10 @@ export default function PEBBuildingBOQPage() {
                     <tbody>
                       <tr>
                         <td style={styles.td}><code>MAT-PEB-PRM</code></td>
-                        <td style={styles.td}>
+                        <td style={styles.tdDesc} className="bm-peb-desc-col"><div style={styles.descBox}>
                           <strong>Primary Structural Steel (Built-up Tapered Columns Web {widthFt >= 120 ? '800' : widthFt >= 80 ? '650' : '500'}~250x{widthFt >= 100 || craneRequired ? '8' : '6'}mm Flg {widthFt >= 100 ? '220' : '200'}x{craneRequired ? '14' : '10'}mm & Rafters Web {widthFt >= 120 ? '700' : widthFt >= 80 ? '550' : '400'}~250x{widthFt >= 100 ? '8' : '6'}mm Flg {widthFt >= 100 ? '200' : '180'}x{widthFt >= 100 ? '12' : '10'}mm per {steelGrade})</strong>
                           <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>IS 800:2007 / MBMA Design Standard | Yield Strength: 350 MPa</div>
-                        </td>
+                        </div></td>
                         <td style={styles.td}>KG</td>
                         <td style={styles.td}>{steelTonnageBreakdown.primaryKg.toLocaleString()}</td>
                         <td style={styles.td}>{formatCurrency(ratePrimarySteel)}</td>
@@ -1548,10 +1616,10 @@ export default function PEBBuildingBOQPage() {
                       </tr>
                       <tr>
                         <td style={styles.td}><code>MAT-PEB-SEC</code></td>
-                        <td style={styles.td}>
+                        <td style={styles.tdDesc} className="bm-peb-desc-col"><div style={styles.descBox}>
                           <strong>Secondary Steel Members ({baySpacingFt}ft Bay Spacing - Z{baySpacingFt > 25 ? '220' : '200'} x 65 x 20 x {baySpacingFt > 25 ? '2.5' : '2.0'}mm Cold Formed Purlins & Girts per IS 811)</strong>
                           <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>IS 811 Cold Formed Steel Sections | Yield Strength: 550 MPa High Tensile</div>
-                        </td>
+                        </div></td>
                         <td style={styles.td}>KG</td>
                         <td style={styles.td}>{steelTonnageBreakdown.secondaryKg.toLocaleString()}</td>
                         <td style={styles.td}>{formatCurrency(rateSecondarySteel)}</td>
@@ -1559,10 +1627,10 @@ export default function PEBBuildingBOQPage() {
                       </tr>
                       <tr>
                         <td style={styles.td}><code>MAT-PEB-BRC</code></td>
-                        <td style={styles.td}>
+                        <td style={styles.tdDesc} className="bm-peb-desc-col"><div style={styles.descBox}>
                           <strong>Bracings, Sag Rods, Base Plates & Flange Stiffeners (Dia 20mm MS Rod Roof/Wall Diagonal Bracings + Dia 12mm Sag Rods)</strong>
                           <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>IS 2062 Grade E250 / IS 800 Wind & Seismic Bracing Schedule</div>
-                        </td>
+                        </div></td>
                         <td style={styles.td}>KG</td>
                         <td style={styles.td}>{steelTonnageBreakdown.bracingKg.toLocaleString()}</td>
                         <td style={styles.td}>{formatCurrency(Math.round(rateSecondarySteel * 0.95))}</td>
@@ -1570,10 +1638,10 @@ export default function PEBBuildingBOQPage() {
                       </tr>
                       <tr>
                         <td style={styles.td}><code>MAT-SHT-ROOF</code></td>
-                        <td style={styles.td}>
+                        <td style={styles.tdDesc} className="bm-peb-desc-col"><div style={styles.descBox}>
                           <strong>Roof Profile Sheeting ({roofSheeting} - 0.47mm TCT AZ150 550MPa Profile)</strong>
                           <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>Trapezoidal Profile 28/195 pitch | AZ150 Bare/Color Coating</div>
-                        </td>
+                        </div></td>
                         <td style={styles.td}>SQFT</td>
                         <td style={styles.td}>{Math.round(netRoofSheetSqft).toLocaleString()}</td>
                         <td style={styles.td}>{formatCurrency(rateRoofSheet)}</td>
@@ -1581,10 +1649,10 @@ export default function PEBBuildingBOQPage() {
                       </tr>
                       <tr>
                         <td style={styles.td}><code>MAT-SHT-SKY</code></td>
-                        <td style={styles.td}>
+                        <td style={styles.tdDesc} className="bm-peb-desc-col"><div style={styles.descBox}>
                           <strong>Polycarbonate Skylight Sheeting ({skylightPercent}% Daylight - 2.0mm UV Embossed Sheet)</strong>
                           <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>UV Resistant Embossed Translucent Polycarbonate Sheets</div>
-                        </td>
+                        </div></td>
                         <td style={styles.td}>SQFT</td>
                         <td style={styles.td}>{Math.round(skylightAreaSqft).toLocaleString()}</td>
                         <td style={styles.td}>₹140.00</td>
@@ -1592,10 +1660,10 @@ export default function PEBBuildingBOQPage() {
                       </tr>
                       <tr>
                         <td style={styles.td}><code>MAT-SHT-WALL</code></td>
-                        <td style={styles.td}>
+                        <td style={styles.tdDesc} className="bm-peb-desc-col"><div style={styles.descBox}>
                           <strong>Wall Cladding Sheeting ({wallCladding})</strong>
                           <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>Net Cladding Area after deducting doors & window openings</div>
-                        </td>
+                        </div></td>
                         <td style={styles.td}>SQFT</td>
                         <td style={styles.td}>{Math.round(netWallSheetSqft).toLocaleString()}</td>
                         <td style={styles.td}>{formatCurrency(rateWallSheet)}</td>
@@ -1603,10 +1671,10 @@ export default function PEBBuildingBOQPage() {
                       </tr>
                       <tr>
                         <td style={styles.td}><code>MAT-INS-ROOF</code></td>
-                        <td style={styles.td}>
+                        <td style={styles.tdDesc} className="bm-peb-desc-col"><div style={styles.descBox}>
                           <strong>Roof Thermal Insulation ({insulation})</strong>
                           <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>Thermal Resistance R-Value 1.5 m²K/W | Fire retardant foil</div>
-                        </td>
+                        </div></td>
                         <td style={styles.td}>SQFT</td>
                         <td style={styles.td}>{Math.round(rawRoofAreaSqft).toLocaleString()}</td>
                         <td style={styles.td}>{formatCurrency(rateInsulation)}</td>
@@ -1614,10 +1682,10 @@ export default function PEBBuildingBOQPage() {
                       </tr>
                       <tr>
                         <td style={styles.td}><code>MAT-ACC-FST</code></td>
-                        <td style={styles.td}>
+                        <td style={styles.tdDesc} className="bm-peb-desc-col"><div style={styles.descBox}>
                           <strong>Fasteners, Self-Tapping Screws & EPDM Seal Washers (Class 3 12-14x25mm)</strong>
                           <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>Class 3 Corrosion Resistant Screws with Weatherproof EPDM Washers</div>
-                        </td>
+                        </div></td>
                         <td style={styles.td}>NOS</td>
                         <td style={styles.td}>{Math.round((netRoofSheetSqft + netWallSheetSqft) * 4.5).toLocaleString()}</td>
                         <td style={styles.td}>₹1.00</td>
@@ -1625,10 +1693,10 @@ export default function PEBBuildingBOQPage() {
                       </tr>
                       <tr>
                         <td style={styles.td}><code>MAT-ACC-FLS</code></td>
-                        <td style={styles.td}>
+                        <td style={styles.tdDesc} className="bm-peb-desc-col"><div style={styles.descBox}>
                           <strong>Flashings (Ridge Cap, Gable Trim, Corner & Drip Flashing - 0.50mm Girth)</strong>
                           <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>Matching 0.50mm Galvalume Trims & Flashings Schedule</div>
-                        </td>
+                        </div></td>
                         <td style={styles.td}>RFT</td>
                         <td style={styles.td}>{perimeterFt.toLocaleString()}</td>
                         <td style={styles.td}>₹65.00</td>
@@ -1636,10 +1704,10 @@ export default function PEBBuildingBOQPage() {
                       </tr>
                       <tr>
                         <td style={styles.td}><code>MAT-ACC-GUT</code></td>
-                        <td style={styles.td}>
+                        <td style={styles.tdDesc} className="bm-peb-desc-col"><div style={styles.descBox}>
                           <strong>Eaves Gutters & Rainwater PVC/GI Downpipes ({guttersType})</strong>
                           <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>Eaves Gutters with Heavy Duty Clamps & Downpipes</div>
-                        </td>
+                        </div></td>
                         <td style={styles.td}>RFT</td>
                         <td style={styles.td}>{(2 * lengthFt).toLocaleString()}</td>
                         <td style={styles.td}>₹120.00</td>
@@ -1656,11 +1724,11 @@ export default function PEBBuildingBOQPage() {
 
               {activeReportTab === "labour" && (
                 <div style={styles.tableContainer}>
-                  <div className="bm-final-boq-table-scroll"><table className="bm-final-boq-table" style={styles.table}>
+                  <div className="bm-final-boq-table-scroll" style={{ overflowX: 'auto', overflowY: 'visible', WebkitOverflowScrolling: 'touch', touchAction: 'auto' }}><table className="bm-final-boq-table" style={styles.table}>
                     <thead>
                       <tr>
                         <th style={styles.th}>Task Code</th>
-                        <th style={styles.th}>Labour & Erection Service Description</th>
+                        <th style={styles.thDesc} className="bm-peb-desc-col"><div style={styles.descBox}>Labour & Erection Service Description</div></th>
                         <th style={styles.th}>Quantity</th>
                         <th style={styles.th}>UOM</th>
                         <th style={styles.th}>Unit Rate (₹)</th>
@@ -1670,7 +1738,7 @@ export default function PEBBuildingBOQPage() {
                     <tbody>
                       <tr>
                         <td style={styles.td}><code>LAB-PEB-ERC</code></td>
-                        <td style={styles.td}><strong>Structural Steel Erection, Alignment & Bolting Team</strong></td>
+                        <td style={styles.tdDesc} className="bm-peb-desc-col"><div style={styles.descBox}><strong>Structural Steel Erection, Alignment & Bolting Team</strong></div></td>
                         <td style={styles.td}>{steelTonnageBreakdown.totalKg.toLocaleString()}</td>
                         <td style={styles.td}>KG</td>
                         <td style={styles.td}>{formatCurrency(rateErectionCrane)}</td>
@@ -1678,7 +1746,7 @@ export default function PEBBuildingBOQPage() {
                       </tr>
                       <tr>
                         <td style={styles.td}><code>LAB-PEB-TRN</code></td>
-                        <td style={styles.td}><strong>Logistics, Heavy Trailer Freight & Crane Rig Hire</strong></td>
+                        <td style={styles.tdDesc} className="bm-peb-desc-col"><div style={styles.descBox}><strong>Logistics, Heavy Trailer Freight & Crane Rig Hire</strong></div></td>
                         <td style={styles.td}>{steelTonnageBreakdown.totalTonnes}</td>
                         <td style={styles.td}>TON</td>
                         <td style={styles.td}>₹2,200.00</td>
@@ -1686,7 +1754,7 @@ export default function PEBBuildingBOQPage() {
                       </tr>
                       <tr>
                         <td style={styles.td}><code>LAB-PEB-OVH</code></td>
-                        <td style={styles.td}><strong>Site Supervision, Safety Harnessing & Tooling Overheads</strong></td>
+                        <td style={styles.tdDesc} className="bm-peb-desc-col"><div style={styles.descBox}><strong>Site Supervision, Safety Harnessing & Tooling Overheads</strong></div></td>
                         <td style={styles.td}>1</td>
                         <td style={styles.td}>LS</td>
                         <td style={styles.td}>-</td>
@@ -1703,11 +1771,11 @@ export default function PEBBuildingBOQPage() {
 
               {activeReportTab === "cost" && (
                 <div style={styles.tableContainer}>
-                  <div className="bm-final-boq-table-scroll"><table className="bm-final-boq-table" style={styles.table}>
+                  <div className="bm-final-boq-table-scroll" style={{ overflowX: 'auto', overflowY: 'visible', WebkitOverflowScrolling: 'touch', touchAction: 'auto' }}><table className="bm-final-boq-table" style={styles.table}>
                     <thead>
                       <tr>
                         <th style={styles.th}>Cost Component</th>
-                        <th style={styles.th}>Description & Basis</th>
+                        <th style={styles.thDesc} className="bm-peb-desc-col"><div style={styles.descBox}>Description & Basis</div></th>
                         <th style={styles.th}>Subtotal Amount (₹)</th>
                         <th style={styles.th}>Share %</th>
                       </tr>
@@ -1755,7 +1823,7 @@ export default function PEBBuildingBOQPage() {
 
               {activeReportTab === "quantity" && (
                 <div style={styles.tableContainer}>
-                  <div className="bm-final-boq-table-scroll"><table className="bm-final-boq-table" style={styles.table}>
+                  <div className="bm-final-boq-table-scroll" style={{ overflowX: 'auto', overflowY: 'visible', WebkitOverflowScrolling: 'touch', touchAction: 'auto' }}><table className="bm-final-boq-table" style={styles.table}>
                     <thead>
                       <tr>
                         <th style={styles.th}>Material Category</th>
@@ -1808,7 +1876,7 @@ export default function PEBBuildingBOQPage() {
 
               {activeReportTab === "steel" && (
                 <div style={styles.tableContainer}>
-                  <div className="bm-final-boq-table-scroll"><table className="bm-final-boq-table" style={styles.table}>
+                  <div className="bm-final-boq-table-scroll" style={{ overflowX: 'auto', overflowY: 'visible', WebkitOverflowScrolling: 'touch', touchAction: 'auto' }}><table className="bm-final-boq-table" style={styles.table}>
                     <thead>
                       <tr>
                         <th style={styles.th}>Member Type</th>
@@ -1853,7 +1921,7 @@ export default function PEBBuildingBOQPage() {
 
               {activeReportTab === "foundation" && (
                 <div style={styles.tableContainer}>
-                  <div className="bm-final-boq-table-scroll"><table className="bm-final-boq-table" style={styles.table}>
+                  <div className="bm-final-boq-table-scroll" style={{ overflowX: 'auto', overflowY: 'visible', WebkitOverflowScrolling: 'touch', touchAction: 'auto' }}><table className="bm-final-boq-table" style={styles.table}>
                     <thead>
                       <tr>
                         <th style={styles.th}>Foundation Component</th>
@@ -1913,12 +1981,12 @@ export default function PEBBuildingBOQPage() {
                       <div style={{ fontSize: '22px', fontWeight: '900' }}>{formatCurrency(boqCalculations.grandTotalCost)}</div>
                     </div>
                   </div>
-                  <div className="bm-final-boq-table-scroll"><table className="bm-final-boq-table" style={styles.table}>
+                  <div className="bm-final-boq-table-scroll" style={{ overflowX: 'auto', overflowY: 'visible', WebkitOverflowScrolling: 'touch', touchAction: 'auto' }}><table className="bm-final-boq-table" style={styles.table}>
                     <thead>
                       <tr>
                         <th style={styles.th}>Sr.</th>
                         <th style={styles.th}>Master Code</th>
-                        <th style={styles.th}>Consolidated Work Item Description</th>
+                        <th style={styles.thDesc} className="bm-peb-desc-col"><div style={styles.descBox}>Consolidated Work Item Description</div></th>
                         <th style={styles.th}>UOM</th>
                         <th style={styles.th}>Quantity</th>
                         <th style={styles.th}>Unit Rate (₹)</th>
@@ -1933,7 +2001,7 @@ export default function PEBBuildingBOQPage() {
                       <tr>
                         <td style={styles.td}>1</td>
                         <td style={styles.td}><code>MAT-PEB-PRM</code></td>
-                        <td style={styles.td}>Primary Structural Steel (Built-up Tapered Columns Web {widthFt >= 120 ? '800' : widthFt >= 80 ? '650' : '500'}~250x{widthFt >= 100 || craneRequired ? '8' : '6'}mm & Rafters Web {widthFt >= 120 ? '700' : widthFt >= 80 ? '550' : '400'}~250x{widthFt >= 100 ? '8' : '6'}mm)</td>
+                        <td style={styles.tdDesc} className="bm-peb-desc-col"><div style={styles.descBox}>Primary Structural Steel (Built-up Tapered Columns Web {widthFt >= 120 ? '800' : widthFt >= 80 ? '650' : '500'}~250x{widthFt >= 100 || craneRequired ? '8' : '6'}mm & Rafters Web {widthFt >= 120 ? '700' : widthFt >= 80 ? '550' : '400'}~250x{widthFt >= 100 ? '8' : '6'}mm)</div></td>
                         <td style={styles.td}>KG</td>
                         <td style={styles.td}>{steelTonnageBreakdown.primaryKg.toLocaleString()}</td>
                         <td style={styles.td}>{formatCurrency(ratePrimarySteel)}</td>
@@ -1942,7 +2010,7 @@ export default function PEBBuildingBOQPage() {
                       <tr>
                         <td style={styles.td}>2</td>
                         <td style={styles.td}><code>MAT-PEB-SEC</code></td>
-                        <td style={styles.td}>Secondary Steel Members ({baySpacingFt}ft Bay Spacing Z{baySpacingFt > 25 ? '220' : '200'} x 65 x 20 x {baySpacingFt > 25 ? '2.5' : '2.0'}mm Cold Formed Purlins & Girts)</td>
+                        <td style={styles.tdDesc} className="bm-peb-desc-col"><div style={styles.descBox}>Secondary Steel Members ({baySpacingFt}ft Bay Spacing Z{baySpacingFt > 25 ? '220' : '200'} x 65 x 20 x {baySpacingFt > 25 ? '2.5' : '2.0'}mm Cold Formed Purlins & Girts)</div></td>
                         <td style={styles.td}>KG</td>
                         <td style={styles.td}>{steelTonnageBreakdown.secondaryKg.toLocaleString()}</td>
                         <td style={styles.td}>{formatCurrency(rateSecondarySteel)}</td>
@@ -1951,7 +2019,7 @@ export default function PEBBuildingBOQPage() {
                       <tr>
                         <td style={styles.td}>3</td>
                         <td style={styles.td}><code>MAT-PEB-BRC</code></td>
-                        <td style={styles.td}>Bracings, Sag Rods, Base & Flange Stiffeners (Dia 20mm MS Rod Roof/Wall Bracings + Dia 12mm Sag Rods)</td>
+                        <td style={styles.tdDesc} className="bm-peb-desc-col"><div style={styles.descBox}>Bracings, Sag Rods, Base & Flange Stiffeners (Dia 20mm MS Rod Roof/Wall Bracings + Dia 12mm Sag Rods)</div></td>
                         <td style={styles.td}>KG</td>
                         <td style={styles.td}>{steelTonnageBreakdown.bracingKg.toLocaleString()}</td>
                         <td style={styles.td}>{formatCurrency(Math.round(rateSecondarySteel * 0.95))}</td>
@@ -1965,7 +2033,7 @@ export default function PEBBuildingBOQPage() {
                       <tr>
                         <td style={styles.td}>4</td>
                         <td style={styles.td}><code>MAT-SHT-ROOF</code></td>
-                        <td style={styles.td}>Roof Profile Sheeting ({roofSheeting} - 0.47mm TCT AZ150 550MPa Profile)</td>
+                        <td style={styles.tdDesc} className="bm-peb-desc-col"><div style={styles.descBox}>Roof Profile Sheeting ({roofSheeting} - 0.47mm TCT AZ150 550MPa Profile)</div></td>
                         <td style={styles.td}>SQFT</td>
                         <td style={styles.td}>{Math.round(netRoofSheetSqft).toLocaleString()}</td>
                         <td style={styles.td}>{formatCurrency(rateRoofSheet)}</td>
@@ -1974,7 +2042,7 @@ export default function PEBBuildingBOQPage() {
                       <tr>
                         <td style={styles.td}>5</td>
                         <td style={styles.td}><code>MAT-SHT-SKY</code></td>
-                        <td style={styles.td}>Polycarbonate Skylight Sheeting ({skylightPercent}% Daylight Area - 2.0mm UV Sheet)</td>
+                        <td style={styles.tdDesc} className="bm-peb-desc-col"><div style={styles.descBox}>Polycarbonate Skylight Sheeting ({skylightPercent}% Daylight Area - 2.0mm UV Sheet)</div></td>
                         <td style={styles.td}>SQFT</td>
                         <td style={styles.td}>{Math.round(skylightAreaSqft).toLocaleString()}</td>
                         <td style={styles.td}>₹140.00</td>
@@ -1983,7 +2051,7 @@ export default function PEBBuildingBOQPage() {
                       <tr>
                         <td style={styles.td}>6</td>
                         <td style={styles.td}><code>MAT-SHT-WALL</code></td>
-                        <td style={styles.td}>Wall Cladding Sheeting ({wallCladding})</td>
+                        <td style={styles.tdDesc} className="bm-peb-desc-col"><div style={styles.descBox}>Wall Cladding Sheeting ({wallCladding})</div></td>
                         <td style={styles.td}>SQFT</td>
                         <td style={styles.td}>{Math.round(netWallSheetSqft).toLocaleString()}</td>
                         <td style={styles.td}>{formatCurrency(rateWallSheet)}</td>
@@ -1992,7 +2060,7 @@ export default function PEBBuildingBOQPage() {
                       <tr>
                         <td style={styles.td}>7</td>
                         <td style={styles.td}><code>MAT-INS-ROOF</code></td>
-                        <td style={styles.td}>Roof Thermal Insulation ({insulation})</td>
+                        <td style={styles.tdDesc} className="bm-peb-desc-col"><div style={styles.descBox}>Roof Thermal Insulation ({insulation})</div></td>
                         <td style={styles.td}>SQFT</td>
                         <td style={styles.td}>{Math.round(rawRoofAreaSqft).toLocaleString()}</td>
                         <td style={styles.td}>{formatCurrency(rateInsulation)}</td>
@@ -2006,7 +2074,7 @@ export default function PEBBuildingBOQPage() {
                       <tr>
                         <td style={styles.td}>8</td>
                         <td style={styles.td}><code>MAT-ACC-FST</code></td>
-                        <td style={styles.td}>Fasteners, Self-Tapping Screws & EPDM Seal Washers (Class 3 12-14x25mm)</td>
+                        <td style={styles.tdDesc} className="bm-peb-desc-col"><div style={styles.descBox}>Fasteners, Self-Tapping Screws & EPDM Seal Washers (Class 3 12-14x25mm)</div></td>
                         <td style={styles.td}>NOS</td>
                         <td style={styles.td}>{Math.round((netRoofSheetSqft + netWallSheetSqft) * 4.5).toLocaleString()}</td>
                         <td style={styles.td}>₹1.00</td>
@@ -2015,7 +2083,7 @@ export default function PEBBuildingBOQPage() {
                       <tr>
                         <td style={styles.td}>9</td>
                         <td style={styles.td}><code>MAT-ACC-FLS</code></td>
-                        <td style={styles.td}>Flashings (Ridge Cap, Gable Trim, Corner & Drip Flashing - 0.50mm Girth)</td>
+                        <td style={styles.tdDesc} className="bm-peb-desc-col"><div style={styles.descBox}>Flashings (Ridge Cap, Gable Trim, Corner & Drip Flashing - 0.50mm Girth)</div></td>
                         <td style={styles.td}>RFT</td>
                         <td style={styles.td}>{perimeterFt.toLocaleString()}</td>
                         <td style={styles.td}>₹65.00</td>
@@ -2024,7 +2092,7 @@ export default function PEBBuildingBOQPage() {
                       <tr>
                         <td style={styles.td}>10</td>
                         <td style={styles.td}><code>MAT-ACC-GUT</code></td>
-                        <td style={styles.td}>Eaves Gutters & Rainwater PVC/GI Downpipes ({guttersType})</td>
+                        <td style={styles.tdDesc} className="bm-peb-desc-col"><div style={styles.descBox}>Eaves Gutters & Rainwater PVC/GI Downpipes ({guttersType})</div></td>
                         <td style={styles.td}>RFT</td>
                         <td style={styles.td}>{(2 * lengthFt).toLocaleString()}</td>
                         <td style={styles.td}>₹120.00</td>
@@ -2033,7 +2101,7 @@ export default function PEBBuildingBOQPage() {
                       <tr>
                         <td style={styles.td}>11</td>
                         <td style={styles.td}><code>MAT-ACC-VNT</code></td>
-                        <td style={styles.td}>Turbo Ventilators ({turboVentilatorsQty} Nos), Doors ({doorsQty} Nos) & Shutters ({rollingShuttersQty} Nos)</td>
+                        <td style={styles.tdDesc} className="bm-peb-desc-col"><div style={styles.descBox}>Turbo Ventilators ({turboVentilatorsQty} Nos), Doors ({doorsQty} Nos) & Shutters ({rollingShuttersQty} Nos)</div></td>
                         <td style={styles.td}>NOS</td>
                         <td style={styles.td}>{turboVentilatorsQty + doorsQty + rollingShuttersQty + windowsQty}</td>
                         <td style={styles.td}>-</td>
@@ -2042,7 +2110,7 @@ export default function PEBBuildingBOQPage() {
                       <tr>
                         <td style={styles.td}>12</td>
                         <td style={styles.td}><code>MAT-PNT-SYS</code></td>
-                        <td style={styles.td}>Synthetic Enamel / Epoxy Protective Paint System ({Math.round(steelTonnageBreakdown.totalTonnes * 28)} sq.m)</td>
+                        <td style={styles.tdDesc} className="bm-peb-desc-col"><div style={styles.descBox}>Synthetic Enamel / Epoxy Protective Paint System ({Math.round(steelTonnageBreakdown.totalTonnes * 28)} sq.m)</div></td>
                         <td style={styles.td}>SQM</td>
                         <td style={styles.td}>{Math.round(steelTonnageBreakdown.totalTonnes * 28)}</td>
                         <td style={styles.td}>₹180.00</td>

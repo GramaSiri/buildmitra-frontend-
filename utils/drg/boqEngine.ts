@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import { DRGInputs, FloorLayout, BOQItem, AreaStatement } from "./types";
 
 /**

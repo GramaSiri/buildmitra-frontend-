@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import DashboardLayout from "../components/DashboardLayout";

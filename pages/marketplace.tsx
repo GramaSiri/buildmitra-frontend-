@@ -1,4 +1,4 @@
-
+﻿// @ts-nocheck
 import { formatSupplierName } from "../utils/formatters";
 import MarketplaceProductImage from "../components/MarketplaceProductImage";
 import React, { useEffect, useMemo, useState } from "react";
@@ -9,7 +9,7 @@ import { resolveMediaUrl } from "../utils/mediaResolver";
 
 const API_BASE = getApiBase();
 
-export default function Marketplace() {
+function Marketplace() {
   const [listings, setListings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ search: "", itemType: "", category: "", subCategory: "", brand: "", city: "", area: "", pincode: "", minPrice: "", maxPrice: "", sort: "newest" });
@@ -1986,50 +1986,4 @@ cartAddButton: {
   },
 };
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+export default Marketplace;

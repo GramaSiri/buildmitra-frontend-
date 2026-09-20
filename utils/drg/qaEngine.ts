@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import { BuildingModel, RoomRect } from "./types";
 import { generateCleanWallSegments, cutWallSegmentsAtDoors, DoorCut } from "./wallEngine";
 

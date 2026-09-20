@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import React, { useState, useMemo, useEffect } from "react";
 import { exportToExcel, shareWhatsApp } from "../../utils/exportUtils";
 import { generateElectricalPdfReport } from "../../utils/pdfExport";

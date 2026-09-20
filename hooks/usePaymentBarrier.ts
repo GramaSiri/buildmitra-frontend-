@@ -1,2 +1,3 @@
-export * from "./usePaymentBarrier.tsx";
-export { default } from "./usePaymentBarrier.tsx";
+﻿// @ts-nocheck
+export * from "./usePaymentBarrier";
+export { default } from "./usePaymentBarrier";

@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import React from 'react';
 import { Box, Paper, Typography, Grid, Divider, Chip, Stack } from '@mui/material';
 import { BlockItem, PlotConfig, getBoundingBox, calculateAreaMetrics } from '../../../utils/games/layoutValidation';

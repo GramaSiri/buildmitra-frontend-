@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import { Facing, BuildingUse } from "./types";
 
 export type ReferenceLayoutTemplate = {

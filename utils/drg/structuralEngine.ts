@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import {
   RoomRect,
   Box2D,

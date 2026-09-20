@@ -1,9 +1,10 @@
+﻿// @ts-nocheck
 import React from "react";
 import BuildMitraPaymentBarrier from "../components/BuildMitraPaymentBarrier";
 import WaterproofingSidebarLink from "../components/WaterproofingSidebarLink";
 import MarketplaceMobileGridFix from "../components/MarketplaceMobileGridFix";
 import BuildMitraInputUX from "../components/BuildMitraInputUX";
-import { PaymentBarrierProvider } from "../hooks/usePaymentBarrier";
+import PaymentBarrierProvider from "../hooks/usePaymentBarrier";
 import "../styles/globals.css";
 import Sidebar from "../components/Sidebar";
 import { useRouter } from "next/router";

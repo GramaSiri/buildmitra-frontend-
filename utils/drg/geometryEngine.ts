@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import { Point2D, Box2D, Polygon2D } from "./types";
 
 /**

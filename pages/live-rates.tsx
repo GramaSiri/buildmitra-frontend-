@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
 
@@ -908,7 +908,7 @@ export default function LiveRatesPage() {
 
           {/* RIGHT: 14-DAY DUAL-LINE PRICE TREND ANALYSIS */}
           <div>
-            <div style={{ background: "#ffffff", borderRadius: "12px", padding: "16px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", border: "1px solid #e2e8f0", sticky: "top", top: "16px" }}>
+            <div style={{ background: "#ffffff", borderRadius: "12px", padding: "16px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", border: "1px solid #e2e8f0", position: "sticky", top: "16px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
                 <h3 style={{ margin: 0, fontSize: "15px", fontWeight: "800", color: "#0f172a" }}>
                   📊 Real Live vs Dealer Trend

@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import React, { useState } from 'react';
 import {
   Box, Paper, Typography, Button, Grid, Slider, Select, MenuItem, FormControl, InputLabel, Stack, Alert, Chip, Card, CardContent

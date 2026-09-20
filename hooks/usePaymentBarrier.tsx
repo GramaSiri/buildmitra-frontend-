@@ -165,3 +165,5 @@ export function usePaymentBarrier() {
   return context;
 }
 
+
+export default PaymentBarrierProvider;

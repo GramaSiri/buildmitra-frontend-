@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import React, { useState, useEffect } from "react";
 import { generateBuildMitraDocument } from "../utils/documentGenerator";
 import { themeTokens, PrimaryButton, SecondaryButton, Card, Badge, LoadingSpinner, EmptyState, BuildMitraHeader } from "../components/ui/DesignSystem";

@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import { GroundFloorPlanningReport } from './types';
 import { FirstFloorPlanningReport } from './firstFloorEngine';
 

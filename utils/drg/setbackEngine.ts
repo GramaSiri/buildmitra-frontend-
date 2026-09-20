@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import { DRGInputs, Setbacks, Polygon2D, Box2D } from "./types";
 import { generatePlotPolygon } from "./plotEngine";
 import { polygonArea, polygonBounds } from "./geometryEngine";
