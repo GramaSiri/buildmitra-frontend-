@@ -5,7 +5,7 @@ import { getApiBase } from "../utils/apiConfig";
 const API_BASE = getApiBase();
 
 type Billing = "monthly" | "annual";
-type PlanId = "basic" | "professional" | "business";
+type PlanId = "basic" | "professional" | "enterprise";
 
 type RegisterForm = {
   name: string;
@@ -75,14 +75,14 @@ const PLANS = [
     id: "professional" as PlanId,
     name: "Professional Plan",
     monthly: 350,
-    annual: 3000,
+    annual: 3500,
     features: FEATURES.slice(0, 6)
   },
   {
-    id: "business" as PlanId,
-    name: "Business Module",
+    id: "enterprise" as PlanId,
+    name: "Enterprise Plan",
     monthly: 450,
-    annual: 4000,
+    annual: 4500,
     features: FEATURES
   }
 ];
