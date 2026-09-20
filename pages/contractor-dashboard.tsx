@@ -1,4 +1,4 @@
-﻿// @ts-nocheck
+// @ts-nocheck
 import React, { useState, useEffect } from "react";
 import { generateBuildMitraDocument } from "../utils/documentGenerator";
 import { themeTokens, PrimaryButton, SecondaryButton, Card, Badge, LoadingSpinner, EmptyState, BuildMitraHeader } from "../components/ui/DesignSystem";
@@ -74,54 +74,7 @@ const [showProjectModal, setShowProjectModal] = useState(false);
       const saved = localStorage.getItem("contractorLabourMasterList");
       if (saved) return JSON.parse(saved);
     } catch {}
-    return [
-      {
-        id: "LAB-1001",
-        name: "Ramesh Kumar",
-        age: "34",
-        mobile: "9876543210",
-        address: "Hobli, Whitefield, Bengaluru",
-        category: "Civil Mason",
-        jobAllotted: "Brickwork & Plastering",
-        projectId: "1",
-        projectName: "Green Valley Villa",
-        projectCode: "PRJ-101",
-        dailyWage: 950,
-        salaryMode: "Weekly",
-        pfAmount: 120,
-        esiAmount: 50,
-        conveyance: 100,
-        otRate: 150,
-        accommodation: "Site Shed Provided",
-        otherPerks: "Safety Gear",
-        joinDate: "2026-01-15",
-        status: "Active",
-        punchLink: "/labour-attendance?workerCode=LAB-1001&code=PRJ-101&mode=restricted"
-      },
-      {
-        id: "LAB-1002",
-        name: "Suresh Naik",
-        age: "29",
-        mobile: "9123456789",
-        address: "Kethaganahalli, Hoskote",
-        category: "Barbender Steel",
-        jobAllotted: "Column & Beam Rebar Binding",
-        projectId: "1",
-        projectName: "Green Valley Villa",
-        projectCode: "PRJ-101",
-        dailyWage: 900,
-        salaryMode: "Weekly",
-        pfAmount: 110,
-        esiAmount: 45,
-        conveyance: 80,
-        otRate: 140,
-        accommodation: "Travel Allowance",
-        otherPerks: "Lunch Pass",
-        joinDate: "2026-02-01",
-        status: "Active",
-        punchLink: "/labour-attendance?workerCode=LAB-1002&code=PRJ-101&mode=restricted"
-      }
-    ];
+    return [];
   });
   const [showQuoteModal, setShowQuoteModal] = useState(false);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
@@ -1343,59 +1296,8 @@ useEffect(() => {
       const { totalPayment } = calculateWeeklyPayment(labour);
       return sum + totalPayment;
     }, 0);
-    
-    const yesterdayDate = new Date(Date.now() - 86400000).toISOString().split("T")[0];
-    const geofenceAttendance = [
-      { id: "LAB-101", name: "Ramesh Kumar", role: "Civil Mason", checkIn: "08:30 AM", checkOut: "05:30 PM", distance: "8m", status: "GPS Verified ✅", wage: 950, approved: "Approved" },
-      { id: "LAB-102", name: "Suresh Naik", role: "Barbender Steel", checkIn: "08:45 AM", checkOut: "05:30 PM", distance: "12m", status: "GPS Verified ✅", wage: 900, approved: "Approved" },
-      { id: "LAB-103", name: "Manjunath B", role: "Helper", checkIn: "09:00 AM", checkOut: "05:30 PM", distance: "15m", status: "GPS Verified ✅", wage: 650, approved: "Approved" },
-      { id: "LAB-104", name: "Ganesh Gouda", role: "Tile Laying Mason", checkIn: "08:30 AM", checkOut: "05:45 PM", distance: "6m", status: "GPS Verified ✅", wage: 1000, approved: "Approved" },
-      { id: "LAB-105", name: "Shiva R", role: "Helper", checkIn: "09:10 AM", checkOut: "05:30 PM", distance: "185m", status: "Out of Fence ⚠️", wage: 650, approved: "Flagged" }
-    ];
 
     return React.createElement("div", null,
-      React.createElement("div", { style: { ...styles.card, borderLeft: "4px solid #14b8a6", backgroundColor: "#f0fdf4" } },
-        React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", marginBottom: "12px" } },
-          React.createElement("div", null,
-            React.createElement("h3", { style: { margin: 0, color: "#0f766e", fontSize: "16px" } }, "📍 Yesterday's Labour Geofence Attendance Report"),
-            React.createElement("div", { style: { fontSize: "12px", color: "#115e59", marginTop: "4px" } }, "Date: ", React.createElement("strong", null, yesterdayDate), " • Site Geofence Boundary: ", React.createElement("strong", null, "150m Radius Active (12.9716° N, 77.5946° E)"))
-          ),
-          React.createElement("div", { style: { display: "flex", gap: "8px" } },
-            React.createElement("span", { style: { backgroundColor: "#ccfbf1", color: "#0f766e", padding: "4px 10px", borderRadius: "20px", fontSize: "12px", fontWeight: "bold" } }, "92.8% Verified"),
-            React.createElement("button", { onClick: () => alert("Exported Yesterday's Geofence Audit CSV"), style: styles.buttonSuccess }, "📥 Export CSV")
-          )
-        ),
-        React.createElement("div", { style: styles.grid4 },
-          React.createElement("div", { style: { backgroundColor: "white", padding: "12px", borderRadius: "8px", border: "1px solid #b2f5ea" } }, React.createElement("div", { style: { fontSize: "11px", color: "#555" } }, "Total Logged Labours"), React.createElement("div", { style: { fontSize: "20px", fontWeight: "bold", color: "#0f766e" } }, "28 Workers")),
-          React.createElement("div", { style: { backgroundColor: "white", padding: "12px", borderRadius: "8px", border: "1px solid #b2f5ea" } }, React.createElement("div", { style: { fontSize: "11px", color: "#555" } }, "Geofence Verified (GPS)"), React.createElement("div", { style: { fontSize: "20px", fontWeight: "bold", color: "#28a745" } }, "26 Verified")),
-          React.createElement("div", { style: { backgroundColor: "white", padding: "12px", borderRadius: "8px", border: "1px solid #b2f5ea" } }, React.createElement("div", { style: { fontSize: "11px", color: "#555" } }, "Yesterday Wage Bill"), React.createElement("div", { style: { fontSize: "20px", fontWeight: "bold", color: "#2563eb" } }, "₹14,850")),
-          React.createElement("div", { style: { backgroundColor: "white", padding: "12px", borderRadius: "8px", border: "1px solid #b2f5ea" } }, React.createElement("div", { style: { fontSize: "11px", color: "#555" } }, "Supervisor Approval"), React.createElement("div", { style: { fontSize: "13px", fontWeight: "bold", color: "#d97706", marginTop: "4px" } }, "Approved ✅ (Eng. Rajesh)"))
-        ),
-        React.createElement("div", { style: { marginTop: "14px", overflowX: "auto" } },
-          React.createElement("table", { style: styles.table },
-            React.createElement("thead", null, React.createElement("tr", null,
-              React.createElement("th", { style: styles.th }, "Worker ID & Name"),
-              React.createElement("th", { style: styles.th }, "Trade / Role"),
-              React.createElement("th", { style: styles.th }, "Check-In"),
-              React.createElement("th", { style: styles.th }, "Check-Out"),
-              React.createElement("th", { style: styles.th }, "Geofence Dist"),
-              React.createElement("th", { style: styles.th }, "GPS Verification"),
-              React.createElement("th", { style: styles.th }, "Daily Wage"),
-              React.createElement("th", { style: styles.th }, "Status")
-            )),
-            React.createElement("tbody", null, geofenceAttendance.map(item => React.createElement("tr", { key: item.id },
-              React.createElement("td", { style: styles.td }, React.createElement("strong", null, item.name), React.createElement("div", { style: { fontSize: "10px", color: "#666" } }, item.id)),
-              React.createElement("td", { style: styles.td }, item.role),
-              React.createElement("td", { style: styles.td }, item.checkIn),
-              React.createElement("td", { style: styles.td }, item.checkOut),
-              React.createElement("td", { style: styles.td }, item.distance),
-              React.createElement("td", { style: styles.td }, React.createElement("span", { style: { ...styles.statusBadge, backgroundColor: item.status.includes("Verified") ? "#d1fae5" : "#fee2e2", color: item.status.includes("Verified") ? "#065f46" : "#991b1b" } }, item.status)),
-              React.createElement("td", { style: styles.td }, "₹", item.wage),
-              React.createElement("td", { style: styles.td }, item.approved)
-            )))
-          )
-        )
-      ),
       React.createElement("div", { style: { display: "flex", gap: "12px", marginBottom: "16px", flexWrap: "wrap" } },
         React.createElement("button", { onClick: () => setShowLabourModal(true), style: styles.button }, "+ Add Labour"),
         React.createElement("input", { type: "date", value: selectedDate, onChange: (e) => setSelectedDate(e.target.value), style: { ...styles.input, width: "auto" } })
@@ -1886,15 +1788,9 @@ useEffect(() => {
   const renderLabourAttendance = () => {
     const yesterdayDate = new Date(Date.now() - 86400000).toISOString().split("T")[0];
     
-    // Sample Geofence & Punch Attendance Data
-    const geofenceAttendanceLog = [
-      { id: "LAB-1001", name: "Ramesh Kumar", mobile: "9876543210", category: "Civil Mason", prjId: "1", prjName: "Green Valley Villa", prjCode: "PRJ-101", checkIn: "08:30 AM", checkOut: "05:30 PM", distance: "8m", status: "GPS Verified ✅", wage: 950, otHours: 1.5, approved: "Approved" },
-      { id: "LAB-1002", name: "Suresh Naik", mobile: "9123456789", category: "Barbender Steel", prjId: "1", prjName: "Green Valley Villa", prjCode: "PRJ-101", checkIn: "08:45 AM", checkOut: "05:30 PM", distance: "12m", status: "GPS Verified ✅", wage: 900, otHours: 0, approved: "Approved" },
-      { id: "LAB-1003", name: "Manjunath B", mobile: "9900112233", category: "Helper", prjId: "2", prjName: "Skyline Towers", prjCode: "PRJ-102", checkIn: "09:00 AM", checkOut: "05:30 PM", distance: "15m", status: "GPS Verified ✅", wage: 650, otHours: 2, approved: "Approved" },
-      { id: "LAB-1004", name: "Ganesh Gouda", mobile: "9811223344", category: "Tile Laying Mason", prjId: "1", prjName: "Green Valley Villa", prjCode: "PRJ-101", checkIn: "08:30 AM", checkOut: "05:45 PM", distance: "6m", status: "GPS Verified ✅", wage: 1000, otHours: 1, approved: "Approved" },
-      { id: "LAB-1005", name: "Venkatesh P", mobile: "9766554433", category: "Plastering Mason", prjId: "2", prjName: "Skyline Towers", prjCode: "PRJ-102", checkIn: "08:15 AM", checkOut: "05:30 PM", distance: "14m", status: "GPS Verified ✅", wage: 950, otHours: 0, approved: "Approved" },
-      { id: "LAB-1006", name: "Shiva R", mobile: "9988776655", category: "Helper", prjId: "1", prjName: "Green Valley Villa", prjCode: "PRJ-101", checkIn: "09:10 AM", checkOut: "05:30 PM", distance: "185m", status: "Out of Boundary ⚠️", wage: 650, otHours: 0, approved: "Flagged" }
-    ];
+    // Attendance log starts empty in production.
+// Populate from genuine attendance records/API only.
+const geofenceAttendanceLog: any[] = [];
 
     // Apply Filters
     const filteredAttendanceLog = geofenceAttendanceLog.filter(item => {
@@ -2927,6 +2823,7 @@ useEffect(() => {
     )
   );
 }
+
 
 
 

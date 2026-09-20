@@ -463,7 +463,7 @@ export const PropertyIntelligenceModal: React.FC<Props> = ({ property, onClose }
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '18px' }}>
                 <div style={{ height: '370px', backgroundColor: '#020617', borderRadius: '14px', overflow: 'hidden', border: '1px solid #cbd5e1', position: 'relative' }}>
                   {mediaView === 'drone' && (
-                    <video autoPlay loop muted playsInline controls style={{ width: '100%', height: '100%', objectFit: 'cover' }} src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" />
+                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', textAlign: 'center', color: '#cbd5e1', backgroundColor: '#020617' }}>Property media is not available for this listing.</div>
                   )}
                   {mediaView === 'pano' && (
                     <div onMouseDown={(e) => { setIsPanning(true); lastMousePos.current = { x: e.clientX, y: e.clientY }; }} onMouseMove={(e) => { if (!isPanning) return; panXRef.current -= (e.clientX - lastMousePos.current.x) * 2; lastMousePos.current = { x: e.clientX, y: e.clientY }; }} onMouseUp={() => setIsPanning(false)} style={{ width: '100%', height: '100%', position: 'relative', cursor: isPanning ? 'grabbing' : 'grab' }}>
@@ -758,3 +758,4 @@ export const PropertyIntelligenceModal: React.FC<Props> = ({ property, onClose }
 };
 
 export default PropertyIntelligenceModal;
+
