@@ -173,16 +173,6 @@ export default function LoginPage() {
       sessionStorage.setItem("justLoggedIn", "true");
       localStorage.setItem("buildmitraUser", JSON.stringify(user));
 
-      try {
-        const { createJWTToken } = require("../utils/auth");
-        createJWTToken({
-          id: user.userCode || user.id,
-          name: user.name,
-          role: effectiveRole,
-          email: user.email
-        });
-      } catch {}
-
       setSuccess(`Login successful. Welcome ${user.name || "to BuildMitra"}.`);
 
       setTimeout(() => {
@@ -558,3 +548,4 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: 10
   }
 };
+
