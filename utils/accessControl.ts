@@ -1,3 +1,4 @@
+
 export type FeatureType =
   | "calculator_export"
   | "boq_export"
@@ -5,163 +6,193 @@ export type FeatureType =
   | "learn_earn_export"
   | "marketplace_share"
   | "quotation_export";
+/* ============================================================
+   BuildMitra — Access Control
+   Central helper for checking paid unlocks, featured content,
+   and feature permission by path or reference code.
+   ============================================================ */
 
-export type PaymentInfo = {
-  amount?: number;
-  paymentMode?: string;
-  status?: string;
-  date?: string;
-  transactionId?: string;
-};
+const PAID_KEY_PREFIX = "bm_paid";
+const UNLOCK_KEY_PREFIX = "bm_unlock";
 
-export type PaidUnlock = {
-  userId: string;
-  featureType: FeatureType;
-  referenceCode: string;
-  amount: number;
-  date: string;
-  status: "Paid";
-  paymentMode: string;
-  transactionId: string;
-};
+/**
+ * Returns the localStorage key for a paid unlock.
+ */
+function paidKey(featureType: string, referenceCode: string): string {
+  return `${PAID_KEY_PREFIX}_${featureType || "any"}_${referenceCode || "any"}`;
+}
 
-const UNLOCK_KEY = "bm_paid_unlocks";
+/**
+ * Returns the localStorage key for a generic unlock.
+ */
+function unlockKey(featureType: string, referenceCode: string): string {
+  return `${UNLOCK_KEY_PREFIX}_${featureType || "any"}_${referenceCode || "any"}`;
+}
 
-function safeJson<T>(value: string | null, fallback: T): T {
+/**
+ * Check if a specific feature + reference code has been paid/unlocked.
+ * Returns true when the user has paid for this specific item.
+ */
+export function hasPaidUnlock(
+  featureType: string,
+  referenceCode: string
+): boolean {
+  if (typeof window === "undefined") return false;
   try {
-    return value ? JSON.parse(value) : fallback;
+    const key = paidKey(featureType, referenceCode);
+    return localStorage.getItem(key) === "true";
   } catch {
-    return fallback;
+    return false;
   }
 }
 
-export function getCurrentUser(): any | null {
-  if (typeof window === "undefined") return null;
-  return (
-    safeJson(sessionStorage.getItem("loggedInUser"), null) ||
-    safeJson(sessionStorage.getItem("currentUser"), null) ||
-    safeJson(localStorage.getItem("buildmitraUser"), null)
-  );
-}
-
-export function getUserId(): string | null {
-  const user = getCurrentUser();
-  if (!user) return null;
-  return String(user.userId || user.id || user.uniqueCode || user.email || user.mobile || user.name || "guest");
-}
-
-export function hasActiveSubscription(): boolean {
-  if (typeof window === "undefined") return false;
-  const user = getCurrentUser();
-  const subscription = safeJson<any>(localStorage.getItem("buildmitraSubscription"), null);
-  const userSubscription = safeJson<any>(localStorage.getItem("bm_active_subscription"), null);
-  const now = Date.now();
-  const validUntil = subscription?.validUntil || userSubscription?.validUntil || user?.subscriptionValidUntil;
-  return Boolean(
-    user?.subscriptionActive ||
-      user?.isSubscribed ||
-      subscription?.active ||
-      userSubscription?.active ||
-      (validUntil && new Date(validUntil).getTime() > now)
-  );
-}
-
-export function getUnlockKey(featureType?: any, referenceCode = "global"): string {
-  const typeStr = typeof featureType === "string" && featureType ? featureType : "calculator_export";
-  return `${getUserId() || "anonymous"}::${typeStr}::${referenceCode || "global"}`;
-}
-
-export function getPaidUnlocks(): Record<string, PaidUnlock> {
-  if (typeof window === "undefined") return {};
-  return safeJson<Record<string, PaidUnlock>>(localStorage.getItem(UNLOCK_KEY), {});
-}
-
-export function hasPaidUnlock(featureType?: any, referenceCode = "global"): boolean {
-  if (typeof window === "undefined") return false;
-  if (hasActiveSubscription()) return true;
-  const unlocks = getPaidUnlocks();
-  const key = getUnlockKey(featureType, referenceCode);
-  const globalKey = getUnlockKey(featureType, "global");
-  return Boolean(unlocks[key] || unlocks[globalKey]);
-}
-
-function appendLocalStorageArray(key: string, record: any) {
-  const existing = safeJson<any[]>(localStorage.getItem(key), []);
-  localStorage.setItem(key, JSON.stringify([record, ...existing].slice(0, 500)));
-}
-
-export function markPaidUnlock(featureType?: any, referenceCode = "global", paymentInfo: PaymentInfo = {}): PaidUnlock {
-  if (typeof window === "undefined") {
-    throw new Error("Payment unlock can only be stored in browser localStorage.");
-  }
-  const safeType = typeof featureType === "string" && featureType ? (featureType as FeatureType) : "calculator_export";
-  const userId = getUserId() || "anonymous";
-  const amount = Number(paymentInfo.amount || defaultUnlockAmount(safeType));
-  const record: PaidUnlock = {
-    userId,
-    featureType: safeType,
-    referenceCode: referenceCode || "global",
-    amount,
-    date: paymentInfo.date || new Date().toISOString(),
-    status: "Paid",
-    paymentMode: paymentInfo.paymentMode || "UPI",
-    transactionId: paymentInfo.transactionId || `BM-PAY-${Date.now()}`
-  };
-  const unlocks = getPaidUnlocks();
-  unlocks[getUnlockKey(safeType, referenceCode)] = record;
-  localStorage.setItem(UNLOCK_KEY, JSON.stringify(unlocks));
+/**
+ * Mark a feature + reference code as paid.
+ */
+export function setPaidUnlock(
+  featureType: string,
+  referenceCode: string,
+  paid: boolean = true
+): void {
+  if (typeof window === "undefined") return;
   try {
-    localStorage.setItem("bm_unlocked_all", "true");
-  } catch {}
-  appendLocalStorageArray("bm_payment_transactions", record);
-  appendLocalStorageArray("adminTransactions", record);
-  appendLocalStorageArray("buildmitraTransactions", record);
-  return record;
+    const key = paidKey(featureType, referenceCode);
+    if (paid) {
+      localStorage.setItem(key, "true");
+    } else {
+      localStorage.removeItem(key);
+    }
+  } catch {
+    /* ignore */
+  }
 }
 
+/**
+ * Clear a paid unlock.
+ */
+export function clearPaidUnlock(
+  featureType: string,
+  referenceCode: string
+): void {
+  setPaidUnlock(featureType, referenceCode, false);
+}
+
+/**
+ * Check generic unlock (used for non-payment gates).
+ */
+export function hasUnlock(
+  featureType: string,
+  referenceCode: string
+): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const key = unlockKey(featureType, referenceCode);
+    return localStorage.getItem(key) === "true";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Set generic unlock.
+ */
+export function setUnlock(
+  featureType: string,
+  referenceCode: string,
+  unlocked: boolean = true
+): void {
+  if (typeof window === "undefined") return;
+  try {
+    const key = unlockKey(featureType, referenceCode);
+    if (unlocked) {
+      localStorage.setItem(key, "true");
+    } else {
+      localStorage.removeItem(key);
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * Determine the feature type from a URL path.
+ */
+export function featureFromPath(
+  pathname: string,
+  fallback?: string
+): string {
+  if (!pathname) return fallback || "unknown";
+  const clean = pathname.replace(/^\//, "").split("/")[0];
+  return clean || fallback || "unknown";
+}
+
+/**
+ * Determine the reference code from a URL path.
+ * Example: /calculators/beam-design → "beam-design"
+ */
+export function referenceFromPage(pathname: string): string {
+  if (!pathname) return "any";
+  const parts = pathname.replace(/^\//, "").split("/");
+  if (parts.length >= 2) return parts[1];
+  return parts[0] || "any";
+}
+
+/**
+ * Check if a given feature is unlocked for a path.
+ */
+export function isFeatureUnlocked(
+  pathname: string,
+  fallbackType?: string
+): boolean {
+  const type = featureFromPath(pathname, fallbackType);
+  const code = referenceFromPage(pathname);
+  return hasPaidUnlock(type, code) || hasUnlock(type, code);
+}
+
+
+/**
+ * Compatibility helper used by PaymentBarrier.
+ * Marks a feature/reference as paid and unlocked.
+ */
+export function markPaidUnlock(
+  featureType: FeatureType,
+  referenceCode: string
+): void {
+  setPaidUnlock(featureType, referenceCode, true);
+}
+
+/**
+ * Compatibility helper used by PaymentBarrier.
+ * Executes the requested action immediately when already unlocked.
+ * Otherwise opens the payment barrier through onLocked.
+ */
 export function requireUnlock(
-  featureType: any,
-  referenceCode: string | undefined,
-  onAllowed?: (() => void) | any,
-  onBlocked?: (() => void) | any
-) {
-  if (hasPaidUnlock(featureType, referenceCode)) {
-    if (typeof onAllowed === "function") onAllowed();
-    return true;
+  featureType: FeatureType,
+  referenceCode: string,
+  onUnlocked: () => void,
+  onLocked: () => void
+): void {
+  if (
+    hasPaidUnlock(featureType, referenceCode) ||
+    hasUnlock(featureType, referenceCode)
+  ) {
+    onUnlocked();
+    return;
   }
-  if (typeof onBlocked === "function") onBlocked();
-  return false;
-}
 
-export function defaultUnlockAmount(featureType?: any): number {
-  if (!featureType || typeof featureType !== "string") {
-    return 99;
-  }
-  switch (featureType) {
-    case "drawing_export":
-      return 199;
-    case "boq_export":
-      return 149;
-    case "calculator_export":
-      return 49;
-    case "learn_earn_export":
-      return 99;
-    case "marketplace_share":
-      return 29;
-    case "quotation_export":
-      return 99;
-    default:
-      return 99;
-  }
+  onLocked();
 }
-
-export function featureLabel(featureType?: any): string {
-  if (!featureType || typeof featureType !== "string") {
-    return "Feature Access";
-  }
-  return featureType
-    .split("_")
-    .map((part) => (part ? part.charAt(0).toUpperCase() + part.slice(1) : ""))
-    .join(" ");
-}
+/**
+ * Default export for flexible imports.
+ */
+export default {
+  hasPaidUnlock,
+  setPaidUnlock,
+  clearPaidUnlock,
+  hasUnlock,
+  setUnlock,
+  featureFromPath,
+  referenceFromPage,
+  isFeatureUnlocked
+};
 
