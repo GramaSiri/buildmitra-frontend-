@@ -191,7 +191,7 @@ export const BuildMitraLetterhead: React.FC<LetterheadProps> = ({
       {(buyerName || contractorName) && (
         <div style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr",
+          gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))",
           gap: "16px",
           marginBottom: "20px",
           backgroundColor: "#f1f5f9",

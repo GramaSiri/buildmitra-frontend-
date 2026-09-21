@@ -189,7 +189,7 @@ export default function ProjectOnboardingModals({
               [BUILD] Onboard New Builder and Real Estate Project
             </h3>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))", gap: "12px" }}>
               <div>
                 <label style={{ fontSize: "12px", fontWeight: 700 }}>Builder / Developer Name *</label>
                 <input
@@ -384,7 +384,7 @@ export default function ProjectOnboardingModals({
               + Add Inventory Unit to {selectedProject?.projectName}
             </h3>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))", gap: "12px" }}>
               <div>
                 <label style={{ fontSize: "12px", fontWeight: 700 }}>Unit / Plot No. *</label>
                 <input
