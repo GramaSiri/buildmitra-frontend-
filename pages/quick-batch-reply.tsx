@@ -123,7 +123,7 @@ export default function QuickBatchReplyPage() {
   return (
     <div
       style={{
-        minHeight: "100vh",
+        minHeight: "100dvh",
         display: "grid",
         placeItems: "center",
         padding: 20,
@@ -132,6 +132,7 @@ export default function QuickBatchReplyPage() {
       }}
     >
       <div
+        className="quick-reply-card"
         style={{
           width: "min(440px, 94vw)",
           background: "#fff",
@@ -170,6 +171,15 @@ export default function QuickBatchReplyPage() {
           <p>{message}</p>
         )}
       </div>
+      
+      <style jsx>{`
+        @media (max-width: 600px) {
+          .quick-reply-card {
+            padding: 16px !important;
+          }
+        }
+      `}</style>
+    
     </div>
   );
 }

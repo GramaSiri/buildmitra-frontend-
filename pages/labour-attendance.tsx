@@ -838,7 +838,7 @@ export default function LabourAttendancePage() {
             </div>
           )}
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(140px, 100%), 1fr))', gap: '14px' }}>
             <button onClick={() => handlePunch('IN')} style={{ padding: '16px', backgroundColor: '#16a34a', color: '#fff', border: 0, borderRadius: '10px', fontSize: '16px', fontWeight: '900', cursor: 'pointer' }}>🟢 PUNCH IN</button>
             <button onClick={() => handlePunch('OUT')} style={{ padding: '16px', backgroundColor: '#dc2626', color: '#fff', border: 0, borderRadius: '10px', fontSize: '16px', fontWeight: '900', cursor: 'pointer' }}>🔴 PUNCH OUT</button>
           </div>

@@ -265,6 +265,15 @@ export default function PatioPage() {
           </div>
         </div>
       )}
+    
+      <style jsx>{`
+        @media (max-width: 700px) {
+          :global(.patio-calculator-page) {
+            padding: 12px !important;
+          }
+        }
+      `}</style>
+    
     </div>
   );
 }

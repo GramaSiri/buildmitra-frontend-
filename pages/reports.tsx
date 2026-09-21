@@ -154,7 +154,7 @@ export default function ReportsPage() {
         </div>
 
         {/* MAIN CONTROLS */}
-        <div style={{ display: "grid", gridTemplateColumns: "360px 1fr", gap: "24px" }}>
+        <div className="reports-main-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(320px, 100%), 1fr))", gap: "24px" }}>
           
           {/* CATEGORY SELECTOR */}
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -226,6 +226,7 @@ export default function ReportsPage() {
               </div>
 
               {selectedReportType === "boq" ? (
+            <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch", width: "100%" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", textAlign: "left" }}>
                   <thead>
                     <tr style={{ background: "#e2e8f0", color: "#1e293b" }}>

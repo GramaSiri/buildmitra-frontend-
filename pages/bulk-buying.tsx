@@ -105,7 +105,7 @@ export default function BulkBuyingPage() {
     <DashboardLayout>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         {/* CLEARLY VISIBLE HIGHLIGHTED NAVIGATION TABS */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8 bulk-buying-tabs">
           {/* TAB 1: CREATE NEW RFQ */}
           <button
             onClick={() => setActiveTab("launch_form")}
@@ -261,6 +261,16 @@ export default function BulkBuyingPage() {
           />
         )}
       </div>
+    
+      <style jsx>{`
+        @media (max-width: 768px) {
+          .bulk-buying-tabs {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 8px !important;
+          }
+        }
+      `}</style>
+    
     </DashboardLayout>
   );
 }

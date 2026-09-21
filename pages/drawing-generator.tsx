@@ -32,7 +32,7 @@ export default function ProfessionalDraftingEngine() {
   const svgH = effL * scale;
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#0f172a', color: '#f8fafc', padding: '24px', fontFamily: 'Courier New, monospace' }}>
+    <div style={{ minHeight: '100dvh', backgroundColor: '#0f172a', color: '#f8fafc', padding: '24px', fontFamily: 'Courier New, monospace' }}>
       <Head>
         <title>Professional CAD Blueprint DRG | BuildMitra</title>
       </Head>
@@ -40,7 +40,7 @@ export default function ProfessionalDraftingEngine() {
       <div style={{ maxWidth: '1450px', margin: '0 auto' }}>
         
         {/* Top Header */}
-        <div style={{ backgroundColor: '#1e293b', border: '1px solid #334155', padding: '16px 24px', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <div className="drawing-gen-top-header" style={{ backgroundColor: '#1e293b', border: '1px solid #334155', padding: '16px 24px', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <div>
             <span style={{ backgroundColor: '#0284c7', color: '#fff', fontSize: '10px', fontWeight: 800, padding: '3px 8px', borderRadius: '4px', letterSpacing: '1px' }}>
               CAD DRG ENGINE V5.0 — ARCHITECTURAL SANCTION BLUEPRINT
@@ -140,7 +140,7 @@ export default function ProfessionalDraftingEngine() {
             </div>
 
             {/* Precision Architectural SVG Drawing */}
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '10px', backgroundColor: '#fcfcfc', border: '1px solid #cbd5e1' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '10px', backgroundColor: '#fcfcfc', border: '1px solid #cbd5e1', overflowX: 'auto', WebkitOverflowScrolling: 'touch', maxWidth: '100%' }}>
               <svg width={svgW + 100} height={svgH + 100} viewBox={`-50 -50 ${svgW + 100} ${svgH + 100}`} style={{ backgroundColor: '#ffffff' }}>
                 
                 {/* Plot Boundary Line (Red Dashed) */}
@@ -216,6 +216,18 @@ export default function ProfessionalDraftingEngine() {
         )}
 
       </div>
+    
+      <style jsx>{`
+        @media (max-width: 768px) {
+          .drawing-gen-top-header {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 12px !important;
+            padding: 14px 16px !important;
+          }
+        }
+      `}</style>
+    
     </div>
   );
 }
