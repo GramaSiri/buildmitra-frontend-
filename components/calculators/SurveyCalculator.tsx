@@ -56,6 +56,7 @@ export type SavedSurvey = {
   cents: string;
   points: number;
   method: string;
+  location?: string;
 };
 
 const KNOWN_VILLAGES: Record<string, { lat: number; lng: number; label: string }> = {
@@ -116,11 +117,21 @@ export default function SurveyCalculator() {
   const [isLocationConfirmed, setIsLocationConfirmed] = useState<boolean>(false);
   const [isMarkingActive, setIsMarkingActive] = useState<boolean>(false);
 
+  const [searchHint, setSearchHint] = useState<string>(
+    "🎯 Centered on searched location. Click 'Confirm Location' below to lock it, or drag the map to adjust."
+  );
+
   // REAL LEAFLET MAP REFS
   const mapDivRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const tileLayerRef = useRef<any>(null);
   const featureGroupRef = useRef<any>(null);
+  const targetMarkerRef = useRef<any>(null);
+  const polygonLayerRef = useRef<any>(null);
+  const markersMapRef = useRef<Map<string, any>>(new Map());
+  const isDraggingPinIdRef = useRef<string | null>(null);
+  const lastSearchedRef = useRef<string>("");
+  const debounceSearchTimerRef = useRef<any>(null);
   const [isLeafletReady, setIsLeafletReady] = useState<boolean>(false);
 
   // MODE 1: SIMPLE SURVEY
@@ -151,16 +162,20 @@ export default function SurveyCalculator() {
 
   // MODE 3: GPS SURVEY
   const [gpsPoints, setGpsPoints] = useState<GpsPoint[]>([
-    { id: "gps_1", name: "Point A", lat: 12.8251, lng: 77.8124, acc: 1.8 },
-    { id: "gps_2", name: "Point B", lat: 12.8260, lng: 77.8124, acc: 2.1 },
-    { id: "gps_3", name: "Point C1", lat: 12.8260, lng: 77.8135, acc: 1.5 },
-    { id: "gps_4", name: "Point C2", lat: 12.8255, lng: 77.8139, acc: 2.4 },
-    { id: "gps_5", name: "Point D", lat: 12.8251, lng: 77.8139, acc: 1.9 },
+    { id: "gps_1", name: "A", lat: 12.8251, lng: 77.8124, acc: 1.8 },
+    { id: "gps_2", name: "B", lat: 12.8260, lng: 77.8124, acc: 2.1 },
+    { id: "gps_3", name: "C1", lat: 12.8260, lng: 77.8135, acc: 1.5 },
+    { id: "gps_4", name: "C2", lat: 12.8255, lng: 77.8139, acc: 2.4 },
+    { id: "gps_5", name: "D", lat: 12.8251, lng: 77.8139, acc: 1.9 },
   ]);
   const [isGpsActive, setIsGpsActive] = useState(false);
 
   // MODE 4: AERIAL SATELLITE SURVEY (STARTS 100% CLEAN)
   const [satellitePins, setSatellitePins] = useState<SatellitePin[]>([]);
+  const satellitePinsRef = useRef<SatellitePin[]>(satellitePins);
+  satellitePinsRef.current = satellitePins;
+  const isLocationConfirmedRef = useRef<boolean>(isLocationConfirmed);
+  isLocationConfirmedRef.current = isLocationConfirmed;
 
   // SAVED HISTORY
   const [savedSurveys, setSavedSurveys] = useState<SavedSurvey[]>([]);
@@ -197,14 +212,48 @@ export default function SurveyCalculator() {
     }
   }, []);
 
-  // INITIALIZE REAL INTERACTIVE LEAFLET MAP
+  // DEBOUNCED SEARCH ON TYPING (500ms PAUSE)
   useEffect(() => {
-    if (!isLeafletReady || !mapDivRef.current || mode !== "satellite_survey") return;
+    if (mode !== "satellite_survey") return;
+    const q = satSearchInput.trim();
+    if (!q || q.length < 3) return;
+    if (q.toLowerCase() === lastSearchedRef.current.toLowerCase()) return;
+
+    if (debounceSearchTimerRef.current) {
+      clearTimeout(debounceSearchTimerRef.current);
+    }
+    debounceSearchTimerRef.current = setTimeout(() => {
+      handlePerformLocationSearch(q);
+    }, 500);
+
+    return () => {
+      if (debounceSearchTimerRef.current) {
+        clearTimeout(debounceSearchTimerRef.current);
+      }
+    };
+  }, [satSearchInput, mode]);
+
+  // INITIALIZE LEAFLET MAP + MANAGE TILE LAYER (single effect, no race)
+  useEffect(() => {
+    if (!isLeafletReady || mode !== "satellite_survey") return;
     const L = (window as any).L;
     if (!L) return;
+    if (!mapDivRef.current) return;
 
+    const el = mapDivRef.current;
+
+    // Wait for real dimensions
+    if (el.clientWidth === 0 || el.clientHeight === 0) {
+      const t = setTimeout(() => {
+        // trigger re-run by toggling state (safe)
+        setIsLeafletReady((v) => v);
+      }, 200);
+      return () => clearTimeout(t);
+    }
+
+    // ----- Create map + tile layer together, once -----
     if (!mapInstanceRef.current) {
-      const map = L.map(mapDivRef.current, {
+      const map = L.map(el, {
         center: [satCenterLat, satCenterLng],
         zoom: satZoom,
         zoomControl: true,
@@ -214,77 +263,291 @@ export default function SurveyCalculator() {
       const featureGroup = L.featureGroup().addTo(map);
       featureGroupRef.current = featureGroup;
 
-      // Add Tile Layer
-      const esriSatellite = L.tileLayer(
-        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-        { maxZoom: 19, attribution: "Esri World Imagery Satellite" }
-      );
-      esriSatellite.addTo(map);
-      tileLayerRef.current = esriSatellite;
-
-      // Handle Map Click to Drop Pins
       map.on("click", (e: any) => {
-        handleLeafletPointDrop(e.latlng.lat, e.latlng.lng, e.layerPoint.x, e.layerPoint.y);
+        if (!isLocationConfirmedRef.current) {
+          alert("Please click 'Confirm Location' in Step 1 first before dropping boundary points.");
+          return;
+        }
+        handleLeafletPointDrop(
+          e.latlng.lat,
+          e.latlng.lng,
+          e.layerPoint.x,
+          e.layerPoint.y
+        );
       });
 
-      // Update Center State on Map Move
       map.on("moveend", () => {
         const center = map.getCenter();
         setSatCenterLat(parseFloat(center.lat.toFixed(6)));
         setSatCenterLng(parseFloat(center.lng.toFixed(6)));
       });
+
+      // Initial tile layer — satellite by default
+      const initialUrl =
+        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+      const initialAttr = "Esri World Imagery Satellite";
+      const initialLayer = L.tileLayer(initialUrl, {
+        maxZoom: 19,
+        attribution: initialAttr,
+        crossOrigin: true,
+      });
+      initialLayer.addTo(map);
+      tileLayerRef.current = initialLayer;
+
+      // Force a re-layout after the container is fully mounted
+      setTimeout(() => {
+        try { map.invalidateSize(); } catch (e) {}
+      }, 100);
+      setTimeout(() => {
+        try { map.invalidateSize(); } catch (e) {}
+      }, 600);
+
+      // Auto-invalidate on container resize
+      if (typeof ResizeObserver !== "undefined") {
+        const ro = new ResizeObserver(() => {
+          try { map.invalidateSize(); } catch (e) {}
+        });
+        ro.observe(el);
+        (map as any)._bmResizeObserver = ro;
+      }
     }
 
-    // Cleanup on unmount or tab switch
+    // ----- Handle tile-type switch (only runs after map exists) -----
+    if (mapInstanceRef.current && tileLayerRef.current) {
+      // Determine desired layer for current satMapType
+      let desiredUrl =
+        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+      let desiredAttr = "Esri World Imagery Satellite";
+
+      if (satMapType === "roadmap") {
+        desiredUrl = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
+        desiredAttr = "OpenStreetMap Standard";
+      } else if (satMapType === "terrain") {
+        desiredUrl = "https://tile.opentopomap.org/{z}/{x}/{y}.png";
+        desiredAttr = "OpenTopoMap Terrain";
+      }
+
+      // Check if current layer already matches desired — skip if so
+      const currentUrl = (tileLayerRef.current as any)?._url || "";
+      if (currentUrl !== desiredUrl) {
+        try {
+          mapInstanceRef.current.removeLayer(tileLayerRef.current);
+        } catch (e) {}
+
+        const newLayer = L.tileLayer(desiredUrl, {
+          maxZoom: 19,
+          attribution: desiredAttr,
+          crossOrigin: true,
+        });
+        newLayer.addTo(mapInstanceRef.current);
+        tileLayerRef.current = newLayer;
+
+        setTimeout(() => {
+          try { mapInstanceRef.current.invalidateSize(); } catch (e) {}
+        }, 100);
+      }
+    }
+
+    // Cleanup
     return () => {
       if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
+        try {
+          const ro = (mapInstanceRef.current as any)._bmResizeObserver;
+          if (ro && typeof ro.disconnect === "function") ro.disconnect();
+          mapInstanceRef.current.remove();
+        } catch (e) {}
         mapInstanceRef.current = null;
         tileLayerRef.current = null;
         featureGroupRef.current = null;
       }
     };
-  }, [isLeafletReady, mode]);
+  }, [isLeafletReady, mode, satMapType]);
 
-  // SWITCH LEAFLET TILE LAYERS DYNAMICALLY
-  useEffect(() => {
-    if (!mapInstanceRef.current || !isLeafletReady) return;
-    const L = (window as any).L;
-    if (!L) return;
+  // HELPER: CREATE DRAGGABLE MARKER ICON WITH BARE LETTER & ✕ DELETE BADGE
+  const createMarkerIcon = (L: any, pin: SatellitePin) => {
+    return L.divIcon({
+      className: "custom-leaflet-pin",
+      html: `<div style="position:relative; display:inline-block; user-select:none; -webkit-user-select:none; cursor:grab; touch-action:none;">
+        <div style="background:#0f172a; border:2px solid #00f0ff; color:#ffffff; padding:2px 8px; border-radius:12px; font-weight:900; font-size:12px; text-align:center; font-family:Inter,sans-serif; box-shadow:0 2px 8px rgba(0,0,0,0.5); whitespace:nowrap; line-height:18px; min-width:24px;">
+          ${pin.name}
+        </div>
+        <div class="bm-del-pin-btn" data-pin-id="${pin.id}" title="Delete Point ${pin.name}" style="position:absolute; top:-7px; right:-8px; background:#ef4444; color:#ffffff; width:16px; height:16px; border-radius:50%; font-size:10px; line-height:16px; text-align:center; font-weight:900; cursor:pointer; box-shadow:0 1px 4px rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center; border:1px solid #ffffff; z-index:10;">
+          ✕
+        </div>
+      </div>`,
+      iconSize: [40, 28],
+      iconAnchor: [20, 14],
+    });
+  };
 
-    if (tileLayerRef.current) {
-      mapInstanceRef.current.removeLayer(tileLayerRef.current);
-    }
+  // HELPER: BIND POPUP WITH ✕ DELETE BUTTON
+  const bindMarkerPopup = (L: any, marker: any, pin: SatellitePin) => {
+    const popupHtml = `
+      <div style="font-family:Inter,sans-serif; text-align:center; padding:4px;">
+        <div style="font-weight:900; font-size:13px; margin-bottom:2px; color:#0f172a;">Point ${pin.name}</div>
+        <div style="font-size:11px; color:#64748b; margin-bottom:8px;">
+          Lat: ${pin.lat.toFixed(6)}<br/>Lng: ${pin.lng.toFixed(6)}
+        </div>
+        <button id="del-popup-${pin.id}" style="background:#ef4444; color:#ffffff; border:none; padding:5px 12px; border-radius:6px; font-size:11px; font-weight:800; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,0.2);">
+          ✕ Delete Point ${pin.name}
+        </button>
+      </div>
+    `;
+    marker.bindPopup(popupHtml);
+    marker.on("popupopen", (e: any) => {
+      const btn = document.getElementById(`del-popup-${pin.id}`);
+      if (btn) {
+        btn.onclick = (ev) => {
+          ev.stopPropagation();
+          if (mapInstanceRef.current) mapInstanceRef.current.closePopup();
+          handleDeleteSatellitePin(pin.id);
+        };
+      }
+    });
+  };
 
-    let tileUrl = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
-    let attr = "Esri World Imagery Satellite";
+  // DELETE POINT & RE-LETTER REMAINING POINTS CONTIGUOUSLY (A, B, C, D...)
+  const handleDeleteSatellitePin = (id: string) => {
+    setSatellitePins((prev) => {
+      const remaining = prev.filter((p) => p.id !== id);
+      return remaining.map((p, idx) => ({
+        ...p,
+        name: ALPHABET_LABELS[idx] || `P${idx + 1}`,
+      }));
+    });
+  };
 
-    if (satMapType === "roadmap") {
-      tileUrl = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
-      attr = "OpenStreetMap Standard";
-    } else if (satMapType === "terrain") {
-      tileUrl = "https://tile.opentopomap.org/{z}/{x}/{y}.png";
-      attr = "OpenTopoMap Terrain";
-    }
-
-    const newLayer = L.tileLayer(tileUrl, { maxZoom: 19, attribution: attr });
-    newLayer.addTo(mapInstanceRef.current);
-    tileLayerRef.current = newLayer;
-  }, [satMapType, isLeafletReady]);
-
-  // SYNCHRONIZE LEAFLET MARKERS & POLYGON
+  // SYNCHRONIZE LEAFLET MARKERS & POLYGON WITH DRAGGING & DELETING
   useEffect(() => {
     if (!mapInstanceRef.current || !featureGroupRef.current || !isLeafletReady) return;
     const L = (window as any).L;
     if (!L) return;
 
-    featureGroupRef.current.clearLayers();
+    const map = mapInstanceRef.current;
+    const fg = featureGroupRef.current;
 
-    if (satellitePins.length > 0) {
-      const latlngs = satellitePins.map((p) => [p.lat, p.lng]);
+    if (satellitePins.length === 0) {
+      fg.clearLayers();
+      markersMapRef.current.clear();
+      polygonLayerRef.current = null;
+      return;
+    }
 
-      // Draw Polygon if at least 2 points
-      if (satellitePins.length >= 2) {
+    const currentPinIds = new Set(satellitePins.map((p) => p.id));
+
+    // 1. Remove markers for pins that were deleted
+    markersMapRef.current.forEach((marker, id) => {
+      if (!currentPinIds.has(id)) {
+        try { fg.removeLayer(marker); } catch (e) {}
+        markersMapRef.current.delete(id);
+      }
+    });
+
+    // 2. Add or update markers for current pins
+    satellitePins.forEach((pin) => {
+      if (markersMapRef.current.has(pin.id)) {
+        const marker = markersMapRef.current.get(pin.id);
+        // Only set position if this pin is not currently being dragged
+        if (isDraggingPinIdRef.current !== pin.id) {
+          marker.setLatLng([pin.lat, pin.lng]);
+        }
+        // Update icon label if name changed (e.g. re-lettered after deletion)
+        marker.setIcon(createMarkerIcon(L, pin));
+        bindMarkerPopup(L, marker, pin);
+      } else {
+        // Create new draggable marker
+        const marker = L.marker([pin.lat, pin.lng], {
+          icon: createMarkerIcon(L, pin),
+          draggable: true,
+          autoPan: true,
+        });
+
+        marker.on("dragstart", () => {
+          isDraggingPinIdRef.current = pin.id;
+          map.closePopup();
+        });
+
+        marker.on("drag", (e: any) => {
+          const newLatLng = e.target.getLatLng();
+          const curLat = parseFloat(newLatLng.lat.toFixed(6));
+          const curLng = parseFloat(newLatLng.lng.toFixed(6));
+
+          // Live update polygon directly for instant 60fps responsiveness
+          if (polygonLayerRef.current && satellitePinsRef.current.length >= 2) {
+            const idx = satellitePinsRef.current.findIndex((p) => p.id === pin.id);
+            if (idx !== -1) {
+              const updated = satellitePinsRef.current.map((p, i) =>
+                i === idx ? [curLat, curLng] : [p.lat, p.lng]
+              );
+              polygonLayerRef.current.setLatLngs(updated);
+            }
+          }
+
+          // Live update satellitePins state for live area calculation
+          setSatellitePins((prev) =>
+            prev.map((p) => (p.id === pin.id ? { ...p, lat: curLat, lng: curLng } : p))
+          );
+        });
+
+        marker.on("dragend", (e: any) => {
+          isDraggingPinIdRef.current = null;
+          const finalLatLng = e.target.getLatLng();
+          const finalLat = parseFloat(finalLatLng.lat.toFixed(6));
+          const finalLng = parseFloat(finalLatLng.lng.toFixed(6));
+
+          let px = 400, py = 265;
+          const pt = map.latLngToLayerPoint(finalLatLng);
+          if (pt) {
+            px = Math.round(pt.x);
+            py = Math.round(pt.y);
+          }
+
+          setSatellitePins((prev) =>
+            prev.map((p) =>
+              p.id === pin.id
+                ? {
+                    ...p,
+                    lat: finalLat,
+                    lng: finalLng,
+                    pixelX: px,
+                    pixelY: py,
+                  }
+                : p
+            )
+          );
+        });
+
+        // Click on ✕ delete badge
+        marker.on("click", (e: any) => {
+          const target = e.originalEvent?.target as HTMLElement;
+          if (target && (target.classList?.contains("bm-del-pin-btn") || target.closest?.(".bm-del-pin-btn"))) {
+            L.DomEvent.stopPropagation(e.originalEvent);
+            handleDeleteSatellitePin(pin.id);
+          }
+        });
+
+        // Right-click deletes pin
+        marker.on("contextmenu", (e: any) => {
+          if (e.originalEvent) {
+            e.originalEvent.preventDefault();
+            e.originalEvent.stopPropagation();
+          }
+          handleDeleteSatellitePin(pin.id);
+        });
+
+        bindMarkerPopup(L, marker, pin);
+
+        fg.addLayer(marker);
+        markersMapRef.current.set(pin.id, marker);
+      }
+    });
+
+    // 3. Update Polygon
+    const latlngs = satellitePins.map((p) => [p.lat, p.lng]);
+    if (satellitePins.length >= 2) {
+      if (polygonLayerRef.current) {
+        polygonLayerRef.current.setLatLngs(latlngs);
+      } else {
         const polygon = L.polygon(latlngs, {
           color: "#34d399",
           weight: 3.5,
@@ -292,48 +555,74 @@ export default function SurveyCalculator() {
           fillOpacity: 0.35,
           dashArray: "6, 2",
         });
-        featureGroupRef.current.addLayer(polygon);
+        fg.addLayer(polygon);
+        polygonLayerRef.current = polygon;
       }
-
-      // Add Custom DivIcon Markers
-      satellitePins.forEach((pin) => {
-        const customIcon = L.divIcon({
-          className: "custom-leaflet-pin",
-          html: `<div style="background:#0f172a; border:2px solid #00f0ff; color:#ffffff; padding:3px 8px; border-radius:12px; font-weight:900; font-size:11px; text-align:center; font-family:Inter,sans-serif; box-shadow:0 2px 8px rgba(0,0,0,0.4); whitespace:nowrap;">📍 ${pin.name}</div>`,
-          iconSize: [80, 30],
-          iconAnchor: [40, 15],
-        });
-        const marker = L.marker([pin.lat, pin.lng], { icon: customIcon });
-        featureGroupRef.current.addLayer(marker);
-      });
+    } else {
+      if (polygonLayerRef.current) {
+        try { fg.removeLayer(polygonLayerRef.current); } catch (e) {}
+        polygonLayerRef.current = null;
+      }
     }
   }, [satellitePins, isLeafletReady]);
 
-  // HANDLE MAP FLY-TO LOCATION
-  const handlePerformLocationSearch = (queryStr: string = satSearchInput) => {
-    const q = queryStr.trim().toLowerCase();
+  // HANDLE MAP FLY-TO LOCATION, TARGET MARKER & VIEWPORT CENTERING
+  const handlePerformLocationSearch = async (queryStr: string = satSearchInput) => {
+    const q = queryStr.trim();
     if (!q) return;
+
+    if (debounceSearchTimerRef.current) {
+      clearTimeout(debounceSearchTimerRef.current);
+    }
+    lastSearchedRef.current = q;
 
     let targetLat = satCenterLat;
     let targetLng = satCenterLng;
     let targetLabel = queryStr;
+    let bbox: [number, number, number, number] | null = null;
+
+    const qLower = q.toLowerCase();
 
     // Check direct Lat, Lng coordinate match
-    const coordMatch = q.match(/^(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)$/);
+    const coordMatch = qLower.match(/^(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)$/);
     if (coordMatch) {
       targetLat = parseFloat(coordMatch[1]);
       targetLng = parseFloat(coordMatch[2]);
       targetLabel = `Coordinates (${targetLat.toFixed(4)}, ${targetLng.toFixed(4)})`;
     } else {
-      let foundKey = Object.keys(KNOWN_VILLAGES).find((k) => q.includes(k));
+      let foundKey = Object.keys(KNOWN_VILLAGES).find((k) => qLower.includes(k));
       if (foundKey) {
         const v = KNOWN_VILLAGES[foundKey];
         targetLat = v.lat;
         targetLng = v.lng;
         targetLabel = v.label;
-      } else {
-        targetLat = 12.8251;
-        targetLng = 77.8124;
+      }
+
+      // Query Nominatim to fetch accurate coordinates and full address/display_name
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryStr)}&limit=1`);
+        const data = await res.json();
+        if (data && data.length > 0) {
+          targetLat = parseFloat(data[0].lat);
+          targetLng = parseFloat(data[0].lon);
+          targetLabel = data[0].display_name || targetLabel;
+          if (data[0].boundingbox && data[0].boundingbox.length === 4) {
+            bbox = [
+              parseFloat(data[0].boundingbox[0]),
+              parseFloat(data[0].boundingbox[1]),
+              parseFloat(data[0].boundingbox[2]),
+              parseFloat(data[0].boundingbox[3]),
+            ];
+          }
+        } else if (!foundKey) {
+          targetLat = 12.8251;
+          targetLng = 77.8124;
+        }
+      } catch (e) {
+        if (!foundKey) {
+          targetLat = 12.8251;
+          targetLng = 77.8124;
+        }
       }
     }
 
@@ -342,13 +631,50 @@ export default function SurveyCalculator() {
     setLocationName(targetLabel);
     setIsLocationConfirmed(false);
     setSatellitePins([]);
+    setSearchHint("🎯 Centered on searched location. Click 'Confirm Location' below to lock it, or drag the map to adjust.");
 
-    if (mapInstanceRef.current) {
-      mapInstanceRef.current.flyTo([targetLat, targetLng], 17, { duration: 1.5 });
+    const L = (window as any).L;
+    if (mapInstanceRef.current && L) {
+      const map = mapInstanceRef.current;
+
+      // Remove previous target marker before adding a new one so only one is visible
+      if (targetMarkerRef.current) {
+        try { map.removeLayer(targetMarkerRef.current); } catch (e) {}
+        targetMarkerRef.current = null;
+      }
+
+      // Drop temporary target marker (🎯)
+      const targetIcon = L.divIcon({
+        className: "custom-target-marker",
+        html: `<div style="font-size:32px; line-height:32px; text-align:center; filter:drop-shadow(0 2px 8px rgba(0,0,0,0.6)); cursor:pointer; user-select:none;">🎯</div>`,
+        iconSize: [36, 36],
+        iconAnchor: [18, 18],
+      });
+      const tMarker = L.marker([targetLat, targetLng], {
+        icon: targetIcon,
+        zIndexOffset: 1500,
+      });
+      tMarker.addTo(map);
+      targetMarkerRef.current = tMarker;
+
+      // Fly smoothly to location
+      if (bbox) {
+        const bounds = L.latLngBounds([bbox[0], bbox[2]], [bbox[1], bbox[3]]);
+        map.flyToBounds(bounds, { duration: 1.5, maxZoom: 17 });
+      } else {
+        map.flyTo([targetLat, targetLng], 17, { duration: 1.5 });
+      }
+
+      // After the fly animation ends, snap the view so the target marker sits exactly at center of viewport
+      map.once("moveend", () => {
+        try {
+          map.panTo([targetLat, targetLng], { animate: false });
+        } catch (e) {}
+      });
     }
   };
 
-  const handleConfirmLocation = () => {
+    const handleConfirmLocation = () => {
     setIsLocationConfirmed(true);
     setIsMarkingActive(true);
   };
@@ -359,21 +685,23 @@ export default function SurveyCalculator() {
 
   // HANDLE LEAFLET / CANVAS CLICK TO DROP SEQUENTIAL POINTS
   const handleLeafletPointDrop = (lat: number, lng: number, px: number = 400, py: number = 265) => {
-    const nextIdx = satellitePins.length;
-    const labelLetter = ALPHABET_LABELS[nextIdx] || `P${nextIdx + 1}`;
-    const name = `Point ${labelLetter}`;
+    setSatellitePins((prev) => {
+      const nextIdx = prev.length;
+      const labelLetter = ALPHABET_LABELS[nextIdx] || `P${nextIdx + 1}`;
+      const name = labelLetter;
 
-    setSatellitePins((prev) => [
-      ...prev,
-      {
-        id: `sat_${Date.now()}`,
-        name,
-        lat: parseFloat(lat.toFixed(6)),
-        lng: parseFloat(lng.toFixed(6)),
-        pixelX: px,
-        pixelY: py,
-      },
-    ]);
+      return [
+        ...prev,
+        {
+          id: `sat_${Date.now()}_${nextIdx}`,
+          name,
+          lat: parseFloat(lat.toFixed(6)),
+          lng: parseFloat(lng.toFixed(6)),
+          pixelX: px,
+          pixelY: py,
+        },
+      ];
+    });
   };
 
   const handleMapCanvasClick = (e: React.MouseEvent<SVGSVGElement>) => {
@@ -398,7 +726,7 @@ export default function SurveyCalculator() {
   };
 
   const removeSatellitePin = (id: string) => {
-    setSatellitePins((prev) => prev.filter((p) => p.id !== id));
+    handleDeleteSatellitePin(id);
   };
 
   // Quick Presets Loader
@@ -552,8 +880,8 @@ export default function SurveyCalculator() {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const { latitude, longitude, accuracy } = pos.coords;
-        const labels = ["Point A", "Point B", "Point C", "Point C1", "Point C2", "Point D"];
-        const name = labels[gpsPoints.length] || `Point P${gpsPoints.length + 1}`;
+        const labels = ["A", "B", "C", "C1", "C2", "D", "E", "F"];
+        const name = labels[gpsPoints.length] || `P${gpsPoints.length + 1}`;
         setGpsPoints((prev) => [
           ...prev,
           {
@@ -568,7 +896,8 @@ export default function SurveyCalculator() {
       },
       () => {
         const last = gpsPoints[gpsPoints.length - 1] || { lat: satCenterLat, lng: satCenterLng };
-        const name = `Point P${gpsPoints.length + 1}`;
+        const labels = ["A", "B", "C", "C1", "C2", "D", "E", "F"];
+        const name = labels[gpsPoints.length] || `P${gpsPoints.length + 1}`;
         setGpsPoints((prev) => [
           ...prev,
           {
@@ -609,8 +938,8 @@ export default function SurveyCalculator() {
 
       rows.push({
         id: `row_${i}`,
-        fromLabel: current.name.replace("Point ", ""),
-        toLabel: next.name.replace("Point ", ""),
+        fromLabel: current.name,
+        toLabel: next.name,
         lengthFt: distFt > 0 ? distFt.toFixed(1) : "120.0",
         lat: current.lat,
         lng: current.lng,
@@ -909,6 +1238,7 @@ export default function SurveyCalculator() {
       cents: fmt(result.cents),
       points: result.pointCount,
       method: result.methodTitle,
+      location: locationName,
     };
     const updated = [newRecord, ...savedSurveys];
     setSavedSurveys(updated);
@@ -921,26 +1251,55 @@ export default function SurveyCalculator() {
   const handleExportExcel = () => {
     const rows = [
       ["Land Survey Calculation & Regional Unit Report — BuildMitra"],
-      ["Plot Name", plotName],
-      ["Survey No.", surveyNo],
-      ["Location", locationName],
-      ["Method", result.methodTitle],
+      [""],
+      ["=== LOCATION DETAILS ==="],
+      ["Location / Address", locationName || "-"],
+      ["Survey No.", surveyNo || "-"],
+      ["Plot Name", plotName || "-"],
+      ["Latitude", satCenterLat ? satCenterLat.toFixed(6) : "-"],
+      ["Longitude", satCenterLng ? satCenterLng.toFixed(6) : "-"],
+      ["Survey Method", result.methodTitle],
+      [""],
+      ["=== BOUNDARY POINTS ==="],
+      ["Point", "Latitude", "Longitude"],
+      ...(satellitePins.length > 0
+        ? satellitePins.map((p) => [p.name, p.lat, p.lng])
+        : [["-", "-", "-"]]),
+      [""],
+      ["=== AREA CALCULATION ==="],
       ["Area (Sq.Ft)", fmt(result.areaSft)],
-      ["Area (Cents)", fmt(result.cents)],
-      ["Area (Gunthas)", fmt(result.guntha)],
       ["Area (Acres)", fmt(result.acres, 4)],
-      ["Area (Sq.Yards / Gaj)", fmt(result.sqYards)],
-      ["Area (Ground)", fmt(result.ground)],
+      ["Area (Cents)", fmt(result.cents, 2)],
+      ["Area (Gunthas)", fmt(result.guntha, 2)],
+      ["Area (Ground)", fmt(result.ground, 2)],
       ["Area (Bigha Pucca)", fmt(result.bighaPucca, 3)],
       ["Area (Kanal)", fmt(result.kanal, 2)],
       ["Area (Marla)", fmt(result.marla, 2)],
-      ["Area (Sq.Meters)", fmt(result.sqMeters)],
+      ["Area (Sq.Meters)", fmt(result.sqMeters, 2)],
+      ["Area (Sq.Yards / Gaj)", fmt(result.sqYards, 2)],
       ["Perimeter (Ft)", fmt(result.perimeterFt, 1)],
+      ["Perimeter (m)", fmt(result.perimeterMeters, 1)],
+      [""],
+      ["=== SEGMENT ROWS ==="],
+      ["Row #", "From", "To", "Distance (Ft)"],
+      ...(satSegmentRows.length > 0
+        ? satSegmentRows.map((r, i) => [
+            `Row #${i + 1}`,
+            r.fromLabel,
+            r.toLabel,
+            r.lengthFt,
+          ])
+        : [["-", "-", "-", "-"]]),
     ];
     const ws = XLSX.utils.aoa_to_sheet(rows);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Survey Report");
-    XLSX.writeFile(wb, `${plotName.replace(/\s+/g, "_")}_survey_report.xlsx`);
+
+    const villageSlug = (locationName || "survey")
+      .split(",")[0]
+      .replace(/\s+/g, "_")
+      .slice(0, 30);
+    XLSX.writeFile(wb, `Land_Survey_${villageSlug}_${Date.now()}.xlsx`);
   };
 
   return (
@@ -1090,7 +1449,15 @@ export default function SurveyCalculator() {
                     placeholder="Search village e.g. Belagondapalli, Tamil Nadu or paste Lat, Lng..."
                     value={satSearchInput}
                     onChange={(e) => setSatSearchInput(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handlePerformLocationSearch()}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        if (debounceSearchTimerRef.current) {
+                          clearTimeout(debounceSearchTimerRef.current);
+                        }
+                        handlePerformLocationSearch(satSearchInput);
+                      }
+                    }}
                     style={{ flex: 1, padding: "9px 14px", borderRadius: "8px", border: "0", fontSize: "13px", fontWeight: "700", backgroundColor: "#ffffff", color: "#0f172a" }}
                   />
                   <button onClick={() => handlePerformLocationSearch()} style={{ backgroundColor: "#38bdf8", color: "#050c17", border: 0, padding: "9px 16px", borderRadius: "8px", fontSize: "12px", fontWeight: "900", cursor: "pointer" }}>
@@ -1148,62 +1515,45 @@ export default function SurveyCalculator() {
             </div>
           </div>
 
+          {/* SEARCH & CENTERING HINT BANNER */}
+          <div style={{ background: "#e0f2fe", border: "1.5px solid #38bdf8", padding: "10px 14px", borderRadius: "10px", marginBottom: "12px", display: "flex", alignItems: "center", gap: "10px", color: "#0369a1", fontSize: "12px", fontWeight: "700" }}>
+            <span style={{ fontSize: "18px" }}>🎯</span>
+            <span>{searchHint}</span>
+          </div>
+
           {/* REAL LEAFLET MAP & FALLBACK CANVAS WRAPPER (550PX HIGH FULL WIDTH) */}
-          <div style={{ height: "550px", minHeight: "500px", width: "100%", backgroundColor: "#0f172a", position: "relative", borderRadius: "0 0 14px 14px", border: "2px solid #0284c7", overflow: "hidden" }}>
+          <div style={{ height: "550px", minHeight: "500px", width: "100%", backgroundColor: "#0f172a", position: "relative", borderRadius: "0 0 14px 14px", border: "2px solid #0284c7",                   	overflow: "hidden" }}>
             
             {/* Real Interactive Leaflet Map Div Container */}
-            <div ref={mapDivRef} style={{ width: "100%", height: "100%", zIndex: 1 }} />
+            <div ref={mapDivRef} style={{ width: "100%", height: "100%", zIndex: 1, position: "relative" }} />
+            <style jsx global>{`
+              .leaflet-container .leaflet-tile-container {
+                width: auto !important;
+                max-width: none !important;
+                height: auto !important;
+                max-height: none !important;
+                overflow: visible !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                border-radius: 0 !important;
+              }
+              .leaflet-container {
+                background: #0f172a !important;
+              }
+            `}</style>
 
-            {/* Fallback Interactive Click Canvas Layer if Leaflet Script is Loading */}
+            {/* Fallback notice while Leaflet is still loading */}
             {!isLeafletReady && (
-              <svg
-                onClick={handleMapCanvasClick}
-                viewBox="0 0 800 530"
-                style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", cursor: isLocationConfirmed ? "crosshair" : "not-allowed", zIndex: 2, background: "#064e3b" }}
-              >
-                <defs>
-                  <pattern id="surveyGrid550Fallback" width="40" height="40" patternUnits="userSpaceOnUse">
-                    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255, 255, 255, 0.15)" strokeWidth="0.5" />
-                  </pattern>
-                </defs>
-                <rect width="100%" height="100%" fill="url(#surveyGrid550Fallback)" />
-
-                {/* Satellite Fallback Texture Text */}
-                <text x="400" y="200" fill="#34d399" fontSize="14" fontWeight="900" textAnchor="middle">
-                  🛰️ SATELLITE FIELD LAYER — {locationName.toUpperCase()}
-                </text>
-                <text x="400" y="225" fill="#94a3b8" fontSize="12" textAnchor="middle">
-                  (Loading Live Leaflet Map Engine...) Click anywhere to mark Point A, B, C, D...
-                </text>
-
-                {/* Connecting Polygon */}
-                {satellitePins.length >= 2 && (
-                  <path
-                    d={satellitePins.reduce((acc, n, i) => `${acc} ${i === 0 ? "M" : "L"} ${n.pixelX} ${n.pixelY}`, "") + (satellitePins.length >= 3 ? " Z" : "")}
-                    fill={satellitePins.length >= 3 ? "rgba(52, 211, 153, 0.3)" : "none"}
-                    stroke="#34d399"
-                    strokeWidth="3.5"
-                    strokeDasharray="6,2"
-                  />
-                )}
-
-                {/* Pins */}
-                {satellitePins.map((sat) => (
-                  <g key={sat.id} transform={`translate(${sat.pixelX}, ${sat.pixelY})`}>
-                    <circle cx="0" cy="0" r="12" fill="rgba(0, 240, 255, 0.4)" />
-                    <circle cx="0" cy="0" r="7" fill="#00f0ff" stroke="#ffffff" strokeWidth="2" />
-                    <rect x="-24" y="-30" width="48" height="18" rx="4" fill="#0f172a" stroke="#00f0ff" strokeWidth="1" />
-                    <text x="0" y="-17" fill="#ffffff" fontSize="10" fontWeight="900" textAnchor="middle">{sat.name}</text>
-                  </g>
-                ))}
-              </svg>
+              <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", zIndex: 2, background: "#0f172a", display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8", fontSize: "14px", fontWeight: 700, pointerEvents: "none" }}>
+                Loading satellite map…
+              </div>
             )}
 
             {/* Instruction Overlay if Unconfirmed */}
             {!isLocationConfirmed && (
-              <div style={{ position: "absolute", top: "20px", left: "50%", transform: "translateX(-50%)", background: "rgba(15, 23, 42, 0.94)", border: "2px solid #00f0ff", padding: "12px 24px", borderRadius: "30px", color: "#ffffff", boxShadow: "0 4px 14px rgba(0,0,0,0.3)", zIndex: 1000, pointerEvents: "none" }}>
-                <span style={{ fontSize: "13px", fontWeight: "800", color: "#00f0ff" }}>
-                  👈 STEP 1: Click "Confirm Location" above to unlock Point Marking mode.
+              <div style={{ position: "absolute", top: "20px", left: "50%", transform: "translateX(-50%)", background: "rgba(15, 23, 42, 0.94)", border: "2px solid #00f0ff", padding: "10px 22px", borderRadius: "30px", color: "#ffffff", boxShadow: "0 4px 14px rgba(0,0,0,0.3)", zIndex: 1000, pointerEvents: "none", textAlign: "center", maxWidth: "90%" }}>
+                <span style={{ fontSize: "12px", fontWeight: "800", color: "#00f0ff" }}>
+                  {searchHint}
                 </span>
               </div>
             )}
@@ -1249,7 +1599,7 @@ export default function SurveyCalculator() {
                 {satSegmentRows.map((r, idx) => (
                   <div key={r.id} style={{ background: "#f0f9ff", border: "1.5px solid #bae6fd", padding: "10px 14px", borderRadius: "10px", marginBottom: "8px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px" }}>
                     <span style={{ fontSize: "12px", fontWeight: "900", color: "#0284c7", width: "180px" }}>
-                      ROW #{idx + 1}: POINT {r.fromLabel} → POINT {r.toLabel}
+                      ROW #{idx + 1}: {r.fromLabel} → {r.toLabel}
                     </span>
                     <div style={{ flex: 1, display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gap: "10px" }}>
                       <div style={{ background: "#ffffff", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1" }}>
@@ -1548,6 +1898,26 @@ export default function SurveyCalculator() {
           </div>
         </div>
 
+        {/* LOCATION / ADDRESS REPORT BLOCK */}
+        <div style={{ background: "#f0f9ff", border: "1px solid #bae6fd", padding: "10px 14px", borderRadius: "10px", marginBottom: "12px" }}>
+          <span style={{ fontSize: "11px", fontWeight: "800", color: "#0284c7", textTransform: "uppercase", display: "block" }}>
+            📍 SURVEYED LOCATION / ADDRESS
+          </span>
+          <strong style={{ fontSize: "14px", color: "#0f172a" }}>
+            {locationName}
+          </strong>
+          {satCenterLat && satCenterLng && (
+            <span style={{ fontSize: "11px", color: "#64748b", display: "block", marginTop: "2px" }}>
+              Lat: {satCenterLat.toFixed(6)}, Lng: {satCenterLng.toFixed(6)}
+            </span>
+          )}
+          {surveyNo && (
+            <span style={{ fontSize: "11px", color: "#64748b", display: "block" }}>
+              Survey No: {surveyNo}
+            </span>
+          )}
+        </div>
+
         {/* REGIONAL UNITS CONVERSION GRID */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "12px", marginBottom: "16px" }}>
           
@@ -1647,7 +2017,14 @@ export default function SurveyCalculator() {
                 <div>
                   <strong style={{ color: "#ff7a00", fontSize: "13px" }}>{rec.areaSft} Sft</strong>
                   <span style={{ fontSize: "12px", color: "#475569" }}> ({rec.acres} Acres / {rec.cents} Cents)</span>
-                  <span style={{ fontSize: "11px", color: "#94a3b8", display: "block" }}>{rec.method} — Saved at {rec.date}</span>
+                  <span style={{ fontSize: "11px", color: "#94a3b8", display: "block" }}>
+                    {rec.method} — Saved at {rec.date}
+                  </span>
+                  {rec.location && (
+                    <span style={{ fontSize: "11px", color: "#0284c7", display: "block", fontWeight: "600", marginTop: "2px" }}>
+                      📍 {rec.location}
+                    </span>
+                  )}
                 </div>
                 <span style={{ background: "#e2e8f0", color: "#334155", padding: "2px 8px", borderRadius: "4px", fontSize: "11px", fontWeight: "bold" }}>
                   {rec.points} Points
