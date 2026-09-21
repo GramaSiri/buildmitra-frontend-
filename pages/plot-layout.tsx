@@ -393,7 +393,7 @@ export default function PlotLayoutPage() {
       </div>
 
       {/* MAIN TWO COLUMN WORKSPACE */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: "24px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(380px, 100%), 1fr))", gap: "24px" }}>
         
         {/* LEFT COLUMN: SVG VISUAL BLUEPRINT */}
         <div style={{ background: "#ffffff", borderRadius: "14px", padding: "20px", border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
@@ -406,7 +406,7 @@ export default function PlotLayoutPage() {
             </div>
           </div>
 
-          <div style={{ background: "#f8fafc", borderRadius: "10px", padding: "12px", border: "1px solid #e2e8f0", overflowX: "auto" }}>
+          <div style={{ background: "#f8fafc", borderRadius: "10px", padding: "12px", border: "1px solid #e2e8f0", overflowX: "auto", WebkitOverflowScrolling: "touch", width: "100%" }}>
             <LayoutSvg layout={layout} mainRoad={mainRoadWidth} internalRoad={internalRoadWidth} selected={selectedAmenities} />
           </div>
 

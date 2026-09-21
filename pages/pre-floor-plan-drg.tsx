@@ -1101,8 +1101,8 @@ export default function ArchitecturalStudioIS456Engine() {
         </div>
 
         {/* DYNAMIC SVG CANVAS */}
-        <div style={{ width: '100%', overflow: 'auto', display: 'flex', justifyContent: 'center' }}>
-          <svg id="blueprint-svg-canvas" width="780" height="640" viewBox="0 0 780 640" style={{ maxWidth: '100%', height: 'auto', background: '#050c17' }}>
+        <div style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch', display: 'flex', justifyContent: 'center' }}>
+          <svg id="blueprint-svg-canvas" width="780" height="640" viewBox="0 0 780 640" style={{ minWidth: 480, maxWidth: '100%', height: 'auto', background: '#050c17' }}>
             <defs>
               <pattern id={`cad-grid-${floor}`} width="20" height="20" patternUnits="userSpaceOnUse">
                 <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#0a213a" strokeWidth="0.8" />
@@ -1631,7 +1631,7 @@ export default function ArchitecturalStudioIS456Engine() {
             {renderFloorSheet('terrace', 4)}
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '14px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(380px, 100%), 1fr))', gap: '14px' }}>
             {/* Active Floor SVG Blueprint Canvas */}
             <div>
               {renderFloorSheet(

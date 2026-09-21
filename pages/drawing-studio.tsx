@@ -24,8 +24,8 @@ export default function DRGPage() {
       cursor: "pointer",
       transition: "all 0.2s"
     }),
-    layoutContainer: { display: "grid", gridTemplateColumns: "1fr 340px", gap: "24px", alignItems: "start" },
-    canvasCard: { backgroundColor: "#ffffff", padding: "24px", borderRadius: "12px", boxShadow: "0 4px 12px rgba(0,0,0,0.05)", border: "1px solid #e2e8f0" },
+    layoutContainer: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(340px, 100%), 1fr))", gap: "24px", alignItems: "start" },
+    canvasCard: { backgroundColor: "#ffffff", padding: "24px", borderRadius: "12px", boxShadow: "0 4px 12px rgba(0,0,0,0.05)", border: "1px solid #e2e8f0", overflowX: "auto", WebkitOverflowScrolling: "touch", width: "100%" },
     sidebarCard: { backgroundColor: "#ffffff", padding: "20px", borderRadius: "12px", boxShadow: "0 4px 12px rgba(0,0,0,0.05)", border: "1px solid #e2e8f0" },
     specTable: { width: "100%", borderCollapse: "collapse", fontSize: "13px" },
     specRow: { borderBottom: "1px solid #f1f5f9" },
@@ -54,7 +54,7 @@ export default function DRGPage() {
           {activeTab === "ground" && (
             <div>
               <h3 style={{ margin: "0 0 12px 0", color: "#1a5f7a" }}>1. Ground Floor Plan (Parking Layout)</h3>
-              <svg width="100%" viewBox="-40 -20 560 700" style={{ background: "#f8fafc", borderRadius: "8px" }}>
+              <svg width="100%" viewBox="-40 -20 560 700" style={{ minWidth: 480, background: "#f8fafc", borderRadius: "8px" }}>
                 {/* Outer Compound Walls */}
                 <rect x="0" y="0" width={canvasW} height={canvasH} fill="#ffffff" stroke="#000000" strokeWidth="3" />
                 
@@ -134,7 +134,7 @@ export default function DRGPage() {
           {activeTab === "first" && (
             <div>
               <h3 style={{ margin: "0 0 12px 0", color: "#1a5f7a" }}>2. First Floor Plan (Residential Unit)</h3>
-              <svg width="100%" viewBox="-40 -20 560 700" style={{ background: "#ffffff", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
+              <svg width="100%" viewBox="-40 -20 560 700" style={{ minWidth: 480, background: "#ffffff", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
                 {/* Outer Framing walls */}
                 <rect x="0" y="0" width={canvasW} height={canvasH} fill="none" stroke="#000" strokeWidth="3" />
 
@@ -185,7 +185,7 @@ export default function DRGPage() {
           {activeTab === "second" && (
             <div>
               <h3 style={{ margin: "0 0 12px 0", color: "#1a5f7a" }}>3. Second Floor Plan Layout</h3>
-              <svg width="100%" viewBox="-40 -20 560 700" style={{ background: "#ffffff", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
+              <svg width="100%" viewBox="-40 -20 560 700" style={{ minWidth: 480, background: "#ffffff", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
                 <rect x="0" y="0" width={canvasW} height={canvasH} fill="none" stroke="#000" strokeWidth="3" />
                 
                 {/* Multi Room Structural Grid Partition Blocks */}
@@ -217,7 +217,7 @@ export default function DRGPage() {
           {activeTab === "elevation" && (
             <div>
               <h3 style={{ margin: "0 0 12px 0", color: "#1a5f7a" }}>4. Front Modern Facade Elevation View</h3>
-              <svg width="100%" viewBox="-40 -20 560 700" style={{ background: "#ffffff", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
+              <svg width="100%" viewBox="-40 -20 560 700" style={{ minWidth: 480, background: "#ffffff", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
                 {/* Structural Foundation Ground Line base */}
                 <line x1="-20" y1="600" x2="520" y2="600" stroke="#000" strokeWidth="4" />
                 
