@@ -1,5 +1,38 @@
-src/
+# BUILDMITRA VERCEL DEPLOYMENT — only production files
+
+# Backup folders
+backup-*/
+backups/
+_backups/
+
+# Backup files
+*.backup
+*.backup-*
+*.backup_*
+*.BACKUP_*
+*.bak
+*.bak_*
+*.compact-grid-backup-*
+*.mobile-backup-*
+
+# Debug scripts
+scratch_*.js
+survey-diagnostic.txt
+fix_*.js
+check_*.js
+inspect_*.js
+apply_*.js
+force_*.js
+trace_*.js
+*.ps1
+
+# Stale builds
+.next-stale-*/
+
+# Duplicate images
+ - Copy.*
+
+# Standard
 .next/
 node_modules/
-*.backup
-*.bak
+src/

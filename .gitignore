@@ -34,3 +34,22 @@ yarn-debug.log*
 yarn-error.log*
 *.syntax-backup-*
 *.orig
+
+# BUILDMITRA BACKUP PROTECTION
+backup-*/
+backups/
+_backups/
+*.backup
+*.backup-*
+*.backup_*
+*.BACKUP_*
+*.bak
+*.bak_*
+*.compact-grid-backup-*
+*.mobile-backup-*
+scratch_*.js
+survey-diagnostic.txt
+ - Copy.*
+.next-stale-*/
+
+tsconfig.tsbuildinfo

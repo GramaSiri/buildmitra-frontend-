@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import { getApiBase } from "../utils/apiConfig";
 
+import { authFetch } from "../utils/authFetch";
 const API_BASE = getApiBase();
 
 export type MasterItemRecord = {
@@ -157,7 +158,7 @@ export default function AdminMasterImageLibrary() {
   const handleUpdateRate = async (item: MasterItemRecord, newRate: number) => {
     try {
       setMessage("");
-      const res = await fetch(`${API_BASE}/api/admin/master-items/${encodeURIComponent(item.masterItemCode)}/rate`, {
+      const res = await authFetch(`${API_BASE}/api/admin/master-items/${encodeURIComponent(item.masterItemCode)}/rate`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", "x-user-role": "admin" },
         body: JSON.stringify({ referenceRate: newRate, currentRate: newRate, rate: newRate })
@@ -178,7 +179,7 @@ export default function AdminMasterImageLibrary() {
     const nextStatus = item.status === "inactive" ? "active" : "inactive";
     try {
       setMessage("");
-      const res = await fetch(`${API_BASE}/api/admin/master-items/${encodeURIComponent(item.masterItemCode)}/status`, {
+      const res = await authFetch(`${API_BASE}/api/admin/master-items/${encodeURIComponent(item.masterItemCode)}/status`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", "x-user-role": "admin" },
         body: JSON.stringify({ status: nextStatus, isActive: nextStatus === "active" })
@@ -201,7 +202,7 @@ export default function AdminMasterImageLibrary() {
 
     try {
       setMessage("");
-      const res = await fetch(`${API_BASE}/api/admin/master-items/${encodeURIComponent(item.masterItemCode)}`, {
+      const res = await authFetch(`${API_BASE}/api/admin/master-items/${encodeURIComponent(item.masterItemCode)}`, {
         method: "DELETE",
         headers: { "x-user-role": "admin" }
       });
@@ -228,7 +229,7 @@ export default function AdminMasterImageLibrary() {
       });
       formData.append("uploadedBy", "ADM-000001");
 
-      const response = await fetch(`${API_BASE}/api/master-images/upload-images`, {
+      const response = await authFetch(`${API_BASE}/api/master-images/upload-images`, {
         method: "POST",
         headers: { "x-user-role": "admin", "x-user-code": "ADM-000001" },
         body: formData
@@ -543,3 +544,4 @@ const styles: Record<string, React.CSSProperties> = {
   td: { padding: "8px 10px", verticalAlign: "middle" },
   unitBadge: { background: "#f1f5f9", color: "#475569", padding: "2px 6px", borderRadius: "4px", fontSize: "10px", fontWeight: "700" }
 };
+

@@ -287,7 +287,7 @@ export const RealEstateDashboard: React.FC = () => {
 
           {/* TAB 1: ALL PROPERTIES */}
           {activeTab === 'listings' && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(300px, 100%), 1fr))', gap: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '20px' }}>
               {properties.length === 0 ? (
                 <div style={{ padding: '40px', textAlign: 'center', backgroundColor: '#ffffff', borderRadius: '16px', gridColumn: '1 / -1', color: '#64748b' }}>
                   No properties posted yet. Click <strong>+ Post Property</strong> to create one.
@@ -356,7 +356,7 @@ export const RealEstateDashboard: React.FC = () => {
               {pipelineProperties.length === 0 ? (
                 <div style={{ padding: '30px', textAlign: 'center', color: '#64748b' }}>No properties currently in negotiation pipeline.</div>
               ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '16px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
                   {pipelineProperties.map((p) => (
                     <div key={p.id} style={{ padding: '16px', borderRadius: '12px', border: '1.5px solid #fde68a', backgroundColor: '#fffbeb' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -414,7 +414,6 @@ export const RealEstateDashboard: React.FC = () => {
                 </form>
               )}
 
-              <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', width: '100%' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
                 <thead>
                   <tr style={{ backgroundColor: '#f8fafc', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>
@@ -462,7 +461,6 @@ export const RealEstateDashboard: React.FC = () => {
                 <p style={{ fontSize: '12px', color: '#64748b', margin: '4px 0 0 0' }}>Permanent ledger of executed property registrations and earned brokerage commissions.</p>
               </div>
 
-              <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', width: '100%' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
                 <thead>
                   <tr style={{ backgroundColor: '#f0fdf4', borderBottom: '2px solid #bbf7d0', color: '#166534' }}>
