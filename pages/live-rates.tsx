@@ -741,7 +741,7 @@ export default function LiveRatesPage() {
         </div>
 
         {/* MAIN DASHBOARD */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 420px", gap: "20px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(420px, 100%), 1fr))", gap: "20px" }}>
           
           {/* LEFT: REAL BENCHMARK VS LOCAL DEALER MATERIAL FEED */}
           <div>

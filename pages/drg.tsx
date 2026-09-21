@@ -336,7 +336,7 @@ export default function ProfessionalDRGPage() {
         </div>
 
         {/* ROW 1: SECTION 1 (PROJECT), SECTION 2 (PLOT), SECTION 3 (BUILDING) */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px", marginBottom: "16px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(280px, 100%), 1fr))", gap: "16px", marginBottom: "16px" }}>
           
           {/* SECTION 1 — PROJECT INFORMATION */}
           <div style={{ background: "#f8fafc", padding: "14px", borderRadius: "12px", border: "1px solid #cbd5e1" }}>
@@ -402,7 +402,7 @@ export default function ProfessionalDRGPage() {
               </div>
 
               {/* COMPACT ROOM COUNTS ROW */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "6px", background: "#e0f2fe", padding: "6px", borderRadius: "8px", border: "1px solid #bae6fd" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(90px, 100%), 1fr))", gap: "6px", background: "#e0f2fe", padding: "6px", borderRadius: "8px", border: "1px solid #bae6fd" }}>
                 <label style={{ fontWeight: "bold", color: "#0369a1", fontSize: "10px" }}>
                   No of Rooms
                   <input type="number" min="1" max="20" value={inputs.bedroomsCount} onChange={(e) => updateInput("bedroomsCount", Math.max(1, Number(e.target.value)))} style={{ width: "100%", padding: "4px 6px", borderRadius: "6px", border: "1px solid #0284c7", marginTop: "2px", fontWeight: "bold" }} />
@@ -422,7 +422,7 @@ export default function ProfessionalDRGPage() {
         </div>
 
         {/* ROW 2: SECTION 4 (SOIL/SBC), SECTION 5 (SERVICES), SECTION 6 (PARKING) */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(280px, 100%), 1fr))", gap: "16px" }}>
           
           {/* SECTION 4 — SOIL & STRUCTURAL INFORMATION */}
           <div style={{ background: "#f8fafc", padding: "14px", borderRadius: "12px", border: "1px solid #cbd5e1" }}>

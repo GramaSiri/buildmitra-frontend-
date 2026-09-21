@@ -516,7 +516,7 @@ Generated using BuildMitra Financial Engine.`;
           </div>
 
           {/* TOP DASHBOARD METRIC BOXES — ALL START AT 0 UNTIL USER ENTERS INPUTS */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px", marginBottom: "24px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))", gap: "16px", marginBottom: "24px" }}>
             <div style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)", color: "#ffffff", padding: "18px", borderRadius: "14px", boxShadow: "0 4px 15px rgba(0,0,0,0.08)", borderLeft: "4px solid #38bdf8" }}>
               <div style={{ fontSize: "11px", color: "#94a3b8", fontWeight: "bold" }}>TOTAL SANCTIONED LOAN</div>
               <div style={{ fontSize: "24px", fontWeight: "900", color: loanSummary.loanAmount > 0 ? "#38bdf8" : "#94a3b8", marginTop: "4px" }}>
@@ -552,7 +552,7 @@ Generated using BuildMitra Financial Engine.`;
               📌 Select Loan Calculator Category (Switching Resets Inputs to ₹0)
             </h3>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "14px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))", gap: "14px" }}>
               {[
                 { id: "home_construction", name: "Home Construction", icon: "🏗️", desc: "Self-construction on own plot with CLP disbursals", bg: "#f0f9ff", border: "#0284c7" },
                 { id: "plot_construction", name: "Composite Plot + Build", icon: "🏞️", desc: "Plot purchase + construction loan package", bg: "#f0fdf4", border: "#16a34a" },
@@ -595,7 +595,7 @@ Generated using BuildMitra Financial Engine.`;
               ⚙️ Enter Loan Details (Enter values below to start calculation)
             </h3>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 0.8fr 0.8fr", gap: "16px", alignItems: "center" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))", gap: "16px", alignItems: "center" }}>
               
               {/* Property Cost Input & Slider */}
               <div>
@@ -719,7 +719,7 @@ Generated using BuildMitra Financial Engine.`;
                 <h4 style={{ margin: "0 0 14px", fontSize: "14px", color: "#0f172a", fontWeight: "bold", display: "flex", alignItems: "center", gap: "8px" }}>
                   ⭐ CLP Progressive Disbursal Summary (Calculated across entered stages)
                 </h4>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(240px, 100%), 1fr))", gap: "16px" }}>
                   
                   {/* Card 1: TOTAL INTEREST PAID */}
                   <div style={{ background: "linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)", border: "2px solid #ff7a00", borderRadius: "12px", padding: "16px" }}>
@@ -880,7 +880,7 @@ Generated using BuildMitra Financial Engine.`;
           {activeTab === "eligibility" && (
             <div style={{ background: "#ffffff", padding: "24px", borderRadius: "16px", border: "1px solid #cbd5e1", marginBottom: "24px" }}>
               <h3 style={{ margin: "0 0 16px", fontSize: "16px", color: "#0f172a", fontWeight: "bold" }}>👤 Indian Banking FOIR &amp; LTV Eligibility Audit</h3>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(240px, 100%), 1fr))", gap: "20px" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                   <div>
                     <label style={{ display: "block", fontSize: "11px", fontWeight: "bold", color: "#475569", marginBottom: "4px" }}>NET MONTHLY INCOME (₹)</label>
@@ -910,7 +910,7 @@ Generated using BuildMitra Financial Engine.`;
 
           {/* TAB 3: BANK COMPARISON */}
           {activeTab === "bank_comparison" && (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px", marginBottom: "24px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(260px, 100%), 1fr))", gap: "16px", marginBottom: "24px" }}>
               {BANK_COMPARISON_DATA.map((b) => (
                 <div key={b.id} style={{ background: "#ffffff", padding: "18px", borderRadius: "14px", border: b.isBestValue ? "2px solid #ff7a00" : "1px solid #cbd5e1", position: "relative" }}>
                   {b.isBestValue && (
@@ -954,6 +954,7 @@ Generated using BuildMitra Financial Engine.`;
                   👈 Enter <b>Property Cost</b>, <b>Interest Rate</b> &amp; <b>Tenure</b> above to load the progressive month-wise amortization schedule.
                 </div>
               ) : (
+                <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
                   <thead style={{ position: "sticky", top: 0, background: "#0f172a", color: "#ffffff" }}>
                     <tr>
@@ -982,6 +983,7 @@ Generated using BuildMitra Financial Engine.`;
                     ))}
                   </tbody>
                 </table>
+                </div>
               )}
             </div>
           </div>

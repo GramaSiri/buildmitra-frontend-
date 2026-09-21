@@ -298,7 +298,7 @@ const styles: Record<string, React.CSSProperties> = {
   inputGroup: { marginBottom: '0px', minWidth: 0 },
   row2: {
     display: "grid",
-    gridTemplateColumns: "1fr 1fr",
+    gridTemplateColumns: "repeat(auto-fit, minmax(min(240px, 100%), 1fr))",
     gap: 12
   },
   label: { display: 'block', fontSize: '10px', fontWeight: '600', marginBottom: '2px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },

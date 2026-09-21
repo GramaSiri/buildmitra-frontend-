@@ -401,7 +401,7 @@ export const RealEstateHubPage: React.FC = () => {
       </div>
 
       {/* Property Cards Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '24px' }}>
         {filteredProperties.map((property) => (
           <div
             key={property.id}
@@ -447,7 +447,7 @@ export const RealEstateHubPage: React.FC = () => {
                   📍 {property.location}
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', margin: '14px 0' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(130px, 100%), 1fr))', gap: '8px', margin: '14px 0' }}>
                   <div style={{ padding: '8px 10px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #f1f5f9', fontSize: '11px', color: '#334155' }}>
                     📐 <strong>{property.dimensions}</strong>
                   </div>
