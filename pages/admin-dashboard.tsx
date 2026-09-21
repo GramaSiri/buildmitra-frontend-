@@ -1,4 +1,4 @@
-﻿// @ts-nocheck
+// @ts-nocheck
 import React, { useEffect, useState } from "react";
 import * as XLSX from 'xlsx';
 import { themeTokens, PrimaryButton, SecondaryButton, Card, Badge, LoadingSpinner, EmptyState, BuildMitraHeader } from "../components/ui/DesignSystem";
@@ -8,6 +8,7 @@ import { getApiBase } from "../utils/apiConfig";
 import { getBuildMitraUser, logoutToLogin } from "../utils/session";
 import { syncApprovedRatesFromBackend, DEFAULT_CIVIL_MASTER_RATES } from "../utils/masterRates";
 
+import { authFetch } from "../utils/authFetch";
 const API = typeof window !== "undefined" ? getApiBase() + "/api" : "";
 
 export default function AdminDashboard() {
@@ -84,7 +85,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     const loadMongoUsers = async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/admin/mongo-users`, {
+        const res = await authFetch(`${API_BASE}/api/admin/mongo-users`, {
           headers: { "x-user-role": "admin" },
         });
 
@@ -127,7 +128,7 @@ export default function AdminDashboard() {
   const loadMongoEnquiries = async () => {
     try {
       const currentAdmin = getBuildMitraUser() || {};
-      const res = await fetch(`${API_BASE}/api/enquiry/admin/all`, {
+      const res = await authFetch(`${API_BASE}/api/enquiry/admin/all`, {
         headers: {
           "x-user-role": "admin",
           "x-user-code": currentAdmin.userCode || currentAdmin.uniqueCode || "admin",
@@ -196,7 +197,7 @@ export default function AdminDashboard() {
         body.adminRemarks = window.prompt("Approval remarks (optional):") || "";
       }
 
-      const res = await fetch(endpoint, {
+      const res = await authFetch(endpoint, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -313,8 +314,8 @@ export default function AdminDashboard() {
     try {
       setLoadingMasterItems(true);
       const [itemsRes, countsRes] = await Promise.all([
-        fetch(`${API_BASE}/api/admin/master-items?limit=10000`, { headers: { "x-user-role": "admin" } }),
-        fetch(`${API_BASE}/api/admin/master-counts`, { headers: { "x-user-role": "admin" } })
+        authFetch(`${API_BASE}/api/admin/master-items?limit=10000`, { headers: { "x-user-role": "admin" } }),
+        authFetch(`${API_BASE}/api/admin/master-counts`, { headers: { "x-user-role": "admin" } })
       ]);
 
       const itemsData = await itemsRes.json();
@@ -438,8 +439,8 @@ export default function AdminDashboard() {
       if (marketplaceStatus && marketplaceStatus !== "all") params.set("status", marketplaceStatus);
       if (marketplaceSearch) params.set("search", marketplaceSearch);
       const [listingsRes, requestsRes] = await Promise.all([
-        fetch(`${API_BASE}/api/admin/marketplace-listings?${params.toString()}`, { headers: { "x-user-role": "admin" } }),
-        fetch(`${API_BASE}/api/admin/new-item-requests`, { headers: { "x-user-role": "admin" } }),
+        authFetch(`${API_BASE}/api/admin/marketplace-listings?${params.toString()}`, { headers: { "x-user-role": "admin" } }),
+        authFetch(`${API_BASE}/api/admin/new-item-requests`, { headers: { "x-user-role": "admin" } }),
       ]);
       const listingsData = await listingsRes.json();
       const requestsData = await requestsRes.json();
@@ -457,7 +458,7 @@ export default function AdminDashboard() {
 
   const updateListingStatus = async (listingCode, status) => {
     const path = status === "approved" ? "approve" : "reject";
-    const res = await fetch(`${API_BASE}/api/admin/marketplace-listings/${listingCode}/${path}`, {
+    const res = await authFetch(`${API_BASE}/api/admin/marketplace-listings/${listingCode}/${path}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json", "x-user-role": "admin" },
       body: JSON.stringify({ approvedBy: "admin", rejectedReason: "Rejected by admin" }),
@@ -470,7 +471,7 @@ export default function AdminDashboard() {
   const bulkListingStatus = async (status) => {
     const ids = Object.keys(selectedListingCodes).filter((code) => selectedListingCodes[code]);
     if (!ids.length) return alert("Select listings first.");
-    const res = await fetch(`${API_BASE}/api/admin/marketplace-listings/bulk/status`, {
+    const res = await authFetch(`${API_BASE}/api/admin/marketplace-listings/bulk/status`, {
       method: "PUT",
       headers: { "Content-Type": "application/json", "x-user-role": "admin" },
       body: JSON.stringify({ ids, status, approvedBy: "admin", rejectedReason: "Rejected by admin" }),
@@ -486,7 +487,7 @@ export default function AdminDashboard() {
 
   if (!rate) return;
 
-  await fetch(`${API_BASE}/api/admin/marketplace-listings/${listing.listingCode}`, {
+  await authFetch(`${API_BASE}/api/admin/marketplace-listings/${listing.listingCode}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -498,7 +499,7 @@ export default function AdminDashboard() {
   loadMarketplaceApprovals();
 };  const loadRealEstateApprovals = async () => {
   try {
-    const res = await fetch(`${API_BASE}/api/realestate/admin/all`, {
+    const res = await authFetch(`${API_BASE}/api/realestate/admin/all`, {
       headers: {
         "x-user-role": "admin",
       },
@@ -520,7 +521,7 @@ export default function AdminDashboard() {
 
 const approveRealEstate = async (propertyCode) => {
   try {
-    const res = await fetch(
+    const res = await authFetch(
       `${API_BASE}/api/realestate/admin/${propertyCode}/approve`,
       {
         method: "PUT",
@@ -557,7 +558,7 @@ const rejectRealEstate = async (propertyCode) => {
     "Rejected by admin";
 
   try {
-    const res = await fetch(
+    const res = await authFetch(
       `${API_BASE}/api/realestate/admin/${propertyCode}/reject`,
       {
         method: "PUT",
@@ -589,7 +590,7 @@ const rejectRealEstate = async (propertyCode) => {
   }
 };
   const loadDefaultMasterItems = async () => {
-    const res = await fetch(`${API_BASE}/api/admin/master-items/default-load`, {
+    const res = await authFetch(`${API_BASE}/api/admin/master-items/default-load`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-user-role": "admin" },
       body: JSON.stringify({ adminCode: "admin" }),
@@ -601,7 +602,7 @@ const rejectRealEstate = async (propertyCode) => {
   const approveNewItemRequest = async (request) => {
     const category = prompt("Category:", request.itemType === "material" ? "Cement" : request.itemType) || "";
     const unit = prompt("Unit:", request.itemType === "labour" ? "Day" : "Unit") || "";
-    const res = await fetch(`${API_BASE}/api/admin/new-item-requests/${request.requestCode}/approve`, {
+    const res = await authFetch(`${API_BASE}/api/admin/new-item-requests/${request.requestCode}/approve`, {
       method: "PUT",
       headers: { "Content-Type": "application/json", "x-user-role": "admin" },
       body: JSON.stringify({ category, unit, gst: 0, hsnCode: "", status: "active", adminCode: "admin" }),
@@ -724,7 +725,7 @@ const rejectRealEstate = async (propertyCode) => {
       }
 
       try {
-        const res = await fetch(`${API_BASE}/api/admin/boq-rates/${code}`, {
+        const res = await authFetch(`${API_BASE}/api/admin/boq-rates/${code}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json", "x-user-role": "admin" },
           body: JSON.stringify({
@@ -778,7 +779,7 @@ const rejectRealEstate = async (propertyCode) => {
   const updateUserStatus = async (userId, status) => {
   try {
     const endpoint = status === "Blocked" ? "block" : "unblock";
-    await fetch(`${API_BASE}/api/admin/mongo-users/${userId}/${endpoint}`, {
+    await authFetch(`${API_BASE}/api/admin/mongo-users/${userId}/${endpoint}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json", "x-user-role": "admin" },
       body: JSON.stringify({ blockedReason: status === "Blocked" ? "Blocked by admin" : "" })
@@ -792,7 +793,7 @@ const rejectRealEstate = async (propertyCode) => {
 
   const updateSubscription = async (userId, payload, successMessage) => {
     try {
-      const res = await fetch(
+      const res = await authFetch(
         `${API_BASE}/api/admin/mongo-users/${userId}/admin-control`,
         {
           method: "PUT",
@@ -984,7 +985,7 @@ const rejectRealEstate = async (propertyCode) => {
 
   const approveKYC = async (userId) => {
   try {
-    await fetch(`${API_BASE}/api/admin/mongo-users/${userId}/admin-control`, {
+    await authFetch(`${API_BASE}/api/admin/mongo-users/${userId}/admin-control`, {
       method: "PUT",
       headers: { "Content-Type": "application/json", "x-user-role": "admin" },
       body: JSON.stringify({ isVerified: true })
@@ -1338,7 +1339,7 @@ const rejectRealEstate = async (propertyCode) => {
 
       console.log("Bulk Upload Type:", type, "Rows:", rows, "Imported:", imported);
       if (backendRows.length) {
-        fetch(`${API_BASE}/api/admin/master-items/bulk`, {
+        authFetch(`${API_BASE}/api/admin/master-items/bulk`, {
           method: "POST",
           headers: { "Content-Type": "application/json", "x-user-role": "admin" },
           body: JSON.stringify({ adminCode: "admin", items: backendRows }),
@@ -1433,10 +1434,10 @@ const rejectRealEstate = async (propertyCode) => {
     header: { backgroundColor: "#800020", color: "white", padding: "16px", borderRadius: "12px", marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" },
     headerTitle: { margin: 0, fontSize: "20px" },
     headerSub: { margin: "5px 0 0", fontSize: "12px", opacity: 0.9 },
-    grid2: { display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: "16px", marginBottom: "20px" },
-    grid3: { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "16px", marginBottom: "20px" },
-    grid4: { display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "16px", marginBottom: "20px" },
-    card: { backgroundColor: "white", borderRadius: "12px", padding: "16px", marginBottom: "16px" },
+    grid2: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(260px, 100%), 1fr))", gap: "16px", marginBottom: "20px" },
+    grid3: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(240px, 100%), 1fr))", gap: "16px", marginBottom: "20px" },
+    grid4: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))", gap: "16px", marginBottom: "20px" },
+    card: { backgroundColor: "white", borderRadius: "12px", padding: "16px", marginBottom: "16px", overflowX: "auto" },
     cardTitle: { fontSize: "16px", fontWeight: "bold", marginBottom: "12px", borderBottom: "2px solid #800020", paddingBottom: "8px" },
     button: { backgroundColor: "#800020", color: "white", padding: "10px 16px", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" },
     buttonSuccess: { backgroundColor: "#28a745", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer" },
@@ -1455,7 +1456,7 @@ const rejectRealEstate = async (propertyCode) => {
     label: { display: "block", marginBottom: "6px", fontWeight: "600", fontSize: "12px" },
     select: { width: "100%", padding: "10px", border: "1px solid #ddd", borderRadius: "8px", marginBottom: "12px" },
     textarea: { width: "100%", padding: "10px", border: "1px solid #ddd", borderRadius: "8px", minHeight: "80px", marginBottom: "12px" },
-    row2: { display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: "16px", marginBottom: "16px" },
+    row2: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(240px, 100%), 1fr))", gap: "16px", marginBottom: "16px" },
     statValue: { fontSize: "24px", fontWeight: "bold", color: "#800020" },
     statLabel: { fontSize: "12px", color: "#666", marginTop: "4px" },
     qrBox: { border: "2px dashed #800020", borderRadius: "12px", padding: "20px", textAlign: "center", backgroundColor: "#f8f9fa", marginBottom: "16px" },
@@ -1826,7 +1827,7 @@ const rejectRealEstate = async (propertyCode) => {
               const unit = prompt("Unit (e.g. BAG, KG, CFT, SQFT, NOS):", "NOS") || "NOS";
 
               try {
-                const res = await fetch(`${API_BASE}/api/rates/add`, {
+                const res = await authFetch(`${API_BASE}/api/rates/add`, {
                   method: "POST",
                   headers: { "Content-Type": "application/json", "x-user-role": "admin" },
                   body: JSON.stringify({ masterItemCode: code, itemCode: code, currentRate: rate, city, unit })
@@ -2182,7 +2183,7 @@ React.createElement("button", { onClick: () => bulkListingStatus("approved"), st
                   React.createElement("td", { style: styles.td }, req.status),
                   React.createElement("td", { style: styles.td },
                     req.status === "pending" && React.createElement("button", { onClick: () => approveNewItemRequest(req), style: { ...styles.buttonSuccess, marginRight: "4px" } }, "Create Master"),
-                    req.status === "pending" && React.createElement("button", { onClick: async () => { await fetch(`${API_BASE}/api/admin/new-item-requests/${req.requestCode}/reject`, { method: "PUT", headers: { "Content-Type": "application/json", "x-user-role": "admin" }, body: JSON.stringify({ reason: "Rejected by admin" }) }); loadMarketplaceApprovals(); }, style: styles.buttonDanger }, "Reject")
+                    req.status === "pending" && React.createElement("button", { onClick: async () => { await authFetch(`${API_BASE}/api/admin/new-item-requests/${req.requestCode}/reject`, { method: "PUT", headers: { "Content-Type": "application/json", "x-user-role": "admin" }, body: JSON.stringify({ reason: "Rejected by admin" }) }); loadMarketplaceApprovals(); }, style: styles.buttonDanger }, "Reject")
                   )
                 )
               )
@@ -2518,7 +2519,7 @@ React.createElement("button", { onClick: () => bulkListingStatus("approved"), st
             React.createElement("label", { style: styles.label }, "Item Name"),
             React.createElement("input", { value: editingBOQItem.itemName || "", onChange: (e) => setEditingBOQItem({ ...editingBOQItem, itemName: e.target.value }), style: styles.input })
           ),
-          React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" } },
+          React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(180px, 100%), 1fr))", gap: "12px" } },
             React.createElement("div", null,
               React.createElement("label", { style: styles.label }, "Unit"),
               React.createElement("input", { value: editingBOQItem.unit || "NOS", onChange: (e) => setEditingBOQItem({ ...editingBOQItem, unit: e.target.value }), style: styles.input })
@@ -2528,7 +2529,7 @@ React.createElement("button", { onClick: () => bulkListingStatus("approved"), st
               React.createElement("input", { value: editingBOQItem.linkedLabourItemCode || "", readOnly: true, style: { ...styles.input, backgroundColor: "#f1f5f9" } })
             )
           ),
-          React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" } },
+          React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(180px, 100%), 1fr))", gap: "12px" } },
             React.createElement("div", null,
               React.createElement("label", { style: styles.label }, "Material / Service Rate (₹)"),
               React.createElement("input", {
@@ -2575,6 +2576,7 @@ React.createElement("button", { onClick: () => bulkListingStatus("approved"), st
     )
   );
 }
+
 
 
 

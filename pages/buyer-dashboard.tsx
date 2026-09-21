@@ -1,10 +1,11 @@
-﻿// @ts-nocheck
+// @ts-nocheck
 import React, { useState, useEffect } from "react";
 import { exportProjectReport } from "../utils/reporting";
 import { DEFAULT_PROJECT_PERMISSIONS, getLoggedInUser, migrateLegacyProjects, saveProjectsForBuyer } from "../utils/projectStorage";
 import { logoutToLogin } from "../utils/session";
 import { themeTokens, PrimaryButton, SecondaryButton, Card, Badge, LoadingSpinner, EmptyState, BuildMitraHeader } from "../components/ui/DesignSystem";
 import MarketRateTrend from "../components/ui/MarketRateTrend";
+import { authFetch } from "../utils/authFetch";
 
 export default function BuyerDashboard() {
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE || "https://buildmitra-backend-beta.onrender.com";
@@ -205,7 +206,7 @@ const isReadOnly = false;
           setSentEnquiries([]);
           return;
         }
-        let res = await fetch(
+        let res = await authFetch(
           API_BASE + "/api/enquiry/buyer/my?buyerUserCode=" + encodeURIComponent(buyerUserCode),
           {
             headers: {
@@ -215,7 +216,7 @@ const isReadOnly = false;
         );
         let data = await res.json().catch(() => ({}));
         if (!data.success) {
-          res = await fetch(
+          res = await authFetch(
             API_BASE + "/api/enquiry?buyerUserCode=" + encodeURIComponent(buyerUserCode),
             {
               headers: {
@@ -931,11 +932,11 @@ const isReadOnly = false;
     tabContainer: { display: "flex", gap: "8px", marginBottom: "20px", borderBottom: "1px solid #ddd", flexWrap: "wrap", backgroundColor: "white", padding: "0 16px", borderRadius: "12px 12px 0 0" },
     tab: { padding: "12px 20px", cursor: "pointer", borderBottom: "3px solid transparent", fontSize: "14px", fontWeight: "500" },
     activeTab: { borderBottomColor: "#800020", color: "#800020" },
-    card: { backgroundColor: "white", borderRadius: "12px", padding: "20px", marginBottom: "20px", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" },
+    card: { backgroundColor: "white", borderRadius: "12px", padding: "20px", marginBottom: "20px", boxShadow: "0 2px 4px rgba(0,0,0,0.1)", overflowX: "auto" },
     cardTitle: { fontSize: "18px", fontWeight: "bold", marginBottom: "16px", borderBottom: "2px solid #800020", paddingBottom: "10px" },
-    grid2: { display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: "20px", marginBottom: "20px" },
-    grid3: { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "20px", marginBottom: "20px" },
-    grid4: { display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "20px", marginBottom: "20px" },
+    grid2: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(260px, 100%), 1fr))", gap: "20px", marginBottom: "20px" },
+    grid3: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(240px, 100%), 1fr))", gap: "20px", marginBottom: "20px" },
+    grid4: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))", gap: "20px", marginBottom: "20px" },
     button: { backgroundColor: "#800020", color: "white", padding: "10px 20px", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" },
     buttonSuccess: { backgroundColor: "#28a745", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer" },
     buttonWarning: { backgroundColor: "#ffc107", color: "#333", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer" },
@@ -947,8 +948,8 @@ const isReadOnly = false;
     input: { width: "100%", padding: "10px", border: "1px solid #ddd", borderRadius: "8px", marginBottom: "12px" },
     label: { display: "block", marginBottom: "6px", fontWeight: "600", fontSize: "12px", color: "#333" },
     select: { width: "100%", padding: "10px", border: "1px solid #ddd", borderRadius: "8px", marginBottom: "12px" },
-    row2: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "16px" },
-    row3: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px", marginBottom: "16px" },
+    row2: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(240px, 100%), 1fr))", gap: "16px", marginBottom: "16px" },
+    row3: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))", gap: "16px", marginBottom: "16px" },
     progressBar: { height: "8px", backgroundColor: "#e0e0e0", borderRadius: "4px", overflow: "hidden", marginTop: "8px" },
     progressFill: { height: "100%", backgroundColor: "#10b981", borderRadius: "4px", transition: "width 0.3s" },
     statValue: { fontSize: "28px", fontWeight: "bold", color: "#800020" },

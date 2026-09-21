@@ -17,6 +17,7 @@ import {
 import { logoutToLogin } from "../utils/session";
 import { generateCivilMilestones } from "../utils/milestoneEngine";
 import { getApiBase } from "../utils/apiConfig";
+import { authFetch } from "../utils/authFetch";
 export default function ContractorDashboard() {
 
   
@@ -278,7 +279,7 @@ useEffect(() => {
         return;
       }
 
-      let res = await fetch(
+      let res = await authFetch(
         API_BASE + "/api/enquiry/provider/my?providerUserCode=" + encodeURIComponent(providerUserCode),
         {
           headers: {
@@ -289,7 +290,7 @@ useEffect(() => {
       let data = await res.json().catch(() => ({}));
 
       if (!data.success) {
-        res = await fetch(
+        res = await authFetch(
           API_BASE + "/api/enquiry?providerUserCode=" + encodeURIComponent(providerUserCode),
           {
             headers: {
@@ -362,11 +363,11 @@ useEffect(() => {
     tabContainer: { display: "flex", gap: "8px", marginBottom: "20px", borderBottom: "1px solid #ddd", flexWrap: "wrap", backgroundColor: "white", padding: "0 16px", borderRadius: "12px 12px 0 0" },
     tab: { padding: "12px 20px", cursor: "pointer", borderBottom: "3px solid transparent", fontSize: "14px", fontWeight: "500" },
     activeTab: { borderBottomColor: "#2d6a4f", color: "#2d6a4f" },
-    card: { backgroundColor: "white", borderRadius: "12px", padding: "20px", marginBottom: "20px", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" },
+    card: { backgroundColor: "white", borderRadius: "12px", padding: "20px", marginBottom: "20px", boxShadow: "0 2px 4px rgba(0,0,0,0.1)", overflowX: "auto" },
     cardTitle: { fontSize: "18px", fontWeight: "bold", marginBottom: "16px", borderBottom: "2px solid #2d6a4f", paddingBottom: "10px" },
-    grid2: { display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: "20px", marginBottom: "20px" },
-    grid3: { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "20px", marginBottom: "20px" },
-    grid4: { display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "20px", marginBottom: "20px" },
+    grid2: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(260px, 100%), 1fr))", gap: "20px", marginBottom: "20px" },
+    grid3: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(240px, 100%), 1fr))", gap: "20px", marginBottom: "20px" },
+    grid4: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))", gap: "20px", marginBottom: "20px" },
     button: { backgroundColor: "#2d6a4f", color: "white", padding: "10px 20px", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" },
     buttonSuccess: { backgroundColor: "#28a745", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer" },
     buttonInfo: { backgroundColor: "#17a2b8", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer" },
@@ -376,8 +377,8 @@ useEffect(() => {
     th: { textAlign: "left", padding: "12px", borderBottom: "1px solid #ddd", backgroundColor: "#f8f9fa" },
     td: { padding: "12px", borderBottom: "1px solid #eee" },
     input: { width: "100%", padding: "10px", border: "1px solid #ddd", borderRadius: "8px", marginBottom: "12px" },
-    row2: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "16px" },
-    row3: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px", marginBottom: "16px" },
+    row2: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(240px, 100%), 1fr))", gap: "16px", marginBottom: "16px" },
+    row3: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))", gap: "16px", marginBottom: "16px" },
     progressBar: { height: "8px", backgroundColor: "#e0e0e0", borderRadius: "4px", overflow: "hidden", marginTop: "8px" },
     progressFill: { height: "100%", backgroundColor: "#2d6a4f", borderRadius: "4px", transition: "width 0.3s" },
     statValue: { fontSize: "28px", fontWeight: "bold", color: "#2d6a4f" },
@@ -837,7 +838,7 @@ useEffect(() => {
       return;
     }
     try {
-      const res = await fetch(API_BASE + "/api/enquiry/" + enquiryId + "/quote", {
+      const res = await authFetch(API_BASE + "/api/enquiry/" + enquiryId + "/quote", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -2772,7 +2773,7 @@ const geofenceAttendanceLog: any[] = [];
 
         React.createElement("div", { style: { marginBottom: "16px" } },
           React.createElement("strong", { style: { display: "block", marginBottom: "10px" } }, "3. Permission Toggles for Selected Buyer & Project:"),
-          React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" } },
+          React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(160px, 100%), 1fr))", gap: "10px" } },
             Object.entries({
               projectSummary: "Project Summary & Progress",
               milestones: "Civil Milestones Progress",
@@ -2823,6 +2824,7 @@ const geofenceAttendanceLog: any[] = [];
     )
   );
 }
+
 
 
 

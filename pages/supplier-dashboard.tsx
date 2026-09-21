@@ -4,9 +4,10 @@ import { logoutToLogin } from "../utils/session";
 import { BuildMitraHeader } from "../components/ui/DesignSystem";
 import { getApiBase } from "../utils/apiConfig";
 
+import { authFetch } from "../utils/authFetch";
 // Safe fetch wrapper that validates JSON response before parsing
 async function safeFetchJson(url: string, options?: RequestInit) {
-  const res = await fetch(url, options);
+  const res = await authFetch(url, options);
   const contentType = res.headers.get("content-type") || "";
   if (!contentType.includes("application/json")) {
     const text = await res.text();
@@ -1691,7 +1692,7 @@ BuildMitra`;
               <strong>{editingItem.itemName}</strong> ({editingItem.masterItemCode})
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))", gap: 14 }}>
               <div>
                 <label style={styles.label}>Proposed Rate (₹ per {editingItem.unit || "unit"}) *</label>
                 <input
@@ -2082,7 +2083,7 @@ const styles: Record<string, React.CSSProperties> = {
   kpiSub: { fontSize: 11, color: "#94a3b8" },
 
   // Widgets Grid
-  widgetGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16, marginBottom: 24 },
+  widgetGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(280px, 100%), 1fr))", gap: 16, marginBottom: 24 },
   widgetCard: { background: "#fff", borderRadius: 12, padding: 18, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" },
   widgetTitle: { margin: 0, fontSize: 15, fontWeight: 700, color: "#1e293b", borderBottom: "1px solid #f1f5f9", paddingBottom: 8 },
   emptyText: { fontSize: 13, color: "#94a3b8", marginTop: 14 },
@@ -2136,6 +2137,7 @@ const styles: Record<string, React.CSSProperties> = {
   cancelBtn: { padding: "8px 16px", borderRadius: 8, border: "1px solid #cbd5e1", background: "#fff", color: "#475569", fontWeight: 600, cursor: "pointer" },
   saveBtn: { padding: "8px 16px", borderRadius: 8, border: 0, background: "#1a5f7a", color: "#fff", fontWeight: 700, cursor: "pointer" },
 };
+
 
 
 
