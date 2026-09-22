@@ -37,12 +37,13 @@ export const getBuildMitraUser = () => {
   const possibleKeys = [
     "currentUser",
     "loggedInUser",
-    "user"
+    "user",
+    "buildmitraUser"
   ];
 
   for (const key of possibleKeys) {
     try {
-      const rawValue = sessionStorage.getItem(key);
+      const rawValue = sessionStorage.getItem(key) || localStorage.getItem(key);
 
       if (!rawValue) continue;
 
@@ -62,12 +63,18 @@ export const getBuildMitraUser = () => {
 export const getBuildMitraToken = () => {
   if (typeof window === "undefined") return "";
 
-  return (
+  const token =
     sessionStorage.getItem("token") ||
     sessionStorage.getItem("accessToken") ||
     sessionStorage.getItem("authToken") ||
-    ""
-  );
+    localStorage.getItem("token") ||
+    localStorage.getItem("accessToken") ||
+    "";
+
+  if (token) return token;
+
+  const user = getBuildMitraUser();
+  return user?.token || "";
 };
 
 export const isBuildMitraLoggedIn = () => {
@@ -84,4 +91,3 @@ export const logoutToLogin = () => {
     window.location.replace("/login");
   }
 };
-

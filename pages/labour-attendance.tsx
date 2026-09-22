@@ -3,6 +3,8 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import * as XLSX from 'xlsx';
 import Sidebar from '../components/Sidebar';
+import { getApiBase } from '../utils/apiConfig';
+import { authFetch } from '../utils/authFetch';
 
 interface ProjectSite {
   id: string;
@@ -515,7 +517,7 @@ export default function LabourAttendancePage() {
   };
 
   const mainContent = (
-    <div style={{ padding: '16px', maxWidth: '1280px', margin: '0 auto', fontFamily: 'Inter, -apple-system, sans-serif', backgroundColor: '#f8fafc', minHeight: '100vh' }}>
+    <div style={{ padding: '16px', maxWidth: '1280px', width: '100%', margin: '0 auto', fontFamily: 'Inter, -apple-system, sans-serif', backgroundColor: '#f8fafc', minHeight: '100dvh', boxSizing: 'border-box', overflowX: 'hidden' }}>
       
       {/* HEADER BANNER */}
       <div style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', borderRadius: '16px', padding: '20px 24px', color: '#ffffff', marginBottom: '20px', boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.25)' }}>
@@ -692,20 +694,20 @@ export default function LabourAttendancePage() {
             Register worker profile once with monthly CTC (Basic+PF+ESI+Insurance+Conveyance). Generates auto Geofence Link for worker's mobile.
           </p>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '20px' }}>
             <div>
               <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#475569', marginBottom: '6px' }}>Labour Name</label>
-              <input type="text" placeholder="Full Name..." value={newWorkerName} onChange={(e) => setNewWorkerName(e.target.value)} style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px' }} />
+              <input type="text" placeholder="Full Name..." value={newWorkerName} onChange={(e) => setNewWorkerName(e.target.value)} style={{ width: '100%', boxSizing: 'border-box', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px' }} />
             </div>
 
             <div>
               <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#475569', marginBottom: '6px' }}>Mobile Number</label>
-              <input type="text" placeholder="10-digit mobile..." value={newWorkerMobile} onChange={(e) => setNewWorkerMobile(e.target.value)} style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px' }} />
+              <input type="text" placeholder="10-digit mobile..." value={newWorkerMobile} onChange={(e) => setNewWorkerMobile(e.target.value)} style={{ width: '100%', boxSizing: 'border-box', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px' }} />
             </div>
 
             <div>
               <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#475569', marginBottom: '6px' }}>Skill Category</label>
-              <select value={newWorkerCategory} onChange={(e) => setNewWorkerCategory(e.target.value)} style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', backgroundColor: '#fff' }}>
+              <select value={newWorkerCategory} onChange={(e) => setNewWorkerCategory(e.target.value)} style={{ width: '100%', boxSizing: 'border-box', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', backgroundColor: '#fff' }}>
                 <option value="Mason">Mason</option>
                 <option value="Carpenter">Carpenter</option>
                 <option value="Electrician">Electrician</option>
@@ -718,19 +720,19 @@ export default function LabourAttendancePage() {
 
             <div>
               <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#475569', marginBottom: '6px' }}>Assigned Project Site / Location</label>
-              <select value={newWorkerSiteId} onChange={(e) => setNewWorkerSiteId(e.target.value)} style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', backgroundColor: '#fff' }}>
+              <select value={newWorkerSiteId} onChange={(e) => setNewWorkerSiteId(e.target.value)} style={{ width: '100%', boxSizing: 'border-box', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', backgroundColor: '#fff' }}>
                 {sites.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </div>
 
             <div>
               <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#475569', marginBottom: '6px' }}>Type of Job Allocated</label>
-              <input type="text" placeholder="e.g. Steel Structure Anchor Bolt Works" value={newWorkerJob} onChange={(e) => setNewWorkerJob(e.target.value)} style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px' }} />
+              <input type="text" placeholder="e.g. Steel Structure Anchor Bolt Works" value={newWorkerJob} onChange={(e) => setNewWorkerJob(e.target.value)} style={{ width: '100%', boxSizing: 'border-box', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px' }} />
             </div>
 
             <div>
               <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#475569', marginBottom: '6px' }}>Working Timings</label>
-              <input type="text" placeholder="e.g. 08:30 AM - 05:30 PM" value={newWorkerTimings} onChange={(e) => setNewWorkerTimings(e.target.value)} style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px' }} />
+              <input type="text" placeholder="e.g. 08:30 AM - 05:30 PM" value={newWorkerTimings} onChange={(e) => setNewWorkerTimings(e.target.value)} style={{ width: '100%', boxSizing: 'border-box', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px' }} />
             </div>
           </div>
 
@@ -738,30 +740,30 @@ export default function LabourAttendancePage() {
             💰 Monthly CTC Salary Structure (Basic + PF + ESI + Insurance + Conveyance)
           </h4>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '20px' }}>
             <div>
               <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#475569', marginBottom: '4px' }}>Basic Wage (₹/mo)</label>
-              <input type="number" value={newWorkerBasic} onChange={(e) => setNewWorkerBasic(Number(e.target.value))} style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px' }} />
+              <input type="number" value={newWorkerBasic} onChange={(e) => setNewWorkerBasic(Number(e.target.value))} style={{ width: '100%', boxSizing: 'border-box', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px' }} />
             </div>
             <div>
               <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#475569', marginBottom: '4px' }}>PF Amount (₹/mo)</label>
-              <input type="number" value={newWorkerPf} onChange={(e) => setNewWorkerPf(Number(e.target.value))} style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px' }} />
+              <input type="number" value={newWorkerPf} onChange={(e) => setNewWorkerPf(Number(e.target.value))} style={{ width: '100%', boxSizing: 'border-box', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px' }} />
             </div>
             <div>
               <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#475569', marginBottom: '4px' }}>ESI Amount (₹/mo)</label>
-              <input type="number" value={newWorkerEsi} onChange={(e) => setNewWorkerEsi(Number(e.target.value))} style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px' }} />
+              <input type="number" value={newWorkerEsi} onChange={(e) => setNewWorkerEsi(Number(e.target.value))} style={{ width: '100%', boxSizing: 'border-box', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px' }} />
             </div>
             <div>
               <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#475569', marginBottom: '4px' }}>Insurance Premium (₹/mo)</label>
-              <input type="number" value={newWorkerInsurance} onChange={(e) => setNewWorkerInsurance(Number(e.target.value))} style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px' }} />
+              <input type="number" value={newWorkerInsurance} onChange={(e) => setNewWorkerInsurance(Number(e.target.value))} style={{ width: '100%', boxSizing: 'border-box', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px' }} />
             </div>
             <div>
               <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#475569', marginBottom: '4px' }}>Conveyance / Travel (₹/mo)</label>
-              <input type="number" value={newWorkerConveyance} onChange={(e) => setNewWorkerConveyance(Number(e.target.value))} style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px' }} />
+              <input type="number" value={newWorkerConveyance} onChange={(e) => setNewWorkerConveyance(Number(e.target.value))} style={{ width: '100%', boxSizing: 'border-box', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px' }} />
             </div>
             <div>
               <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#475569', marginBottom: '4px' }}>Extra Allowances (₹/mo)</label>
-              <input type="number" value={newWorkerExtra} onChange={(e) => setNewWorkerExtra(Number(e.target.value))} style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px' }} />
+              <input type="number" value={newWorkerExtra} onChange={(e) => setNewWorkerExtra(Number(e.target.value))} style={{ width: '100%', boxSizing: 'border-box', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px' }} />
             </div>
           </div>
 
@@ -770,7 +772,7 @@ export default function LabourAttendancePage() {
               <small style={{ color: '#166534', fontWeight: '900', fontSize: '12px' }}>TOTAL CALCULATED MONTHLY CTC SALARY</small>
               <h2 style={{ margin: '4px 0 0 0', fontSize: '26px', fontWeight: '900', color: '#15803d' }}>₹{calculatedTotalCtc.toLocaleString()}/month</h2>
             </div>
-            <button onClick={handleCreateWorker} style={{ backgroundColor: '#800020', color: '#fff', border: 0, borderRadius: '10px', padding: '14px 28px', fontSize: '15px', fontWeight: '900', cursor: 'pointer' }}>
+            <button onClick={handleCreateWorker} style={{ width: '100%', boxSizing: 'border-box', marginTop: '12px', backgroundColor: '#800020', color: '#fff', border: 0, borderRadius: '10px', padding: '14px 28px', fontSize: '15px', fontWeight: '900', cursor: 'pointer' }}>
               💾 Save Worker Master Entry & Generate App Link
             </button>
           </div>
@@ -811,7 +813,7 @@ export default function LabourAttendancePage() {
 
             <div>
               <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#475569', marginBottom: '6px' }}>OT Hours</label>
-              <input type="number" min={0} value={customOtHours} onChange={(e) => setCustomOtHours(Number(e.target.value))} style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px' }} />
+              <input type="number" min={0} value={customOtHours} onChange={(e) => setCustomOtHours(Number(e.target.value))} style={{ width: '100%', boxSizing: 'border-box', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px' }} />
             </div>
           </div>
 
@@ -864,7 +866,7 @@ export default function LabourAttendancePage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px', marginBottom: '20px' }}>
             <div>
               <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#475569', marginBottom: '4px' }}>Filter by Location / Site</label>
-              <select value={reportFilterSite} onChange={(e) => setReportFilterSite(e.target.value)} style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', backgroundColor: '#fff' }}>
+              <select value={reportFilterSite} onChange={(e) => setReportFilterSite(e.target.value)} style={{ width: '100%', boxSizing: 'border-box', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', backgroundColor: '#fff' }}>
                 <option value="all">All Locations / Sites</option>
                 {sites.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
@@ -872,7 +874,7 @@ export default function LabourAttendancePage() {
 
             <div>
               <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#475569', marginBottom: '4px' }}>Filter by Category / Skill</label>
-              <select value={reportFilterCategory} onChange={(e) => setReportFilterCategory(e.target.value)} style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', backgroundColor: '#fff' }}>
+              <select value={reportFilterCategory} onChange={(e) => setReportFilterCategory(e.target.value)} style={{ width: '100%', boxSizing: 'border-box', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', backgroundColor: '#fff' }}>
                 <option value="all">All Categories</option>
                 <option value="Mason">Mason</option>
                 <option value="Carpenter">Carpenter</option>

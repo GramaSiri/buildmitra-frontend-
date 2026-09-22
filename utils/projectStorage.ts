@@ -1,3 +1,5 @@
+import { getApiBase } from "./apiConfig";
+import { authFetch } from "./authFetch";
 export const PROJECTS_STORAGE_KEY = "buildmitraProjects";
 const PROJECTS_MIGRATION_VERSION = "phase-1.1-v1";
 
@@ -97,6 +99,16 @@ const saveCanonicalProjects = (projects: any[]) => {
   try {
     localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(projects));
     window.dispatchEvent(new Event("buildmitraProjectsUpdated"));
+
+    // Asynchronously persist all projects to MongoDB
+    if (typeof window !== "undefined") {
+      authFetch(`${getApiBase()}/api/project-permission/save`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projects })
+      }).catch((err) => console.log("Cloud project sync error:", err));
+    }
+
     return true;
   } catch (error) {
     compactLegacyMediaPayloads();
@@ -315,3 +327,58 @@ export const findBuyerByCode = (buyerCode: string) => {
   return null;
 };
 
+
+
+// Cloud persistence helpers backed by MongoDB
+export const syncProjectsFromCloud = async (userCode: string): Promise<any[]> => {
+  if (typeof window === "undefined" || !userCode) return getAllProjects();
+  try {
+    const res = await authFetch(`${getApiBase()}/api/project-permission/my-projects/${encodeURIComponent(userCode)}`);
+    const data = await res.json();
+    if (data.success && Array.isArray(data.projects) && data.projects.length > 0) {
+      const local = getAllProjects();
+      const merged = mergeWithExistingPriority(local, data.projects);
+      try {
+        localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(merged));
+        window.dispatchEvent(new Event("buildmitraProjectsUpdated"));
+      } catch {}
+      return merged;
+    }
+  } catch (err) {
+    console.log("Failed to sync projects from cloud:", err);
+  }
+  return getAllProjects();
+};
+
+export const saveProjectToCloud = async (project: any): Promise<any> => {
+  if (typeof window === "undefined" || !project) return project;
+  try {
+    const res = await authFetch(`${getApiBase()}/api/project-permission/save`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(project)
+    });
+    const data = await res.json();
+    if (data.success && data.project) {
+      return data.project;
+    }
+  } catch (err) {
+    console.log("Save project to cloud error:", err);
+  }
+  return project;
+};
+
+export const recordPaymentToCloud = async (paymentData: any): Promise<any> => {
+  if (typeof window === "undefined" || !paymentData) return null;
+  try {
+    const res = await authFetch(`${getApiBase()}/api/project-permission/payment`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(paymentData)
+    });
+    return await res.json();
+  } catch (err) {
+    console.log("Record payment to cloud error:", err);
+    return null;
+  }
+};

@@ -612,7 +612,11 @@ export default function LabourNet() {
 
       <style jsx>{`
         .page {
-          min-height: 100vh;
+          min-height: 100dvh;
+          width: 100%;
+          max-width: 100%;
+          box-sizing: border-box;
+          overflow-x: hidden;
           padding: 24px;
           background: #f8fafc;
           color: #0f172a;
@@ -690,6 +694,7 @@ export default function LabourNet() {
           font-size: 13px;
           color: #0f172a;
           background: #ffffff;
+          box-sizing: border-box;
         }
 
         .countBar {
@@ -963,6 +968,7 @@ export default function LabourNet() {
           border-radius: 16px;
           background: white;
           box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+          box-sizing: border-box;
         }
 
         .close {

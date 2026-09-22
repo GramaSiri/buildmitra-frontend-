@@ -1020,19 +1020,19 @@ export default function SteelCalculatorPage() {
             </div>
             <div>
               <label style={styles.label}>Length ({unitSystem})</label>
-              <input type="number" value={length} onChange={(e) => setLength(e.target.value === "" ? ("" as any) : parseFloat(e.target.value))} style={styles.input} />
+              <input type="number" value={length} onChange={(e) => setLength(e.target.value === "" ? ("" as any) : parseFloat(e.target.value) || 0)} style={styles.input} />
             </div>
             <div>
               <label style={styles.label}>Width ({unitSystem})</label>
-              <input type="number" value={width} onChange={(e) => setWidth(e.target.value === "" ? ("" as any) : parseFloat(e.target.value))} style={styles.input} />
+              <input type="number" value={width} onChange={(e) => setWidth(e.target.value === "" ? ("" as any) : parseFloat(e.target.value) || 0)} style={styles.input} />
             </div>
             <div>
               <label style={styles.label}>Thickness (mm)</label>
-              <input type="number" value={depth} onChange={(e) => setDepth(e.target.value === "" ? ("" as any) : parseFloat(e.target.value))} style={styles.input} />
+              <input type="number" value={depth} onChange={(e) => setDepth(e.target.value === "" ? ("" as any) : parseFloat(e.target.value) || 0)} style={styles.input} />
             </div>
             <div>
               <label style={styles.label}>Clear Cover (mm)</label>
-              <input type="number" value={coverMm} onChange={(e) => setCoverMm(e.target.value === "" ? ("" as any) : parseFloat(e.target.value))} style={styles.input} />
+              <input type="number" value={coverMm} onChange={(e) => setCoverMm(e.target.value === "" ? ("" as any) : parseFloat(e.target.value) || 0)} style={styles.input} />
             </div>
             <div>
               <label style={styles.label}>Main (X) Dia</label>
@@ -1042,7 +1042,7 @@ export default function SteelCalculatorPage() {
             </div>
             <div>
               <label style={styles.label}>Main (X) Spacing (mm)</label>
-              <input type="number" value={xSpacingMm} onChange={(e) => setXSpacingMm(e.target.value === "" ? ("" as any) : parseFloat(e.target.value))} style={styles.input} />
+              <input type="number" value={xSpacingMm} onChange={(e) => setXSpacingMm(e.target.value === "" ? ("" as any) : parseFloat(e.target.value) || 0)} style={styles.input} />
             </div>
             <div>
               <label style={styles.label}>Dist (Y) Dia</label>

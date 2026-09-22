@@ -604,20 +604,27 @@ Generated using BuildMitra Financial Engine.`;
                   <span style={{ color: "#0284c7" }}>₹{propertyValue.toLocaleString("en-IN")}</span>
                 </div>
                 <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                  <input
+                                    <input
                     type="range"
                     min={0}
                     max={30000000}
                     step={100000}
-                    value={propertyValue}
+                    value={Math.min(propertyValue, 30000000)}
                     onChange={(e) => setPropertyValue(parseFloat(e.target.value) || 0)}
                     style={{ flex: 1, accentColor: "#0284c7" }}
                   />
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
+                    data-bm-digits="10"
+                    data-bm-field="loan-amount"
+                    maxLength={10}
                     value={propertyValue || ""}
                     placeholder="Enter ₹"
-                    onChange={(e) => setPropertyValue(parseFloat(e.target.value) || 0)}
+                    onChange={(e) => {
+                      const cleanVal = e.target.value.replace(/\D/g, "").slice(0, 10);
+                      setPropertyValue(cleanVal === "" ? 0 : parseFloat(cleanVal) || 0);
+                    }}
                     style={{ width: "110px", padding: "6px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "12px", fontWeight: "bold" }}
                   />
                 </div>
@@ -884,11 +891,11 @@ Generated using BuildMitra Financial Engine.`;
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                   <div>
                     <label style={{ display: "block", fontSize: "11px", fontWeight: "bold", color: "#475569", marginBottom: "4px" }}>NET MONTHLY INCOME (₹)</label>
-                    <input type="number" value={monthlyIncome || ""} placeholder="Enter ₹" onChange={(e) => setMonthlyIncome(parseFloat(e.target.value) || 0)} style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "12px", fontWeight: "bold" }} />
+                    <input type="text" inputMode="numeric" data-bm-digits="10" maxLength={10} value={monthlyIncome || ""} placeholder="Enter ₹" onChange={(e) => { const v = e.target.value.replace(/\D/g, "").slice(0, 10); setMonthlyIncome(v === "" ? 0 : parseFloat(v) || 0); }} style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "12px", fontWeight: "bold" }} />
                   </div>
                   <div>
                     <label style={{ display: "block", fontSize: "11px", fontWeight: "bold", color: "#475569", marginBottom: "4px" }}>EXISTING MONTHLY EMIS (₹)</label>
-                    <input type="number" value={existingEmi || ""} placeholder="Enter ₹" onChange={(e) => setExistingEmi(parseFloat(e.target.value) || 0)} style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "12px" }} />
+                    <input type="text" inputMode="numeric" data-bm-digits="10" maxLength={10} value={existingEmi || ""} placeholder="Enter ₹" onChange={(e) => { const v = e.target.value.replace(/\D/g, "").slice(0, 10); setExistingEmi(v === "" ? 0 : parseFloat(v) || 0); }} style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "12px" }} />
                   </div>
                   <div>
                     <label style={{ display: "block", fontSize: "11px", fontWeight: "bold", color: "#475569", marginBottom: "4px" }}>EMPLOYMENT TYPE</label>

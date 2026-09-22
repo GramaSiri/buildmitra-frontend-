@@ -15,7 +15,8 @@ import {
   saveProjectsForContractor, getAllProjects
 } from "../utils/projectStorage";
 import { logoutToLogin } from "../utils/session";
-import { generateCivilMilestones } from "../utils/milestoneEngine";
+import { generateCivilMilestones } from "../utils/milestoneEngine";
+
 import { getApiBase } from "../utils/apiConfig";
 import { authFetch } from "../utils/authFetch";
 export default function ContractorDashboard() {
@@ -177,6 +178,25 @@ const [showProjectModal, setShowProjectModal] = useState(false);
 
   // Projects with unique IDs for linking with buyer dashboard
   const [projects, setProjects] = useState<any[]>([]);
+
+  // Helper to persist contractor data to MongoDB
+  const persistContractorDataToCloud = async (fieldsToUpdate: any) => {
+    try {
+      const user = getLoggedInUser();
+      const currentUser = getCurrentAppUser();
+      const contractorCode = String(user?.uniqueCode || (user as any)?.userCode || currentUser.userCode || currentUser.uniqueCode || "").trim();
+      if (!contractorCode) return;
+
+      await authFetch(`${API_BASE}/api/contractor/data/${encodeURIComponent(contractorCode)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-user-code": contractorCode },
+        body: JSON.stringify(fieldsToUpdate)
+      });
+    } catch (err) {
+      console.log("Failed to sync contractor data to DB:", err);
+    }
+  };
+
     
   // Load and safely migrate legacy project data into the canonical collection.
   useEffect(() => {
@@ -206,6 +226,56 @@ const [showProjectModal, setShowProjectModal] = useState(false);
       if (savedInfo) setContractorInfo(savedInfo);
     } catch {}
     setStorageReady(true);
+
+    // Fetch projects and contractor data from MongoDB
+    const contractorCode = String(user.uniqueCode || (user as any).userCode || "").trim();
+    if (contractorCode) {
+      // 1. Load projects from MongoDB
+      authFetch(`${API_BASE}/api/project-permission/my-projects/${encodeURIComponent(contractorCode)}`, {
+        headers: { "x-user-code": contractorCode }
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && Array.isArray(data.projects) && data.projects.length > 0) {
+            const cloudProjects = data.projects.map(normalizeProjectRecord);
+            setProjects(cloudProjects);
+            if (!selectedProject) setSelectedProject(cloudProjects[0]?.id ?? null);
+          }
+        })
+        .catch(err => console.log("Contractor cloud projects fetch error:", err));
+
+      // 2. Load contractor data from MongoDB
+      authFetch(`${API_BASE}/api/contractor/data/${encodeURIComponent(contractorCode)}`, {
+        headers: { "x-user-code": contractorCode }
+      })
+        .then(res => res.json())
+        .then(resData => {
+          if (resData.success && resData.data) {
+            const d = resData.data;
+            if (Array.isArray(d.labourMasterList) && d.labourMasterList.length > 0) {
+              setLabourMasterList(d.labourMasterList);
+              localStorage.setItem("contractorLabourMasterList", JSON.stringify(d.labourMasterList));
+            }
+            if (d.companyProfile && Object.keys(d.companyProfile).length > 0) {
+              setCompanyProfile(d.companyProfile);
+              localStorage.setItem("contractorCompanyProfile", JSON.stringify(d.companyProfile));
+            }
+            if (Array.isArray(d.quotes) && d.quotes.length > 0) {
+              setCompanyQuotes(d.quotes);
+              localStorage.setItem("contractorCompanyQuotes", JSON.stringify(d.quotes));
+            }
+            if (Array.isArray(d.companyDocs) && d.companyDocs.length > 0) {
+              setCompanyDocs(d.companyDocs);
+              localStorage.setItem("contractorCompanyDocs", JSON.stringify(d.companyDocs));
+            }
+            if (Array.isArray(d.customLocations) && d.customLocations.length > 0) {
+              setCustomLocations(d.customLocations);
+              localStorage.setItem("contractorCustomLocations", JSON.stringify(d.customLocations));
+            }
+          }
+        })
+        .catch(err => console.log("Contractor cloud data fetch error:", err));
+    }
   }, []);
 
 useEffect(() => {
@@ -356,7 +426,7 @@ useEffect(() => {
 }, [myQuotes]);
 
   const styles = {
-    container: { padding: "20px", backgroundColor: "#f0f2f5", minHeight: "100vh" },
+    container: { padding: "20px", backgroundColor: "#f0f2f5", minHeight: "100dvh", width: "100%", maxWidth: "100%", boxSizing: "border-box", overflowX: "hidden" },
     header: { backgroundColor: "#2d6a4f", color: "white", padding: "16px 20px", borderRadius: "12px", marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" },
     headerTitle: { margin: 0, fontSize: "20px" },
     headerSub: { margin: "5px 0 0", fontSize: "12px", opacity: 0.9 },
@@ -376,7 +446,10 @@ useEffect(() => {
     table: { width: "100%", borderCollapse: "collapse", fontSize: "13px", overflowX: "auto" },
     th: { textAlign: "left", padding: "12px", borderBottom: "1px solid #ddd", backgroundColor: "#f8f9fa" },
     td: { padding: "12px", borderBottom: "1px solid #eee" },
-    input: { width: "100%", padding: "10px", border: "1px solid #ddd", borderRadius: "8px", marginBottom: "12px" },
+    input: { width: "100%", padding: "10px", border: "1px solid #ddd", borderRadius: "8px", marginBottom: "12px", boxSizing: "border-box" },
+    label: { display: "block", marginBottom: "6px", fontWeight: "600", fontSize: "12px", color: "#333" },
+    select: { width: "100%", padding: "10px", border: "1px solid #ddd", borderRadius: "8px", marginBottom: "12px", boxSizing: "border-box" },
+    textarea: { width: "100%", padding: "10px", border: "1px solid #ddd", borderRadius: "8px", marginBottom: "12px", boxSizing: "border-box", fontFamily: "inherit" },
     row2: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(240px, 100%), 1fr))", gap: "16px", marginBottom: "16px" },
     row3: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))", gap: "16px", marginBottom: "16px" },
     progressBar: { height: "8px", backgroundColor: "#e0e0e0", borderRadius: "4px", overflow: "hidden", marginTop: "8px" },
@@ -384,7 +457,7 @@ useEffect(() => {
     statValue: { fontSize: "28px", fontWeight: "bold", color: "#2d6a4f" },
     statLabel: { fontSize: "12px", color: "#666", marginTop: "4px" },
     modal: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 },
-    modalContent: { backgroundColor: "white", borderRadius: "16px", padding: "24px", width: "90%", maxWidth: "700px", maxHeight: "85vh", overflow: "auto" },
+    modalContent: { backgroundColor: "white", borderRadius: "16px", padding: "24px", width: "min(640px, 94vw)", maxWidth: "640px", maxHeight: "85vh", overflowY: "auto", boxSizing: "border-box" },
     statusBadge: { padding: "4px 12px", borderRadius: "20px", fontSize: "11px", fontWeight: "500", display: "inline-block" },
     presentBtn: { backgroundColor: "#28a745", color: "white", padding: "6px 12px", borderRadius: "6px", cursor: "pointer", border: "none" },
     absentBtn: { backgroundColor: "#dc3545", color: "white", padding: "6px 12px", borderRadius: "6px", cursor: "pointer", border: "none" },
@@ -1663,6 +1736,7 @@ useEffect(() => {
     const updated = [...companyQuotes, quote];
     setCompanyQuotes(updated);
     localStorage.setItem("contractorCompanyQuotes", JSON.stringify(updated));
+    persistContractorDataToCloud({ quotes: updated });
     downloadBuildMitraPDF({
       documentTitle: title,
       documentNo: quote.id,
@@ -1678,6 +1752,7 @@ useEffect(() => {
 
   const saveCompanyProfile = () => {
     localStorage.setItem("contractorCompanyProfile", JSON.stringify(companyProfile));
+    persistContractorDataToCloud({ companyProfile });
     alert("Company Profile saved successfully.");
   };
 
@@ -1734,6 +1809,7 @@ useEffect(() => {
           React.createElement("label", { style: styles.buttonInfo }, "+ ISO", React.createElement("input", { type: "file", accept: ".pdf,.jpg,.jpeg,.png", onChange: (e) => addCompanyDoc(e, "ISO Certificate"), style: { display: "none" } })),
           React.createElement("label", { style: styles.buttonInfo }, "+ Awards", React.createElement("input", { type: "file", accept: ".pdf,.jpg,.jpeg,.png", onChange: (e) => addCompanyDoc(e, "Awards / Certificates"), style: { display: "none" } }))
         ),
+        React.createElement("div", { style: { overflowX: "auto", width: "100%" } },
         React.createElement("table", { style: styles.table },
           React.createElement("thead", null,
             React.createElement("tr", null,
@@ -1753,13 +1829,15 @@ useEffect(() => {
               React.createElement("td", { style: styles.td }, d.uploadedAt)
             ))
           )
-        ),
+        )
+      ),
 
         React.createElement("h3", null, "Quotation Upload"),
         React.createElement("div", { style: { display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "12px" } },
           React.createElement("button", { onClick: addCompanyQuote, style: styles.buttonSuccess }, "+ Upload Own Letterhead Quote"),
           React.createElement("button", { onClick: addCompanyQuote, style: styles.button }, "+ BuildMitra Format Quote")
         ),
+        React.createElement("div", { style: { overflowX: "auto", width: "100%" } },
         React.createElement("table", { style: styles.table },
           React.createElement("thead", null,
             React.createElement("tr", null,
@@ -1779,7 +1857,8 @@ useEffect(() => {
               React.createElement("td", { style: styles.td }, q.uploadedAt)
             ))
           )
-        ),
+        )
+      ),
 
         React.createElement("button", { onClick: saveCompanyProfile, style: { ...styles.buttonSuccess, width: "100%", marginTop: "12px" } }, "Save Company Profile")
       )
@@ -1876,129 +1955,110 @@ const geofenceAttendanceLog: any[] = [];
               )
             ),
 
-            React.createElement("div", { style: styles.row2 },
-              React.createElement("div", null,
-                React.createElement("label", { style: styles.label }, "1. Labour Name *"),
-                React.createElement("input", { placeholder: "Full Name e.g. Ramesh Kumar", value: newLabourMaster.name, onChange: (e) => setNewLabourMaster({...newLabourMaster, name: e.target.value}), style: styles.input })
-              ),
-              React.createElement("div", null,
-                React.createElement("label", { style: styles.label }, "2. Age (Years)"),
-                React.createElement("input", { type: "number", placeholder: "e.g. 32", value: newLabourMaster.age, onChange: (e) => setNewLabourMaster({...newLabourMaster, age: e.target.value}), style: styles.input })
+            React.createElement("div", { style: { marginBottom: "14px" } },
+              React.createElement("label", { style: styles.label }, "1. Labour Name *"),
+              React.createElement("input", { placeholder: "Full Name e.g. Ramesh Kumar", value: newLabourMaster.name, onChange: (e) => setNewLabourMaster({...newLabourMaster, name: e.target.value}), style: styles.input })
+            ),
+            React.createElement("div", { style: { marginBottom: "14px" } },
+              React.createElement("label", { style: styles.label }, "2. Age (Years)"),
+              React.createElement("input", { type: "number", placeholder: "e.g. 32", value: newLabourMaster.age, onChange: (e) => setNewLabourMaster({...newLabourMaster, age: e.target.value}), style: styles.input })
+            ),
+            React.createElement("div", { style: { marginBottom: "14px" } },
+              React.createElement("label", { style: styles.label }, "3. Mobile No (WhatsApp) *"),
+              React.createElement("input", { type: "tel", placeholder: "10-digit Mobile No e.g. 9876543210", value: newLabourMaster.mobile, onChange: (e) => setNewLabourMaster({...newLabourMaster, mobile: e.target.value}), style: styles.input })
+            ),
+            React.createElement("div", { style: { marginBottom: "14px" } },
+              React.createElement("label", { style: styles.label }, "5. Category / Skill Trade *"),
+              React.createElement("select", { value: newLabourMaster.category, onChange: (e) => setNewLabourMaster({...newLabourMaster, category: e.target.value}), style: styles.select },
+                React.createElement("option", null, "Civil Mason"),
+                React.createElement("option", null, "Barbender Steel"),
+                React.createElement("option", null, "Carpenter Shuttering"),
+                React.createElement("option", null, "Electrician"),
+                React.createElement("option", null, "Plumber"),
+                React.createElement("option", null, "Painter"),
+                React.createElement("option", null, "Tile Laying Mason"),
+                React.createElement("option", null, "Helper"),
+                React.createElement("option", null, "Welder")
               )
             ),
-
-            React.createElement("div", { style: styles.row2 },
-              React.createElement("div", null,
-                React.createElement("label", { style: styles.label }, "3. Mobile No (WhatsApp) *"),
-                React.createElement("input", { type: "tel", placeholder: "10-digit Mobile No e.g. 9876543210", value: newLabourMaster.mobile, onChange: (e) => setNewLabourMaster({...newLabourMaster, mobile: e.target.value}), style: styles.input })
-              ),
-              React.createElement("div", null,
-                React.createElement("label", { style: styles.label }, "5. Category / Skill Trade *"),
-                React.createElement("select", { value: newLabourMaster.category, onChange: (e) => setNewLabourMaster({...newLabourMaster, category: e.target.value}), style: styles.select },
-                  React.createElement("option", null, "Civil Mason"),
-                  React.createElement("option", null, "Barbender Steel"),
-                  React.createElement("option", null, "Carpenter Shuttering"),
-                  React.createElement("option", null, "Electrician"),
-                  React.createElement("option", null, "Plumber"),
-                  React.createElement("option", null, "Painter"),
-                  React.createElement("option", null, "Tile Laying Mason"),
-                  React.createElement("option", null, "Helper"),
-                  React.createElement("option", null, "Welder")
-                )
-              )
+            React.createElement("div", { style: { marginBottom: "14px" } },
+              React.createElement("label", { style: styles.label }, "6. Job Allotted / Work Description"),
+              React.createElement("input", { placeholder: "e.g. Column Rebar & Brickwork Masonry", value: newLabourMaster.jobAllotted, onChange: (e) => setNewLabourMaster({...newLabourMaster, jobAllotted: e.target.value}), style: styles.input })
             ),
-
-            React.createElement("div", { style: styles.row2 },
-              React.createElement("div", null,
-                React.createElement("label", { style: styles.label }, "6. Job Allotted / Work Description"),
-                React.createElement("input", { placeholder: "e.g. Column Rebar & Brickwork Masonry", value: newLabourMaster.jobAllotted, onChange: (e) => setNewLabourMaster({...newLabourMaster, jobAllotted: e.target.value}), style: styles.input })
-              ),
-              React.createElement("div", null,
-                React.createElement("label", { style: styles.label }, "7. Location / Project Allotted *"),
-                React.createElement("select", {
-                  value: isManualLocationInput ? "__CUSTOM__" : (newLabourMaster.projectId || (projects[0]?.id || "")),
-                  onChange: (e) => {
-                    if (e.target.value === "__CUSTOM__") {
-                      setIsManualLocationInput(true);
-                    } else {
-                      setIsManualLocationInput(false);
-                      setNewLabourMaster({ ...newLabourMaster, projectId: e.target.value });
-                    }
-                  },
-                  style: styles.select
+            React.createElement("div", { style: { marginBottom: "14px" } },
+              React.createElement("label", { style: styles.label }, "7. Location / Project Allotted *"),
+              React.createElement("select", {
+                value: isManualLocationInput ? "__CUSTOM__" : (newLabourMaster.projectId || (projects[0]?.id || "")),
+                onChange: (e) => {
+                  if (e.target.value === "__CUSTOM__") {
+                    setIsManualLocationInput(true);
+                  } else {
+                    setIsManualLocationInput(false);
+                    setNewLabourMaster({ ...newLabourMaster, projectId: e.target.value });
+                  }
                 },
-                  React.createElement("optgroup", { label: "Standard Contractor Projects" },
-                    projects.map(p => React.createElement("option", { key: p.id, value: p.id }, `${p.name} (Code: ${p.projectUniqueId || "PRJ-" + p.id})`))
-                  ),
-                  customLocations.length > 0 && React.createElement("optgroup", { label: "Saved Custom Locations" },
-                    customLocations.map((loc, idx) => React.createElement("option", { key: idx, value: `LOC_${idx}` }, loc))
-                  ),
-                  React.createElement("option", { value: "__CUSTOM__" }, "✏️ + Enter Custom Location / Site Address Manually...")
+                style: styles.select
+              },
+                React.createElement("optgroup", { label: "Standard Contractor Projects" },
+                  projects.map(p => React.createElement("option", { key: p.id, value: p.id }, `${p.name} (Code: ${p.projectUniqueId || "PRJ-" + p.id})`))
                 ),
-                isManualLocationInput && React.createElement("input", {
-                  type: "text",
-                  placeholder: "Type Custom Location / Site Address (e.g. Site #4, Hosur Road)",
-                  value: manualLocationText,
-                  onChange: (e) => setManualLocationText(e.target.value),
-                  style: { ...styles.input, marginTop: "6px", border: "2px solid #0d9488", backgroundColor: "#f0fdf4" }
-                })
+                customLocations.length > 0 && React.createElement("optgroup", { label: "Saved Custom Locations" },
+                  customLocations.map((loc, idx) => React.createElement("option", { key: idx, value: `LOC_${idx}` }, loc))
+                ),
+                React.createElement("option", { value: "__CUSTOM__" }, "✏️ + Enter Custom Location / Site Address Manually...")
+              ),
+              isManualLocationInput && React.createElement("input", {
+                type: "text",
+                placeholder: "Type Custom Location / Site Address (e.g. Site #4, Hosur Road)",
+                value: manualLocationText,
+                onChange: (e) => setManualLocationText(e.target.value),
+                style: { ...styles.input, marginTop: "6px", border: "2px solid #0d9488", backgroundColor: "#f0fdf4" }
+              })
+            ),
+            React.createElement("div", { style: { marginBottom: "14px" } },
+              React.createElement("label", { style: styles.label }, "8. Wages Rate (₹) *"),
+              React.createElement("input", { type: "number", placeholder: "Daily/Monthly Rate e.g. 950", value: newLabourMaster.dailyWage, onChange: (e) => setNewLabourMaster({...newLabourMaster, dailyWage: e.target.value}), style: styles.input })
+            ),
+            React.createElement("div", { style: { marginBottom: "14px" } },
+              React.createElement("label", { style: styles.label }, "9. Salary Payment Mode"),
+              React.createElement("select", { value: newLabourMaster.salaryMode, onChange: (e) => setNewLabourMaster({...newLabourMaster, salaryMode: e.target.value}), style: styles.select },
+                React.createElement("option", null, "Daily"),
+                React.createElement("option", null, "Weekly"),
+                React.createElement("option", null, "Monthly")
               )
             ),
-
-            React.createElement("div", { style: styles.row3 },
-              React.createElement("div", null,
-                React.createElement("label", { style: styles.label }, "8. Wages Rate (₹) *"),
-                React.createElement("input", { type: "number", placeholder: "Daily/Monthly Rate e.g. 950", value: newLabourMaster.dailyWage, onChange: (e) => setNewLabourMaster({...newLabourMaster, dailyWage: e.target.value}), style: styles.input })
-              ),
-              React.createElement("div", null,
-                React.createElement("label", { style: styles.label }, "9. Salary Payment Mode"),
-                React.createElement("select", { value: newLabourMaster.salaryMode, onChange: (e) => setNewLabourMaster({...newLabourMaster, salaryMode: e.target.value}), style: styles.select },
-                  React.createElement("option", null, "Daily"),
-                  React.createElement("option", null, "Weekly"),
-                  React.createElement("option", null, "Monthly")
-                )
-              ),
-              React.createElement("div", null,
-                React.createElement("label", { style: styles.label }, "16. Date of Joining"),
-                React.createElement("input", { type: "date", value: newLabourMaster.joinDate, onChange: (e) => setNewLabourMaster({...newLabourMaster, joinDate: e.target.value}), style: styles.input })
-              )
+            React.createElement("div", { style: { marginBottom: "14px" } },
+              React.createElement("label", { style: styles.label }, "16. Date of Joining"),
+              React.createElement("input", { type: "date", value: newLabourMaster.joinDate, onChange: (e) => setNewLabourMaster({...newLabourMaster, joinDate: e.target.value}), style: styles.input })
             ),
-
-            React.createElement("div", { style: styles.row3 },
-              React.createElement("div", null,
-                React.createElement("label", { style: styles.label }, "10. PF Amount (₹ / month)"),
-                React.createElement("input", { type: "number", placeholder: "0", value: newLabourMaster.pfAmount, onChange: (e) => setNewLabourMaster({...newLabourMaster, pfAmount: e.target.value}), style: styles.input })
-              ),
-              React.createElement("div", null,
-                React.createElement("label", { style: styles.label }, "11. ESI Amount (₹ / month)"),
-                React.createElement("input", { type: "number", placeholder: "0", value: newLabourMaster.esiAmount, onChange: (e) => setNewLabourMaster({...newLabourMaster, esiAmount: e.target.value}), style: styles.input })
-              ),
-              React.createElement("div", null,
-                React.createElement("label", { style: styles.label }, "12. Conveyance (₹ / day)"),
-                React.createElement("input", { type: "number", placeholder: "0", value: newLabourMaster.conveyance, onChange: (e) => setNewLabourMaster({...newLabourMaster, conveyance: e.target.value}), style: styles.input })
-              )
+            React.createElement("div", { style: { marginBottom: "14px" } },
+              React.createElement("label", { style: styles.label }, "10. PF Amount (₹ / month)"),
+              React.createElement("input", { type: "number", placeholder: "0", value: newLabourMaster.pfAmount, onChange: (e) => setNewLabourMaster({...newLabourMaster, pfAmount: e.target.value}), style: styles.input })
             ),
-
-            React.createElement("div", { style: styles.row3 },
-              React.createElement("div", null,
-                React.createElement("label", { style: styles.label }, "13. OT Rate (₹ / hr)"),
-                React.createElement("input", { type: "number", placeholder: "0", value: newLabourMaster.otRate, onChange: (e) => setNewLabourMaster({...newLabourMaster, otRate: e.target.value}), style: styles.input })
-              ),
-              React.createElement("div", null,
-                React.createElement("label", { style: styles.label }, "14. Accommodation Perks"),
-                React.createElement("input", { placeholder: "Site Shed / Allowance", value: newLabourMaster.accommodation, onChange: (e) => setNewLabourMaster({...newLabourMaster, accommodation: e.target.value}), style: styles.input })
-              ),
-              React.createElement("div", null,
-                React.createElement("label", { style: styles.label }, "15. Other Perks"),
-                React.createElement("input", { placeholder: "Medical / Safety Gear", value: newLabourMaster.otherPerks, onChange: (e) => setNewLabourMaster({...newLabourMaster, otherPerks: e.target.value}), style: styles.input })
-              )
+            React.createElement("div", { style: { marginBottom: "14px" } },
+              React.createElement("label", { style: styles.label }, "11. ESI Amount (₹ / month)"),
+              React.createElement("input", { type: "number", placeholder: "0", value: newLabourMaster.esiAmount, onChange: (e) => setNewLabourMaster({...newLabourMaster, esiAmount: e.target.value}), style: styles.input })
             ),
-
-            React.createElement("div", null,
+            React.createElement("div", { style: { marginBottom: "14px" } },
+              React.createElement("label", { style: styles.label }, "12. Conveyance (₹ / day)"),
+              React.createElement("input", { type: "number", placeholder: "0", value: newLabourMaster.conveyance, onChange: (e) => setNewLabourMaster({...newLabourMaster, conveyance: e.target.value}), style: styles.input })
+            ),
+            React.createElement("div", { style: { marginBottom: "14px" } },
+              React.createElement("label", { style: styles.label }, "13. OT Rate (₹ / hr)"),
+              React.createElement("input", { type: "number", placeholder: "0", value: newLabourMaster.otRate, onChange: (e) => setNewLabourMaster({...newLabourMaster, otRate: e.target.value}), style: styles.input })
+            ),
+            React.createElement("div", { style: { marginBottom: "14px" } },
+              React.createElement("label", { style: styles.label }, "14. Accommodation Perks"),
+              React.createElement("input", { placeholder: "Site Shed / Allowance", value: newLabourMaster.accommodation, onChange: (e) => setNewLabourMaster({...newLabourMaster, accommodation: e.target.value}), style: styles.input })
+            ),
+            React.createElement("div", { style: { marginBottom: "14px" } },
+              React.createElement("label", { style: styles.label }, "15. Other Perks"),
+              React.createElement("input", { placeholder: "Medical / Safety Gear", value: newLabourMaster.otherPerks, onChange: (e) => setNewLabourMaster({...newLabourMaster, otherPerks: e.target.value}), style: styles.input })
+            ),
+            React.createElement("div", { style: { marginBottom: "14px" } },
               React.createElement("label", { style: styles.label }, "4. Permanent Address"),
               React.createElement("textarea", { placeholder: "Enter permanent home address", value: newLabourMaster.address, onChange: (e) => setNewLabourMaster({...newLabourMaster, address: e.target.value}), style: { ...styles.input, minHeight: "45px" } })
             ),
-
             React.createElement("button", {
               onClick: () => {
                 if (!newLabourMaster.name.trim() || !newLabourMaster.mobile.trim() || !newLabourMaster.dailyWage) {
@@ -2058,6 +2118,7 @@ const geofenceAttendanceLog: any[] = [];
                 const updatedList = [...labourMasterList, newEntry];
                 setLabourMasterList(updatedList);
                 localStorage.setItem("contractorLabourMasterList", JSON.stringify(updatedList));
+    persistContractorDataToCloud({ labourMasterList: updatedList });
 
                 // Sync to contractor projects array so Buyer Dashboard can view it live in real-time
                 const updatedProjects = projects.map(p =>
@@ -2302,52 +2363,56 @@ const geofenceAttendanceLog: any[] = [];
     // Add Project Modal
     showProjectModal && React.createElement("div", { style: styles.modal, onClick: () => setShowProjectModal(false) },
       React.createElement("div", { style: styles.modalContent, onClick: (e) => e.stopPropagation() },
-        React.createElement("h2", { style: { color: "#2d6a4f" } }, "Add New Project"),
-        React.createElement("div", { style: styles.row2 },
-          React.createElement("input", { type: "text", placeholder: "Project Name", value: newProject.name, onChange: (e) => setNewProject({...newProject, name: e.target.value}), style: styles.input }),
-          React.createElement("div", null,
-            React.createElement("input", { type: "text", placeholder: "Buyer Unique Code (e.g. BUY-1234)", value: newProject.buyerCode, onChange: (e) => setNewProject({...newProject, buyerCode: e.target.value.toUpperCase()}), style: styles.input }),
-            React.createElement("div", { style: { fontSize: "11px", color: "#666", marginTop: "-8px", marginBottom: "4px" } }, "Ask the buyer to copy their Buyer Code from the buyer dashboard."),
-            newProject.buyerCode && React.createElement("div", { style: { fontSize: "11px", color: matchedBuyer ? "#15803d" : "#dc2626", marginBottom: "12px" } }, matchedBuyer ? `Buyer verified: ${matchedBuyer.name}` : "Buyer code not found or is not registered as a buyer.")
-          )
+        React.createElement("h2", { style: { color: "#2d6a4f", marginTop: 0, marginBottom: "16px" } }, "Create Project"),
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Project Name *"),
+          React.createElement("input", { type: "text", placeholder: "Project Name", value: newProject.name, onChange: (e) => setNewProject({...newProject, name: e.target.value}), style: styles.input })
         ),
-        React.createElement("div", { style: styles.row2 },
-          React.createElement("input", { type: "tel", placeholder: "Client Mobile", value: newProject.clientMobile, onChange: (e) => setNewProject({...newProject, clientMobile: e.target.value}), style: styles.input }),
-          React.createElement("input", { type: "email", placeholder: "Client Email", value: newProject.clientEmail, onChange: (e) => setNewProject({...newProject, clientEmail: e.target.value}), style: styles.input })
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Client Mobile *"),
+          React.createElement("input", { type: "tel", placeholder: "Client Mobile", value: newProject.clientMobile, onChange: (e) => setNewProject({...newProject, clientMobile: e.target.value}), style: styles.input })
         ),
-        React.createElement("div", { style: styles.row3 },
-          React.createElement("input", { type: "number", placeholder: "Plot Length (ft)", value: newProject.plotLength, onChange: (e) => setNewProject({...newProject, plotLength: e.target.value}), style: styles.input }),
-          React.createElement("input", { type: "number", placeholder: "Plot Width (ft)", value: newProject.plotWidth, onChange: (e) => setNewProject({...newProject, plotWidth: e.target.value}), style: styles.input }),
-          React.createElement("input", { type: "number", placeholder: "No of Floors", value: newProject.floors, onChange: (e) => setNewProject({...newProject, floors: e.target.value}), style: styles.input })
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Plot Length (ft) *"),
+          React.createElement("input", { type: "number", placeholder: "Plot Length (ft)", value: newProject.plotLength, onChange: (e) => setNewProject({...newProject, plotLength: e.target.value}), style: styles.input })
         ),
-        React.createElement("div", { style: styles.row2 },
-          React.createElement("input", { type: "number", min: 1, placeholder: "Rate per sqft (₹)", value: newProject.ratePerSft, onChange: (e) => setNewProject({...newProject, ratePerSft: e.target.value}), style: styles.input }),
-          React.createElement("div", { style: { backgroundColor: "#e8f5e9", padding: "10px", borderRadius: "8px", marginBottom: "12px" } },
-            React.createElement("div", null, "Plot Area: ", plotArea.toLocaleString(), " sq.ft"),
-            React.createElement("div", null, "BUA (90% × floors): ", calculatedBua.toLocaleString(), " sq.ft"),
-            React.createElement("strong", null, "Total Amount: ₹", calculatedTotalAmount.toLocaleString())
-          )
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Plot Width (ft) *"),
+          React.createElement("input", { type: "number", placeholder: "Plot Width (ft)", value: newProject.plotWidth, onChange: (e) => setNewProject({...newProject, plotWidth: e.target.value}), style: styles.input })
         ),
-        React.createElement("div", { style: styles.row2 },
-          React.createElement("input", { type: "date", placeholder: "Start Date", value: newProject.startDate, onChange: (e) => setNewProject({...newProject, startDate: e.target.value}), style: styles.input }),
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Rate per sqft (₹)"),
+          React.createElement("input", { type: "number", min: 1, placeholder: "Rate per sqft (₹)", value: newProject.ratePerSft, onChange: (e) => setNewProject({...newProject, ratePerSft: e.target.value}), style: styles.input })
+        ),
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "No. of Floors"),
+          React.createElement("input", { type: "number", placeholder: "No. of Floors", value: newProject.floors, onChange: (e) => setNewProject({...newProject, floors: e.target.value}), style: styles.input })
+        ),
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Start Date *"),
+          React.createElement("input", { type: "date", placeholder: "Start Date", value: newProject.startDate, onChange: (e) => setNewProject({...newProject, startDate: e.target.value}), style: styles.input })
+        ),
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "End Date *"),
           React.createElement("input", { type: "date", placeholder: "End Date", value: newProject.endDate, onChange: (e) => setNewProject({...newProject, endDate: e.target.value}), style: styles.input })
         ),
-        React.createElement("div", null,
+        React.createElement("div", { style: { marginBottom: "14px" } },
           React.createElement("label", { style: styles.label }, "Agreement Document"),
-          React.createElement("input", { type: "file", onChange: (e) => {
-            const file = e.target.files[0];
-            if(file) setNewProject({...newProject, agreementUrl: URL.createObjectURL(file)});
-          }, style: styles.input })
+          React.createElement("input", { type: "file", onChange: (e) => setAgreementFile(e.target.files?.[0] || null), style: styles.input })
         ),
-        React.createElement("button", { onClick: addProject, style: { ...styles.buttonSuccess, width: "100%" } }, "Create Project")
+        React.createElement("button", { onClick: addProject, style: { ...styles.buttonSuccess, width: "100%", padding: "12px", fontSize: "14px", fontWeight: "bold" } }, "Create Project")
       )
     ),
 
     showInventoryModal && React.createElement("div", { style: styles.modal, onClick: () => setShowInventoryModal(false) },
       React.createElement("div", { style: styles.modalContent, onClick: (e) => e.stopPropagation() },
-        React.createElement("h2", { style: { color: "#2d6a4f" } }, "Record Inventory - ", selectedProjectData?.name),
-        React.createElement("div", { style: styles.row2 },
-          React.createElement("input", { placeholder: "Material", value: newInventoryItem.material, onChange: (e) => setNewInventoryItem({...newInventoryItem, material: e.target.value}), style: styles.input }),
+        React.createElement("h2", { style: { color: "#2d6a4f", marginTop: 0, marginBottom: "16px" } }, "Record Inventory - ", selectedProjectData?.name),
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Material Name *"),
+          React.createElement("input", { placeholder: "Material e.g. Cement, Steel", value: newInventoryItem.material, onChange: (e) => setNewInventoryItem({...newInventoryItem, material: e.target.value}), style: styles.input })
+        ),
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Unit *"),
           React.createElement("select", { value: newInventoryItem.unit, onChange: (e) => setNewInventoryItem({...newInventoryItem, unit: e.target.value}), style: styles.select },
             React.createElement("option", { value: "bags" }, "Bags"),
             React.createElement("option", { value: "kg" }, "Kg"),
@@ -2356,76 +2421,122 @@ const geofenceAttendanceLog: any[] = [];
             React.createElement("option", { value: "litres" }, "Litres")
           )
         ),
-        React.createElement("div", { style: styles.row2 },
-          React.createElement("input", { type: "number", min: 0, placeholder: "Ordered Quantity", value: newInventoryItem.orderedQty, onChange: (e) => setNewInventoryItem({...newInventoryItem, orderedQty: e.target.value}), style: styles.input }),
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Ordered Quantity"),
+          React.createElement("input", { type: "number", min: 0, placeholder: "Ordered Quantity", value: newInventoryItem.orderedQty, onChange: (e) => setNewInventoryItem({...newInventoryItem, orderedQty: e.target.value}), style: styles.input })
+        ),
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Received Quantity"),
           React.createElement("input", { type: "number", min: 0, placeholder: "Received Quantity", value: newInventoryItem.receivedQty, onChange: (e) => setNewInventoryItem({...newInventoryItem, receivedQty: e.target.value}), style: styles.input })
         ),
-        React.createElement("div", { style: styles.row2 },
-          React.createElement("input", { type: "number", min: 0, placeholder: "Consumed Quantity", value: newInventoryItem.consumedQty, onChange: (e) => setNewInventoryItem({...newInventoryItem, consumedQty: e.target.value}), style: styles.input }),
-          React.createElement("input", { type: "number", min: 0, placeholder: "Rate", value: newInventoryItem.rate, onChange: (e) => setNewInventoryItem({...newInventoryItem, rate: e.target.value}), style: styles.input })
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Consumed Quantity"),
+          React.createElement("input", { type: "number", min: 0, placeholder: "Consumed Quantity", value: newInventoryItem.consumedQty, onChange: (e) => setNewInventoryItem({...newInventoryItem, consumedQty: e.target.value}), style: styles.input })
         ),
-        React.createElement("div", { style: styles.row2 },
-          React.createElement("input", { placeholder: "Supplier", value: newInventoryItem.supplier, onChange: (e) => setNewInventoryItem({...newInventoryItem, supplier: e.target.value}), style: styles.input }),
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Rate (₹)"),
+          React.createElement("input", { type: "number", min: 0, placeholder: "Rate in ₹", value: newInventoryItem.rate, onChange: (e) => setNewInventoryItem({...newInventoryItem, rate: e.target.value}), style: styles.input })
+        ),
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Supplier Name"),
+          React.createElement("input", { placeholder: "Supplier Name", value: newInventoryItem.supplier, onChange: (e) => setNewInventoryItem({...newInventoryItem, supplier: e.target.value}), style: styles.input })
+        ),
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Invoice Number"),
           React.createElement("input", { placeholder: "Invoice Number", value: newInventoryItem.invoiceNo, onChange: (e) => setNewInventoryItem({...newInventoryItem, invoiceNo: e.target.value}), style: styles.input })
         ),
-        React.createElement("input", { type: "date", value: newInventoryItem.invoiceDate, onChange: (e) => setNewInventoryItem({...newInventoryItem, invoiceDate: e.target.value}), style: styles.input }),
-        React.createElement("div", { style: { marginBottom: "12px" } }, "Balance: ", Math.max(0, Number(newInventoryItem.receivedQty || 0) - Number(newInventoryItem.consumedQty || 0)), " ", newInventoryItem.unit, " | Amount: ₹", (Number(newInventoryItem.receivedQty || 0) * Number(newInventoryItem.rate || 0)).toLocaleString()),
-        React.createElement("button", { onClick: addInventoryItem, style: { ...styles.buttonSuccess, width: "100%" } }, "Save Inventory")
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Invoice Date"),
+          React.createElement("input", { type: "date", value: newInventoryItem.invoiceDate, onChange: (e) => setNewInventoryItem({...newInventoryItem, invoiceDate: e.target.value}), style: styles.input })
+        ),
+        React.createElement("div", { style: { marginBottom: "14px" } }, "Balance: ", Math.max(0, Number(newInventoryItem.receivedQty || 0) - Number(newInventoryItem.consumedQty || 0)), " ", newInventoryItem.unit, " | Amount: ₹", (Number(newInventoryItem.receivedQty || 0) * Number(newInventoryItem.rate || 0)).toLocaleString()),
+        React.createElement("button", { onClick: addInventoryItem, style: { ...styles.buttonSuccess, width: "100%", padding: "12px", fontSize: "14px", fontWeight: "bold" } }, "Save Inventory")
       )
     ),
 
     showProjectQuoteModal && React.createElement("div", { style: styles.modal, onClick: () => setShowProjectQuoteModal(false) },
       React.createElement("div", { style: styles.modalContent, onClick: (e) => e.stopPropagation() },
-        React.createElement("h2", { style: { color: "#2d6a4f" } }, "Add Quotation - ", selectedProjectData?.name),
-        React.createElement("div", { style: styles.row2 },
-          React.createElement("input", { placeholder: "Quote No", value: newProjectQuote.quoteNo, onChange: (e) => setNewProjectQuote({...newProjectQuote, quoteNo: e.target.value}), style: styles.input }),
-          React.createElement("input", { value: selectedProjectData?.name || "", readOnly: true, style: styles.input })
+        React.createElement("h2", { style: { color: "#2d6a4f", marginTop: 0, marginBottom: "16px" } }, "Add Quotation - ", selectedProjectData?.name),
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Quote No *"),
+          React.createElement("input", { placeholder: "Quote No", value: newProjectQuote.quoteNo, onChange: (e) => setNewProjectQuote({...newProjectQuote, quoteNo: e.target.value}), style: styles.input })
         ),
-        React.createElement("input", { type: "date", value: newProjectQuote.date, onChange: (e) => setNewProjectQuote({...newProjectQuote, date: e.target.value}), style: styles.input }),
-        React.createElement("textarea", { placeholder: "Description", value: newProjectQuote.description, onChange: (e) => setNewProjectQuote({...newProjectQuote, description: e.target.value}), style: styles.input }),
-        React.createElement("div", { style: styles.row2 },
-          React.createElement("input", { type: "number", min: 0, placeholder: "Amount", value: newProjectQuote.amount, onChange: (e) => setNewProjectQuote({...newProjectQuote, amount: e.target.value}), style: styles.input }),
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Date *"),
+          React.createElement("input", { type: "date", value: newProjectQuote.date, onChange: (e) => setNewProjectQuote({...newProjectQuote, date: e.target.value}), style: styles.input })
+        ),
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Description"),
+          React.createElement("textarea", { placeholder: "Description", value: newProjectQuote.description, onChange: (e) => setNewProjectQuote({...newProjectQuote, description: e.target.value}), style: styles.input })
+        ),
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Amount (₹) *"),
+          React.createElement("input", { type: "number", min: 0, placeholder: "Amount in ₹", value: newProjectQuote.amount, onChange: (e) => setNewProjectQuote({...newProjectQuote, amount: e.target.value}), style: styles.input })
+        ),
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Status *"),
           React.createElement("select", { value: newProjectQuote.status, onChange: (e) => setNewProjectQuote({...newProjectQuote, status: e.target.value}), style: styles.select },
             React.createElement("option", { value: "Draft" }, "Draft"), React.createElement("option", { value: "Sent" }, "Sent"), React.createElement("option", { value: "Accepted" }, "Accepted"), React.createElement("option", { value: "Rejected" }, "Rejected")
           )
         ),
-        React.createElement("textarea", { placeholder: "Remarks", value: newProjectQuote.remarks, onChange: (e) => setNewProjectQuote({...newProjectQuote, remarks: e.target.value}), style: styles.input }),
-        React.createElement("button", { onClick: addProjectQuotation, style: { ...styles.buttonSuccess, width: "100%" } }, "Save Quotation")
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Remarks"),
+          React.createElement("textarea", { placeholder: "Remarks", value: newProjectQuote.remarks, onChange: (e) => setNewProjectQuote({...newProjectQuote, remarks: e.target.value}), style: styles.input })
+        ),
+        React.createElement("button", { onClick: addProjectQuotation, style: { ...styles.buttonSuccess, width: "100%", padding: "12px", fontSize: "14px", fontWeight: "bold" } }, "Save Quotation")
       )
     ),
 
     showPaymentEntryModal && React.createElement("div", { style: styles.modal, onClick: () => setShowPaymentEntryModal(false) },
       React.createElement("div", { style: styles.modalContent, onClick: (e) => e.stopPropagation() },
-        React.createElement("h2", { style: { color: "#2d6a4f" } }, "Record Payment - ", selectedProjectData?.name),
-        React.createElement("input", { placeholder: "Milestone / Description", value: newPayment.milestoneName, onChange: (e) => setNewPayment({...newPayment, milestoneName: e.target.value}), style: styles.input }),
-        React.createElement("div", { style: styles.row2 },
-          React.createElement("input", { type: "number", min: 0, placeholder: "Amount", value: newPayment.amount, onChange: (e) => setNewPayment({...newPayment, amount: e.target.value}), style: styles.input }),
+        React.createElement("h2", { style: { color: "#2d6a4f", marginTop: 0, marginBottom: "16px" } }, "Record Payment - ", selectedProjectData?.name),
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Milestone / Description *"),
+          React.createElement("input", { placeholder: "Milestone / Description", value: newPayment.milestoneName, onChange: (e) => setNewPayment({...newPayment, milestoneName: e.target.value}), style: styles.input })
+        ),
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Payment Amount (₹) *"),
+          React.createElement("input", { type: "number", min: 0, placeholder: "Amount in ₹", value: newPayment.amount, onChange: (e) => setNewPayment({...newPayment, amount: e.target.value}), style: styles.input })
+        ),
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Payment Date *"),
           React.createElement("input", { type: "date", value: newPayment.date, onChange: (e) => setNewPayment({...newPayment, date: e.target.value}), style: styles.input })
         ),
-        React.createElement("div", { style: styles.row2 },
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Payment Status *"),
           React.createElement("select", { value: newPayment.status, onChange: (e) => setNewPayment({...newPayment, status: e.target.value}), style: styles.select },
             React.createElement("option", { value: "Received" }, "Received"),
             React.createElement("option", { value: "Pending" }, "Pending"),
             React.createElement("option", { value: "Partially Paid" }, "Partially Paid")
-          ),
+          )
+        ),
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Cheque / UTR / Reference"),
           React.createElement("input", { placeholder: "Cheque / UTR / Reference", value: newPayment.reference, onChange: (e) => setNewPayment({...newPayment, reference: e.target.value}), style: styles.input })
         ),
-        React.createElement("button", { onClick: addPayment, style: { ...styles.buttonSuccess, width: "100%" } }, "Save Payment")
+        React.createElement("button", { onClick: addPayment, style: { ...styles.buttonSuccess, width: "100%", padding: "12px", fontSize: "14px", fontWeight: "bold" } }, "Save Payment")
       )
     ),
 
     showMilestoneModal && React.createElement("div", { style: styles.modal, onClick: () => setShowMilestoneModal(false) },
       React.createElement("div", { style: styles.modalContent, onClick: (e) => e.stopPropagation() },
-        React.createElement("h2", { style: { color: "#2d6a4f" } }, "Add Milestone - ", selectedProjectData?.name),
-        React.createElement("input", { placeholder: "Milestone Name", value: newMilestone.name, onChange: (e) => setNewMilestone({...newMilestone, name: e.target.value}), style: styles.input }),
-        React.createElement("div", { style: styles.row2 },
-          React.createElement("input", { type: "number", min: 0, placeholder: "Amount", value: newMilestone.amount, onChange: (e) => setNewMilestone({...newMilestone, amount: e.target.value}), style: styles.input }),
+        React.createElement("h2", { style: { color: "#2d6a4f", marginTop: 0, marginBottom: "16px" } }, "Add Milestone - ", selectedProjectData?.name),
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Milestone Name *"),
+          React.createElement("input", { placeholder: "Milestone Name", value: newMilestone.name, onChange: (e) => setNewMilestone({...newMilestone, name: e.target.value}), style: styles.input })
+        ),
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Amount (₹) *"),
+          React.createElement("input", { type: "number", min: 0, placeholder: "Amount in ₹", value: newMilestone.amount, onChange: (e) => setNewMilestone({...newMilestone, amount: e.target.value}), style: styles.input })
+        ),
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Planned End Date *"),
           React.createElement("input", { type: "date", value: newMilestone.plannedEndDate, onChange: (e) => setNewMilestone({...newMilestone, plannedEndDate: e.target.value}), style: styles.input })
         ),
-        React.createElement("button", { onClick: addMilestone, style: { ...styles.buttonSuccess, width: "100%" } }, "Save Milestone")
+        React.createElement("button", { onClick: addMilestone, style: { ...styles.buttonSuccess, width: "100%", padding: "12px", fontSize: "14px", fontWeight: "bold" } }, "Save Milestone")
       )
     ),
-    
+
     // Media Upload Modal
     showMediaModal && React.createElement("div", { style: styles.modal, onClick: () => setShowMediaModal(false) },
       React.createElement("div", { style: styles.modalContent, onClick: (e) => e.stopPropagation() },
@@ -2698,6 +2809,7 @@ const geofenceAttendanceLog: any[] = [];
             const updatedList = [...labourMasterList, newEntry];
             setLabourMasterList(updatedList);
             localStorage.setItem("contractorLabourMasterList", JSON.stringify(updatedList));
+    persistContractorDataToCloud({ labourMasterList: updatedList });
 
             // Sync to contractor projects array so Buyer Dashboard can view it live in real-time
             const updatedProjects = projects.map(p =>

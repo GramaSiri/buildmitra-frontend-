@@ -999,13 +999,15 @@ ${enquiry.buyerPhone}`;
                                 </button>
 
                                 <input
-                                  type="number"
-                                  min="1"
-                                  step="1"
+                                  type="text"
+                                  inputMode="numeric"
+                                  data-bm-digits="5"
+                                  data-bm-field="cart-quantity"
+                                  maxLength={5}
                                   style={styles.quantityInput}
                                   value={cartItem.quantity || ""}
                                   onChange={(e) => {
-                                    const value = e.target.value;
+                                    const value = e.target.value.replace(/\D/g, "").slice(0, 5);
 
                                     setCart((current) =>
                                       current.map(

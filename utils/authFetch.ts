@@ -1,15 +1,22 @@
-import { getBuildMitraToken } from "./session";
+import { getBuildMitraToken, getBuildMitraUser } from "./session";
 
 export function getAuthHeaders(
   headers: HeadersInit = {}
 ): HeadersInit {
   const token = getBuildMitraToken();
+  const user = getBuildMitraUser();
+  const userCode = user?.userCode || user?.uniqueCode || "";
 
   return {
     ...headers,
     ...(token
       ? {
           Authorization: `Bearer ${token}`,
+        }
+      : {}),
+    ...(userCode
+      ? {
+          "x-user-code": userCode,
         }
       : {}),
   };

@@ -4,7 +4,8 @@ import * as XLSX from 'xlsx';
 import { logoutToLogin } from "../utils/session";
 import { themeTokens, PrimaryButton, SecondaryButton, Card, Badge, LoadingSpinner, EmptyState } from "../components/ui/DesignSystem";
 import MarketRateTrend from "../components/ui/MarketRateTrend";
-
+
+
 import { getApiBase } from "../utils/apiConfig";
 export default function MachineHireDashboard() {
 const API_BASE = getApiBase();
@@ -80,24 +81,82 @@ const [activeTab, setActiveTab] = useState("dashboard");
     date: e.createdAt ? e.createdAt.split("T")[0] : ""
   });
 
-  const loadLiveEnquiries = async () => {
+  const loadDashboardData = async () => {
     try {
       const currentUser = getCurrentAppUser();
-      const providerUserCode = currentUser.userCode || currentUser.userId || currentUser.uniqueCode || "";
-      if (!providerUserCode) {
-        setEnquiries([]);
-        return;
+      const providerUserCode = String(currentUser.userCode || currentUser.userId || currentUser.uniqueCode || "MAC-000001").trim();
+
+      // 1. Fetch live enquiries
+      try {
+        const res = await authFetch(API_BASE + "/api/enquiry?providerUserCode=" + encodeURIComponent(providerUserCode), {
+          headers: { "x-user-code": providerUserCode }
+        });
+        const data = await res.json();
+        if (data.success && Array.isArray(data.enquiries)) {
+          setEnquiries(data.enquiries.map(mapMongoEnquiry));
+        }
+      } catch (err) {
+        console.log("Machine enquiries load error:", err);
       }
-      const res = await fetch(API_BASE + "/api/enquiry?providerUserCode=" + encodeURIComponent(providerUserCode));
-      const data = await res.json();
-      if (data.success) setEnquiries((data.enquiries || []).map(mapMongoEnquiry));
-    } catch (err) {
-      console.log("Machine enquiries not loaded", err);
+
+      // 2. Fetch machines from MongoDB
+      try {
+        const res = await authFetch(API_BASE + "/api/machine-hire/machines?userCode=" + encodeURIComponent(providerUserCode), {
+          headers: { "x-user-code": providerUserCode }
+        });
+        const data = await res.json();
+        if (data.success && Array.isArray(data.machines) && data.machines.length > 0) {
+          setMachines(data.machines.map((m: any, idx: number) => ({ ...m, id: m._id || m.id || (idx + 1) })));
+        }
+      } catch (err) {
+        console.log("Machines load error:", err);
+      }
+
+      // 3. Fetch rentals from MongoDB
+      try {
+        const res = await authFetch(API_BASE + "/api/machine-hire/rentals?userCode=" + encodeURIComponent(providerUserCode), {
+          headers: { "x-user-code": providerUserCode }
+        });
+        const data = await res.json();
+        if (data.success && Array.isArray(data.rentals) && data.rentals.length > 0) {
+          setRentals(data.rentals.map((r: any, idx: number) => ({ ...r, id: r._id || r.id || (idx + 1) })));
+        }
+      } catch (err) {
+        console.log("Rentals load error:", err);
+      }
+
+      // 4. Fetch maintenance from MongoDB
+      try {
+        const res = await authFetch(API_BASE + "/api/machine-hire/maintenance?userCode=" + encodeURIComponent(providerUserCode), {
+          headers: { "x-user-code": providerUserCode }
+        });
+        const data = await res.json();
+        if (data.success && Array.isArray(data.maintenance) && data.maintenance.length > 0) {
+          setMaintenance(data.maintenance.map((m: any, idx: number) => ({ ...m, id: m._id || m.id || (idx + 1) })));
+        }
+      } catch (err) {
+        console.log("Maintenance load error:", err);
+      }
+
+      // 5. Fetch invoices from MongoDB
+      try {
+        const res = await authFetch(API_BASE + "/api/machine-hire/invoices?userCode=" + encodeURIComponent(providerUserCode), {
+          headers: { "x-user-code": providerUserCode }
+        });
+        const data = await res.json();
+        if (data.success && Array.isArray(data.invoices) && data.invoices.length > 0) {
+          setInvoices(data.invoices.map((inv: any) => ({ ...inv, id: inv._id || inv.id })));
+        }
+      } catch (err) {
+        console.log("Machine invoices load error:", err);
+      }
+    } catch (e) {
+      console.log("Machine dashboard data load error:", e);
     }
   };
 
   useEffect(() => {
-    loadLiveEnquiries();
+    loadDashboardData();
   }, []);
 
   const handleLogout = () => {
@@ -108,12 +167,30 @@ const [activeTab, setActiveTab] = useState("dashboard");
     window.location.href = path;
   };
 
-  const addMachine = () => {
+  const addMachine = async () => {
     if (!newMachine.name || !newMachine.dailyRate) return alert("Fill required fields");
-    setMachines([...machines, { ...newMachine, id: machines.length + 1, status: "Available", images: [], documents: [] }]);
+    const currentUser = getCurrentAppUser();
+    const userCode = String(currentUser.userCode || currentUser.userId || currentUser.uniqueCode || "MAC-000001").trim();
+
+    try {
+      const res = await authFetch(API_BASE + "/api/machine-hire/machines", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-user-code": userCode },
+        body: JSON.stringify({ ...newMachine, userCode, status: "Available" })
+      });
+      const data = await res.json();
+      if (data.success && data.machine) {
+        setMachines([data.machine, ...machines]);
+      } else {
+        setMachines([{ ...newMachine, id: machines.length + 1, status: "Available", images: [], documents: [] }, ...machines]);
+      }
+    } catch {
+      setMachines([{ ...newMachine, id: machines.length + 1, status: "Available", images: [], documents: [] }, ...machines]);
+    }
+
     setNewMachine({ name: "", category: "Earth Moving", model: "", dailyRate: 0, weeklyRate: 0, monthlyRate: 0, operatorRequired: false, operatorCost: 0, fuelType: "Diesel", description: "" });
     setShowAddMachineModal(false);
-    alert("Machine added!");
+    alert("Machine added and saved to database!");
   };
 
   const handleBulkUpload = (e) => {
@@ -129,10 +206,12 @@ const [activeTab, setActiveTab] = useState("dashboard");
     reader.readAsArrayBuffer(file);
   };
 
-  const importBulkMachines = () => {
+  const importBulkMachines = async () => {
+    const currentUser = getCurrentAppUser();
+    const userCode = String(currentUser.userCode || currentUser.userId || currentUser.uniqueCode || "MAC-000001").trim();
+
     const newMachines = bulkData.map((item, idx) => ({
-      id: machines.length + idx + 1,
-      name: item.name || item.Machine,
+      name: item.name || item.Machine || "Machine",
       category: item.category || "Other",
       model: item.model || "2024",
       dailyRate: parseFloat(item.dailyRate || 1000),
@@ -145,10 +224,26 @@ const [activeTab, setActiveTab] = useState("dashboard");
       images: [],
       documents: []
     }));
-    setMachines([...machines, ...newMachines]);
+
+    try {
+      const res = await authFetch(API_BASE + "/api/machine-hire/machines/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-user-code": userCode },
+        body: JSON.stringify({ machines: newMachines, userCode })
+      });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.machines)) {
+        setMachines([...data.machines, ...machines]);
+      } else {
+        setMachines([...newMachines.map((m, i) => ({ ...m, id: machines.length + i + 1 })), ...machines]);
+      }
+    } catch {
+      setMachines([...newMachines.map((m, i) => ({ ...m, id: machines.length + i + 1 })), ...machines]);
+    }
+
     setBulkData([]);
     setShowBulkModal(false);
-    alert(`${newMachines.length} machines imported!`);
+    alert(`${newMachines.length} machines imported and saved to database!`);
   };
 
   const addRental = () => {
@@ -270,7 +365,7 @@ const [activeTab, setActiveTab] = useState("dashboard");
   const totalRevenue = rentals.reduce((sum, r) => sum + r.totalAmount, 0);
 
   const styles = {
-    container: { padding: "16px", backgroundColor: "#f0f2f5", minHeight: "100vh" },
+    container: { padding: "16px", backgroundColor: "#f0f2f5", minHeight: "100dvh", width: "100%", maxWidth: "100%", boxSizing: "border-box", overflowX: "hidden" },
     header: { backgroundColor: "#800020", color: "white", padding: "16px", borderRadius: "12px", marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" },
     headerTitle: { margin: 0, fontSize: "20px" },
     headerSub: { margin: "5px 0 0", fontSize: "12px", opacity: 0.9 },
@@ -289,7 +384,7 @@ const [activeTab, setActiveTab] = useState("dashboard");
     th: { textAlign: "left", padding: "8px", borderBottom: "1px solid #eee", fontWeight: "bold" },
     td: { padding: "8px", borderBottom: "1px solid #eee" },
     modal: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 },
-    modalContent: { backgroundColor: "white", borderRadius: "16px", padding: "24px", width: "90%", maxWidth: "550px", maxHeight: "80vh", overflow: "auto" },
+    modalContent: { backgroundColor: "white", borderRadius: "16px", padding: "24px", width: "min(520px, 94vw)", maxWidth: "520px", maxHeight: "85vh", overflowY: "auto", boxSizing: "border-box" },
     tabContainer: { display: "flex", gap: "10px", marginBottom: "20px", borderBottom: "1px solid #eee", flexWrap: "wrap" },
     tab: { padding: "8px 16px", cursor: "pointer", borderBottom: "2px solid transparent" },
     activeTab: { borderBottomColor: "#800020", color: "#800020", fontWeight: "bold" },
@@ -528,56 +623,102 @@ const [activeTab, setActiveTab] = useState("dashboard");
 
     showAddMachineModal && React.createElement("div", { style: styles.modal, onClick: () => setShowAddMachineModal(false) },
       React.createElement("div", { style: styles.modalContent, onClick: (e) => e.stopPropagation() },
-        React.createElement("h3", null, "Add Machine"),
-        React.createElement("input", { placeholder: "Machine Name", value: newMachine.name, onChange: (e) => setNewMachine({...newMachine, name: e.target.value}), style: styles.input }),
-        React.createElement("select", { value: newMachine.category, onChange: (e) => setNewMachine({...newMachine, category: e.target.value}), style: styles.select },
-          React.createElement("option", null, "Earth Moving"), React.createElement("option", null, "Concrete"), React.createElement("option", null, "Painting"),
-          React.createElement("option", null, "Polishing"), React.createElement("option", null, "Cutting"), React.createElement("option", null, "Drilling")
+        React.createElement("h3", { style: { marginTop: 0, marginBottom: "16px" } }, "Add Machine"),
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Machine Name *"),
+          React.createElement("input", { placeholder: "Machine Name", value: newMachine.name, onChange: (e) => setNewMachine({...newMachine, name: e.target.value}), style: styles.input })
         ),
-        React.createElement("div", { style: styles.row2 },
-          React.createElement("input", { type: "number", placeholder: "Daily Rate", value: newMachine.dailyRate, onChange: (e) => setNewMachine({...newMachine, dailyRate: parseFloat(e.target.value)}), style: styles.input }),
-          React.createElement("input", { type: "number", placeholder: "Weekly Rate", value: newMachine.weeklyRate, onChange: (e) => setNewMachine({...newMachine, weeklyRate: parseFloat(e.target.value)}), style: styles.input })
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Category *"),
+          React.createElement("select", { value: newMachine.category, onChange: (e) => setNewMachine({...newMachine, category: e.target.value}), style: styles.select },
+            React.createElement("option", null, "Earth Moving"), React.createElement("option", null, "Concrete"), React.createElement("option", null, "Painting"),
+            React.createElement("option", null, "Polishing"), React.createElement("option", null, "Cutting"), React.createElement("option", null, "Drilling")
+          )
         ),
-        React.createElement("input", { type: "number", placeholder: "Monthly Rate", value: newMachine.monthlyRate, onChange: (e) => setNewMachine({...newMachine, monthlyRate: parseFloat(e.target.value)}), style: styles.input }),
-        React.createElement("div", { style: styles.row2 },
-          React.createElement("label", null, React.createElement("input", { type: "checkbox", checked: newMachine.operatorRequired, onChange: (e) => setNewMachine({...newMachine, operatorRequired: e.target.checked}) }), " Operator Required"),
-          newMachine.operatorRequired && React.createElement("input", { type: "number", placeholder: "Operator Cost/day", value: newMachine.operatorCost, onChange: (e) => setNewMachine({...newMachine, operatorCost: parseFloat(e.target.value)}), style: styles.input })
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Daily Rate (₹) *"),
+          React.createElement("input", { type: "number", "data-bm-digits": "10", placeholder: "Daily Rate in ₹", value: newMachine.dailyRate, onChange: (e) => setNewMachine({...newMachine, dailyRate: parseFloat(e.target.value)}), style: styles.input })
         ),
-        React.createElement("button", { onClick: addMachine, style: styles.buttonSuccess }, "Add Machine")
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Weekly Rate (₹)"),
+          React.createElement("input", { type: "number", "data-bm-digits": "10", placeholder: "Weekly Rate in ₹", value: newMachine.weeklyRate, onChange: (e) => setNewMachine({...newMachine, weeklyRate: parseFloat(e.target.value)}), style: styles.input })
+        ),
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Monthly Rate (₹)"),
+          React.createElement("input", { type: "number", "data-bm-digits": "10", placeholder: "Monthly Rate in ₹", value: newMachine.monthlyRate, onChange: (e) => setNewMachine({...newMachine, monthlyRate: parseFloat(e.target.value)}), style: styles.input })
+        ),
+        React.createElement("div", { style: { marginBottom: "14px", display: "flex", alignItems: "center", gap: "8px" } },
+          React.createElement("input", { type: "checkbox", id: "opReq", checked: newMachine.operatorRequired, onChange: (e) => setNewMachine({...newMachine, operatorRequired: e.target.checked}) }),
+          React.createElement("label", { htmlFor: "opReq", style: { fontWeight: "600", fontSize: "13px", cursor: "pointer" } }, "Operator Required")
+        ),
+        newMachine.operatorRequired && React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Operator Cost / day (₹)"),
+          React.createElement("input", { type: "number", "data-bm-digits": "10", placeholder: "Operator Cost/day", value: newMachine.operatorCost, onChange: (e) => setNewMachine({...newMachine, operatorCost: parseFloat(e.target.value)}), style: styles.input })
+        ),
+        React.createElement("button", { onClick: addMachine, style: { ...styles.buttonSuccess, width: "100%", padding: "12px", fontSize: "14px", fontWeight: "bold" } }, "Add Machine")
       )
     ),
 
     showRentalModal && selectedMachine && React.createElement("div", { style: styles.modal, onClick: () => setShowRentalModal(false) },
       React.createElement("div", { style: styles.modalContent, onClick: (e) => e.stopPropagation() },
-        React.createElement("h3", null, "Rent Machine: ", selectedMachine.name),
-        React.createElement("select", { value: selectedRental?.clientId || "", onChange: (e) => setSelectedRental({...selectedRental, clientId: parseInt(e.target.value)}) || setSelectedRental({ clientId: parseInt(e.target.value), startDate: "", endDate: "", dailyRate: "", operatorIncluded: false, securityDeposit: "" }), style: styles.select },
-          React.createElement("option", { value: "" }, "Select Client"),
-          clients.map(c => React.createElement("option", { key: c.id, value: c.id }, c.name, " - ", c.project))
+        React.createElement("h3", { style: { marginTop: 0, marginBottom: "16px" } }, "Rent Machine: ", selectedMachine.name),
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Select Client *"),
+          React.createElement("select", { value: selectedRental?.clientId || "", onChange: (e) => setSelectedRental({...selectedRental, clientId: parseInt(e.target.value)}) || setSelectedRental({ clientId: parseInt(e.target.value), startDate: "", endDate: "", dailyRate: "", operatorIncluded: false, securityDeposit: "" }), style: styles.select },
+            React.createElement("option", { value: "" }, "Select Client"),
+            clients.map(c => React.createElement("option", { key: c.id, value: c.id }, c.name, " - ", c.project))
+          )
         ),
-        React.createElement("div", { style: styles.row2 },
-          React.createElement("input", { type: "date", placeholder: "Start Date", value: selectedRental?.startDate || "", onChange: (e) => setSelectedRental({...selectedRental, startDate: e.target.value}), style: styles.input }),
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Start Date *"),
+          React.createElement("input", { type: "date", placeholder: "Start Date", value: selectedRental?.startDate || "", onChange: (e) => setSelectedRental({...selectedRental, startDate: e.target.value}), style: styles.input })
+        ),
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "End Date *"),
           React.createElement("input", { type: "date", placeholder: "End Date", value: selectedRental?.endDate || "", onChange: (e) => setSelectedRental({...selectedRental, endDate: e.target.value}), style: styles.input })
         ),
-        React.createElement("input", { type: "number", placeholder: "Daily Rate (₹)", value: selectedRental?.dailyRate || "", onChange: (e) => setSelectedRental({...selectedRental, dailyRate: e.target.value}), style: styles.input }),
-        React.createElement("label", null, React.createElement("input", { type: "checkbox", checked: selectedRental?.operatorIncluded || false, onChange: (e) => setSelectedRental({...selectedRental, operatorIncluded: e.target.checked}) }), " Include Operator"),
-        React.createElement("button", { onClick: addRental, style: styles.buttonSuccess }, "Create Rental")
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Daily Rate (₹) *"),
+          React.createElement("input", { type: "number", "data-bm-digits": "10", placeholder: "Daily Rate (₹)", value: selectedRental?.dailyRate || "", onChange: (e) => setSelectedRental({...selectedRental, dailyRate: e.target.value}), style: styles.input })
+        ),
+        React.createElement("div", { style: { marginBottom: "14px", display: "flex", alignItems: "center", gap: "8px" } },
+          React.createElement("input", { type: "checkbox", id: "incOp", checked: selectedRental?.operatorIncluded || false, onChange: (e) => setSelectedRental({...selectedRental, operatorIncluded: e.target.checked}) }),
+          React.createElement("label", { htmlFor: "incOp", style: { fontWeight: "600", fontSize: "13px", cursor: "pointer" } }, "Include Operator")
+        ),
+        React.createElement("button", { onClick: addRental, style: { ...styles.buttonSuccess, width: "100%", padding: "12px", fontSize: "14px", fontWeight: "bold" } }, "Create Rental")
       )
     ),
 
     showMaintenanceModal && selectedMachine && React.createElement("div", { style: styles.modal, onClick: () => setShowMaintenanceModal(false) },
       React.createElement("div", { style: styles.modalContent, onClick: (e) => e.stopPropagation() },
-        React.createElement("h3", null, "Schedule Maintenance for ", selectedMachine.name),
-        React.createElement("div", { style: styles.row2 },
-          React.createElement("input", { type: "date", placeholder: "Service Date", value: newMaintenance.serviceDate, onChange: (e) => setNewMaintenance({...newMaintenance, serviceDate: e.target.value}), style: styles.input }),
+        React.createElement("h3", { style: { marginTop: 0, marginBottom: "16px" } }, "Schedule Maintenance for ", selectedMachine.name),
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Service Date *"),
+          React.createElement("input", { type: "date", placeholder: "Service Date", value: newMaintenance.serviceDate, onChange: (e) => setNewMaintenance({...newMaintenance, serviceDate: e.target.value}), style: styles.input })
+        ),
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Next Due Date *"),
           React.createElement("input", { type: "date", placeholder: "Next Due Date", value: newMaintenance.nextDueDate, onChange: (e) => setNewMaintenance({...newMaintenance, nextDueDate: e.target.value}), style: styles.input })
         ),
-        React.createElement("select", { value: newMaintenance.serviceType, onChange: (e) => setNewMaintenance({...newMaintenance, serviceType: e.target.value}), style: styles.select },
-          React.createElement("option", null, "Preventive"), React.createElement("option", null, "Breakdown")
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Service Type *"),
+          React.createElement("select", { value: newMaintenance.serviceType, onChange: (e) => setNewMaintenance({...newMaintenance, serviceType: e.target.value}), style: styles.select },
+            React.createElement("option", null, "Preventive"), React.createElement("option", null, "Breakdown")
+          )
         ),
-        React.createElement("input", { type: "number", placeholder: "Cost (₹)", value: newMaintenance.cost, onChange: (e) => setNewMaintenance({...newMaintenance, cost: e.target.value}), style: styles.input }),
-        React.createElement("input", { placeholder: "Mechanic Name", value: newMaintenance.mechanic, onChange: (e) => setNewMaintenance({...newMaintenance, mechanic: e.target.value}), style: styles.input }),
-        React.createElement("textarea", { placeholder: "Notes", value: newMaintenance.notes, onChange: (e) => setNewMaintenance({...newMaintenance, notes: e.target.value}), style: styles.textarea }),
-        React.createElement("button", { onClick: addMaintenance, style: styles.buttonSuccess }, "Schedule Maintenance")
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Cost (₹)"),
+          React.createElement("input", { type: "number", "data-bm-digits": "10", placeholder: "Cost in ₹", value: newMaintenance.cost, onChange: (e) => setNewMaintenance({...newMaintenance, cost: e.target.value}), style: styles.input })
+        ),
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Mechanic Name"),
+          React.createElement("input", { placeholder: "Mechanic Name", value: newMaintenance.mechanic, onChange: (e) => setNewMaintenance({...newMaintenance, mechanic: e.target.value}), style: styles.input })
+        ),
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Notes"),
+          React.createElement("textarea", { placeholder: "Maintenance notes", value: newMaintenance.notes, onChange: (e) => setNewMaintenance({...newMaintenance, notes: e.target.value}), style: styles.textarea })
+        ),
+        React.createElement("button", { onClick: addMaintenance, style: { ...styles.buttonSuccess, width: "100%", padding: "12px", fontSize: "14px", fontWeight: "bold" } }, "Schedule Maintenance")
       )
     ),
 

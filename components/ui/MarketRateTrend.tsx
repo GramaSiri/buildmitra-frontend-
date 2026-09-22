@@ -83,6 +83,12 @@ export default function MarketRateTrend() {
           width: max-content;
           animation: tickerScroll 142s linear infinite;
         }
+        .ticker-container {
+          overflow: hidden !important;
+          width: 100% !important;
+          max-width: 100% !important;
+          position: relative !important;
+        }
         .ticker-container:hover .ticker-track,
         .ticker-track-paused {
           animation-play-state: paused !important;
@@ -109,6 +115,9 @@ export default function MarketRateTrend() {
           display: "flex",
           alignItems: "center",
           overflow: "hidden",
+          width: "100%",
+          maxWidth: "100%",
+          position: "relative",
           padding: "0 12px",
           boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
           color: "#1e293b"

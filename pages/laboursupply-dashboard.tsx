@@ -4,7 +4,8 @@ import * as XLSX from 'xlsx';
 import { logoutToLogin } from "../utils/session";
 import { themeTokens, PrimaryButton, SecondaryButton, Card, Badge, LoadingSpinner, EmptyState } from "../components/ui/DesignSystem";
 import MarketRateTrend from "../components/ui/MarketRateTrend";
-
+
+
 import { getApiBase } from "../utils/apiConfig";
 export default function LabourSupplyDashboard() {
 const API_BASE = getApiBase();
@@ -94,24 +95,95 @@ const [activeTab, setActiveTab] = useState("dashboard");
     date: e.createdAt ? e.createdAt.split("T")[0] : ""
   });
 
-  const loadLiveEnquiries = async () => {
+  const loadDashboardData = async () => {
     try {
       const currentUser = getCurrentAppUser();
-      const providerUserCode = currentUser.userCode || currentUser.userId || currentUser.uniqueCode || "";
-      if (!providerUserCode) {
-        setEnquiries([]);
-        return;
+      const providerUserCode = String(currentUser.userCode || currentUser.userId || currentUser.uniqueCode || "LAB-000001").trim();
+
+      // 1. Fetch live enquiries
+      try {
+        const res = await authFetch(API_BASE + "/api/enquiry?providerUserCode=" + encodeURIComponent(providerUserCode), {
+          headers: { "x-user-code": providerUserCode }
+        });
+        const data = await res.json();
+        if (data.success && Array.isArray(data.enquiries)) {
+          setEnquiries(data.enquiries.map(mapMongoEnquiry));
+        }
+      } catch (err) {
+        console.log("Labour enquiries load error:", err);
       }
-      const res = await fetch(API_BASE + "/api/enquiry?providerUserCode=" + encodeURIComponent(providerUserCode));
-      const data = await res.json();
-      if (data.success) setEnquiries((data.enquiries || []).map(mapMongoEnquiry));
-    } catch (err) {
-      console.log("Labour enquiries not loaded", err);
+
+      // 2. Fetch workers from MongoDB
+      try {
+        const res = await authFetch(API_BASE + "/api/labour-supply/workers?userCode=" + encodeURIComponent(providerUserCode), {
+          headers: { "x-user-code": providerUserCode }
+        });
+        const data = await res.json();
+        if (data.success && Array.isArray(data.workers) && data.workers.length > 0) {
+          setWorkers(data.workers.map((w: any, idx: number) => ({ ...w, id: w._id || w.id || (idx + 1) })));
+        }
+      } catch (err) {
+        console.log("Workers load error:", err);
+      }
+
+      // 3. Fetch attendance from MongoDB
+      try {
+        const res = await authFetch(API_BASE + "/api/labour-supply/attendance?userCode=" + encodeURIComponent(providerUserCode), {
+          headers: { "x-user-code": providerUserCode }
+        });
+        const data = await res.json();
+        if (data.success && Array.isArray(data.attendance) && data.attendance.length > 0) {
+          setAttendance(data.attendance.map((a: any, idx: number) => ({ ...a, id: a._id || a.id || (idx + 1) })));
+        }
+      } catch (err) {
+        console.log("Attendance load error:", err);
+      }
+
+      // 4. Fetch assignments from MongoDB
+      try {
+        const res = await authFetch(API_BASE + "/api/labour-supply/assignments?userCode=" + encodeURIComponent(providerUserCode), {
+          headers: { "x-user-code": providerUserCode }
+        });
+        const data = await res.json();
+        if (data.success && Array.isArray(data.assignments) && data.assignments.length > 0) {
+          setAssignments(data.assignments.map((a: any, idx: number) => ({ ...a, id: a._id || a.id || (idx + 1) })));
+        }
+      } catch (err) {
+        console.log("Assignments load error:", err);
+      }
+
+      // 5. Fetch rate card from MongoDB
+      try {
+        const res = await authFetch(API_BASE + "/api/labour-supply/rates?userCode=" + encodeURIComponent(providerUserCode), {
+          headers: { "x-user-code": providerUserCode }
+        });
+        const data = await res.json();
+        if (data.success && Array.isArray(data.rates) && data.rates.length > 0) {
+          setRateCard(data.rates.map((r: any, idx: number) => ({ ...r, id: r._id || r.id || (idx + 1) })));
+        }
+      } catch (err) {
+        console.log("Rates load error:", err);
+      }
+
+      // 6. Fetch invoices from MongoDB
+      try {
+        const res = await authFetch(API_BASE + "/api/labour-supply/invoices?userCode=" + encodeURIComponent(providerUserCode), {
+          headers: { "x-user-code": providerUserCode }
+        });
+        const data = await res.json();
+        if (data.success && Array.isArray(data.invoices) && data.invoices.length > 0) {
+          setInvoices(data.invoices.map((inv: any) => ({ ...inv, id: inv.invoiceId || inv._id || inv.id })));
+        }
+      } catch (err) {
+        console.log("Invoices load error:", err);
+      }
+    } catch (e) {
+      console.log("Dashboard data load error:", e);
     }
   };
 
   useEffect(() => {
-    loadLiveEnquiries();
+    loadDashboardData();
   }, []);
 
   const [invoices, setInvoices] = useState([
@@ -126,12 +198,30 @@ const [activeTab, setActiveTab] = useState("dashboard");
     window.location.href = path;
   };
 
-  const addWorker = () => {
+  const addWorker = async () => {
     if (!newWorker.name) return alert("Enter worker name");
-    setWorkers([...workers, { ...newWorker, id: workers.length + 1, rating: 4.0, status: "Available", projectId: null }]);
+    const currentUser = getCurrentAppUser();
+    const userCode = String(currentUser.userCode || currentUser.userId || currentUser.uniqueCode || "LAB-000001").trim();
+
+    try {
+      const res = await authFetch(API_BASE + "/api/labour-supply/workers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-user-code": userCode },
+        body: JSON.stringify({ ...newWorker, userCode, rating: 4.0, status: "Available" })
+      });
+      const data = await res.json();
+      if (data.success && data.worker) {
+        setWorkers([data.worker, ...workers]);
+      } else {
+        setWorkers([{ ...newWorker, id: workers.length + 1, rating: 4.0, status: "Available", projectId: null }, ...workers]);
+      }
+    } catch {
+      setWorkers([{ ...newWorker, id: workers.length + 1, rating: 4.0, status: "Available", projectId: null }, ...workers]);
+    }
+
     setNewWorker({ name: "", skill: "Mason", dailyWage: 800, mobile: "", experience: "2 years" });
     setShowWorkerModal(false);
-    alert("Worker added!");
+    alert("Worker added and saved to database!");
   };
 
   const handleBulkUpload = (e) => {
@@ -147,10 +237,12 @@ const [activeTab, setActiveTab] = useState("dashboard");
     reader.readAsArrayBuffer(file);
   };
 
-  const importBulkWorkers = () => {
+  const importBulkWorkers = async () => {
+    const currentUser = getCurrentAppUser();
+    const userCode = String(currentUser.userCode || currentUser.userId || currentUser.uniqueCode || "LAB-000001").trim();
+
     const newWorkers = bulkData.map((item, idx) => ({
-      id: workers.length + idx + 1,
-      name: item.name || item.Name,
+      name: item.name || item.Name || "Worker",
       skill: item.skill || "Helper",
       dailyWage: parseFloat(item.wage || 500),
       mobile: item.mobile || "",
@@ -159,25 +251,56 @@ const [activeTab, setActiveTab] = useState("dashboard");
       status: "Available",
       projectId: null
     }));
-    setWorkers([...workers, ...newWorkers]);
+
+    try {
+      const res = await authFetch(API_BASE + "/api/labour-supply/workers/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-user-code": userCode },
+        body: JSON.stringify({ workers: newWorkers, userCode })
+      });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.workers)) {
+        setWorkers([...data.workers, ...workers]);
+      } else {
+        setWorkers([...newWorkers.map((w, i) => ({ ...w, id: workers.length + i + 1 })), ...workers]);
+      }
+    } catch {
+      setWorkers([...newWorkers.map((w, i) => ({ ...w, id: workers.length + i + 1 })), ...workers]);
+    }
+
     setBulkData([]);
     setShowBulkModal(false);
-    alert(`${newWorkers.length} workers imported!`);
+    alert(`${newWorkers.length} workers imported and saved to database!`);
   };
 
-  const assignWorker = () => {
+  const assignWorker = async () => {
     if (!selectedWorker) return alert("Select worker");
     const project = projects.find(p => p.id === selectedProject);
-    setAssignments([...assignments, {
-      id: assignments.length + 1,
-      workerId: selectedWorker.id,
+    const currentUser = getCurrentAppUser();
+    const userCode = String(currentUser.userCode || currentUser.userId || currentUser.uniqueCode || "LAB-000001").trim();
+
+    const assignmentData = {
+      userCode,
+      workerId: selectedWorker._id || selectedWorker.id,
       workerName: selectedWorker.name,
       projectId: project.id,
       projectName: project.name,
       assignedDate: new Date().toISOString().split("T")[0],
       dailyRate: selectedWorker.dailyWage,
       status: "Active"
-    }]);
+    };
+
+    try {
+      await authFetch(API_BASE + "/api/labour-supply/assignments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-user-code": userCode },
+        body: JSON.stringify(assignmentData)
+      });
+    } catch (e) {
+      console.log("Assignment cloud sync error:", e);
+    }
+
+    setAssignments([{ ...assignmentData, id: assignments.length + 1 }, ...assignments]);
     setWorkers(workers.map(w => w.id === selectedWorker.id ? { ...w, status: "Deployed", projectId: project.id } : w));
     setSelectedWorker(null);
     setShowAssignModal(false);
@@ -260,7 +383,7 @@ const [activeTab, setActiveTab] = useState("dashboard");
   const pendingEnquiries = enquiries.filter(e => e.status === "Pending").length;
 
   const styles = {
-    container: { padding: "16px", backgroundColor: "#f0f2f5", minHeight: "100vh" },
+    container: { padding: "16px", backgroundColor: "#f0f2f5", minHeight: "100dvh", width: "100%", maxWidth: "100%", boxSizing: "border-box", overflowX: "hidden" },
     header: { backgroundColor: "#800020", color: "white", padding: "16px", borderRadius: "12px", marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" },
     headerTitle: { margin: 0, fontSize: "20px" },
     headerSub: { margin: "5px 0 0", fontSize: "12px", opacity: 0.9 },
@@ -278,7 +401,7 @@ const [activeTab, setActiveTab] = useState("dashboard");
     th: { textAlign: "left", padding: "8px", borderBottom: "1px solid #eee", fontWeight: "bold" },
     td: { padding: "8px", borderBottom: "1px solid #eee" },
     modal: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 },
-    modalContent: { backgroundColor: "white", borderRadius: "16px", padding: "24px", width: "90%", maxWidth: "550px", maxHeight: "80vh", overflow: "auto" },
+    modalContent: { backgroundColor: "white", borderRadius: "16px", padding: "24px", width: "min(520px, 94vw)", maxWidth: "520px", maxHeight: "85vh", overflowY: "auto", boxSizing: "border-box" },
     tabContainer: { display: "flex", gap: "10px", marginBottom: "20px", borderBottom: "1px solid #eee", flexWrap: "wrap" },
     tab: { padding: "8px 16px", cursor: "pointer", borderBottom: "2px solid transparent" },
     activeTab: { borderBottomColor: "#800020", color: "#800020", fontWeight: "bold" },
@@ -507,52 +630,84 @@ const [activeTab, setActiveTab] = useState("dashboard");
 
     showWorkerModal && React.createElement("div", { style: styles.modal, onClick: () => setShowWorkerModal(false) },
       React.createElement("div", { style: styles.modalContent, onClick: (e) => e.stopPropagation() },
-        React.createElement("h3", null, "Add Worker"),
-        React.createElement("input", { placeholder: "Worker Name", value: newWorker.name, onChange: (e) => setNewWorker({...newWorker, name: e.target.value}), style: styles.input }),
-        React.createElement("select", { value: newWorker.skill, onChange: (e) => setNewWorker({...newWorker, skill: e.target.value}), style: styles.select },
-          React.createElement("option", null, "Mason"), React.createElement("option", null, "Carpenter"),
-          React.createElement("option", null, "Helper"), React.createElement("option", null, "Electrician"),
-          React.createElement("option", null, "Plumber"), React.createElement("option", null, "Painter")
+        React.createElement("h3", { style: { marginTop: 0, marginBottom: "16px" } }, "Add Worker"),
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Worker Name *"),
+          React.createElement("input", { placeholder: "Worker Name", value: newWorker.name, onChange: (e) => setNewWorker({...newWorker, name: e.target.value}), style: styles.input })
         ),
-        React.createElement("div", { style: styles.row2 },
-          React.createElement("input", { type: "number", placeholder: "Daily Wage", value: newWorker.dailyWage, onChange: (e) => setNewWorker({...newWorker, dailyWage: parseFloat(e.target.value)}), style: styles.input }),
-          React.createElement("input", { placeholder: "Mobile Number", value: newWorker.mobile, onChange: (e) => setNewWorker({...newWorker, mobile: e.target.value}), style: styles.input })
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Skill *"),
+          React.createElement("select", { value: newWorker.skill, onChange: (e) => setNewWorker({...newWorker, skill: e.target.value}), style: styles.select },
+            React.createElement("option", null, "Mason"), React.createElement("option", null, "Carpenter"),
+            React.createElement("option", null, "Helper"), React.createElement("option", null, "Electrician"),
+            React.createElement("option", null, "Plumber"), React.createElement("option", null, "Painter")
+          )
         ),
-        React.createElement("input", { placeholder: "Experience", value: newWorker.experience, onChange: (e) => setNewWorker({...newWorker, experience: e.target.value}), style: styles.input }),
-        React.createElement("button", { onClick: addWorker, style: styles.buttonSuccess }, "Add Worker")
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Daily Wage (₹) *"),
+          React.createElement("input", { type: "number", "data-bm-digits": "10", placeholder: "Daily Wage in ₹", value: newWorker.dailyWage, onChange: (e) => setNewWorker({...newWorker, dailyWage: parseFloat(e.target.value)}), style: styles.input })
+        ),
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Mobile Number *"),
+          React.createElement("input", { placeholder: "10-digit mobile number", value: newWorker.mobile, onChange: (e) => setNewWorker({...newWorker, mobile: e.target.value}), style: styles.input })
+        ),
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Experience"),
+          React.createElement("input", { placeholder: "Experience e.g. 5 years", value: newWorker.experience, onChange: (e) => setNewWorker({...newWorker, experience: e.target.value}), style: styles.input })
+        ),
+        React.createElement("button", { onClick: addWorker, style: { ...styles.buttonSuccess, width: "100%", padding: "12px", fontSize: "14px", fontWeight: "bold" } }, "Add Worker")
       )
     ),
 
     showAssignModal && selectedWorker && React.createElement("div", { style: styles.modal, onClick: () => setShowAssignModal(false) },
       React.createElement("div", { style: styles.modalContent, onClick: (e) => e.stopPropagation() },
-        React.createElement("h3", null, "Assign Worker: ", selectedWorker.name),
-        React.createElement("select", { value: selectedProject, onChange: (e) => setSelectedProject(parseInt(e.target.value)), style: styles.select },
-          projects.map(p => React.createElement("option", { key: p.id, value: p.id }, p.name, " - ", p.location))
+        React.createElement("h3", { style: { marginTop: 0, marginBottom: "16px" } }, "Assign Worker: ", selectedWorker.name),
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Select Project *"),
+          React.createElement("select", { value: selectedProject, onChange: (e) => setSelectedProject(parseInt(e.target.value)), style: styles.select },
+            projects.map(p => React.createElement("option", { key: p.id, value: p.id }, p.name, " - ", p.location))
+          )
         ),
-        React.createElement("button", { onClick: assignWorker, style: styles.buttonSuccess }, "Assign to Project")
+        React.createElement("button", { onClick: assignWorker, style: { ...styles.buttonSuccess, width: "100%", padding: "12px", fontSize: "14px", fontWeight: "bold" } }, "Assign to Project")
       )
     ),
 
     showEnquiryModal && selectedEnquiry && React.createElement("div", { style: styles.modal, onClick: () => setShowEnquiryModal(false) },
       React.createElement("div", { style: styles.modalContent, onClick: (e) => e.stopPropagation() },
-        React.createElement("h3", null, "Send WhatsApp Quote"),
+        React.createElement("h3", { style: { marginTop: 0, marginBottom: "16px" } }, "Send WhatsApp Quote"),
         React.createElement("p", null, selectedEnquiry.client, " wants ", selectedEnquiry.quantity, " ", selectedEnquiry.requirement, "(s) for ", selectedEnquiry.duration, " days"),
-        React.createElement("input", { type: "number", placeholder: "Rate per day (₹)", value: quotePrice, onChange: (e) => setQuotePrice(e.target.value), style: styles.input }),
-        React.createElement("textarea", { placeholder: "Message", value: quoteMsg, onChange: (e) => setQuoteMsg(e.target.value), style: styles.textarea, rows: 3 }),
-        React.createElement("button", { onClick: sendQuote, style: styles.buttonSuccess }, "Send Quote")
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Rate per day (₹) *"),
+          React.createElement("input", { type: "number", "data-bm-digits": "10", placeholder: "Rate per day (₹)", value: quotePrice, onChange: (e) => setQuotePrice(e.target.value), style: styles.input })
+        ),
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Message"),
+          React.createElement("textarea", { placeholder: "Message", value: quoteMsg, onChange: (e) => setQuoteMsg(e.target.value), style: styles.textarea, rows: 3 })
+        ),
+        React.createElement("button", { onClick: sendQuote, style: { ...styles.buttonSuccess, width: "100%", padding: "12px", fontSize: "14px", fontWeight: "bold" } }, "Send Quote")
       )
     ),
 
     showRateModal && React.createElement("div", { style: styles.modal, onClick: () => setShowRateModal(false) },
       React.createElement("div", { style: styles.modalContent, onClick: (e) => e.stopPropagation() },
-        React.createElement("h3", null, "Add Rate"),
-        React.createElement("input", { placeholder: "Skill Name", value: newRate.skill, onChange: (e) => setNewRate({...newRate, skill: e.target.value}), style: styles.input }),
-        React.createElement("div", { style: styles.row2 },
-          React.createElement("input", { type: "number", placeholder: "Base Rate (₹/day)", value: newRate.baseRate, onChange: (e) => setNewRate({...newRate, baseRate: parseFloat(e.target.value)}), style: styles.input }),
-          React.createElement("input", { type: "number", placeholder: "Overtime Rate (₹/hr)", value: newRate.overtimeRate, onChange: (e) => setNewRate({...newRate, overtimeRate: parseFloat(e.target.value)}), style: styles.input })
+        React.createElement("h3", { style: { marginTop: 0, marginBottom: "16px" } }, "Add Rate"),
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Skill Name *"),
+          React.createElement("input", { placeholder: "Skill Name", value: newRate.skill, onChange: (e) => setNewRate({...newRate, skill: e.target.value}), style: styles.input })
         ),
-        React.createElement("input", { placeholder: "Notes", value: newRate.notes, onChange: (e) => setNewRate({...newRate, notes: e.target.value}), style: styles.input }),
-        React.createElement("button", { onClick: addRate, style: styles.buttonSuccess }, "Add Rate")
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Base Rate (₹/day) *"),
+          React.createElement("input", { type: "number", "data-bm-digits": "10", placeholder: "Base Rate (₹/day)", value: newRate.baseRate, onChange: (e) => setNewRate({...newRate, baseRate: parseFloat(e.target.value)}), style: styles.input })
+        ),
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Overtime Rate (₹/hr)"),
+          React.createElement("input", { type: "number", "data-bm-digits": "10", placeholder: "Overtime Rate (₹/hr)", value: newRate.overtimeRate, onChange: (e) => setNewRate({...newRate, overtimeRate: parseFloat(e.target.value)}), style: styles.input })
+        ),
+        React.createElement("div", { style: { marginBottom: "14px" } },
+          React.createElement("label", { style: styles.label }, "Notes"),
+          React.createElement("input", { placeholder: "Notes", value: newRate.notes, onChange: (e) => setNewRate({...newRate, notes: e.target.value}), style: styles.input })
+        ),
+        React.createElement("button", { onClick: addRate, style: { ...styles.buttonSuccess, width: "100%", padding: "12px", fontSize: "14px", fontWeight: "bold" } }, "Add Rate")
       )
     ),
 

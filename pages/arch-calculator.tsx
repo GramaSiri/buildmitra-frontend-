@@ -261,33 +261,33 @@ const router = useRouter();
     
     React.createElement('div', { style: styles.sectionTitle }, '📐 Arch Dimensions'),
     React.createElement('div', { style: styles.row6 },
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Nos'), React.createElement('input', { type: 'number', value: archNos, onChange: (e) => setArchNos(parseFloat(e.target.value)), style: styles.input })),
+      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Nos'), React.createElement('input', { type: 'number', value: archNos, onChange: (e) => setArchNos(parseFloat(e.target.value) || 0), style: styles.input })),
       React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Arch Type'), React.createElement('select', { value: archType, onChange: (e) => setArchType(e.target.value), style: styles.select },
         React.createElement('option', { value: 'Semi-circular' }, '⭕ Semi-circular Arch'),
         React.createElement('option', { value: 'Segmental' }, '📐 Segmental Arch'),
         React.createElement('option', { value: 'Gothic' }, '⛪ Gothic Arch'),
         React.createElement('option', { value: 'Flat' }, '📏 Flat Arch'))),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Span (ft)'), React.createElement('input', { type: 'number', value: span, onChange: (e) => setSpan(parseFloat(e.target.value)), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Rise (ft)'), React.createElement('input', { type: 'number', value: rise, onChange: (e) => setRise(parseFloat(e.target.value)), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Thickness (ft)'), React.createElement('input', { type: 'number', value: thickness, onChange: (e) => setThickness(parseFloat(e.target.value)), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Width (ft)'), React.createElement('input', { type: 'number', value: width, onChange: (e) => setWidth(parseFloat(e.target.value)), style: styles.input }))
+      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Span (ft)'), React.createElement('input', { type: 'number', value: span, onChange: (e) => setSpan(parseFloat(e.target.value) || 0), style: styles.input })),
+      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Rise (ft)'), React.createElement('input', { type: 'number', value: rise, onChange: (e) => setRise(parseFloat(e.target.value) || 0), style: styles.input })),
+      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Thickness (ft)'), React.createElement('input', { type: 'number', value: thickness, onChange: (e) => setThickness(parseFloat(e.target.value) || 0), style: styles.input })),
+      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Width (ft)'), React.createElement('input', { type: 'number', value: width, onChange: (e) => setWidth(parseFloat(e.target.value) || 0), style: styles.input }))
     ),
     
     React.createElement('div', { style: styles.row6 },
       React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Grade'), React.createElement('select', { value: concreteGrade, onChange: (e) => setConcreteGrade(e.target.value), style: styles.select },
         React.createElement('option', { value: 'M20' }, 'M20'), React.createElement('option', { value: 'M25' }, 'M25'), React.createElement('option', { value: 'M30' }, 'M30'))),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Cover (mm)'), React.createElement('input', { type: 'number', value: cover, onChange: (e) => setCover(parseFloat(e.target.value)), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Wastage (%)'), React.createElement('input', { type: 'number', value: wastage, onChange: (e) => setWastage(parseFloat(e.target.value)), style: styles.input }))
+      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Cover (mm)'), React.createElement('input', { type: 'number', value: cover, onChange: (e) => setCover(parseFloat(e.target.value) || 0), style: styles.input })),
+      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Wastage (%)'), React.createElement('input', { type: 'number', value: wastage, onChange: (e) => setWastage(parseFloat(e.target.value) || 0), style: styles.input }))
     ),
     
     React.createElement('div', { style: styles.sectionTitle }, '🔄 Reinforcement'),
     React.createElement('div', { style: styles.row4 },
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Main Bar Dia (mm)'), React.createElement('input', { type: 'number', value: mainBarDia, onChange: (e) => setMainBarDia(parseFloat(e.target.value)), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Main Bar Nos'), React.createElement('input', { type: 'number', value: mainBarNos, onChange: (e) => setMainBarNos(parseFloat(e.target.value)), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Dist Bar Dia (mm)'), React.createElement('input', { type: 'number', value: distBarDia, onChange: (e) => setDistBarDia(parseFloat(e.target.value)), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Dist Spacing (mm)'), React.createElement('input', { type: 'number', value: distBarSpacing, onChange: (e) => setDistBarSpacing(parseFloat(e.target.value)), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Stirrup Dia (mm)'), React.createElement('input', { type: 'number', value: stirrupDia, onChange: (e) => setStirrupDia(parseFloat(e.target.value)), style: styles.input })),
-      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Stirrup Spacing (mm)'), React.createElement('input', { type: 'number', value: stirrupSpacing, onChange: (e) => setStirrupSpacing(parseFloat(e.target.value)), style: styles.input }))
+      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Main Bar Dia (mm)'), React.createElement('input', { type: 'number', value: mainBarDia, onChange: (e) => setMainBarDia(parseFloat(e.target.value) || 0), style: styles.input })),
+      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Main Bar Nos'), React.createElement('input', { type: 'number', value: mainBarNos, onChange: (e) => setMainBarNos(parseFloat(e.target.value) || 0), style: styles.input })),
+      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Dist Bar Dia (mm)'), React.createElement('input', { type: 'number', value: distBarDia, onChange: (e) => setDistBarDia(parseFloat(e.target.value) || 0), style: styles.input })),
+      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Dist Spacing (mm)'), React.createElement('input', { type: 'number', value: distBarSpacing, onChange: (e) => setDistBarSpacing(parseFloat(e.target.value) || 0), style: styles.input })),
+      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Stirrup Dia (mm)'), React.createElement('input', { type: 'number', value: stirrupDia, onChange: (e) => setStirrupDia(parseFloat(e.target.value) || 0), style: styles.input })),
+      React.createElement('div', null, React.createElement('label', { style: styles.label }, 'Stirrup Spacing (mm)'), React.createElement('input', { type: 'number', value: stirrupSpacing, onChange: (e) => setStirrupSpacing(parseFloat(e.target.value) || 0), style: styles.input }))
     ),
     
     React.createElement('div', { style: styles.buttonRow },

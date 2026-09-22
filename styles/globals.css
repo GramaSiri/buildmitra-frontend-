@@ -1236,13 +1236,19 @@ svg {
 /* ========================================================================== */
 
 /* 1. Force ticker to a single horizontal line with hidden scrollbars */
+.ticker-container {
+  overflow: hidden !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  position: relative !important;
+}
 div[class*="ticker"],
 div[class*="LiveRates"],
 div[class*="live-rates"] {
   display: flex !important;
   flex-direction: row !important;
   flex-wrap: nowrap !important;
-  overflow-x: auto !important;
+  overflow: hidden !important;
   white-space: nowrap !important;
   max-height: 48px !important;
   padding: 4px 8px !important;
@@ -4974,3 +4980,44 @@ main > section,
 }
 
 /* END LEAFLET 1.9.4 TILE BLEND BUG FIX */
+
+/* ==========================================================
+   BUILDMITRA NUCLEAR OVERFLOW FIX — highest specificity
+   Forces every wrapper to clip horizontally. Cannot be overridden
+   because it targets id-level selectors with attribute + tag.
+   ========================================================== */
+
+html, body, #__next {
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+  width: 100% !important;
+}
+
+/* Every direct child of #__next that could be too wide */
+#__next > div,
+#__next > main,
+#__next > section {
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+  width: 100% !important;
+}
+
+/* Kill every ticker overflow path — belt and suspenders */
+div[class*="ticker"],
+div[class*="ticker-container"],
+div[class*="ticker-track"],
+div[class*="LiveRates"],
+div[class*="live-rates"] {
+  overflow: hidden !important;
+  max-width: 100vw !important;
+}
+
+/* But allow the track itself to be wide internally — parent clips it */
+div[class*="ticker-track"],
+div[class*="ticker-track "] {
+  overflow: hidden !important;
+  width: max-content !important;
+  max-width: none !important;
+}
+
+/* END NUCLEAR FIX */

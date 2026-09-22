@@ -676,7 +676,7 @@ export default function ProviderSelectItems() {
       </div>
 
       {/* Products Table / Cards */}
-      <div style={styles.tableWrap}>
+      <div style={{ ...styles.tableWrap, width: "100%", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
         <table style={styles.table}>
           <thead>
             <tr>
@@ -849,7 +849,7 @@ export default function ProviderSelectItems() {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  container: { padding: 20, background: "#f8fafc", minHeight: "100vh", fontFamily: "Inter, Arial, sans-serif" },
+  container: { padding: 20, background: "#f8fafc", minHeight: "100dvh", width: "100%", maxWidth: "100%", boxSizing: "border-box", overflowX: "hidden", fontFamily: "Inter, Arial, sans-serif" },
   headerStrip: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 14 },
   title: { margin: 0, fontSize: 22, color: "#0f172a", fontWeight: 800 },
   subtitle: { margin: "4px 0 0 0", fontSize: 13, color: "#64748b" },
@@ -858,8 +858,8 @@ const styles: Record<string, React.CSSProperties> = {
   filterBox: { background: "#fff", borderRadius: 12, padding: 18, boxShadow: "0 1px 3px rgba(0,0,0,0.05)", marginBottom: 16 },
   filterGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 },
   label: { display: "block", fontSize: 12, fontWeight: 700, color: "#334155", marginBottom: 4 },
-  select: { width: "100%", padding: "8px 12px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 13, background: "#fff" },
-  input: { padding: "8px 12px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 13 },
+  select: { width: "100%", padding: "8px 12px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 13, background: "#fff", boxSizing: "border-box" },
+  input: { padding: "8px 12px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 13, boxSizing: "border-box" },
   chipStrip: { display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" },
   chip: { padding: "6px 14px", borderRadius: 20, border: "1px solid #e2e8f0", background: "#f8fafc", color: "#475569", fontSize: 12, cursor: "pointer", fontWeight: 500 },
   chipActive: { background: "#1a5f7a", color: "#fff", borderColor: "#1a5f7a", fontWeight: 700 },
@@ -870,7 +870,7 @@ const styles: Record<string, React.CSSProperties> = {
   successButton: { padding: "9px 18px", borderRadius: 8, border: 0, background: "#10b981", color: "#fff", fontWeight: 800, cursor: "pointer", fontSize: 13 },
   excelBtn: { padding: "8px 14px", borderRadius: 8, border: "1px solid #047857", background: "#ecfdf5", color: "#047857", fontWeight: 700, cursor: "pointer", fontSize: 12, display: "inline-block" },
 
-  tableWrap: { background: "#fff", borderRadius: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.05)", overflowX: "auto", marginBottom: 24 },
+  tableWrap: { background: "#fff", borderRadius: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.05)", overflowX: "auto", width: "100%", WebkitOverflowScrolling: "touch", boxSizing: "border-box", marginBottom: 24 },
   table: { width: "100%", borderCollapse: "collapse", fontSize: 13 },
   th: { padding: "12px 14px", background: "#f1f5f9", textAlign: "left", color: "#334155", fontWeight: 700, borderBottom: "1px solid #e2e8f0" },
   td: { padding: "12px 14px", borderBottom: "1px solid #f1f5f9", verticalAlign: "middle" },

@@ -1430,7 +1430,7 @@ const rejectRealEstate = async (propertyCode) => {
   const totalMasterRates = materialRates.length + labourRates.length + equipmentRates.length + serviceRates.length;
 
   const styles = {
-    container: { padding: "16px", backgroundColor: "#f0f2f5", minHeight: "100vh" },
+    container: { padding: "16px", backgroundColor: "#f0f2f5", minHeight: "100dvh", width: "100%", maxWidth: "100%", boxSizing: "border-box", overflowX: "hidden" },
     header: { backgroundColor: "#800020", color: "white", padding: "16px", borderRadius: "12px", marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" },
     headerTitle: { margin: 0, fontSize: "20px" },
     headerSub: { margin: "5px 0 0", fontSize: "12px", opacity: 0.9 },
@@ -1448,11 +1448,11 @@ const rejectRealEstate = async (propertyCode) => {
     th: { textAlign: "left", padding: "8px", borderBottom: "1px solid #eee", fontWeight: "bold" },
     td: { padding: "8px", borderBottom: "1px solid #eee" },
     modal: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 },
-    modalContent: { backgroundColor: "white", borderRadius: "16px", padding: "24px", width: "90%", maxWidth: "550px", maxHeight: "80vh", overflow: "auto" },
+    modalContent: { backgroundColor: "white", borderRadius: "16px", padding: "24px", width: "90%", maxWidth: "550px", maxHeight: "80vh", overflow: "auto", boxSizing: "border-box" },
     tabContainer: { display: "flex", gap: "10px", marginBottom: "20px", borderBottom: "1px solid #eee", flexWrap: "wrap" },
     tab: { padding: "8px 16px", cursor: "pointer", borderBottom: "2px solid transparent" },
     activeTab: { borderBottomColor: "#800020", color: "#800020", fontWeight: "bold" },
-    input: { width: "100%", padding: "10px", border: "1px solid #ddd", borderRadius: "8px", marginBottom: "12px" },
+    input: { width: "100%", padding: "10px", border: "1px solid #ddd", borderRadius: "8px", marginBottom: "12px", boxSizing: "border-box" },
     label: { display: "block", marginBottom: "6px", fontWeight: "600", fontSize: "12px" },
     select: { width: "100%", padding: "10px", border: "1px solid #ddd", borderRadius: "8px", marginBottom: "12px" },
     textarea: { width: "100%", padding: "10px", border: "1px solid #ddd", borderRadius: "8px", minHeight: "80px", marginBottom: "12px" },
@@ -2455,14 +2455,16 @@ React.createElement("button", { onClick: () => bulkListingStatus("approved"), st
 
     showPlanModal && React.createElement("div", { style: styles.modal, onClick: () => setShowPlanModal(false) },
       React.createElement("div", { style: styles.modalContent, onClick: (e) => e.stopPropagation() },
-        React.createElement("h3", null, "Add Subscription Plan"),
+        React.createElement("h3", { style: { marginTop: 0, marginBottom: "16px" } }, "Add Subscription Plan"),
+        React.createElement("label", { style: styles.label }, "Plan Name *"),
         React.createElement("input", { placeholder: "Plan Name", value: newPlan.name, onChange: (e) => setNewPlan({...newPlan, name: e.target.value}), style: styles.input }),
-        React.createElement("div", { style: styles.row2 },
-          React.createElement("input", { type: "number", placeholder: "Monthly Price", value: newPlan.monthly, onChange: (e) => setNewPlan({...newPlan, monthly: parseFloat(e.target.value)}), style: styles.input }),
-          React.createElement("input", { type: "number", placeholder: "Yearly Price", value: newPlan.yearly, onChange: (e) => setNewPlan({...newPlan, yearly: parseFloat(e.target.value)}), style: styles.input })
-        ),
+        React.createElement("label", { style: styles.label }, "Monthly Price (₹) *"),
+        React.createElement("input", { type: "number", placeholder: "Monthly Price", value: newPlan.monthly, onChange: (e) => setNewPlan({...newPlan, monthly: parseFloat(e.target.value)}), style: styles.input, "data-bm-digits": "10" }),
+        React.createElement("label", { style: styles.label }, "Yearly Price (₹) *"),
+        React.createElement("input", { type: "number", placeholder: "Yearly Price", value: newPlan.yearly, onChange: (e) => setNewPlan({...newPlan, yearly: parseFloat(e.target.value)}), style: styles.input, "data-bm-digits": "10" }),
+        React.createElement("label", { style: styles.label }, "Features (comma separated)"),
         React.createElement("textarea", { placeholder: "Features (comma separated)", value: newPlan.features, onChange: (e) => setNewPlan({...newPlan, features: e.target.value}), style: styles.textarea }),
-        React.createElement("button", { onClick: addPlan, style: styles.buttonSuccess }, "Add Plan")
+        React.createElement("button", { onClick: addPlan, style: { ...styles.buttonSuccess, width: "100%", padding: "12px", marginTop: "8px", fontWeight: "bold" } }, "Add Plan")
       )
     ),
 
@@ -2482,16 +2484,20 @@ React.createElement("button", { onClick: () => bulkListingStatus("approved"), st
 
     showUserModal && React.createElement("div", { style: styles.modal, onClick: () => setShowUserModal(false) },
       React.createElement("div", { style: styles.modalContent, onClick: (e) => e.stopPropagation() },
-        React.createElement("h3", null, "Add New User"),
+        React.createElement("h3", { style: { marginTop: 0, marginBottom: "16px" } }, "Add New User"),
+        React.createElement("label", { style: styles.label }, "Full Name *"),
         React.createElement("input", { placeholder: "Full Name", value: newUser.name, onChange: (e) => setNewUser({...newUser, name: e.target.value}), style: styles.input }),
+        React.createElement("label", { style: styles.label }, "Email *"),
         React.createElement("input", { placeholder: "Email", value: newUser.email, onChange: (e) => setNewUser({...newUser, email: e.target.value}), style: styles.input }),
+        React.createElement("label", { style: styles.label }, "Mobile Number *"),
         React.createElement("input", { placeholder: "Mobile Number", value: newUser.mobile, onChange: (e) => setNewUser({...newUser, mobile: e.target.value}), style: styles.input }),
+        React.createElement("label", { style: styles.label }, "Role *"),
         React.createElement("select", { value: newUser.role, onChange: (e) => setNewUser({...newUser, role: e.target.value}), style: styles.select },
           React.createElement("option", { value: "buyer" }, "Buyer"), React.createElement("option", { value: "supplier" }, "Supplier"),
           React.createElement("option", { value: "vendor" }, "Vendor"), React.createElement("option", { value: "labour" }, "Labour"),
           React.createElement("option", { value: "machine" }, "Machine"), React.createElement("option", { value: "admin" }, "Admin")
         ),
-        React.createElement("button", { onClick: addUser, style: styles.buttonSuccess }, "Add User")
+        React.createElement("button", { onClick: addUser, style: { ...styles.buttonSuccess, width: "100%", padding: "12px", marginTop: "8px", fontWeight: "bold" } }, "Add User")
       )
     ),
 
@@ -2519,7 +2525,7 @@ React.createElement("button", { onClick: () => bulkListingStatus("approved"), st
             React.createElement("label", { style: styles.label }, "Item Name"),
             React.createElement("input", { value: editingBOQItem.itemName || "", onChange: (e) => setEditingBOQItem({ ...editingBOQItem, itemName: e.target.value }), style: styles.input })
           ),
-          React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(180px, 100%), 1fr))", gap: "12px" } },
+          React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: "12px" } },
             React.createElement("div", null,
               React.createElement("label", { style: styles.label }, "Unit"),
               React.createElement("input", { value: editingBOQItem.unit || "NOS", onChange: (e) => setEditingBOQItem({ ...editingBOQItem, unit: e.target.value }), style: styles.input })
@@ -2529,7 +2535,7 @@ React.createElement("button", { onClick: () => bulkListingStatus("approved"), st
               React.createElement("input", { value: editingBOQItem.linkedLabourItemCode || "", readOnly: true, style: { ...styles.input, backgroundColor: "#f1f5f9" } })
             )
           ),
-          React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(180px, 100%), 1fr))", gap: "12px" } },
+          React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: "12px" } },
             React.createElement("div", null,
               React.createElement("label", { style: styles.label }, "Material / Service Rate (₹)"),
               React.createElement("input", {

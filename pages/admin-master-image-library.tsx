@@ -364,7 +364,7 @@ export default function AdminMasterImageLibrary() {
         ) : !filteredItems.length ? (
           <div style={styles.empty}>No Master Items found matching search criteria.</div>
         ) : (
-          <div style={{ overflowX: "auto" }}>
+          <div style={{ width: "100%", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
             <table style={styles.table}>
               <thead>
                 <tr style={{ background: "#f8fafc", textAlign: "left" }}>
@@ -517,7 +517,7 @@ export default function AdminMasterImageLibrary() {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  page: { minHeight: "100vh", background: "#f8fafc", padding: "16px", fontFamily: "sans-serif" },
+  page: { minHeight: "100dvh", width: "100%", maxWidth: "100%", boxSizing: "border-box", overflowX: "hidden", background: "#f8fafc", padding: "16px", fontFamily: "sans-serif" },
   header: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "10px" },
   eyebrow: { color: "#2563eb", fontWeight: 800, fontSize: "11px", letterSpacing: "1px" },
   title: { margin: "2px 0", fontSize: "24px", fontWeight: "800", color: "#0f172a" },
@@ -536,8 +536,8 @@ const styles: Record<string, React.CSSProperties> = {
   message: { marginTop: "10px", padding: "8px 12px", background: "#f0fdf4", color: "#166534", borderRadius: "6px", fontSize: "12px", fontWeight: "700" },
   libraryCard: { background: "#ffffff", padding: "16px", borderRadius: "8px", border: "1px solid #e2e8f0" },
   libraryHeader: { marginBottom: "12px" },
-  searchInput: { flex: 1, minWidth: "220px", padding: "8px 12px", fontSize: "13px", borderRadius: "6px", border: "1px solid #cbd5e1" },
-  selectFilter: { padding: "8px 12px", fontSize: "13px", borderRadius: "6px", border: "1px solid #cbd5e1", background: "#fff" },
+  searchInput: { flex: 1, minWidth: "220px", padding: "8px 12px", fontSize: "13px", borderRadius: "6px", border: "1px solid #cbd5e1", boxSizing: "border-box" },
+  selectFilter: { padding: "8px 12px", fontSize: "13px", borderRadius: "6px", border: "1px solid #cbd5e1", background: "#fff", boxSizing: "border-box" },
   empty: { padding: "30px", textAlign: "center", color: "#64748b", fontSize: "13px" },
   table: { width: "100%", borderCollapse: "collapse", fontSize: "12px" },
   th: { padding: "8px 10px", fontSize: "11px", fontWeight: "700", color: "#475569", borderBottom: "2px solid #e2e8f0" },

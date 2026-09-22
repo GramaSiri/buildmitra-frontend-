@@ -181,6 +181,7 @@ export default function SupplierDashboard() {
   // DB Data
   const [listings, setListings] = useState<any[]>([]);
   const [enquiries, setEnquiries] = useState<any[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
   const [reportData, setReportData] = useState<any>(null);
 
   // Reports Filter & View State
@@ -243,6 +244,7 @@ export default function SupplierDashboard() {
           fetchMyListings(code);
           fetchMyEnquiries(code);
           fetchMyReports(code);
+        fetchMyOrders(code);
         } else {
           setLoading(false);
         }
@@ -282,6 +284,39 @@ export default function SupplierDashboard() {
       }
     } catch (err) {
       console.error("Failed to fetch supplier enquiries", err);
+    }
+  };
+
+  const fetchMyOrders = async (code: string) => {
+    try {
+      const apiBase = getApiBase();
+      const res = await authFetch(`${apiBase}/api/provider/orders/${encodeURIComponent(code)}`, {
+        headers: { "x-user-code": code }
+      });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.orders)) {
+        setOrders(data.orders);
+      }
+    } catch (err) {
+      console.log("Failed to fetch supplier orders", err);
+    }
+  };
+
+  const handleUpdateDispatch = async (orderId: string, status: string) => {
+    try {
+      const apiBase = getApiBase();
+      const res = await authFetch(`${apiBase}/api/provider/orders/${encodeURIComponent(orderId)}/dispatch`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "x-user-code": userCode },
+        body: JSON.stringify({ status })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setOrders(orders.map((o: any) => o.orderId === orderId ? { ...o, status } : o));
+        alert(`Order ${orderId} marked as ${status}`);
+      }
+    } catch (err) {
+      console.log("Dispatch update error:", err);
     }
   };
 
@@ -1233,7 +1268,8 @@ BuildMitra`;
 
             {/* Customer-Wise Report View */}
             {reportType === "customer_wise" && (
-              <table style={styles.table}>
+              <div style={{ width: "100%", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+          <table style={styles.table}>
                 <thead>
                   <tr>
                     <th style={styles.th}>Customer Name</th>
@@ -1263,11 +1299,13 @@ BuildMitra`;
                   )}
                 </tbody>
               </table>
+        </div>
             )}
 
             {/* Payment Pending Report View */}
             {reportType === "payment_pending" && (
-              <table style={styles.table}>
+              <div style={{ width: "100%", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+          <table style={styles.table}>
                 <thead>
                   <tr>
                     <th style={styles.th}>Enquiry Code</th>
@@ -1300,13 +1338,15 @@ BuildMitra`;
                   )}
                 </tbody>
               </table>
+        </div>
             )}
 
             {/* Full Statement & Total Business Report View */}
             {(reportType === "full_statement" || reportType === "total_business") && (
               <div>
                 <h3 style={{ fontSize: 16, color: "#1e293b", margin: "16px 0 8px" }}>Enquiries & Quoted Transactions</h3>
-                <table style={styles.table}>
+                <div style={{ width: "100%", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+          <table style={styles.table}>
                   <thead>
                     <tr>
                       <th style={styles.th}>Enquiry Code</th>
@@ -1336,6 +1376,7 @@ BuildMitra`;
                     )}
                   </tbody>
                 </table>
+        </div>
               </div>
             )}
           </div>
@@ -1428,7 +1469,8 @@ BuildMitra`;
               <>
                 {/* Desktop Responsive Table View */}
                 <div style={styles.desktopTableWrap}>
-                  <table style={styles.table}>
+                  <div style={{ width: "100%", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+          <table style={styles.table}>
                     <thead>
                       <tr>
                         <th style={styles.th}>Product & Code</th>
@@ -1534,6 +1576,7 @@ BuildMitra`;
                       })}
                     </tbody>
                   </table>
+        </div>
                 </div>
 
                 {/* Mobile Compact Cards View (320px - 430px) */}
@@ -1618,7 +1661,8 @@ BuildMitra`;
             {enquiries.length === 0 ? (
               <div style={{ padding: 30, textAlign: "center", color: "#666" }}>No active buyer enquiries received yet.</div>
             ) : (
-              <table style={styles.table}>
+              <div style={{ width: "100%", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+          <table style={styles.table}>
                 <thead>
                   <tr>
                     <th style={styles.th}>Date</th>
@@ -1678,6 +1722,7 @@ BuildMitra`;
                   ))}
                 </tbody>
               </table>
+        </div>
             )}
           </div>
         </div>
@@ -1692,7 +1737,7 @@ BuildMitra`;
               <strong>{editingItem.itemName}</strong> ({editingItem.masterItemCode})
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))", gap: 14 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <div>
                 <label style={styles.label}>Proposed Rate (₹ per {editingItem.unit || "unit"}) *</label>
                 <input
@@ -1701,6 +1746,7 @@ BuildMitra`;
                   value={editRate}
                   onChange={(e) => setEditRate(e.target.value)}
                   placeholder="Enter new proposed rate"
+                  data-bm-digits="10"
                 />
                 <div style={{ fontSize: 11, color: "#666", marginTop: 4 }}>
                   Current Approved Rate: <strong>₹{editingItem.approvedRate || editingItem.rate || "N/A"}</strong>
@@ -1715,6 +1761,7 @@ BuildMitra`;
                   value={editStock}
                   onChange={(e) => setEditStock(e.target.value)}
                   placeholder="e.g. 500"
+                  data-bm-digits="10"
                 />
               </div>
 
@@ -1923,10 +1970,9 @@ BuildMitra`;
 
             <div
               style={{
-                display: "grid",
-                gridTemplateColumns:
-                  "repeat(auto-fit, minmax(145px, 1fr))",
-                gap: 10,
+                display: "flex",
+                flexDirection: "column",
+                gap: 14,
                 marginTop: 14,
               }}
             >
@@ -1988,10 +2034,9 @@ BuildMitra`;
 
             <div
               style={{
-                display: "grid",
-                gridTemplateColumns:
-                  "repeat(auto-fit, minmax(220px, 1fr))",
-                gap: 10,
+                display: "flex",
+                flexDirection: "column",
+                gap: 14,
                 marginTop: 12,
               }}
             >
@@ -2068,7 +2113,7 @@ BuildMitra`;
 
 // Inline Styles & CSS Variables
 const styles: Record<string, React.CSSProperties> = {
-  container: { padding: 20, background: "#f8fafc", minHeight: "100vh", fontFamily: "Inter, Arial, sans-serif" },
+  container: { padding: 20, background: "#f8fafc", minHeight: "100dvh", width: "100%", maxWidth: "100%", boxSizing: "border-box", overflowX: "hidden", fontFamily: "Inter, Arial, sans-serif" },
   actionStrip: { display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", marginBottom: 20, flexWrap: "wrap" },
   actionBtn: { padding: "8px 16px", borderRadius: 8, border: "1px solid #cbd5e1", background: "#fff", color: "#334155", fontWeight: 600, cursor: "pointer" },
   actionBtnActive: { background: "#1a5f7a", color: "#fff", borderColor: "#1a5f7a" },
@@ -2131,9 +2176,9 @@ const styles: Record<string, React.CSSProperties> = {
 
   // Modals
   modalBackdrop: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(15,23,42,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 },
-  modalContent: { background: "#fff", borderRadius: 14, padding: 24, width: "100%", maxWidth: 640, maxHeight: "90vh", overflowY: "auto" },
+  modalContent: { background: "#fff", borderRadius: 14, padding: 24, width: "100%", maxWidth: 640, maxHeight: "90vh", overflowY: "auto", boxSizing: "border-box" },
   label: { display: "block", fontSize: 12, fontWeight: 700, color: "#334155", marginBottom: 4 },
-  modalInput: { width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 13 },
+  modalInput: { width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 13, boxSizing: "border-box" },
   cancelBtn: { padding: "8px 16px", borderRadius: 8, border: "1px solid #cbd5e1", background: "#fff", color: "#475569", fontWeight: 600, cursor: "pointer" },
   saveBtn: { padding: "8px 16px", borderRadius: 8, border: 0, background: "#1a5f7a", color: "#fff", fontWeight: 700, cursor: "pointer" },
 };

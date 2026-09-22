@@ -1,4 +1,6 @@
-﻿import React, { useState, useEffect } from 'react';
+import { getApiBase } from "../utils/apiConfig";
+import { authFetch } from "../utils/authFetch";
+import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import InteractivePinpointMap from '../components/InteractivePinpointMap';
 import { autoResolvePropertyGeoData } from '../utils/geoResolver';
@@ -71,11 +73,27 @@ export const RealEstateDashboard: React.FC = () => {
   };
 
   const loadData = async () => {
-    const props = await fetchAllProperties();
+    const code = sellerCode || "REA-000003";
+    const props = await fetchAllProperties(code);
     setProperties(props);
 
-    const enqs = await fetchAllEnquiries();
+    const enqs = await fetchAllEnquiries(code);
     setEnquiries(enqs);
+
+    // Fetch closed deals from MongoDB
+    try {
+      const res = await authFetch(`${getApiBase()}/api/realestate/deals/${encodeURIComponent(code)}`, {
+        headers: { "x-user-code": code }
+      });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.deals) && data.deals.length > 0) {
+        setClosedDeals(data.deals.map((d: any) => ({ ...d, id: d.dealId || d._id || d.id })));
+        localStorage.setItem('bm_realestate_deals', JSON.stringify(data.deals));
+        return;
+      }
+    } catch (err) {
+      console.log("Deals load from cloud error:", err);
+    }
 
     const storedDeals = localStorage.getItem('bm_realestate_deals');
     if (storedDeals) {
@@ -166,6 +184,13 @@ export const RealEstateDashboard: React.FC = () => {
     setClosedDeals(updatedDeals);
     localStorage.setItem('bm_realestate_deals', JSON.stringify(updatedDeals));
 
+    // Persist deal to MongoDB
+    authFetch(`${getApiBase()}/api/realestate/deals`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-user-code": sellerCode || "REA-000003" },
+      body: JSON.stringify({ ...newDeal, userCode: sellerCode || "REA-000003" })
+    }).catch(err => console.log("Deal cloud sync error:", err));
+
     await handleStatusChange(prop.id, 'Sold / Closed');
     alert(`🎉 Deal Closed Successfully!\nEarned Commission: ₹${commissionLakhs} Lakhs (2%) on ₹${priceCr} Cr transaction.`);
     setActiveTab('deals');
@@ -203,7 +228,7 @@ export const RealEstateDashboard: React.FC = () => {
         <title>Broker & Seller CRM | BuildMitra</title>
       </Head>
 
-      <main style={{ minHeight: '100vh', backgroundColor: '#f8fafc', padding: '24px', fontFamily: 'system-ui, -apple-system, sans-serif', color: '#0f172a' }}>
+      <main style={{ minHeight: '100dvh', width: '100%', maxWidth: '100%', boxSizing: 'border-box', overflowX: 'hidden', backgroundColor: '#f8fafc', padding: '24px', fontFamily: 'system-ui, -apple-system, sans-serif', color: '#0f172a' }}>
         <div style={{ maxWidth: '1380px', margin: '0 auto' }}>
           
           <header style={{ backgroundColor: '#0f172a', color: '#ffffff', padding: '24px 30px', borderRadius: '18px', marginBottom: '24px', boxShadow: '0 8px 20px rgba(15,23,42,0.15)' }}>
@@ -404,17 +429,27 @@ export const RealEstateDashboard: React.FC = () => {
 
               {showAddEnquiry && (
                 <form onSubmit={handleAddEnquiry} style={{ backgroundColor: '#f5f3ff', padding: '18px', borderRadius: '14px', border: '1px solid #ddd6fe', marginBottom: '20px' }}>
-                  <div style={{ fontWeight: 800, fontSize: '13px', color: '#5b21b6', marginBottom: '10px' }}>Quick Log Caller Details:</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
-                    <input type="text" required placeholder="Caller Full Name" value={newEnqName} onChange={(e) => setNewEnqName(e.target.value)} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12px' }} />
-                    <input type="text" required placeholder="Phone Number (+91)" value={newEnqPhone} onChange={(e) => setNewEnqPhone(e.target.value)} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12px' }} />
-                    <input type="text" placeholder="Budget (e.g. ₹1.50 Cr)" value={newEnqBudget} onChange={(e) => setNewEnqBudget(e.target.value)} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12px' }} />
-                    <button type="submit" style={{ padding: '8px 16px', backgroundColor: '#7c3aed', color: '#ffffff', fontWeight: 800, fontSize: '12px', borderRadius: '8px', border: 'none', cursor: 'pointer' }}>Save Inquiry →</button>
+                  <div style={{ fontWeight: 800, fontSize: '14px', color: '#5b21b6', marginBottom: '14px' }}>Quick Log Caller Details:</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, color: '#334155', marginBottom: '6px' }}>Caller Full Name *</label>
+                      <input type="text" required placeholder="Caller Full Name" value={newEnqName} onChange={(e) => setNewEnqName(e.target.value)} style={{ width: '100%', boxSizing: 'border-box', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }} />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, color: '#334155', marginBottom: '6px' }}>Phone Number (+91) *</label>
+                      <input type="text" required placeholder="Phone Number (+91)" value={newEnqPhone} onChange={(e) => setNewEnqPhone(e.target.value)} style={{ width: '100%', boxSizing: 'border-box', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }} />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, color: '#334155', marginBottom: '6px' }}>Budget</label>
+                      <input type="text" placeholder="Budget (e.g. ₹1.50 Cr)" value={newEnqBudget} onChange={(e) => setNewEnqBudget(e.target.value)} style={{ width: '100%', boxSizing: 'border-box', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }} />
+                    </div>
+                    <button type="submit" style={{ width: '100%', boxSizing: 'border-box', padding: '12px 16px', backgroundColor: '#7c3aed', color: '#ffffff', fontWeight: 800, fontSize: '13px', borderRadius: '8px', border: 'none', cursor: 'pointer' }}>Save Inquiry →</button>
                   </div>
                 </form>
               )}
 
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+              <div style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
                 <thead>
                   <tr style={{ backgroundColor: '#f8fafc', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>
                     <th style={{ padding: '12px' }}>Inquiry ID</th>
@@ -450,6 +485,7 @@ export const RealEstateDashboard: React.FC = () => {
                   )}
                 </tbody>
               </table>
+              </div>
             </div>
           )}
 
@@ -461,7 +497,8 @@ export const RealEstateDashboard: React.FC = () => {
                 <p style={{ fontSize: '12px', color: '#64748b', margin: '4px 0 0 0' }}>Permanent ledger of executed property registrations and earned brokerage commissions.</p>
               </div>
 
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+              <div style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
                 <thead>
                   <tr style={{ backgroundColor: '#f0fdf4', borderBottom: '2px solid #bbf7d0', color: '#166534' }}>
                     <th style={{ padding: '12px' }}>Deal ID</th>
@@ -487,6 +524,7 @@ export const RealEstateDashboard: React.FC = () => {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
           )}
 
@@ -521,25 +559,25 @@ export const RealEstateDashboard: React.FC = () => {
                 </span>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '18px', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
                 <div>
-                  <label style={{ fontSize: '12px', fontWeight: 800, color: '#334155', display: 'block', marginBottom: '6px' }}>Property Title</label>
+                  <label style={{ fontSize: '12px', fontWeight: 800, color: '#334155', display: 'block', marginBottom: '6px' }}>Property Title *</label>
                   <input
                     type="text"
                     required
                     placeholder="e.g. Agriculture Land / Gramatana Site / BDA Plot"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none' }}
+                    style={{ width: '100%', boxSizing: 'border-box', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none' }}
                   />
                 </div>
 
                 <div>
-                  <label style={{ fontSize: '12px', fontWeight: 800, color: '#334155', display: 'block', marginBottom: '6px' }}>Property & Land Category</label>
+                  <label style={{ fontSize: '12px', fontWeight: 800, color: '#334155', display: 'block', marginBottom: '6px' }}>Property & Land Category *</label>
                   <select
                     value={propertyType}
                     onChange={(e) => setPropertyType(e.target.value)}
-                    style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none', backgroundColor: '#ffffff', fontWeight: 700 }}
+                    style={{ width: '100%', boxSizing: 'border-box', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none', backgroundColor: '#ffffff', fontWeight: 700 }}
                   >
                     <option value="BDA Plot">🏡 BDA Approved Plot</option>
                     <option value="BMRDA Villa Plot">🏡 BMRDA / DTCP Approved Plot</option>
@@ -558,7 +596,7 @@ export const RealEstateDashboard: React.FC = () => {
                   <select
                     value={roadFacing}
                     onChange={(e) => setRoadFacing(e.target.value)}
-                    style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none', backgroundColor: '#ffffff' }}
+                    style={{ width: '100%', boxSizing: 'border-box', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none', backgroundColor: '#ffffff' }}
                   >
                     <option value="East Facing Main Road">East Facing Main Road</option>
                     <option value="North Facing Main Road">North Facing Main Road</option>
@@ -573,7 +611,7 @@ export const RealEstateDashboard: React.FC = () => {
                   <select
                     value={zoning}
                     onChange={(e) => setZoning(e.target.value)}
-                    style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none', backgroundColor: '#ffffff' }}
+                    style={{ width: '100%', boxSizing: 'border-box', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none', backgroundColor: '#ffffff' }}
                   >
                     <option value="BDA Approved Residential Yellow Zone">BDA Approved Residential Yellow Zone</option>
                     <option value="BMRDA Approved Residential">BMRDA Approved Residential</option>
@@ -584,23 +622,21 @@ export const RealEstateDashboard: React.FC = () => {
                     <option value="DC Converted Revenue Approved">DC Converted Revenue Approved</option>
                   </select>
                 </div>
-              </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '18px', marginBottom: '24px' }}>
                 <div>
-                  <label style={{ fontSize: '12px', fontWeight: 800, color: '#334155', display: 'block', marginBottom: '6px' }}>Asking Price</label>
+                  <label style={{ fontSize: '12px', fontWeight: 800, color: '#334155', display: 'block', marginBottom: '6px' }}>Asking Price *</label>
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <input
                       type="text"
                       required
                       value={price}
                       onChange={(e) => setPrice(e.target.value)}
-                      style={{ flex: 1, padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none' }}
+                      style={{ flex: 1, boxSizing: 'border-box', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none' }}
                     />
                     <select
                       value={priceUnit}
                       onChange={(e) => setPriceUnit(e.target.value)}
-                      style={{ padding: '10px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', backgroundColor: '#ffffff' }}
+                      style={{ padding: '10px 16px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', backgroundColor: '#ffffff', fontWeight: 700 }}
                     >
                       <option value="Cr">Cr</option>
                       <option value="Lakhs">Lakhs</option>
@@ -614,7 +650,7 @@ export const RealEstateDashboard: React.FC = () => {
                     type="text"
                     value={ratePerSqFt}
                     onChange={(e) => setRatePerSqFt(e.target.value)}
-                    style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none' }}
+                    style={{ width: '100%', boxSizing: 'border-box', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none' }}
                   />
                 </div>
 
@@ -625,7 +661,7 @@ export const RealEstateDashboard: React.FC = () => {
                     value={dimensions}
                     onChange={(e) => setDimensions(e.target.value)}
                     placeholder="e.g. 30x40 / 1.5 Acres"
-                    style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none' }}
+                    style={{ width: '100%', boxSizing: 'border-box', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none' }}
                   />
                 </div>
 
@@ -635,7 +671,7 @@ export const RealEstateDashboard: React.FC = () => {
                     type="text"
                     value={approachRoad}
                     onChange={(e) => setApproachRoad(e.target.value)}
-                    style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none' }}
+                    style={{ width: '100%', boxSizing: 'border-box', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none' }}
                   />
                 </div>
               </div>

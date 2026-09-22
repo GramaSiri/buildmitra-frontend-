@@ -1,3 +1,6 @@
+import { getApiBase } from "../utils/apiConfig";
+import { authFetch } from "../utils/authFetch";
+
 export interface DBProperty {
   id: string;
   propertyId: string;
@@ -48,7 +51,52 @@ export interface DBEnquiry {
 const LOCAL_PROPERTIES_KEY = 'realestate_properties';
 const LOCAL_ENQUIRIES_KEY = 'bm_realestate_enquiries';
 
-export async function fetchAllProperties(): Promise<DBProperty[]> {
+export async function fetchAllProperties(sellerCode: string = "REA-000003"): Promise<DBProperty[]> {
+  try {
+    const apiBase = getApiBase();
+    const res = await authFetch(`${apiBase}/api/realestate/mine/${encodeURIComponent(sellerCode)}`, {
+      headers: { "x-user-code": sellerCode }
+    });
+    const data = await res.json();
+    if (data.success && Array.isArray(data.properties) && data.properties.length > 0) {
+      const mapped: DBProperty[] = data.properties.map((p: any) => ({
+        id: p.propertyCode || p._id || p.id,
+        propertyId: p.propertyCode || p._id || p.id,
+        title: p.title || "Property",
+        location: p.locality || p.city || p.location || "Bengaluru",
+        lat: Number(p.lat) || 12.8718,
+        lng: Number(p.lng) || 77.5753,
+        type: p.listingType || "Sale",
+        listingType: p.listingType || "Sale",
+        propertyType: p.propertyType || "Plot",
+        price: typeof p.price === "number" ? `₹${(p.price / 10000000).toFixed(2)} Cr` : String(p.price || "₹1.50 Cr"),
+        priceNum: Number(p.price) || 150,
+        rate: p.rate || `₹${p.pricePerSqft || 12500} / Sq.ft`,
+        ratePerSqFt: String(p.pricePerSqft || p.ratePerSqFt || "12500"),
+        bhk: p.propertyType?.includes("plot") ? "Plot" : "3 BHK",
+        dimensions: p.dimensions || "30′ × 40′ (1,200 Sq.ft)",
+        approach: p.approachRoad || p.approach || "40 Ft Road",
+        roadFacing: p.facing || p.roadFacing || "East",
+        zoning: p.approvalType || p.zoning || "BDA Approved",
+        sroOffice: p.sroOffice || "SRO JP Nagar",
+        guidanceValue: Number(p.guidanceValue) || 6800,
+        image: Array.isArray(p.images) && p.images[0] ? p.images[0] : (p.coverImage || '/images/bda-plot-bsk6.jpeg'),
+        tag: '✓ Live Verified Listing',
+        status: p.status === 'Sold' ? 'Sold / Closed' : p.status === 'Pending' ? 'Under Pipeline' : 'Available',
+        companyName: p.providerName || "Garden Greens",
+        sellerCode: p.providerUserCode || sellerCode,
+        phone: p.providerPhone || "9845012345"
+      }));
+
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(LOCAL_PROPERTIES_KEY, JSON.stringify(mapped));
+      }
+      return mapped;
+    }
+  } catch (err) {
+    console.log("Cloud properties fetch error, falling back to local cache:", err);
+  }
+
   if (typeof window !== 'undefined') {
     const cached = localStorage.getItem(LOCAL_PROPERTIES_KEY);
     if (cached) {
@@ -68,6 +116,28 @@ export async function savePropertyToCloud(propData: DBProperty): Promise<DBPrope
     createdAt: new Date().toISOString()
   };
 
+  try {
+    const apiBase = getApiBase();
+    await authFetch(`${apiBase}/api/realestate`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-user-code": propData.sellerCode || "REA-000003"
+      },
+      body: JSON.stringify({
+        ...propData,
+        providerUserCode: propData.sellerCode || "REA-000003",
+        providerName: propData.companyName || "Garden Greens",
+        providerPhone: propData.phone || "9845012345",
+        askingPrice: propData.priceNum ? propData.priceNum * 10000000 : 15000000,
+        price: propData.priceNum ? propData.priceNum * 10000000 : 15000000,
+        totalAmount: propData.priceNum ? propData.priceNum * 10000000 : 15000000
+      })
+    });
+  } catch (err) {
+    console.log("Save property to cloud error:", err);
+  }
+
   if (typeof window !== 'undefined') {
     const cached = localStorage.getItem(LOCAL_PROPERTIES_KEY);
     const list: DBProperty[] = cached ? JSON.parse(cached) : [];
@@ -79,6 +149,18 @@ export async function savePropertyToCloud(propData: DBProperty): Promise<DBPrope
 }
 
 export async function updatePropertyStatusInCloud(propId: string, newStatus: 'Available' | 'Under Pipeline' | 'Sold / Closed'): Promise<void> {
+  try {
+    const apiBase = getApiBase();
+    const backendStatus = newStatus === 'Sold / Closed' ? 'Sold' : newStatus === 'Under Pipeline' ? 'Pending' : 'Available';
+    await authFetch(`${apiBase}/api/realestate/${encodeURIComponent(propId)}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: backendStatus })
+    });
+  } catch (err) {
+    console.log("Update property status in cloud error:", err);
+  }
+
   if (typeof window !== 'undefined') {
     const cached = localStorage.getItem(LOCAL_PROPERTIES_KEY);
     if (cached) {
@@ -89,7 +171,32 @@ export async function updatePropertyStatusInCloud(propId: string, newStatus: 'Av
   }
 }
 
-export async function fetchAllEnquiries(): Promise<DBEnquiry[]> {
+export async function fetchAllEnquiries(sellerCode: string = "REA-000003"): Promise<DBEnquiry[]> {
+  try {
+    const apiBase = getApiBase();
+    const res = await authFetch(`${apiBase}/api/enquiry?providerUserCode=${encodeURIComponent(sellerCode)}`, {
+      headers: { "x-user-code": sellerCode }
+    });
+    const data = await res.json();
+    if (data.success && Array.isArray(data.enquiries) && data.enquiries.length > 0) {
+      const mapped: DBEnquiry[] = data.enquiries.map((e: any) => ({
+        id: e._id || e.enquiryCode,
+        propertyId: e.propertyCode || e.listingCode || "REP-197127",
+        callerName: e.buyerName || "Enquiry Client",
+        phone: e.buyerPhone || "9876543210",
+        date: e.createdAt ? e.createdAt.split("T")[0] : new Date().toISOString().split("T")[0],
+        budget: e.quotedAmount ? `₹${e.quotedAmount}` : "₹1.50 Cr",
+        status: e.status === "Approved" ? "Site Visit Scheduled" : e.status === "Closed" ? "Deal Closed" : "New Enquiry"
+      }));
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(LOCAL_ENQUIRIES_KEY, JSON.stringify(mapped));
+      }
+      return mapped;
+    }
+  } catch (err) {
+    console.log("Enquiries cloud fetch error:", err);
+  }
+
   if (typeof window !== 'undefined') {
     const cached = localStorage.getItem(LOCAL_ENQUIRIES_KEY);
     if (cached) {
@@ -107,6 +214,24 @@ export async function logNewEnquiryToCloud(enquiryData: DBEnquiry): Promise<DBEn
     ...enquiryData,
     createdAt: new Date().toISOString()
   };
+
+  try {
+    const apiBase = getApiBase();
+    await authFetch(`${apiBase}/api/enquiry`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        buyerName: enquiryData.callerName,
+        buyerPhone: enquiryData.phone,
+        propertyCode: enquiryData.propertyId,
+        enquiryCategory: "realestate",
+        providerUserCode: "REA-000003",
+        providerRole: "realestate"
+      })
+    });
+  } catch (err) {
+    console.log("Log enquiry to cloud error:", err);
+  }
 
   if (typeof window !== 'undefined') {
     const cached = localStorage.getItem(LOCAL_ENQUIRIES_KEY);
