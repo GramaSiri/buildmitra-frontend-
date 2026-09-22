@@ -228,10 +228,10 @@ export const RealEstateDashboard: React.FC = () => {
         <title>Broker & Seller CRM | BuildMitra</title>
       </Head>
 
-      <main style={{ minHeight: '100dvh', width: '100%', maxWidth: '100%', boxSizing: 'border-box', overflowX: 'hidden', backgroundColor: '#f8fafc', padding: '24px', fontFamily: 'system-ui, -apple-system, sans-serif', color: '#0f172a' }}>
-        <div style={{ maxWidth: '1380px', margin: '0 auto' }}>
+      <main style={{ minHeight: '100dvh', width: '100%', maxWidth: '100vw', boxSizing: 'border-box', overflowX: 'hidden', backgroundColor: '#f8fafc', padding: '12px', fontFamily: 'system-ui, -apple-system, sans-serif', color: '#0f172a' }}>
+        <div style={{ maxWidth: '1380px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
           
-          <header style={{ backgroundColor: '#0f172a', color: '#ffffff', padding: '24px 30px', borderRadius: '18px', marginBottom: '24px', boxShadow: '0 8px 20px rgba(15,23,42,0.15)' }}>
+          <header style={{ backgroundColor: '#0f172a', color: '#ffffff', padding: '10px 12px', borderRadius: 8, marginBottom: 8, boxShadow: '0 4px 12px rgba(15,23,42,0.15)', width: '100%', boxSizing: 'border-box' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -251,24 +251,24 @@ export const RealEstateDashboard: React.FC = () => {
               </div>
 
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                <div style={{ backgroundColor: '#1e293b', padding: '10px 16px', borderRadius: '12px', border: '1px solid #334155', textAlign: 'center' }}>
+                <div style={{ backgroundColor: '#1e293b', padding: '8px 12px', borderRadius: 8, border: '1px solid #334155', textAlign: 'center' }}>
                   <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 800, textTransform: 'uppercase' }}>Under Pipeline</div>
-                  <div style={{ fontSize: '18px', fontWeight: 900, color: '#f59e0b', marginTop: '2px' }}>{pipelineProperties.length} Properties</div>
+                  <div style={{ fontSize: '12px', fontWeight: 900, color: '#f59e0b', marginTop: '2px' }}>{pipelineProperties.length} Properties</div>
                 </div>
 
-                <div style={{ backgroundColor: '#1e293b', padding: '10px 16px', borderRadius: '12px', border: '1px solid #334155', textAlign: 'center' }}>
+                <div style={{ backgroundColor: '#1e293b', padding: '8px 12px', borderRadius: 8, border: '1px solid #334155', textAlign: 'center' }}>
                   <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 800, textTransform: 'uppercase' }}>Closed Volume</div>
-                  <div style={{ fontSize: '18px', fontWeight: 900, color: '#38bdf8', marginTop: '2px' }}>₹{totalClosedVolume} Cr</div>
+                  <div style={{ fontSize: '12px', fontWeight: 900, color: '#38bdf8', marginTop: '2px' }}>₹{totalClosedVolume} Cr</div>
                 </div>
 
-                <div style={{ backgroundColor: '#064e3b', padding: '10px 16px', borderRadius: '12px', border: '1px solid #059669', textAlign: 'center' }}>
+                <div style={{ backgroundColor: '#064e3b', padding: '8px 12px', borderRadius: 8, border: '1px solid #059669', textAlign: 'center' }}>
                   <div style={{ fontSize: '10px', color: '#6ee7b7', fontWeight: 800, textTransform: 'uppercase' }}>Earned Commission</div>
-                  <div style={{ fontSize: '18px', fontWeight: 900, color: '#34d399', marginTop: '2px' }}>₹{totalEarnedCommission} Lakhs</div>
+                  <div style={{ fontSize: '12px', fontWeight: 900, color: '#34d399', marginTop: '2px' }}>₹{totalEarnedCommission} Lakhs</div>
                 </div>
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '10px', marginTop: '20px', borderTop: '1px solid #334155', paddingTop: '16px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '12px', borderTop: '1px solid #334155', paddingTop: '10px', flexWrap: 'wrap' }}>
               <button
                 onClick={() => setActiveTab('listings')}
                 style={{ padding: '10px 18px', backgroundColor: activeTab === 'listings' ? '#2563eb' : '#1e293b', color: '#ffffff', fontWeight: 800, fontSize: '13px', borderRadius: '10px', border: 'none', cursor: 'pointer' }}
@@ -312,14 +312,14 @@ export const RealEstateDashboard: React.FC = () => {
 
           {/* TAB 1: ALL PROPERTIES */}
           {activeTab === 'listings' && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(260px, 100%), 1fr))', gap: '10px', width: '100%', maxWidth: '100%', boxSizing: 'border-box', marginBottom: 8 }}>
               {properties.length === 0 ? (
                 <div style={{ padding: '40px', textAlign: 'center', backgroundColor: '#ffffff', borderRadius: '16px', gridColumn: '1 / -1', color: '#64748b' }}>
                   No properties posted yet. Click <strong>+ Post Property</strong> to create one.
                 </div>
               ) : (
                 properties.map((prop) => (
-                  <div key={prop.id} style={{ backgroundColor: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+                  <div key={prop.id} style={{ backgroundColor: '#ffffff', borderRadius: 8, border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', marginBottom: 8, width: '100%', boxSizing: 'border-box' }}>
                     <div style={{ height: '200px', backgroundColor: '#0f172a', position: 'relative' }}>
                       <img src={prop.image} alt={prop.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e: any) => { e.target.src = '/images/bda-plot-bsk6.jpeg'; }} />
                       <span style={{ position: 'absolute', top: '10px', left: '10px', backgroundColor: 'rgba(15,23,42,0.85)', color: '#ffffff', fontSize: '11px', fontWeight: 800, padding: '4px 8px', borderRadius: '6px' }}>
@@ -330,18 +330,18 @@ export const RealEstateDashboard: React.FC = () => {
                       </span>
                     </div>
 
-                    <div style={{ padding: '18px' }}>
+                    <div style={{ padding: '10px 12px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: '11px', fontWeight: 800, color: '#64748b' }}>{prop.propertyId || prop.id}</span>
                         <span style={{ fontSize: '11px', fontWeight: 800, color: '#059669' }}>🏛️ {prop.sroOffice}</span>
                       </div>
-                      <h3 style={{ fontSize: '16px', fontWeight: 800, margin: '6px 0 4px 0', color: '#0f172a' }}>{prop.title}</h3>
+                      <h3 style={{ fontSize: '13px', fontWeight: 800, margin: '4px 0 2px 0', color: '#0f172a' }}>{prop.title}</h3>
                       <div style={{ fontSize: '12px', color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>📍 {prop.location}</div>
 
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '14px', paddingTop: '12px', borderTop: '1px solid #f1f5f9' }}>
                         <div>
-                          <div style={{ fontSize: '18px', fontWeight: 900, color: '#0f172a' }}>{prop.price}</div>
-                          <div style={{ fontSize: '11px', color: '#64748b' }}>{prop.rate || `₹${prop.ratePerSqFt} / sq.ft`}</div>
+                          <div style={{ fontSize: '12px', fontWeight: 900, color: '#0f172a' }}>{prop.price}</div>
+                          <div style={{ fontSize: '10px', color: '#64748b' }}>{prop.rate || `₹${prop.ratePerSqFt} / sq.ft`}</div>
                         </div>
 
                         <div style={{ display: 'flex', gap: '6px' }}>
@@ -372,7 +372,7 @@ export const RealEstateDashboard: React.FC = () => {
 
           {/* TAB 2: UNDER PIPELINE */}
           {activeTab === 'pipeline' && (
-            <div style={{ backgroundColor: '#ffffff', borderRadius: '18px', padding: '24px', border: '1px solid #e2e8f0' }}>
+            <div style={{ backgroundColor: '#ffffff', borderRadius: 8, padding: '10px 12px', border: '1px solid #e2e8f0', marginBottom: 8, width: '100%', boxSizing: 'border-box' }}>
               <div style={{ marginBottom: '20px' }}>
                 <h2 style={{ fontSize: '18px', fontWeight: 900, margin: 0, color: '#b45309' }}>⏳ Properties Under Pipeline & Negotiation</h2>
                 <p style={{ fontSize: '12px', color: '#64748b', margin: '4px 0 0 0' }}>Properties with active buyer discussions or advance tokens.</p>
@@ -381,14 +381,14 @@ export const RealEstateDashboard: React.FC = () => {
               {pipelineProperties.length === 0 ? (
                 <div style={{ padding: '30px', textAlign: 'center', color: '#64748b' }}>No properties currently in negotiation pipeline.</div>
               ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(260px, 100%), 1fr))', gap: '10px', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
                   {pipelineProperties.map((p) => (
-                    <div key={p.id} style={{ padding: '16px', borderRadius: '12px', border: '1.5px solid #fde68a', backgroundColor: '#fffbeb' }}>
+                    <div key={p.id} style={{ padding: '10px 12px', borderRadius: 8, border: '1.5px solid #fde68a', backgroundColor: '#fffbeb', marginBottom: 8, width: '100%', boxSizing: 'border-box' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: '11px', fontWeight: 800, color: '#b45309' }}>{p.propertyType}</span>
-                        <span style={{ fontSize: '16px', fontWeight: 900, color: '#78350f' }}>{p.price}</span>
+                        <span style={{ fontSize: '12px', fontWeight: 900, color: '#78350f' }}>{p.price}</span>
                       </div>
-                      <h4 style={{ margin: '8px 0 4px 0', fontSize: '15px', fontWeight: 800, color: '#0f172a' }}>{p.title}</h4>
+                      <h4 style={{ margin: '4px 0 2px 0', fontSize: '13px', fontWeight: 800, color: '#0f172a' }}>{p.title}</h4>
                       <div style={{ fontSize: '12px', color: '#475569' }}>📍 {p.location}</div>
                       <div style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
                         <button
@@ -413,7 +413,7 @@ export const RealEstateDashboard: React.FC = () => {
 
           {/* TAB 3: CALLER ENQUIRIES */}
           {activeTab === 'enquiries' && (
-            <div style={{ backgroundColor: '#ffffff', borderRadius: '18px', padding: '24px', border: '1px solid #e2e8f0' }}>
+            <div style={{ backgroundColor: '#ffffff', borderRadius: 8, padding: '10px 12px', border: '1px solid #e2e8f0', marginBottom: 8, width: '100%', boxSizing: 'border-box' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                 <div>
                   <h2 style={{ fontSize: '18px', fontWeight: 900, margin: 0, color: '#0f172a' }}>📞 Buyer Inquiry Management</h2>
@@ -428,9 +428,9 @@ export const RealEstateDashboard: React.FC = () => {
               </div>
 
               {showAddEnquiry && (
-                <form onSubmit={handleAddEnquiry} style={{ backgroundColor: '#f5f3ff', padding: '18px', borderRadius: '14px', border: '1px solid #ddd6fe', marginBottom: '20px' }}>
+                <form onSubmit={handleAddEnquiry} style={{ backgroundColor: '#f5f3ff', padding: '10px 12px', borderRadius: 8, border: '1px solid #ddd6fe', marginBottom: 8, width: '100%', boxSizing: 'border-box' }}>
                   <div style={{ fontWeight: 800, fontSize: '14px', color: '#5b21b6', marginBottom: '14px' }}>Quick Log Caller Details:</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: 8 }}>
                     <div>
                       <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, color: '#334155', marginBottom: '6px' }}>Caller Full Name *</label>
                       <input type="text" required placeholder="Caller Full Name" value={newEnqName} onChange={(e) => setNewEnqName(e.target.value)} style={{ width: '100%', boxSizing: 'border-box', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }} />
@@ -491,7 +491,7 @@ export const RealEstateDashboard: React.FC = () => {
 
           {/* TAB 4: CLOSED DEALS */}
           {activeTab === 'deals' && (
-            <div style={{ backgroundColor: '#ffffff', borderRadius: '18px', padding: '24px', border: '1px solid #e2e8f0' }}>
+            <div style={{ backgroundColor: '#ffffff', borderRadius: 8, padding: '10px 12px', border: '1px solid #e2e8f0', marginBottom: 8, width: '100%', boxSizing: 'border-box' }}>
               <div style={{ marginBottom: '20px' }}>
                 <h2 style={{ fontSize: '18px', fontWeight: 900, margin: 0, color: '#0f172a' }}>🤝 Closed Property Registrations & Commission Ledger</h2>
                 <p style={{ fontSize: '12px', color: '#64748b', margin: '4px 0 0 0' }}>Permanent ledger of executed property registrations and earned brokerage commissions.</p>
@@ -530,7 +530,7 @@ export const RealEstateDashboard: React.FC = () => {
 
           {/* TAB 5: POST PROPERTY */}
           {activeTab === 'post' && (
-            <form onSubmit={handleCreateProperty} style={{ backgroundColor: '#ffffff', padding: '28px', borderRadius: '18px', border: '1px solid #e2e8f0' }}>
+            <form onSubmit={handleCreateProperty} style={{ backgroundColor: '#ffffff', padding: '10px 12px', borderRadius: 8, border: '1px solid #e2e8f0', marginBottom: 8, width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
               <div style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '16px', marginBottom: '24px' }}>
                 <h2 style={{ fontSize: '20px', fontWeight: 900, color: '#0f172a', margin: '0 0 4px 0' }}>Post Verified Property & Land</h2>
                 <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>
@@ -559,7 +559,7 @@ export const RealEstateDashboard: React.FC = () => {
                 </span>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: 8 }}>
                 <div>
                   <label style={{ fontSize: '12px', fontWeight: 800, color: '#334155', display: 'block', marginBottom: '6px' }}>Property Title *</label>
                   <input

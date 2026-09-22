@@ -12,7 +12,7 @@
 h1, h2, h3, h4, h5, h6, p, span, label, a, button, input, select, textarea,
 .MuiTypography-root {
   overflow-wrap: break-word !important;
-  word-break: break-word !important;
+  word-break: normal !important;
   hyphens: auto !important;
 }
 
@@ -458,7 +458,7 @@ svg {
     border-radius: 7px !important;
     font-size: 11.5px !important;
     line-height: 1.25 !important;
-    word-break: break-word !important;
+    word-break: normal !important;
     overflow-wrap: anywhere !important;
   }
 
@@ -1377,7 +1377,7 @@ div[class*="results-summary"] {
   input[name*="wastage"],
   input[name*="rate"] {
     width: 100% !important;
-    max-width: 75px !important;
+    max-width: none !important;
     height: 30px !important;
     padding: 2px 4px !important;
     font-size: 12px !important;
@@ -1966,7 +1966,7 @@ body,
   align-items: center !important;
   text-align: center !important;
   white-space: normal !important;
-  word-break: break-word !important;
+  word-break: normal !important;
   overflow-wrap: break-word !important;
   box-sizing: border-box !important;
   padding: 8px 6px !important;
@@ -1974,7 +1974,7 @@ body,
 
 .bm-calc-results-scroll > * * {
   white-space: normal !important;
-  word-break: break-word !important;
+  word-break: normal !important;
   line-height: 1.25 !important;
 }
 
@@ -5021,3 +5021,328 @@ div[class*="ticker-track "] {
 }
 
 /* END NUCLEAR FIX */
+
+
+/* ==========================================================================
+   BUILDMITRA — DASHBOARD HORIZONTAL SCREEN SCROLLBAR PERMANENT FIX
+   Enables natural left-to-right screen scrolling with visible scrollbars
+   ========================================================================== */
+html, body {
+  overflow-x: auto !important;
+  max-width: 100% !important;
+  scrollbar-width: auto !important;
+}
+
+#__next, main, .bm-dashboard-main, div[class*="DashboardLayout"], div[class*="dashboard"] {
+  overflow-x: auto !important;
+  max-width: none !important;
+  min-width: min-content;
+}
+
+/* Force visible horizontal scrollbar for the entire screen */
+::-webkit-scrollbar {
+  height: 10px !important;
+  width: 10px !important;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9 !important;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #94a3b8 !important;
+  border-radius: 5px !important;
+  border: 2px solid #f1f5f9 !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #64748b !important;
+}
+
+
+/* ==========================================================================
+   BUILDMITRA DASHBOARDS — UNIVERSAL COMPACT STATS & HORIZONTAL SCROLL FIX
+   ========================================================================== */
+
+/* 1. UNLOCK PAGE AND DASHBOARD HORIZONTAL SCROLLING */
+html, body {
+  overflow-x: auto !important;
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+#__next,
+#__next > div,
+#__next > main,
+#__next > section,
+main,
+.bm-dashboard-main,
+div[class*="dashboard"],
+div[class*="Dashboard"] {
+  overflow-x: auto !important;
+  max-width: 100% !important;
+}
+
+/* 2. COMPACT SUMMARY STAT BOXES (Progress, Milestones, Paid, Balance) */
+/* Target stat/metric cards across all dashboard overviews */
+div[class*="stat"],
+div[class*="metric"],
+div[class*="summary-box"],
+div[class*="summaryCard"],
+div[class*="summary-card"] {
+  padding: 8px 12px !important;
+  min-height: auto !important;
+}
+
+/* Reduce the oversized text numbers inside stat boxes */
+div[class*="stat"] h2,
+div[class*="stat"] h3,
+div[class*="metric"] h2,
+div[class*="metric"] h3,
+div[class*="summary"] h2,
+div[class*="summary"] h3,
+div[class*="stat"] strong,
+div[class*="metric"] strong {
+  font-size: 16px !important;
+  line-height: 1.2 !important;
+  margin: 2px 0 !important;
+}
+
+/* Small labels (e.g. "Progress", "Milestones Done") */
+div[class*="stat"] span,
+div[class*="stat"] p,
+div[class*="metric"] span,
+div[class*="metric"] p {
+  font-size: 11px !important;
+  line-height: 1.2 !important;
+  color: #64748b !important;
+  margin: 0 !important;
+}
+
+/* 3. UNIVERSAL TABLE & RECENT MILESTONES HORIZONTAL SCROLL */
+/* Wrap all dashboard data tables in an auto-scroll container */
+table {
+  width: 100% !important;
+  min-width: 650px !important; /* Forces columns to stay structured, enabling horizontal scroll */
+  border-collapse: collapse !important;
+}
+
+/* Force container around any table to scroll smoothly */
+div:has(> table),
+section:has(> table),
+.table-responsive,
+[class*="tableContainer"],
+[class*="table-container"],
+[class*="TableWrap"] {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+  display: block !important;
+  margin: 8px 0 16px !important;
+  padding-bottom: 6px !important;
+}
+
+/* Compact table cells */
+table th,
+table td {
+  padding: 6px 10px !important;
+  font-size: 12px !important;
+  line-height: 1.3 !important;
+  white-space: nowrap !important;
+}
+
+/* 4. VISIBLE SCROLLBAR STYLING ACROSS DASHBOARDS */
+*::-webkit-scrollbar {
+  height: 8px !important;
+  width: 8px !important;
+  display: block !important;
+}
+
+*::-webkit-scrollbar-track {
+  background: #e2e8f0 !important;
+  border-radius: 4px !important;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #94a3b8 !important;
+  border-radius: 4px !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #64748b !important;
+}
+
+
+/* ==========================================================================
+   BUILDMITRA — ALL ROLES UNIVERSAL COMPACT METRIC CARDS OVERRIDE
+   Works across Buyer, Contractor, Supplier, Vendor, Labour, Machine, Real Estate
+   ========================================================================== */
+
+/* 1. UNIVERSAL ROW CONTAINER FOR ANY METRIC / STAT ROW ACROSS ALL DASHBOARDS */
+div[class*="stats"],
+div[class*="metrics"],
+div[class*="overview-cards"],
+div[class*="summary-grid"],
+div[class*="summaryGrid"],
+div[class*="summaryCards"],
+div[class*="statGrid"],
+div[class*="statsGrid"],
+div[class*="quick-stats"],
+/* Target any direct flex/grid strip holding metric cards */
+div:has(> div[class*="stat"]),
+div:has(> div[class*="metric"]),
+div:has(> div[class*="card"]:has(p, span, h2, h3, strong)) {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)) !important;
+  gap: 8px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 6px 0 10px 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* 2. UNIVERSAL STAT / METRIC CARD SHELL */
+div[class*="stat-card"],
+div[class*="statCard"],
+div[class*="metric-card"],
+div[class*="metricCard"],
+div[class*="stat-box"],
+div[class*="statBox"],
+div[class*="metric-box"],
+div[class*="metricBox"],
+div[class*="summary-box"],
+div[class*="summaryBox"],
+div[class*="summaryCard"],
+div:has(> div[class*="stat"]) > div,
+div:has(> div[class*="metric"]) > div {
+  padding: 6px 10px !important;
+  min-height: 52px !important;
+  max-height: 68px !important;
+  border-radius: 7px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+  text-align: center !important;
+  box-sizing: border-box !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+}
+
+/* 3. METRIC NUMERIC VALUE (0%, 0/30, ₹0.05L, Total Orders, Invoices, etc.) */
+div[class*="stat"] strong,
+div[class*="metric"] strong,
+div[class*="summary"] strong,
+div[class*="stat"] h2,
+div[class*="metric"] h2,
+div[class*="summary"] h2,
+div[class*="stat"] h3,
+div[class*="metric"] h3,
+div[class*="summary"] h3,
+div[class*="stat"] b,
+div[class*="metric"] b {
+  font-size: 15px !important;
+  line-height: 1.15 !important;
+  font-weight: 800 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* 4. METRIC LABEL / SUBTEXT (Progress, Total Paid, Active Leads, Units Sold, etc.) */
+div[class*="stat"] span,
+div[class*="metric"] span,
+div[class*="summary"] span,
+div[class*="stat"] p,
+div[class*="metric"] p,
+div[class*="summary"] p,
+div[class*="stat"] small,
+div[class*="metric"] small {
+  font-size: 10.5px !important;
+  line-height: 1.2 !important;
+  font-weight: 600 !important;
+  color: #64748b !important;
+  margin: 1px 0 0 0 !important;
+  padding: 0 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.02em !important;
+}
+
+
+/* ==========================================================================
+   FIX VERTICAL LETTER-OVER-LETTER SQUEEZE ON LABELS, TABS AND MODALS
+   ========================================================================== */
+label,
+.MuiFormLabel-root,
+.label-compact,
+div[class*="label"],
+span[class*="label"] {
+  white-space: nowrap !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  max-width: none !important;
+}
+
+/* Ensure modal dialog forms render clean side-by-side Excel-style layouts */
+div[style*="position: fixed"] input,
+div[style*="position: fixed"] select,
+div[style*="position: fixed"] label {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  word-break: normal !important;
+}
+
+
+/* ==========================================================================
+   UNIVERSAL CLEAN TEXT & MODAL EXCEL FORMAT (ALL DASHBOARDS & SUB-TABS)
+   ========================================================================== */
+label,
+.label,
+.label-compact,
+.MuiFormLabel-root,
+span,
+p,
+div[class*="label"],
+form label {
+  white-space: normal !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  max-width: none !important;
+  text-align: left !important;
+  font-size: 12px !important;
+  line-height: 1.35 !important;
+}
+
+/* Modal form fields stay neat, side-by-side, and readable */
+div[style*="position: fixed"] label {
+  white-space: normal !important;
+  word-break: normal !important;
+  display: block !important;
+  margin-bottom: 3px !important;
+}
+
+div[style*="position: fixed"] input:not([type="file"]):not([type="checkbox"]),
+div[style*="position: fixed"] select,
+div[style*="position: fixed"] textarea {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  height: 36px !important;
+  font-size: 13px !important;
+  padding: 6px 8px !important;
+}
+
+
+/* Allow 6+ digit numbers in modal input fields */
+div[style*="position: fixed"] input[type="number"],
+div[style*="position: fixed"] input {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  text-align: left !important;
+  font-size: 14px !important;
+}

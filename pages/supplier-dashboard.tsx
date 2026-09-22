@@ -1045,7 +1045,7 @@ BuildMitra`;
               onClick={() => setActiveTab("reports")}
             >
               <div style={styles.kpiTitle}>Total Business Done</div>
-              <div style={{ ...styles.kpiValue, color: "#6366f1", fontSize: 20 }}>
+              <div style={{ ...styles.kpiValue, color: "#6366f1", fontSize: 12 }}>
                 ₹{reportData?.summary?.totalBusinessDone || 0}
               </div>
               <div style={styles.kpiSub}>Through BuildMitra orders</div>
@@ -1056,7 +1056,7 @@ BuildMitra`;
               onClick={() => setActiveTab("reports")}
             >
               <div style={styles.kpiTitle}>Payment Pending</div>
-              <div style={{ ...styles.kpiValue, color: "#8b5cf6", fontSize: 20 }}>
+              <div style={{ ...styles.kpiValue, color: "#8b5cf6", fontSize: 12 }}>
                 ₹{reportData?.summary?.pendingPayments || 0}
               </div>
               <div style={styles.kpiSub}>Pending quotes & terms</div>
@@ -2113,7 +2113,7 @@ BuildMitra`;
 
 // Inline Styles & CSS Variables
 const styles: Record<string, React.CSSProperties> = {
-  container: { padding: 20, background: "#f8fafc", minHeight: "100dvh", width: "100%", maxWidth: "100%", boxSizing: "border-box", overflowX: "hidden", fontFamily: "Inter, Arial, sans-serif" },
+  container: { padding: 12, background: "#f8fafc", minHeight: "100dvh", width: "100%", maxWidth: "100vw", boxSizing: "border-box", overflowX: "hidden", fontFamily: "Inter, Arial, sans-serif" },
   actionStrip: { display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", marginBottom: 20, flexWrap: "wrap" },
   actionBtn: { padding: "8px 16px", borderRadius: 8, border: "1px solid #cbd5e1", background: "#fff", color: "#334155", fontWeight: 600, cursor: "pointer" },
   actionBtnActive: { background: "#1a5f7a", color: "#fff", borderColor: "#1a5f7a" },
@@ -2121,16 +2121,16 @@ const styles: Record<string, React.CSSProperties> = {
   logoutBtn: { padding: "8px 14px", borderRadius: 8, border: 0, background: "#ef4444", color: "#fff", fontWeight: 600, cursor: "pointer" },
 
   // KPI Grid
-  kpiGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 14, marginBottom: 24 },
-  kpiCard: { background: "#fff", borderRadius: 10, padding: 16, boxShadow: "0 1px 3px rgba(0,0,0,0.05)", cursor: "pointer" },
-  kpiTitle: { fontSize: 12, color: "#64748b", fontWeight: 600 },
-  kpiValue: { fontSize: 26, fontWeight: 800, color: "#0f172a", margin: "4px 0" },
-  kpiSub: { fontSize: 11, color: "#94a3b8" },
+  kpiGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(260px, 100%), 1fr))", gap: 10, marginBottom: 8, width: "100%", maxWidth: "100%", boxSizing: "border-box" },
+  kpiCard: { background: "#fff", borderRadius: 8, padding: "10px 12px", marginBottom: 8, boxShadow: "0 1px 3px rgba(0,0,0,0.05)", cursor: "pointer", width: "100%", maxWidth: "100%", boxSizing: "border-box" },
+  kpiTitle: { fontSize: 10, color: "#64748b", fontWeight: 600 },
+  kpiValue: { fontSize: 12, fontWeight: 800, color: "#0f172a", margin: "2px 0" },
+  kpiSub: { fontSize: 10, color: "#94a3b8" },
 
   // Widgets Grid
-  widgetGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(280px, 100%), 1fr))", gap: 16, marginBottom: 24 },
-  widgetCard: { background: "#fff", borderRadius: 12, padding: 18, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" },
-  widgetTitle: { margin: 0, fontSize: 15, fontWeight: 700, color: "#1e293b", borderBottom: "1px solid #f1f5f9", paddingBottom: 8 },
+  widgetGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(260px, 100%), 1fr))", gap: 10, marginBottom: 8, width: "100%", maxWidth: "100%", boxSizing: "border-box" },
+  widgetCard: { background: "#fff", borderRadius: 8, padding: "10px 12px", marginBottom: 8, boxShadow: "0 1px 3px rgba(0,0,0,0.05)", width: "100%", maxWidth: "100%", boxSizing: "border-box" },
+  widgetTitle: { margin: 0, fontSize: 13, fontWeight: 700, color: "#1e293b", borderBottom: "1px solid #f1f5f9", paddingBottom: 6 },
   emptyText: { fontSize: 13, color: "#94a3b8", marginTop: 14 },
   dot: { display: "inline-block", width: 8, height: 8, borderRadius: "50%", marginRight: 6 },
   pipelineRow: { display: "flex", justifyContent: "space-between", fontSize: 12, color: "#475569" },
@@ -2138,14 +2138,14 @@ const styles: Record<string, React.CSSProperties> = {
   barFill: { height: "100%", borderRadius: 3, transition: "width 0.3s" },
 
   // Report Section
-  reportPrintCard: { background: "#fff", borderRadius: 12, padding: 24, boxShadow: "0 1px 3px rgba(0,0,0,0.05)", border: "1px solid #e2e8f0" },
+  reportPrintCard: { background: "#fff", borderRadius: 8, padding: "10px 12px", marginBottom: 8, boxShadow: "0 1px 3px rgba(0,0,0,0.05)", border: "1px solid #e2e8f0", width: "100%", maxWidth: "100%", boxSizing: "border-box" },
   reportHeader: { display: "flex", justifyContent: "space-between", gap: 20, borderBottom: "2px solid #1a5f7a", paddingBottom: 16, marginBottom: 16, flexWrap: "wrap" },
-  reportSummaryStrip: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12, background: "#f8fafc", padding: 14, borderRadius: 8, marginBottom: 20 },
-  summaryLabel: { fontSize: 11, color: "#64748b", fontWeight: 600 },
-  summaryVal: { fontSize: 18, fontWeight: 800, color: "#0f172a" },
+  reportSummaryStrip: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(260px, 100%), 1fr))", gap: 10, background: "#f8fafc", padding: "10px 12px", borderRadius: 8, marginBottom: 8, width: "100%", maxWidth: "100%", boxSizing: "border-box" },
+  summaryLabel: { fontSize: 10, color: "#64748b", fontWeight: 600 },
+  summaryVal: { fontSize: 12, fontWeight: 800, color: "#0f172a" },
 
   // Filters
-  filterBox: { background: "#fff", borderRadius: 12, padding: 16, boxShadow: "0 1px 3px rgba(0,0,0,0.05)", marginBottom: 16 },
+  filterBox: { background: "#fff", borderRadius: 8, padding: "10px 12px", marginBottom: 8, boxShadow: "0 1px 3px rgba(0,0,0,0.05)", width: "100%", maxWidth: "100%", boxSizing: "border-box" },
   searchBarWrap: { marginBottom: 12 },
   searchInput: { width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 14 },
   filterRow: { display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" },
@@ -2155,7 +2155,7 @@ const styles: Record<string, React.CSSProperties> = {
   chipActive: { background: "#1a5f7a", color: "#fff", borderColor: "#1a5f7a", fontWeight: 700 },
 
   // Table & Cards
-  tableCardWrap: { background: "#fff", borderRadius: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.05)", overflow: "hidden" },
+  tableCardWrap: { background: "#fff", borderRadius: 8, boxShadow: "0 1px 3px rgba(0,0,0,0.05)", overflow: "hidden", marginBottom: 8, width: "100%", maxWidth: "100%", boxSizing: "border-box" },
   desktopTableWrap: { overflowX: "auto" },
   table: { width: "100%", borderCollapse: "collapse", fontSize: 13 },
   th: { padding: "12px 14px", background: "#f1f5f9", textAlign: "left", color: "#334155", fontWeight: 700, borderBottom: "1px solid #e2e8f0" },

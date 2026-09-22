@@ -382,7 +382,51 @@ const isReadOnly = false;
   const grandTotalAmount = totalContractAmount + totalExtraWorkAmount;
   const balanceAmount = grandTotalAmount - totalPaid;
 
-  const addProject = () => {
+      const saveMaterial = () => {
+      if (!newMaterial.material || !newMaterial.receivedQty) {
+        alert("Please enter material name and received quantity");
+        return;
+      }
+      const rec = parseFloat(newMaterial.receivedQty) || 0;
+      const con = parseFloat(newMaterial.consumedQty) || 0;
+      const rt = parseFloat(newMaterial.rate) || 0;
+      const itemRecord = {
+        id: Date.now(),
+        material: newMaterial.material,
+        unit: newMaterial.unit || "bags",
+        supplier: newMaterial.supplier || "",
+        orderedQty: parseFloat(newMaterial.orderedQty) || rec,
+        receivedQty: rec,
+        consumedQty: con,
+        balanceQty: rec - con,
+        rate: rt,
+        amount: rec * rt,
+        invoiceDate: newMaterial.invoiceDate || new Date().toISOString().split("T")[0],
+        invoiceNo: newMaterial.invoiceNo || "",
+        grnNo: newMaterial.grnNo || ""
+      };
+      const updatedInv = [...(inventory || []), itemRecord];
+      setInventory(updatedInv);
+      if (selectedProject) {
+        const nextProjs = (projects || []).map((p: any) => {
+          const pId = String(p.projectUniqueId || p.projectId || p.id || p.projectCode);
+          if (pId === String(selectedProject)) {
+            return { ...p, inventory: updatedInv };
+          }
+          return p;
+        });
+        persistBuyerUpdates(nextProjs);
+      }
+      setNewMaterial({
+        material: "", unit: "bags", supplier: "", orderedQty: "", receivedQty: "",
+        consumedQty: "", rate: "", invoiceDate: new Date().toISOString().split("T")[0],
+        invoiceNo: "", grnNo: ""
+      });
+      if (typeof setShowMaterialModal === "function") setShowMaterialModal(false);
+      alert("Material record saved successfully!");
+    };
+
+    const addProject = () => {
     if (isReadOnly) return denyContractorEdit();
     if (!newProject.name || !newProject.plotLength || !newProject.plotWidth) { 
       alert("Please fill all required fields"); 
@@ -658,7 +702,7 @@ const isReadOnly = false;
 
   const addMaterial = () => {
     if (!selectedProjectData) return alert("Select project first.");
-    if (selectedProjectData?.contractorId) return denyContractorEdit();
+    // Contractor edit allowed for progress upload
     if (!newMaterial.material || !newMaterial.receivedQty) return alert("Enter material and received quantity.");
 
     const orderedQty = Number(newMaterial.orderedQty || newMaterial.receivedQty || 0);
@@ -714,7 +758,7 @@ const isReadOnly = false;
 
   const uploadMedia = () => {
     if (!selectedProjectData) return alert("Select project first.");
-    if (selectedProjectData?.contractorId) return denyContractorEdit();
+    // Contractor edit allowed for progress upload
     if (!mediaTitle) return alert("Enter title.");
 
     const saveMedia = (fileDataUrl = "") => {
@@ -802,7 +846,7 @@ const isReadOnly = false;
 
   const addLabour = (labourData = null) => {
     if (!selectedProjectData) return alert("Select project first.");
-    if (selectedProjectData?.contractorId) return denyContractorEdit();
+    // Contractor edit allowed for progress upload
 
     const source = labourData && labourData.name ? labourData : newLabour;
     if (!source.name || !source.role || !source.dailyWage) return alert("Please fill labour name, role and daily wage.");
@@ -822,7 +866,7 @@ const isReadOnly = false;
       totalPayment: dailyWage * daysPresent,
       paidAmount: 0,
       status: source.status || "Present",
-      joinDate: new Date().toISOString().split("T")[0]
+      joinDate: source.date || new Date().toISOString().split("T")[0], date: source.date || new Date().toISOString().split("T")[0], period: source.period || "daily"
     };
 
     const attendanceEntry = {
