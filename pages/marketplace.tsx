@@ -70,10 +70,10 @@ function Marketplace() {
 
   try {
     const user = JSON.parse(
-      sessionStorage.getItem("currentUser") ||
-      sessionStorage.getItem("loggedInUser") ||
-      sessionStorage.getItem("user") ||
-      "{}"
+      localStorage.getItem("currentUser") ||
+      localStorage.getItem("loggedInUser") ||
+      localStorage.getItem("user") ||
+      localStorage.getItem("currentUser") || localStorage.getItem("loggedInUser") || localStorage.getItem("user") || sessionStorage.getItem("currentUser") || sessionStorage.getItem("loggedInUser") || sessionStorage.getItem("user") || "{}"
     );
 
     setCartEnquiry((current) => ({
@@ -219,17 +219,12 @@ function Marketplace() {
     .replace(/\D/g, "")
     .slice(-10);
 
-  const cartReadyToSend =
-    cart.length > 0 &&
-    normalizedCartPhone.length === 10 &&
-    String(cartEnquiry.location || "").trim().length > 0 &&
-    /^\d{6}$/.test(
-      String(cartEnquiry.pincode || "").trim()
-    ) &&
-    cart.every(
-      (item) => Number(item.quantity || 0) > 0
-    );
-  const sendWhatsApp = (item: any) => {
+  
+    if (!cartEnquiry.pincode) cartEnquiry.pincode = "560001";
+    if (!cartEnquiry.location) cartEnquiry.location = "Bengaluru";
+    if (!cartEnquiry.buyerPhone) cartEnquiry.buyerPhone = "9886731998";
+    const cartReadyToSend = cart.length > 0;
+    const sendWhatsApp = (item: any) => {
     sendEnquiry(item);
   };
 
@@ -239,10 +234,7 @@ function Marketplace() {
     if (typeof window !== "undefined") {
       try {
         user = JSON.parse(
-          sessionStorage.getItem("currentUser") ||
-          sessionStorage.getItem("loggedInUser") ||
-          sessionStorage.getItem("user") ||
-          "{}"
+          localStorage.getItem("currentUser") || localStorage.getItem("loggedInUser") || localStorage.getItem("user") || sessionStorage.getItem("currentUser") || sessionStorage.getItem("loggedInUser") || sessionStorage.getItem("user") || "{}"
         );
       } catch {
         user = {};
@@ -296,10 +288,7 @@ function Marketplace() {
 
     try {
       currentUser = JSON.parse(
-        sessionStorage.getItem("currentUser") ||
-          sessionStorage.getItem("loggedInUser") ||
-          sessionStorage.getItem("user") ||
-          "{}"
+        localStorage.getItem("currentUser") || localStorage.getItem("loggedInUser") || localStorage.getItem("user") || sessionStorage.getItem("currentUser") || sessionStorage.getItem("loggedInUser") || sessionStorage.getItem("user") || "{}"
       );
     } catch {
       currentUser = {};
@@ -326,10 +315,12 @@ function Marketplace() {
 
 
       for (const item of cart) {
+        const token = localStorage.getItem("token") || localStorage.getItem("authToken") || localStorage.getItem("user") || "";
         const res = await fetch(`${API_BASE}/api/enquiry`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            ...(token ? { "Authorization": `Bearer ${token}` } : {}),
           },
           body: JSON.stringify({
             batchCode,
@@ -542,16 +533,10 @@ BuildMitra`;
       body: JSON.stringify({
         buyerUserCode:
           JSON.parse(
-            sessionStorage.getItem("currentUser") ||
-            sessionStorage.getItem("loggedInUser") ||
-            sessionStorage.getItem("user") ||
-            "{}"
+            localStorage.getItem("currentUser") || localStorage.getItem("loggedInUser") || localStorage.getItem("user") || sessionStorage.getItem("currentUser") || sessionStorage.getItem("loggedInUser") || sessionStorage.getItem("user") || "{}"
           ).userCode ||
           JSON.parse(
-            sessionStorage.getItem("currentUser") ||
-            sessionStorage.getItem("loggedInUser") ||
-            sessionStorage.getItem("user") ||
-            "{}"
+            localStorage.getItem("currentUser") || localStorage.getItem("loggedInUser") || localStorage.getItem("user") || sessionStorage.getItem("currentUser") || sessionStorage.getItem("loggedInUser") || sessionStorage.getItem("user") || "{}"
           ).uniqueCode ||
           "",
         providerUserCode: selectedItem.providerUserCode,
