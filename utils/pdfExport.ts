@@ -1,7 +1,7 @@
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import { loadPDF } from "./lazyLibs";
 
-export const exportToPDF = (data: any[], columns: string[], fileName: string = "Electrical_BOQ_Report") => {
+export const exportToPDF = async (data: any[], columns: string[], fileName: string = "Electrical_BOQ_Report") => {
+  const { jsPDF, autoTable } = await loadPDF();
   const doc = new jsPDF();
   doc.setFontSize(16);
   doc.text("BuildMitra — Electrical, Power & Solar BOQ Estimate", 14, 16);
@@ -19,7 +19,7 @@ export const exportToPDF = (data: any[], columns: string[], fileName: string = "
   doc.save(`${fileName}.pdf`);
 };
 
-export const generateElectricalPdfReport = (
+export const generateElectricalPdfReport = async (
   sanctionedKw: number,
   solarKw: number,
   boqItems: Array<{ category: string; itemDescription: string; unit: string; quantity: number; ratePerUnit: number; totalAmount: number }>,
@@ -27,6 +27,7 @@ export const generateElectricalPdfReport = (
   overheadAmount: number,
   grandTotal: number
 ) => {
+  const { jsPDF, autoTable } = await loadPDF();
   const doc = new jsPDF();
 
   // Title Header Block
@@ -100,7 +101,7 @@ export const generateElectricalPdfReport = (
   doc.save(`BuildMitra_Electrical_Solar_BOQ_${Date.now()}.pdf`);
 };
 
-export const generatePlumbingPdfReport = (
+export const generatePlumbingPdfReport = async (
   sumpLiters: number,
   rwhLiters: number,
   boqItems: Array<{ category: string; itemDescription: string; unit: string; quantity: number; ratePerUnit: number; totalAmount: number }>,
@@ -108,6 +109,7 @@ export const generatePlumbingPdfReport = (
   overheadAmount: number,
   grandTotal: number
 ) => {
+  const { jsPDF, autoTable } = await loadPDF();
   const doc = new jsPDF();
 
   // Title Header Block

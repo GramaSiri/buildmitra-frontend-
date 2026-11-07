@@ -1,8 +1,8 @@
-﻿// @ts-nocheck
+// @ts-nocheck
 import React, { useState, useMemo, useEffect } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import * as XLSX from 'xlsx';
+import { loadXLSX } from '../utils/lazyLibs';
 import { usePaymentBarrier } from '../hooks/usePaymentBarrier';
 import { getMasterRate, syncApprovedRatesFromBackend } from '../utils/masterRates';
 import Sidebar from '../components/Sidebar';
@@ -851,10 +851,12 @@ export default function PEBBuildingBOQPage() {
         ["LAB-PEB-TRN", "Logistics, Freight & Heavy Machinery Transportation", steelTonnageBreakdown.totalTonnes, "TON", 2200, boqCalculations.transportCost]
       ];
 
-      const ws = XLSX.utils.aoa_to_sheet(summaryData);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "PEB_Building_BOQ");
-      XLSX.writeFile(wb, `BuildMitra_PEB_Building_BOQ_${Date.now()}.xlsx`);
+      loadXLSX().then((XLSX) => {
+        const ws = XLSX.utils.aoa_to_sheet(summaryData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "PEB_Building_BOQ");
+        XLSX.writeFile(wb, `BuildMitra_PEB_Building_BOQ_${Date.now()}.xlsx`);
+      }).catch((e) => console.error("Excel export failed", e));
     });
   };
 
@@ -892,10 +894,12 @@ export default function PEBBuildingBOQPage() {
         });
       }
 
-      const ws = XLSX.utils.aoa_to_sheet(summaryData);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "PEB_Quick_BOQ");
-      XLSX.writeFile(wb, `BuildMitra_PEB_Quick_BOQ_${Date.now()}.xlsx`);
+      loadXLSX().then((XLSX) => {
+        const ws = XLSX.utils.aoa_to_sheet(summaryData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "PEB_Quick_BOQ");
+        XLSX.writeFile(wb, `BuildMitra_PEB_Quick_BOQ_${Date.now()}.xlsx`);
+      }).catch((e) => console.error("Excel export failed", e));
     });
   };
 

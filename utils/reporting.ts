@@ -1,6 +1,6 @@
-import * as XLSX from "xlsx";
+import { loadXLSX } from "./lazyLibs";
 
-export const exportProjectReport = (reportType: string, project: any, rows: any[]) => {
+export const exportProjectReport = async (reportType: string, project: any, rows: any[]) => {
   const generated = new Date().toLocaleString();
   const metadata = [
     ["BuildMitra"],
@@ -12,6 +12,7 @@ export const exportProjectReport = (reportType: string, project: any, rows: any[
     ["Generated Date", generated],
     []
   ];
+  const XLSX = await loadXLSX();
   const worksheet = XLSX.utils.aoa_to_sheet(metadata);
   XLSX.utils.sheet_add_json(worksheet, rows, { origin: "A9" });
   const workbook = XLSX.utils.book_new();

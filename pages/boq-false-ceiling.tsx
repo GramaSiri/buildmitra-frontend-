@@ -1,7 +1,7 @@
-﻿// @ts-nocheck
+// @ts-nocheck
 import React, { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import * as XLSX from 'xlsx';
+import { loadXLSX } from '../utils/lazyLibs';
 import { usePaymentBarrier } from '../hooks/usePaymentBarrier';
 import { getMasterRate, getCombinedBOQRate, syncApprovedRatesFromBackend } from '../utils/masterRates';
 import MarketRateTrend from '../components/ui/MarketRateTrend';
@@ -168,10 +168,12 @@ export default function FalseCeilingBOQPage() {
         'Total Amount (₹)': formatCurrency(i.amount)
       }));
 
-      const ws = XLSX.utils.json_to_sheet(data);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'False_Ceiling_BOQ');
-      XLSX.writeFile(wb, `BuildMitra_False_Ceiling_BOQ_${new Date().toISOString().split('T')[0]}.xlsx`);
+      loadXLSX().then((XLSX) => {
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'False_Ceiling_BOQ');
+        XLSX.writeFile(wb, `BuildMitra_False_Ceiling_BOQ_${new Date().toISOString().split('T')[0]}.xlsx`);
+      }).catch((e) => console.error("Excel export failed", e));
     });
   };
 

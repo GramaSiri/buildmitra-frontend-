@@ -1,15 +1,15 @@
-import * as XLSX from 'xlsx';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import { loadPDF, loadXLSX } from "./lazyLibs";
 
-export const exportToExcel = (data: any[], fileName: string = 'BOQ_Report') => {
+export const exportToExcel = async (data: any[], fileName: string = 'BOQ_Report') => {
+  const XLSX = await loadXLSX();
   const ws = XLSX.utils.json_to_sheet(data);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'BOQ');
   XLSX.writeFile(wb, `${fileName}.xlsx`);
 };
 
-export const exportToPDF = (data: any[], columns: string[], fileName: string = 'BOQ_Report') => {
+export const exportToPDF = async (data: any[], columns: string[], fileName: string = 'BOQ_Report') => {
+  const { jsPDF, autoTable } = await loadPDF();
   const doc = new jsPDF();
   doc.text('Bill of Quantities (BOQ)', 14, 16);
   autoTable(doc, {

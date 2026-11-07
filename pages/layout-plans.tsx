@@ -1,7 +1,7 @@
-﻿// @ts-nocheck
+// @ts-nocheck
 import React, { useMemo, useState } from "react";
 import { useRouter } from "next/router";
-import * as XLSX from 'xlsx';
+import { loadXLSX } from '../utils/lazyLibs';
 import { usePaymentBarrier } from '../hooks/usePaymentBarrier';
 import jsPDF from "jspdf";
 
@@ -890,34 +890,36 @@ export default function LayoutPlansPage() {
 
   const exportExcel = () => {
     if (!layout || !generated) return;
-    const workbook = XLSX.utils.book_new();
-    const areaRows = [
-      { "Area Category": "Gross Land", "Sqft": layout.gross },
-      { "Area Category": "Roads", "Sqft": layout.roadArea },
-      { "Area Category": "Amenities", "Sqft": layout.amenityArea },
-      { "Area Category": "Utilities", "Sqft": layout.utilityArea },
-      { "Area Category": "Park/Open", "Sqft": layout.parkArea },
-      { "Area Category": "Saleable Plots", "Sqft": layout.saleableArea },
-      { "Area Category": "Extended Plots", "Sqft": layout.extendedPlotArea },
-      { "Area Category": "Adjusted Plots", "Sqft": layout.adjustedPlotArea },
-      { "Area Category": "Premium Plots", "Sqft": layout.premiumPlotArea },
-      { "Area Category": "Corner Plots", "Sqft": layout.cornerPlotArea },
-      { "Area Category": "Odd Plots", "Sqft": layout.oddPlotArea },
-      { "Area Category": "Unallocated Saleable Land", "Sqft": 0 },
-      { "Area Category": "Unused Area", "Sqft": layout.unusedArea }
-    ];
-    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(areaRows), "Area Statement");
-    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(layout.plots.map(p => ({
-      "Plot No": p.number,
-      "Classification Type": p.type,
-      "Actual Frontage (ft)": p.width,
-      "Actual Depth (ft)": p.depth,
-      "Absorbed Buffer Area (SqFt)": p.absorbedBufferArea,
-      "Actual Area (SqFt)": p.area,
-      "Road Access": p.roadAccess ? "Yes" : "No"
-    }))), "Plot Schedule");
-    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(boq), "BOQ");
-    XLSX.writeFile(workbook, `zero-waste-layout-${Date.now()}.xlsx`);
+    loadXLSX().then((XLSX) => {
+      const workbook = XLSX.utils.book_new();
+      const areaRows = [
+        { "Area Category": "Gross Land", "Sqft": layout.gross },
+        { "Area Category": "Roads", "Sqft": layout.roadArea },
+        { "Area Category": "Amenities", "Sqft": layout.amenityArea },
+        { "Area Category": "Utilities", "Sqft": layout.utilityArea },
+        { "Area Category": "Park/Open", "Sqft": layout.parkArea },
+        { "Area Category": "Saleable Plots", "Sqft": layout.saleableArea },
+        { "Area Category": "Extended Plots", "Sqft": layout.extendedPlotArea },
+        { "Area Category": "Adjusted Plots", "Sqft": layout.adjustedPlotArea },
+        { "Area Category": "Premium Plots", "Sqft": layout.premiumPlotArea },
+        { "Area Category": "Corner Plots", "Sqft": layout.cornerPlotArea },
+        { "Area Category": "Odd Plots", "Sqft": layout.oddPlotArea },
+        { "Area Category": "Unallocated Saleable Land", "Sqft": 0 },
+        { "Area Category": "Unused Area", "Sqft": layout.unusedArea }
+      ];
+      XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(areaRows), "Area Statement");
+      XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(layout.plots.map(p => ({
+        "Plot No": p.number,
+        "Classification Type": p.type,
+        "Actual Frontage (ft)": p.width,
+        "Actual Depth (ft)": p.depth,
+        "Absorbed Buffer Area (SqFt)": p.absorbedBufferArea,
+        "Actual Area (SqFt)": p.area,
+        "Road Access": p.roadAccess ? "Yes" : "No"
+      }))), "Plot Schedule");
+      XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(boq), "BOQ");
+      XLSX.writeFile(workbook, `zero-waste-layout-${Date.now()}.xlsx`);
+    }).catch((e) => console.error("Excel export failed", e));
   };
 
   return (

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { useRouter } from "next/router";
-import * as XLSX from "xlsx";
+import { loadXLSX } from '../utils/lazyLibs';
 import jsPDF from "jspdf";
 
 type SurveyPoint = { id: number; name: string; distance: number; bearing: number };
@@ -313,16 +313,18 @@ export default function PlotLayoutPage() {
   const netProfitMargin = estimatedRevenue - totalBoqAmount;
 
   const exportExcel = () => {
-    const wb = XLSX.utils.book_new();
-    const boqData = boq.map(r => ({ Category: r.category, Item: r.item, Quantity: r.qty, Unit: r.unit, Rate: r.rate, Amount: r.amount }));
-    const ws1 = XLSX.utils.json_to_sheet(boqData);
-    XLSX.utils.book_append_sheet(wb, ws1, "BOQ Civil Estimate");
-
-    const plotData = layout.plots.map(p => ({ "Plot No": p.number, Type: p.type, "Width (ft)": p.width, "Depth (ft)": p.depth, "Area (sqft)": p.area, "Estimated Value (INR)": p.area * plotRatePerSqft }));
-    const ws2 = XLSX.utils.json_to_sheet(plotData);
-    XLSX.utils.book_append_sheet(wb, ws2, "Plot Schedule");
-
-    XLSX.writeFile(wb, `BuildMitra_Layout_Development_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    loadXLSX().then((XLSX) => {
+      const wb = XLSX.utils.book_new();
+      const boqData = boq.map(r => ({ Category: r.category, Item: r.item, Quantity: r.qty, Unit: r.unit, Rate: r.rate, Amount: r.amount }));
+      const ws1 = XLSX.utils.json_to_sheet(boqData);
+      XLSX.utils.book_append_sheet(wb, ws1, "BOQ Civil Estimate");
+  
+      const plotData = layout.plots.map(p => ({ "Plot No": p.number, Type: p.type, "Width (ft)": p.width, "Depth (ft)": p.depth, "Area (sqft)": p.area, "Estimated Value (INR)": p.area * plotRatePerSqft }));
+      const ws2 = XLSX.utils.json_to_sheet(plotData);
+      XLSX.utils.book_append_sheet(wb, ws2, "Plot Schedule");
+  
+      XLSX.writeFile(wb, `BuildMitra_Layout_Development_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    }).catch((e) => console.error("Excel export failed", e));
   };
 
   return (

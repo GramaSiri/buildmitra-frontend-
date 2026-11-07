@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import Head from "next/head";
-import * as XLSX from "xlsx";
+import { loadXLSX } from '../utils/lazyLibs';
 import Sidebar from "../components/Sidebar";
 
 export type LoanType =
@@ -460,10 +460,12 @@ export default function HousingLoanFinance() {
       ]);
     });
 
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Loan Calculator Report");
-    XLSX.writeFile(wb, "Housing_Loan_Finance_Report.xlsx");
+    loadXLSX().then((XLSX) => {
+      const ws = XLSX.utils.aoa_to_sheet(wsData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Loan Calculator Report");
+      XLSX.writeFile(wb, "Housing_Loan_Finance_Report.xlsx");
+    }).catch((e) => console.error("Excel export failed", e));
   };
 
   const shareOnWhatsApp = () => {

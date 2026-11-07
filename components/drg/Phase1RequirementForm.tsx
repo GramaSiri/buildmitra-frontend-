@@ -390,7 +390,7 @@ function FormSection({ title, icon, isOpen, onToggle, children }: { title: strin
           fontWeight: "bold",
           color: "#0f172a",
           display: "flex",
-          justify: "space-between",
+          justifyContent: "space-between",
           alignItems: "center",
           cursor: "pointer",
         }}

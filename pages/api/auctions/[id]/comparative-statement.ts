@@ -11,7 +11,8 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 
   if (req.method === "GET") {
     try {
-      const result = getComparativeStatement(auctionId);
+      const role = typeof req.query.role === "string" ? req.query.role : "buyer";
+      const result = getComparativeStatement(auctionId, role);
       if (!result.success) {
         return res.status(404).json(result);
       }

@@ -1,7 +1,6 @@
-﻿// @ts-nocheck
+// @ts-nocheck
 import DashboardHeader from "../components/DashboardHeader";
 import React, { useState } from "react";
-import * as XLSX from 'xlsx';
 import { logoutToLogin } from "../utils/session";
 const p = (obj: any) => obj;
 import { usePaymentBarrier } from "../hooks/usePaymentBarrier";

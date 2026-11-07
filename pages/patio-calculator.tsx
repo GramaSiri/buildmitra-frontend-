@@ -1,7 +1,7 @@
-﻿// @ts-nocheck
+// @ts-nocheck
 import { syncApprovedRatesFromBackend } from "../utils/masterRates";
 import React, { useState } from 'react';
-import * as XLSX from 'xlsx';
+import { loadXLSX } from '../utils/lazyLibs';
 import { usePaymentBarrier } from '../hooks/usePaymentBarrier';
 import { useRouter } from 'next/router';
 import { useRates } from '../contexts/RateContext';
@@ -152,10 +152,12 @@ export default function PatioPage() {
       { Item: 'Labour Total', Quantity: '', Unit: '', Cost: `₹${results.costs.labour}` },
       { Item: 'Grand Total (₹)', Quantity: '', Unit: '', Cost: `₹${results.costs.grandTotal}` }
     ];
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Patio');
-    XLSX.writeFile(wb, `Patio_${new Date().toISOString().split('T')[0]}.xlsx`);
+    loadXLSX().then((XLSX) => {
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Patio');
+      XLSX.writeFile(wb, `Patio_${new Date().toISOString().split('T')[0]}.xlsx`);
+    }).catch((e) => console.error("Excel export failed", e));
   };
 
   const handleWhatsApp = () => {

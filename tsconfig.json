@@ -15,8 +15,29 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
-    "incremental": true
+    "incremental": false
   },
-  "include": ["next-env.d.ts", "pages/**/*.ts", "pages/**/*.tsx"],
-  "exclude": ["node_modules", "src"]
+  "include": [
+    "next-env.d.ts",
+    "pages/**/*.ts",
+    "pages/**/*.tsx",
+    "components/**/*.ts",
+    "components/**/*.tsx",
+    "hooks/**/*.ts",
+    "hooks/**/*.tsx",
+    "lib/**/*.ts",
+    "lib/**/*.tsx",
+    "utils/**/*.ts",
+    "utils/**/*.tsx",
+    "contexts/**/*.ts",
+    "contexts/**/*.tsx",
+    "services/**/*.ts",
+    "services/**/*.tsx"
+  ],
+  "exclude": [
+    "node_modules",
+    "src",
+    "backend",
+    "hooks/usePaymentBarrier.ts"
+  ]
 }

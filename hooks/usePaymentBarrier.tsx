@@ -3,7 +3,6 @@ import { useRouter } from "next/router";
 import PaymentBarrierModal from "../components/PaymentBarrierModal";
 import {
   FeatureType,
-  getUserId,
   hasPaidUnlock,
   markPaidUnlock,
   requireUnlock

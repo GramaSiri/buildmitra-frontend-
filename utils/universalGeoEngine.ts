@@ -41,6 +41,19 @@ export interface UniversalGeoResult {
   officialStateRegistrationPortal: string;
   guidanceValueGuidanceNote: string;
   mutationAuthorityName: string;
+  stampDutyRate?: number;
+  registrationFeeRate?: number;
+  cessRate?: number;
+  sroExecutionDays?: string;
+  mutationTimelineDays?: string;
+  permissibleFAR?: number;
+  permissibleFloors?: string;
+  setbackFront?: string;
+  setbackRear?: string;
+  setbackSides?: string;
+  feasibilityScore?: number;
+  rentalYieldPercent?: number;
+  benchmarkCityCenter?: string;
 }
 
 // 1. UNIVERSAL AREA UNIT PARSER
@@ -325,7 +338,20 @@ export async function resolveUniversalGeoData(rawLat: number, rawLng: number, ad
       waterSource: 'Deep Groundwater Aquifer (~350 ft High Yield) + Ponnaiyar River Irrigation Basin Feeder',
       officialStateRegistrationPortal: 'TNREGINET (tnreginet.gov.in) & Tamil Nadu e-District Portal',
       guidanceValueGuidanceNote: 'Guideline valuation and Patta/Chitta ownership verification must be verified via TNREGINET and Denkanikottai / Hosur Taluk Sub-Registrar Office.',
-      mutationAuthorityName: 'Tamil Nadu Revenue e-Patta / Chitta Mutation & Taluk Surveyor Sub-Division'
+      mutationAuthorityName: 'Tamil Nadu Revenue e-Patta / Chitta Mutation & Taluk Surveyor Sub-Division',
+      stampDutyRate: 7.0,
+      registrationFeeRate: 4.0,
+      cessRate: 0.0,
+      sroExecutionDays: '1-2 Working Days',
+      mutationTimelineDays: '30 Calendar Days',
+      permissibleFAR: 1.50,
+      permissibleFloors: 'G + 2 Floors',
+      setbackFront: '3.0m',
+      setbackRear: '2.0m',
+      setbackSides: '1.5m',
+      feasibilityScore: 92,
+      rentalYieldPercent: 2.5,
+      benchmarkCityCenter: 'Hosur Town Centre (8.5 km)'
     };
   }
 
@@ -369,7 +395,20 @@ export async function resolveUniversalGeoData(rawLat: number, rawLng: number, ad
       waterSource: 'Active Cauvery Phase 5 Main Feeder + High-Yield Groundwater Aquifer (~420 ft)',
       officialStateRegistrationPortal: 'Kaveri 2.0 (kaveri.karnataka.gov.in) & Bhoomi / e-Aasthi',
       guidanceValueGuidanceNote: 'Certified guidance value, e-Khata verification, and encumbrance certificate must be verified via Karnataka Kaveri 2.0 portal.',
-      mutationAuthorityName: 'BBMP / BDA e-Aasthi PID Mutation & Revenue Mutation Registry'
+      mutationAuthorityName: 'BBMP / BDA e-Aasthi PID Mutation & Revenue Mutation Registry',
+      stampDutyRate: 5.0,
+      registrationFeeRate: 1.0,
+      cessRate: 0.5,
+      sroExecutionDays: '1-2 Working Days',
+      mutationTimelineDays: '30-45 Calendar Days',
+      permissibleFAR: 2.25,
+      permissibleFloors: 'G + 4 Floors (15m permissible height)',
+      setbackFront: '4.0m Front Road Setback',
+      setbackRear: '2.0m Rear Setback',
+      setbackSides: '1.5m Side Setbacks',
+      feasibilityScore: 94,
+      rentalYieldPercent: 4.2,
+      benchmarkCityCenter: 'Vidhana Soudha CBD (12.5 km)'
     };
   }
 
@@ -413,7 +452,20 @@ export async function resolveUniversalGeoData(rawLat: number, rawLng: number, ad
       waterSource: 'BWSSB Cauvery Line Extended + Deep Borewell Grid',
       officialStateRegistrationPortal: 'Kaveri 2.0 (kaveri.karnataka.gov.in)',
       guidanceValueGuidanceNote: 'Check SRO Whitefield / KR Puram rates via Kaveri 2.0.',
-      mutationAuthorityName: 'BBMP Mahadevapura e-Aasthi Khata Mutation'
+      mutationAuthorityName: 'BBMP Mahadevapura e-Aasthi Khata Mutation',
+      stampDutyRate: 5.0,
+      registrationFeeRate: 1.0,
+      cessRate: 0.5,
+      sroExecutionDays: '1-2 Working Days',
+      mutationTimelineDays: '30-45 Calendar Days',
+      permissibleFAR: 2.25,
+      permissibleFloors: 'G + 4 Floors (15m permissible height)',
+      setbackFront: '4.0m Front Road Setback',
+      setbackRear: '2.0m Rear Setback',
+      setbackSides: '1.5m Side Setbacks',
+      feasibilityScore: 95,
+      rentalYieldPercent: 4.5,
+      benchmarkCityCenter: 'MG Road CBD (16.0 km)'
     };
   }
 
@@ -457,6 +509,19 @@ export async function resolveUniversalGeoData(rawLat: number, rawLng: number, ad
     waterSource: 'Municipal Water Grid + Groundwater Aquifer',
     officialStateRegistrationPortal: 'State Inspector General of Registration (IGR) Portal',
     guidanceValueGuidanceNote: 'Consult the respective District Sub-Registrar Office for certified circle rate valuation.',
-    mutationAuthorityName: 'District Revenue & Mutation Authority'
+    mutationAuthorityName: 'District Revenue & Mutation Authority',
+    stampDutyRate: 5.0,
+    registrationFeeRate: 1.0,
+    cessRate: 0.5,
+    sroExecutionDays: '1-2 Working Days',
+    mutationTimelineDays: '30-45 Calendar Days',
+    permissibleFAR: 1.75,
+    permissibleFloors: 'G + 3 Floors',
+    setbackFront: '3.0m',
+    setbackRear: '2.0m',
+    setbackSides: '1.5m',
+    feasibilityScore: 90,
+    rentalYieldPercent: 4.0,
+    benchmarkCityCenter: 'City Commercial Center (11.0 km)'
   };
 }

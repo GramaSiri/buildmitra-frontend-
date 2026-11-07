@@ -8,6 +8,8 @@ interface Supplier {
   whatsappStatus: string;
   quoteUrl: string;
   whatsappUrl: string;
+  distanceKm?: number;
+  maskedCodeName?: string;
 }
 
 interface Props {
@@ -72,9 +74,17 @@ export default function WhatsappBroadcastStatus({ batchCode, suppliers, onClose,
                       {idx + 1}
                     </div>
                     <div>
-                      <div className="font-bold text-slate-900 text-sm">{sup.supplierName}</div>
+                      <div className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                        <span>{sup.supplierName}</span>
+                        {sup.maskedCodeName && (
+                          <span className="text-[10px] bg-amber-100 text-amber-800 font-mono font-bold px-1.5 py-0.5 rounded border border-amber-200">
+                            {sup.maskedCodeName}
+                          </span>
+                        )}
+                      </div>
                       <div className="text-xs text-slate-500 font-mono">
                         Phone: {sup.supplierPhone || 'Verified Vendor'} • Code: {sup.supplierUserCode}
+                        {sup.distanceKm !== undefined && ` • Distance: ${sup.distanceKm} km`}
                       </div>
                     </div>
                   </div>

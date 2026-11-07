@@ -28,7 +28,7 @@ import {
 } from '@mui/icons-material';
 import FormulaGallery from '../components/FormulaGallery';
 import { DesignGamesHub } from '../components/learn-earn/games/DesignGamesHub';
-
+
 import { getApiBase } from "../utils/apiConfig";
 import { resolveMediaUrl } from "../utils/mediaResolver";
 // ============= 40 MAJOR CONSTRUCTION STAGES =============
@@ -5853,6 +5853,9 @@ export default function LearnAndEarnPage() {
   const [uploadDuration, setUploadDuration] = useState<string>('12:00');
   const [uploadDescription, setUploadDescription] = useState<string>('');
 
+  // Sub-tab State for Tab 2: 0 = Expert Talks, 1 = Magazine Updates
+  const [expertSubTab, setExpertSubTab] = useState<number>(0);
+
   // Expert Talks & Industry Intelligence State
   const [expertTalks, setExpertTalks] = useState<any[]>([]);
   const [expertStats, setExpertStats] = useState<any>({
@@ -5869,17 +5872,57 @@ export default function LearnAndEarnPage() {
   const [syncingTalks, setSyncingTalks] = useState<boolean>(false);
   const [bookmarkedArticles, setBookmarkedArticles] = useState<string[]>([]);
 
+  // Magazine Updates & Publications State
+  const [magazines, setMagazines] = useState<any[]>([]);
+  const [magazineStats, setMagazineStats] = useState<any>({
+    totalMagazines: 0,
+    activePublicationsCount: 6,
+    latestEdition: 'July 2026',
+    totalFeatured: 0,
+    lastUpdated: new Date().toISOString()
+  });
+  const [magazinePublication, setMagazinePublication] = useState<string>('All');
+  const [magazineCategory, setMagazineCategory] = useState<string>('All');
+  const [magazineSearch, setMagazineSearch] = useState<string>('');
+  const [magazineSort, setMagazineSort] = useState<string>('default');
+  const [loadingMagazines, setLoadingMagazines] = useState<boolean>(false);
+  const [selectedMagazineModal, setSelectedMagazineModal] = useState<any | null>(null);
+
   const fetchExpertTalks = async () => {
     setLoadingTalks(true);
     try {
       const apiHost = getApiBase();
-      let url = `${apiHost}/api/expert-talks?publication=${encodeURIComponent(expertPublication)}&category=${encodeURIComponent(expertCategory)}&search=${encodeURIComponent(expertSearch)}&sort=${expertSort}`;
-      const res = await fetch(url);
-      const data = await res.json();
-      if (data.success && Array.isArray(data.articles)) {
-        setExpertTalks(data.articles);
-        if (data.stats) {
-          setExpertStats(data.stats);
+      const params = new URLSearchParams({
+        publication: expertPublication,
+        category: expertCategory,
+        search: expertSearch,
+        sort: expertSort
+      }).toString();
+
+      // Primary fetch against dedicated learn-earn endpoint
+      let res: Response | null = null;
+      try {
+        res = await fetch(`${apiHost}/api/learn-earn/experts?${params}`);
+      } catch (_e) {
+        res = await fetch(`/api/learn-earn/experts?${params}`).catch(() => null);
+      }
+
+      if (res && res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.articles)) {
+          setExpertTalks(data.articles);
+          if (data.stats) setExpertStats(data.stats);
+          return;
+        }
+      }
+
+      // Secondary fallback to legacy route
+      const legacyRes = await fetch(`${apiHost}/api/expert-talks?${params}`).catch(() => null);
+      if (legacyRes && legacyRes.ok) {
+        const legacyData = await legacyRes.json();
+        if (legacyData.success && Array.isArray(legacyData.articles)) {
+          setExpertTalks(legacyData.articles);
+          if (legacyData.stats) setExpertStats(legacyData.stats);
         }
       }
     } catch (err) {
@@ -5889,14 +5932,63 @@ export default function LearnAndEarnPage() {
     }
   };
 
+  const fetchMagazines = async () => {
+    setLoadingMagazines(true);
+    try {
+      const apiHost = getApiBase();
+      const params = new URLSearchParams({
+        publication: magazinePublication,
+        category: magazineCategory,
+        search: magazineSearch,
+        sort: magazineSort
+      }).toString();
+
+      // Primary fetch against dedicated learn-earn magazines endpoint
+      let res: Response | null = null;
+      try {
+        res = await fetch(`${apiHost}/api/learn-earn/magazines?${params}`);
+      } catch (_e) {
+        res = await fetch(`/api/learn-earn/magazines?${params}`).catch(() => null);
+      }
+
+      if (res && res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.magazines)) {
+          setMagazines(data.magazines);
+          if (data.stats) setMagazineStats(data.stats);
+          return;
+        }
+      }
+
+      // Direct fallback to local next route
+      const localRes = await fetch(`/api/learn-earn/magazines?${params}`).catch(() => null);
+      if (localRes && localRes.ok) {
+        const localData = await localRes.json();
+        if (localData.success && Array.isArray(localData.magazines)) {
+          setMagazines(localData.magazines);
+          if (localData.stats) setMagazineStats(localData.stats);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching magazines:', err);
+    } finally {
+      setLoadingMagazines(false);
+    }
+  };
+
   const handleManualSyncTalks = async () => {
     setSyncingTalks(true);
     try {
       const apiHost = getApiBase();
-      const res = await fetch(`${apiHost}/api/expert-talks/sync`, { method: 'POST' });
+      let res: Response | null = null;
+      try {
+        res = await fetch(`${apiHost}/api/learn-earn/experts/sync`, { method: 'POST' });
+      } catch (_) {
+        res = await fetch(`${apiHost}/api/expert-talks/sync`, { method: 'POST' });
+      }
       const data = await res.json();
       if (data.success) {
-        alert(`✅ Sync Completed! Discovered: ${data.result.recordsDiscovered || 0}, Inserted: ${data.result.recordsInserted}, Updated: ${data.result.recordsUpdated}, Duplicates skipped: ${data.result.duplicatesSkipped}`);
+        alert(`✅ Sync Completed! Discovered: ${data.result?.recordsDiscovered || 0}, Inserted: ${data.result?.recordsInserted || 0}, Updated: ${data.result?.recordsUpdated || 0}, Duplicates skipped: ${data.result?.duplicatesSkipped || 0}`);
         fetchExpertTalks();
       } else {
         alert('Sync failed: ' + (data.message || 'Unknown error'));
@@ -5908,9 +6000,24 @@ export default function LearnAndEarnPage() {
     }
   };
 
+  const handleDownloadMagazine = async (mag: any) => {
+    try {
+      const apiHost = getApiBase();
+      fetch(`${apiHost}/api/learn-earn/magazines/${mag._id}/download`, { method: 'POST' }).catch(() => {});
+    } catch (_) {}
+    window.open(mag.pdfUrl, '_blank');
+  };
+
+  // Immediate data synchronization when Tab 2 or sub-tabs are selected
   useEffect(() => {
-    fetchExpertTalks();
-  }, [expertPublication, expertCategory, expertSort]);
+    if (tabIndex === 2) {
+      if (expertSubTab === 0) {
+        fetchExpertTalks();
+      } else if (expertSubTab === 1) {
+        fetchMagazines();
+      }
+    }
+  }, [tabIndex, expertSubTab, expertPublication, expertCategory, expertSort, magazinePublication, magazineCategory, magazineSort]);
 
   const fetchConstructionVideos = async () => {
     setLoadingVideos(true);
@@ -6290,7 +6397,7 @@ export default function LearnAndEarnPage() {
             >
               <Tab icon={<QuizIcon />} label="Learn & Earn Quiz" />
               <Tab icon={<YouTubeIcon />} label="Education & Videos" />
-              <Tab icon={<PodcastsIcon />} label="Expert Talks & Tycoons" />
+              <Tab icon={<PodcastsIcon />} label="Expert Talks & Magazines" />
               <Tab icon={<GamesIcon />} label="Designs & Games" />
               <Tab icon={<NewReleasesIcon />} label="New Materials & Tech" />
               <Tab icon={<GavelIcon />} label="Guidelines & Approvals" />
@@ -6756,309 +6863,786 @@ export default function LearnAndEarnPage() {
             </Box>
           )}
 
-          {/* TAB 2: EXPERT TALKS & INDUSTRY INTELLIGENCE HUB */}
+          {/* TAB 2: EXPERT TALKS & MAGAZINE UPDATES HUB */}
           {tabIndex === 2 && (
             <Box>
-              {/* Header & Auto-Sync Stats Bar */}
-              <Paper elevation={2} sx={{ p: 3, mb: 3, borderRadius: 3, background: 'linear-gradient(135deg, #0d47a1 0%, #1565c0 100%)', color: 'white' }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2, mb: 2 }}>
-                  <Box>
-                    <Typography variant="h5" fontWeight="bold">
-                      🎙️ Expert Talks & Industry Intelligence Hub
-                    </Typography>
-                    <Typography variant="caption" sx={{ opacity: 0.9 }}>
-                      Auto-synced from 4 primary publications: Construction Week India, Architectural Digest India, ET Realty & Construction World
-                    </Typography>
+              {/* SUB-TABS NAVIGATION: EXPERT TALKS vs MAGAZINE UPDATES */}
+              <Paper elevation={1} sx={{ mb: 3, borderRadius: 2, bgcolor: '#ffffff', border: '1px solid #e0e0e0' }}>
+                <Tabs
+                  value={expertSubTab}
+                  onChange={(_, val) => setExpertSubTab(val)}
+                  textColor="primary"
+                  indicatorColor="primary"
+                  variant="standard"
+                  sx={{
+                    px: 2,
+                    '& .MuiTab-root': {
+                      fontWeight: 'bold',
+                      fontSize: '15px',
+                      textTransform: 'none',
+                      py: 1.5,
+                      minHeight: 52
+                    }
+                  }}
+                >
+                  <Tab
+                    icon={<PodcastsIcon />}
+                    iconPosition="start"
+                    label={`🎙️ Expert Talks & Tycoons (${expertTalks.length})`}
+                  />
+                  <Tab
+                    icon={<PdfIcon />}
+                    iconPosition="start"
+                    label={`📖 Magazine Updates (${magazines.length || 6})`}
+                  />
+                </Tabs>
+              </Paper>
+
+              {/* ======================================================== */}
+              {/* SUB-TAB 0: EXPERT TALKS & INDUSTRY INTELLIGENCE          */}
+              {/* ======================================================== */}
+              {expertSubTab === 0 && (
+                <Box>
+                  {/* Header & Auto-Sync Stats Bar */}
+                  <Paper elevation={2} sx={{ p: 3, mb: 3, borderRadius: 3, background: 'linear-gradient(135deg, #0d47a1 0%, #1565c0 100%)', color: 'white' }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2, mb: 2 }}>
+                      <Box>
+                        <Typography variant="h5" fontWeight="bold">
+                          🎙️ Expert Talks & Industry Intelligence Hub
+                        </Typography>
+                        <Typography variant="caption" sx={{ opacity: 0.9 }}>
+                          Auto-synced from 4 primary publications: Construction Week India, Architectural Digest India, ET Realty & Construction World
+                        </Typography>
+                      </Box>
+
+                      <Button
+                        variant="contained"
+                        color="secondary"
+                        disabled={syncingTalks}
+                        startIcon={syncingTalks ? <CircularProgress size={18} color="inherit" /> : <RefreshIcon />}
+                        onClick={handleManualSyncTalks}
+                        sx={{ fontWeight: 'bold' }}
+                      >
+                        {syncingTalks ? 'Syncing Feeds...' : 'Sync Now'}
+                      </Button>
+                    </Box>
+
+                    {/* Auto Update Metrics Banner */}
+                    <Grid container spacing={2} sx={{ pt: 1, borderTop: '1px solid rgba(255,255,255,0.2)' }}>
+                      <Grid item xs={6} sm={3}>
+                        <Typography variant="caption" sx={{ opacity: 0.8, display: 'block' }}>Last Successful Update:</Typography>
+                        <Typography variant="body2" fontWeight="bold">
+                          {expertStats.lastSuccessfulSyncAt ? new Date(expertStats.lastSuccessfulSyncAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ', ' + new Date(expertStats.lastSuccessfulSyncAt).toLocaleDateString() : 'Just Now'}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={6} sm={3}>
+                        <Typography variant="caption" sx={{ opacity: 0.8, display: 'block' }}>Next Scheduled Sync:</Typography>
+                        <Typography variant="body2" fontWeight="bold" color="secondary">
+                          In ~6 Hours (Auto-Job Active)
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={6} sm={3}>
+                        <Typography variant="caption" sx={{ opacity: 0.8, display: 'block' }}>New Articles Today:</Typography>
+                        <Typography variant="body2" fontWeight="bold">
+                          🔥 {expertStats.articlesTodayCount || expertTalks.length} Articles
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={6} sm={3}>
+                        <Typography variant="caption" sx={{ opacity: 0.8, display: 'block' }}>Active Sources:</Typography>
+                        <Typography variant="body2" fontWeight="bold">
+                          🏛️ {expertStats.activePublicationsCount || 4} Publications
+                        </Typography>
+                      </Grid>
+                    </Grid>
+                  </Paper>
+
+                  {/* Publication Filter Chips */}
+                  <Box sx={{ display: 'flex', gap: 1, overflowX: 'auto', pb: 1, mb: 2, flexWrap: 'wrap' }}>
+                    <Typography variant="subtitle2" sx={{ alignSelf: 'center', mr: 1, fontWeight: 'bold', color: '#1565c0' }}>Publications:</Typography>
+                    {['All', 'Construction Week India', 'Architectural Digest India', 'ET Realty', 'Construction World'].map(pub => (
+                      <Chip
+                        key={pub}
+                        label={pub === 'All' ? 'All Publications (4)' : pub}
+                        onClick={() => setExpertPublication(pub)}
+                        color={expertPublication === pub ? 'primary' : 'default'}
+                        variant={expertPublication === pub ? 'filled' : 'outlined'}
+                        sx={{ fontWeight: 'bold', cursor: 'pointer' }}
+                      />
+                    ))}
                   </Box>
 
-                  <Button
-                    variant="contained"
-                    color="secondary"
-                    disabled={syncingTalks}
-                    startIcon={syncingTalks ? <CircularProgress size={18} color="inherit" /> : <RefreshIcon />}
-                    onClick={handleManualSyncTalks}
-                    sx={{ fontWeight: 'bold' }}
-                  >
-                    {syncingTalks ? 'Syncing Feeds...' : 'Sync Now'}
-                  </Button>
-                </Box>
-
-                {/* Auto Update Metrics Banner */}
-                <Grid container spacing={2} sx={{ pt: 1, borderTop: '1px solid rgba(255,255,255,0.2)' }}>
-                  <Grid item xs={6} sm={3}>
-                    <Typography variant="caption" sx={{ opacity: 0.8, display: 'block' }}>Last Successful Update:</Typography>
-                    <Typography variant="body2" fontWeight="bold">
-                      {expertStats.lastSuccessfulSyncAt ? new Date(expertStats.lastSuccessfulSyncAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ', ' + new Date(expertStats.lastSuccessfulSyncAt).toLocaleDateString() : 'Just Now'}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={6} sm={3}>
-                    <Typography variant="caption" sx={{ opacity: 0.8, display: 'block' }}>Next Scheduled Sync:</Typography>
-                    <Typography variant="body2" fontWeight="bold" color="secondary">
-                      In ~6 Hours (Auto-Job Active)
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={6} sm={3}>
-                    <Typography variant="caption" sx={{ opacity: 0.8, display: 'block' }}>New Articles Today:</Typography>
-                    <Typography variant="body2" fontWeight="bold">
-                      🔥 {expertStats.articlesTodayCount || expertTalks.length} Articles
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={6} sm={3}>
-                    <Typography variant="caption" sx={{ opacity: 0.8, display: 'block' }}>Active Sources:</Typography>
-                    <Typography variant="body2" fontWeight="bold">
-                      🏛️ {expertStats.activePublicationsCount || 4} Publications
-                    </Typography>
-                  </Grid>
-                </Grid>
-              </Paper>
-
-              {/* Publication Filter Chips */}
-              <Box sx={{ display: 'flex', gap: 1, overflowX: 'auto', pb: 1, mb: 2, flexWrap: 'wrap' }}>
-                <Typography variant="subtitle2" sx={{ alignSelf: 'center', mr: 1, fontWeight: 'bold', color: '#1565c0' }}>Publications:</Typography>
-                {['All', 'Construction Week India', 'Architectural Digest India', 'ET Realty', 'Construction World'].map(pub => (
-                  <Chip
-                    key={pub}
-                    label={pub === 'All' ? 'All Publications (4)' : pub}
-                    onClick={() => setExpertPublication(pub)}
-                    color={expertPublication === pub ? 'primary' : 'default'}
-                    variant={expertPublication === pub ? 'filled' : 'outlined'}
-                    sx={{ fontWeight: 'bold', cursor: 'pointer' }}
-                  />
-                ))}
-              </Box>
-
-              {/* Category Filter Chips & Search Bar */}
-              <Paper elevation={1} sx={{ p: 2, mb: 3, borderRadius: 2, bgcolor: '#f8f9fa' }}>
-                <Grid container spacing={2} alignItems="center">
-                  <Grid item xs={12} md={7}>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      placeholder="Search expert talks by speaker, title, topic, or keyword..."
-                      value={expertSearch}
-                      onChange={(e) => setExpertSearch(e.target.value)}
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <SearchIcon color="action" />
-                          </InputAdornment>
-                        ),
-                        endAdornment: expertSearch && (
-                          <InputAdornment position="end">
-                            <IconButton size="small" onClick={() => setExpertSearch('')}>
-                              <CloseIcon fontSize="small" />
-                            </IconButton>
-                          </InputAdornment>
-                        )
-                      }}
-                    />
-                  </Grid>
-
-                  <Grid item xs={6} md={3}>
-                    <FormControl fullWidth size="small">
-                      <InputLabel>Category</InputLabel>
-                      <Select
-                        value={expertCategory}
-                        label="Category"
-                        onChange={(e) => setExpertCategory(e.target.value)}
-                      >
-                        <MenuItem value="All">All Categories</MenuItem>
-                        <MenuItem value="Architecture">Architecture</MenuItem>
-                        <MenuItem value="Civil Engineering">Civil Engineering</MenuItem>
-                        <MenuItem value="Prefab & Mivan">Prefab & Mivan</MenuItem>
-                        <MenuItem value="BIM & AI">BIM & AI</MenuItem>
-                        <MenuItem value="RERA & Legal">RERA & Legal</MenuItem>
-                        <MenuItem value="Real Estate & PropTech">Real Estate & PropTech</MenuItem>
-                        <MenuItem value="Building Materials">Building Materials</MenuItem>
-                        <MenuItem value="Sustainability & Green Building">Sustainability & Green Building</MenuItem>
-                      </Select>
-                    </FormControl>
-                  </Grid>
-
-                  <Grid item xs={6} md={2}>
-                    <FormControl fullWidth size="small">
-                      <InputLabel>Sort By</InputLabel>
-                      <Select
-                        value={expertSort}
-                        label="Sort By"
-                        onChange={(e) => setExpertSort(e.target.value)}
-                      >
-                        <MenuItem value="default">Featured First</MenuItem>
-                        <MenuItem value="latest">Latest Published</MenuItem>
-                        <MenuItem value="title">Title (A-Z)</MenuItem>
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                </Grid>
-              </Paper>
-
-              {/* Featured Keynotes & Interviews Banner */}
-              {expertTalks.some(a => a.isFeatured) && expertPublication === 'All' && !expertSearch && (
-                <Box sx={{ mb: 4 }}>
-                  <Typography variant="h6" fontWeight="bold" sx={{ color: '#1565c0', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    ⭐ Featured Tycoon Keynotes & Breakthrough Talks
-                  </Typography>
-                  <Grid container spacing={3}>
-                    {expertTalks.filter(a => a.isFeatured).slice(0, 2).map((item) => (
-                      <Grid item xs={12} md={6} key={item._id || item.canonicalUrl}>
-                        <Card sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, borderRadius: 3, border: '2px solid #1565c0', overflow: 'hidden', boxShadow: 3 }}>
-                          <CardMedia
-                            component="img"
-                            sx={{ width: { xs: '100%', sm: 220 }, height: 220, objectFit: 'cover' }}
-                            image={resolveMediaUrl(item.imageUrl)}
-                            alt={item.title}
-                          />
-                          <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1, p: 2 }}>
-                            <Box sx={{ display: 'flex', gap: 1, mb: 1, flexWrap: 'wrap' }}>
-                              <Chip label="⭐ FEATURED" color="error" size="small" sx={{ fontWeight: 'bold', fontSize: '10px' }} />
-                              <Chip label={item.publication} color="primary" size="small" sx={{ fontWeight: 'bold', fontSize: '10px' }} />
-                              <Chip label={item.contentType || 'Interview'} color="secondary" variant="outlined" size="small" sx={{ fontSize: '10px' }} />
-                            </Box>
-
-                            <Typography variant="h6" fontWeight="bold" sx={{ fontSize: '15px', lineHeight: 1.3, mb: 1 }}>
-                              {item.title}
-                            </Typography>
-
-                            <Typography variant="body2" color="primary" fontWeight="bold" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                              🗣️ Speaker: {item.speaker}
-                            </Typography>
-
-                            <Typography variant="caption" color="textSecondary" sx={{ mb: 2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                              {item.summary}
-                            </Typography>
-
-                            <Box sx={{ mt: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <Typography variant="caption" color="textSecondary">
-                                📅 {new Date(item.publishDate).toLocaleDateString()} | ⏱️ {item.readTime || '5 min read'}
-                              </Typography>
-                              <Button
-                                variant="contained"
-                                color="primary"
-                                size="small"
-                                onClick={() => window.open(item.articleUrl, '_blank')}
-                                sx={{ fontWeight: 'bold' }}
-                              >
-                                Read Full Article ↗
-                              </Button>
-                            </Box>
-                          </Box>
-                        </Card>
+                  {/* Category Filter Chips & Search Bar */}
+                  <Paper elevation={1} sx={{ p: 2, mb: 3, borderRadius: 2, bgcolor: '#f8f9fa' }}>
+                    <Grid container spacing={2} alignItems="center">
+                      <Grid item xs={12} md={7}>
+                        <TextField
+                          fullWidth
+                          size="small"
+                          placeholder="Search expert talks by speaker, title, topic, or keyword..."
+                          value={expertSearch}
+                          onChange={(e) => setExpertSearch(e.target.value)}
+                          InputProps={{
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <SearchIcon color="action" />
+                              </InputAdornment>
+                            ),
+                            endAdornment: expertSearch && (
+                              <InputAdornment position="end">
+                                <IconButton size="small" onClick={() => setExpertSearch('')}>
+                                  <CloseIcon fontSize="small" />
+                                </IconButton>
+                              </InputAdornment>
+                            )
+                          }}
+                        />
                       </Grid>
-                    ))}
-                  </Grid>
+
+                      <Grid item xs={6} md={3}>
+                        <FormControl fullWidth size="small">
+                          <InputLabel>Category</InputLabel>
+                          <Select
+                            value={expertCategory}
+                            label="Category"
+                            onChange={(e) => setExpertCategory(e.target.value)}
+                          >
+                            <MenuItem value="All">All Categories</MenuItem>
+                            <MenuItem value="Architecture">Architecture</MenuItem>
+                            <MenuItem value="Civil Engineering">Civil Engineering</MenuItem>
+                            <MenuItem value="Prefab & Mivan">Prefab & Mivan</MenuItem>
+                            <MenuItem value="BIM & AI">BIM & AI</MenuItem>
+                            <MenuItem value="RERA & Legal">RERA & Legal</MenuItem>
+                            <MenuItem value="Real Estate & PropTech">Real Estate & PropTech</MenuItem>
+                            <MenuItem value="Building Materials">Building Materials</MenuItem>
+                            <MenuItem value="Sustainability & Green Building">Sustainability & Green Building</MenuItem>
+                          </Select>
+                        </FormControl>
+                      </Grid>
+
+                      <Grid item xs={6} md={2}>
+                        <FormControl fullWidth size="small">
+                          <InputLabel>Sort By</InputLabel>
+                          <Select
+                            value={expertSort}
+                            label="Sort By"
+                            onChange={(e) => setExpertSort(e.target.value)}
+                          >
+                            <MenuItem value="default">Featured First</MenuItem>
+                            <MenuItem value="latest">Latest Published</MenuItem>
+                            <MenuItem value="title">Title (A-Z)</MenuItem>
+                          </Select>
+                        </FormControl>
+                      </Grid>
+                    </Grid>
+                  </Paper>
+
+                  {/* Featured Keynotes & Interviews Banner */}
+                  {expertTalks.some(a => a.isFeatured) && expertPublication === 'All' && !expertSearch && (
+                    <Box sx={{ mb: 4 }}>
+                      <Typography variant="h6" fontWeight="bold" sx={{ color: '#1565c0', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                        ⭐ Featured Tycoon Keynotes & Breakthrough Talks
+                      </Typography>
+                      <Grid container spacing={3}>
+                        {expertTalks.filter(a => a.isFeatured).slice(0, 2).map((item) => (
+                          <Grid item xs={12} md={6} key={item._id || item.canonicalUrl}>
+                            <Card sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, borderRadius: 3, border: '2px solid #1565c0', overflow: 'hidden', boxShadow: 3 }}>
+                              <CardMedia
+                                component="img"
+                                sx={{ width: { xs: '100%', sm: 220 }, height: 220, objectFit: 'cover' }}
+                                image={resolveMediaUrl(item.imageUrl)}
+                                alt={item.title}
+                              />
+                              <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1, p: 2 }}>
+                                <Box sx={{ display: 'flex', gap: 1, mb: 1, flexWrap: 'wrap' }}>
+                                  <Chip label="⭐ FEATURED" color="error" size="small" sx={{ fontWeight: 'bold', fontSize: '10px' }} />
+                                  <Chip label={item.publication} color="primary" size="small" sx={{ fontWeight: 'bold', fontSize: '10px' }} />
+                                  <Chip label={item.contentType || 'Interview'} color="secondary" variant="outlined" size="small" sx={{ fontSize: '10px' }} />
+                                </Box>
+
+                                <Typography variant="h6" fontWeight="bold" sx={{ fontSize: '15px', lineHeight: 1.3, mb: 1 }}>
+                                  {item.title}
+                                </Typography>
+
+                                <Typography variant="body2" color="primary" fontWeight="bold" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                  🗣️ Speaker: {item.speaker}
+                                </Typography>
+
+                                <Typography variant="caption" color="textSecondary" sx={{ mb: 2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                  {item.summary}
+                                </Typography>
+
+                                <Box sx={{ mt: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <Typography variant="caption" color="textSecondary">
+                                    📅 {new Date(item.publishDate).toLocaleDateString()} | ⏱️ {item.readTime || '5 min read'}
+                                  </Typography>
+                                  <Button
+                                    variant="contained"
+                                    color="primary"
+                                    size="small"
+                                    onClick={() => window.open(item.articleUrl, '_blank')}
+                                    sx={{ fontWeight: 'bold' }}
+                                  >
+                                    Read Full Article ↗
+                                  </Button>
+                                </Box>
+                              </Box>
+                            </Card>
+                          </Grid>
+                        ))}
+                      </Grid>
+                    </Box>
+                  )}
+
+                  {/* Main Articles Grid */}
+                  <Typography variant="h6" fontWeight="bold" sx={{ color: '#333', mb: 2 }}>
+                    📰 Industry Articles & Expert Keynotes ({expertTalks.length})
+                  </Typography>
+
+                  {loadingTalks ? (
+                    <Box sx={{ textAlign: 'center', py: 6 }}>
+                      <CircularProgress color="primary" />
+                      <Typography variant="body2" color="textSecondary" sx={{ mt: 2 }}>
+                        Fetching latest expert talks and insights...
+                      </Typography>
+                    </Box>
+                  ) : expertTalks.length === 0 ? (
+                    <Paper sx={{ p: 4, textAlign: 'center', bgcolor: '#f8f9fa', borderRadius: 3 }}>
+                      <Typography variant="h6" color="textSecondary" gutterBottom>
+                        No articles found matching selected filters.
+                      </Typography>
+                      <Button variant="outlined" color="primary" onClick={() => { setExpertPublication('All'); setExpertCategory('All'); setExpertSearch(''); }}>
+                        Reset Filters
+                      </Button>
+                    </Paper>
+                  ) : (
+                    <Grid container spacing={3}>
+                      {expertTalks.map((item) => (
+                        <Grid item xs={12} sm={6} md={4} key={item._id || item.canonicalUrl}>
+                          <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 3, transition: 'transform 0.2s', '&:hover': { transform: 'translateY(-4px)', boxShadow: 6 } }}>
+                            <Box sx={{ position: 'relative' }}>
+                              <CardMedia
+                                component="img"
+                                height="180"
+                                image={resolveMediaUrl(item.imageUrl)}
+                                alt={item.title}
+                                onError={(e: any) => { e.target.src = resolveMediaUrl(null); }}
+                              />
+                              <Chip
+                                label={item.publication}
+                                size="small"
+                                color="secondary"
+                                sx={{ position: 'absolute', top: 10, left: 10, fontWeight: 'bold', boxShadow: 1 }}
+                              />
+                              <Chip
+                                label={item.category || 'Tech'}
+                                size="small"
+                                sx={{ position: 'absolute', bottom: 10, right: 10, bgcolor: 'rgba(0,0,0,0.7)', color: 'white', fontWeight: 'bold', fontSize: '11px' }}
+                              />
+                            </Box>
+
+                            <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', p: 2 }}>
+                              <Box sx={{ display: 'flex', gap: 0.5, mb: 1 }}>
+                                <Chip label={item.contentType || 'Article'} size="small" variant="outlined" color="primary" sx={{ fontSize: '10px', height: 20 }} />
+                                <Chip label={item.readTime || '4 min read'} size="small" variant="outlined" sx={{ fontSize: '10px', height: 20 }} />
+                              </Box>
+
+                              <Typography variant="h6" fontWeight="bold" sx={{ fontSize: '15px', lineHeight: 1.3, mb: 1, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                {item.title}
+                              </Typography>
+
+                              <Typography variant="body2" color="primary" fontWeight="bold" sx={{ mb: 1, fontSize: '13px' }}>
+                                🗣️ {item.speaker || 'Industry Expert'}
+                              </Typography>
+
+                              <Typography variant="caption" color="textSecondary" sx={{ mb: 2, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', flexGrow: 1 }}>
+                                {item.summary}
+                              </Typography>
+
+                              <Typography variant="caption" color="textSecondary" sx={{ mb: 2, display: 'block' }}>
+                                📅 {new Date(item.publishDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} | By {item.author || item.publication}
+                              </Typography>
+
+                              <Box sx={{ mt: 'auto', pt: 1, borderTop: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <IconButton
+                                  size="small"
+                                  color={bookmarkedArticles.includes(item.canonicalUrl) ? 'primary' : 'default'}
+                                  onClick={() => {
+                                    if (bookmarkedArticles.includes(item.canonicalUrl)) {
+                                      setBookmarkedArticles(prev => prev.filter(c => c !== item.canonicalUrl));
+                                    } else {
+                                      setBookmarkedArticles(prev => [...prev, item.canonicalUrl]);
+                                    }
+                                  }}
+                                >
+                                  <BookmarkIcon fontSize="small" />
+                                </IconButton>
+
+                                <IconButton
+                                  size="small"
+                                  color="success"
+                                  onClick={() => {
+                                    const text = encodeURIComponent(`*${item.title}*\nRead latest expert talk on BuildMitra: ${item.articleUrl}`);
+                                    window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
+                                  }}
+                                >
+                                  <ShareIcon fontSize="small" />
+                                </IconButton>
+
+                                <Button
+                                  variant="contained"
+                                  color="primary"
+                                  size="small"
+                                  onClick={() => window.open(item.articleUrl, '_blank')}
+                                  sx={{ fontWeight: 'bold', fontSize: '11px' }}
+                                >
+                                  Read Full Article ↗
+                                </Button>
+                              </Box>
+                            </CardContent>
+                          </Card>
+                        </Grid>
+                      ))}
+                    </Grid>
+                  )}
                 </Box>
               )}
 
-              {/* Main Articles Grid */}
-              <Typography variant="h6" fontWeight="bold" sx={{ color: '#333', mb: 2 }}>
-                📰 Industry Articles & Expert Keynotes ({expertTalks.length})
-              </Typography>
+              {/* ======================================================== */}
+              {/* SUB-TAB 1: MAGAZINE UPDATES & INDUSTRY PUBLICATIONS     */}
+              {/* ======================================================== */}
+              {expertSubTab === 1 && (
+                <Box>
+                  {/* Magazine Header & Stats Banner */}
+                  <Paper elevation={2} sx={{ p: 3, mb: 3, borderRadius: 3, background: 'linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%)', color: 'white' }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2, mb: 2 }}>
+                      <Box>
+                        <Typography variant="h5" fontWeight="bold">
+                          📖 Construction & Architecture Magazine Updates
+                        </Typography>
+                        <Typography variant="caption" sx={{ opacity: 0.9 }}>
+                          Direct digital editions, quarterly reviews & technical journals from India's top 6 construction & architecture publications
+                        </Typography>
+                      </Box>
 
-              {loadingTalks ? (
-                <Box sx={{ textAlign: 'center', py: 6 }}>
-                  <CircularProgress color="primary" />
-                  <Typography variant="body2" color="textSecondary" sx={{ mt: 2 }}>
-                    Fetching latest expert talks and magazine feeds...
-                  </Typography>
-                </Box>
-              ) : expertTalks.length === 0 ? (
-                <Paper sx={{ p: 4, textAlign: 'center', bgcolor: '#f8f9fa', borderRadius: 3 }}>
-                  <Typography variant="h6" color="textSecondary" gutterBottom>
-                    No articles found matching selected filters.
-                  </Typography>
-                  <Button variant="outlined" color="primary" onClick={() => { setExpertPublication('All'); setExpertCategory('All'); setExpertSearch(''); }}>
-                    Reset Filters
-                  </Button>
-                </Paper>
-              ) : (
-                <Grid container spacing={3}>
-                  {expertTalks.map((item) => (
-                    <Grid item xs={12} sm={6} md={4} key={item._id || item.canonicalUrl}>
-                      <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 3, transition: 'transform 0.2s', '&:hover': { transform: 'translateY(-4px)', boxShadow: 6 } }}>
-                        <Box sx={{ position: 'relative' }}>
+                      <Button
+                        variant="contained"
+                        sx={{ bgcolor: '#ffffff', color: '#1b5e20', fontWeight: 'bold', '&:hover': { bgcolor: '#f1f8e9' } }}
+                        disabled={loadingMagazines}
+                        startIcon={loadingMagazines ? <CircularProgress size={18} color="inherit" /> : <RefreshIcon />}
+                        onClick={fetchMagazines}
+                      >
+                        {loadingMagazines ? 'Refreshing...' : 'Refresh Magazines'}
+                      </Button>
+                    </Box>
+
+                    {/* Magazine Update Metrics Banner */}
+                    <Grid container spacing={2} sx={{ pt: 1, borderTop: '1px solid rgba(255,255,255,0.2)' }}>
+                      <Grid item xs={6} sm={3}>
+                        <Typography variant="caption" sx={{ opacity: 0.8, display: 'block' }}>Total Issues Available:</Typography>
+                        <Typography variant="body2" fontWeight="bold">
+                          📚 {magazineStats.totalMagazines || magazines.length} Editions
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={6} sm={3}>
+                        <Typography variant="caption" sx={{ opacity: 0.8, display: 'block' }}>Active Publications:</Typography>
+                        <Typography variant="body2" fontWeight="bold">
+                          🏛️ {magazineStats.activePublicationsCount || 6} Major Houses
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={6} sm={3}>
+                        <Typography variant="caption" sx={{ opacity: 0.8, display: 'block' }}>Latest Edition:</Typography>
+                        <Typography variant="body2" fontWeight="bold" sx={{ color: '#ffeb3b' }}>
+                          🌟 {magazineStats.latestEdition || 'July 2026'}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={6} sm={3}>
+                        <Typography variant="caption" sx={{ opacity: 0.8, display: 'block' }}>Read Format:</Typography>
+                        <Typography variant="body2" fontWeight="bold">
+                          ⚡ Digital Reader & High-Res PDF
+                        </Typography>
+                      </Grid>
+                    </Grid>
+                  </Paper>
+
+                  {/* Publication Filter Chips */}
+                  <Box sx={{ display: 'flex', gap: 1, overflowX: 'auto', pb: 1, mb: 2, flexWrap: 'wrap' }}>
+                    <Typography variant="subtitle2" sx={{ alignSelf: 'center', mr: 1, fontWeight: 'bold', color: '#2e7d32' }}>Publications:</Typography>
+                    {['All', 'Construction Week India', 'Architectural Digest India', 'ET Realty', 'Construction World', 'EPC World', 'NBM&CW'].map(pub => (
+                      <Chip
+                        key={pub}
+                        label={pub === 'All' ? 'All Publications (6)' : pub}
+                        onClick={() => setMagazinePublication(pub)}
+                        color={magazinePublication === pub ? 'success' : 'default'}
+                        variant={magazinePublication === pub ? 'filled' : 'outlined'}
+                        sx={{ fontWeight: 'bold', cursor: 'pointer' }}
+                      />
+                    ))}
+                  </Box>
+
+                  {/* Category Filter Chips & Search Bar */}
+                  <Paper elevation={1} sx={{ p: 2, mb: 3, borderRadius: 2, bgcolor: '#f8f9fa' }}>
+                    <Grid container spacing={2} alignItems="center">
+                      <Grid item xs={12} md={7}>
+                        <TextField
+                          fullWidth
+                          size="small"
+                          placeholder="Search magazine editions, topics, cover stories, key highlights..."
+                          value={magazineSearch}
+                          onChange={(e) => setMagazineSearch(e.target.value)}
+                          InputProps={{
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <SearchIcon color="action" />
+                              </InputAdornment>
+                            ),
+                            endAdornment: magazineSearch && (
+                              <InputAdornment position="end">
+                                <IconButton size="small" onClick={() => setMagazineSearch('')}>
+                                  <CloseIcon fontSize="small" />
+                                </IconButton>
+                              </InputAdornment>
+                            )
+                          }}
+                        />
+                      </Grid>
+
+                      <Grid item xs={6} md={3}>
+                        <FormControl fullWidth size="small">
+                          <InputLabel>Category</InputLabel>
+                          <Select
+                            value={magazineCategory}
+                            label="Category"
+                            onChange={(e) => setMagazineCategory(e.target.value)}
+                          >
+                            <MenuItem value="All">All Categories</MenuItem>
+                            <MenuItem value="Civil & Infrastructure">Civil & Infrastructure</MenuItem>
+                            <MenuItem value="Architecture & Design">Architecture & Design</MenuItem>
+                            <MenuItem value="Real Estate & Policy">Real Estate & Policy</MenuItem>
+                            <MenuItem value="Building Materials & Concrete">Building Materials & Concrete</MenuItem>
+                            <MenuItem value="Equipment & Machinery">Equipment & Machinery</MenuItem>
+                            <MenuItem value="Technology & BIM">Technology & BIM</MenuItem>
+                            <MenuItem value="Sustainability & Green Building">Sustainability & Green Building</MenuItem>
+                          </Select>
+                        </FormControl>
+                      </Grid>
+
+                      <Grid item xs={6} md={2}>
+                        <FormControl fullWidth size="small">
+                          <InputLabel>Sort By</InputLabel>
+                          <Select
+                            value={magazineSort}
+                            label="Sort By"
+                            onChange={(e) => setMagazineSort(e.target.value)}
+                          >
+                            <MenuItem value="default">Featured First</MenuItem>
+                            <MenuItem value="latest">Latest Edition</MenuItem>
+                            <MenuItem value="title">Title (A-Z)</MenuItem>
+                          </Select>
+                        </FormControl>
+                      </Grid>
+                    </Grid>
+                  </Paper>
+
+                  {/* Featured Magazine Issue Hero Banner */}
+                  {magazines.some(m => m.isFeatured) && magazinePublication === 'All' && !magazineSearch && (
+                    <Box sx={{ mb: 4 }}>
+                      <Typography variant="h6" fontWeight="bold" sx={{ color: '#2e7d32', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                        ⭐ Featured Digital Magazine Edition
+                      </Typography>
+                      {magazines.filter(m => m.isFeatured).slice(0, 1).map((item) => (
+                        <Card key={item._id || item.title} sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, borderRadius: 3, border: '2px solid #2e7d32', overflow: 'hidden', boxShadow: 4 }}>
                           <CardMedia
                             component="img"
-                            height="180"
-                            image={resolveMediaUrl(item.imageUrl)}
+                            sx={{ width: { xs: '100%', md: 280 }, height: { xs: 240, md: 300 }, objectFit: 'cover' }}
+                            image={resolveMediaUrl(item.coverImageUrl)}
                             alt={item.title}
-                            onError={(e: any) => { e.target.src = resolveMediaUrl(null); }}
                           />
-                          <Chip
-                            label={item.publication}
-                            size="small"
-                            color="secondary"
-                            sx={{ position: 'absolute', top: 10, left: 10, fontWeight: 'bold', boxShadow: 1 }}
-                          />
-                          <Chip
-                            label={item.category || 'Tech'}
-                            size="small"
-                            sx={{ position: 'absolute', bottom: 10, right: 10, bgcolor: 'rgba(0,0,0,0.7)', color: 'white', fontWeight: 'bold', fontSize: '11px' }}
-                          />
-                        </Box>
+                          <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1, p: 3 }}>
+                            <Box sx={{ display: 'flex', gap: 1, mb: 1, flexWrap: 'wrap' }}>
+                              <Chip label="⭐ COVER STORY" color="error" size="small" sx={{ fontWeight: 'bold' }} />
+                              <Chip label={item.publication} color="success" size="small" sx={{ fontWeight: 'bold' }} />
+                              <Chip label={item.edition} color="primary" variant="outlined" size="small" sx={{ fontWeight: 'bold' }} />
+                              <Chip label={`📄 ${item.pageCount || 96} Pages`} size="small" sx={{ bgcolor: '#e8f5e9', color: '#2e7d32', fontWeight: 'bold' }} />
+                            </Box>
 
-                        <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', p: 2 }}>
-                          <Box sx={{ display: 'flex', gap: 0.5, mb: 1 }}>
-                            <Chip label={item.contentType || 'Article'} size="small" variant="outlined" color="primary" sx={{ fontSize: '10px', height: 20 }} />
-                            <Chip label={item.readTime || '4 min read'} size="small" variant="outlined" sx={{ fontSize: '10px', height: 20 }} />
+                            <Typography variant="h5" fontWeight="bold" sx={{ mb: 1.5, color: '#1b5e20' }}>
+                              {item.title}
+                            </Typography>
+
+                            <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+                              {item.summary}
+                            </Typography>
+
+                            {/* Highlights List */}
+                            {Array.isArray(item.highlights) && item.highlights.length > 0 && (
+                              <Box sx={{ mb: 2, bgcolor: '#f1f8e9', p: 1.5, borderRadius: 2 }}>
+                                <Typography variant="caption" fontWeight="bold" color="success.dark" sx={{ display: 'block', mb: 0.5 }}>
+                                  Key Features & Industry Analysis:
+                                </Typography>
+                                <Grid container spacing={1}>
+                                  {item.highlights.slice(0, 3).map((h: string, idx: number) => (
+                                    <Grid item xs={12} sm={6} key={idx}>
+                                      <Typography variant="caption" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                        🔹 {h}
+                                      </Typography>
+                                    </Grid>
+                                  ))}
+                                </Grid>
+                              </Box>
+                            )}
+
+                            <Box sx={{ mt: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1.5 }}>
+                              <Typography variant="caption" color="textSecondary">
+                                📅 {new Date(item.publishDate).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })} | 💾 {item.fileSize || '25 MB'}
+                              </Typography>
+
+                              <Box sx={{ display: 'flex', gap: 1 }}>
+                                <IconButton
+                                  size="small"
+                                  color="success"
+                                  onClick={() => {
+                                    const text = encodeURIComponent(`*${item.title}*\nRead this edition on BuildMitra: ${item.readUrl || item.pdfUrl}`);
+                                    window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
+                                  }}
+                                >
+                                  <ShareIcon fontSize="small" />
+                                </IconButton>
+
+                                <Button
+                                  variant="outlined"
+                                  color="success"
+                                  size="small"
+                                  startIcon={<PdfIcon />}
+                                  onClick={() => handleDownloadMagazine(item)}
+                                  sx={{ fontWeight: 'bold' }}
+                                >
+                                  PDF
+                                </Button>
+
+                                <Button
+                                  variant="contained"
+                                  color="success"
+                                  size="small"
+                                  onClick={() => window.open(item.readUrl || item.pdfUrl, '_blank')}
+                                  sx={{ fontWeight: 'bold' }}
+                                >
+                                  Read Full Issue ↗
+                                </Button>
+                              </Box>
+                            </Box>
                           </Box>
+                        </Card>
+                      ))}
+                    </Box>
+                  )}
 
-                          <Typography variant="h6" fontWeight="bold" sx={{ fontSize: '15px', lineHeight: 1.3, mb: 1, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                            {item.title}
-                          </Typography>
+                  {/* Main Magazine Editions Grid */}
+                  <Typography variant="h6" fontWeight="bold" sx={{ color: '#333', mb: 2 }}>
+                    📚 Digital Editions & Technical Journals ({magazines.length})
+                  </Typography>
 
-                          <Typography variant="body2" color="primary" fontWeight="bold" sx={{ mb: 1, fontSize: '13px' }}>
-                            🗣️ {item.speaker || 'Industry Expert'}
-                          </Typography>
+                  {loadingMagazines ? (
+                    <Box sx={{ textAlign: 'center', py: 6 }}>
+                      <CircularProgress color="success" />
+                      <Typography variant="body2" color="textSecondary" sx={{ mt: 2 }}>
+                        Loading latest magazine publications and editions...
+                      </Typography>
+                    </Box>
+                  ) : magazines.length === 0 ? (
+                    <Paper sx={{ p: 4, textAlign: 'center', bgcolor: '#f8f9fa', borderRadius: 3 }}>
+                      <Typography variant="h6" color="textSecondary" gutterBottom>
+                        No magazine editions found matching selected filters.
+                      </Typography>
+                      <Button variant="outlined" color="success" onClick={() => { setMagazinePublication('All'); setMagazineCategory('All'); setMagazineSearch(''); }}>
+                        Reset Filters
+                      </Button>
+                    </Paper>
+                  ) : (
+                    <Grid container spacing={3}>
+                      {magazines.map((item) => (
+                        <Grid item xs={12} sm={6} md={4} key={item._id || item.title}>
+                          <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 3, transition: 'transform 0.2s', '&:hover': { transform: 'translateY(-4px)', boxShadow: 6 } }}>
+                            <Box sx={{ position: 'relative' }}>
+                              <CardMedia
+                                component="img"
+                                height="200"
+                                image={resolveMediaUrl(item.coverImageUrl)}
+                                alt={item.title}
+                                onError={(e: any) => { e.target.src = resolveMediaUrl(null); }}
+                              />
+                              <Chip
+                                label={item.publication}
+                                size="small"
+                                color="success"
+                                sx={{ position: 'absolute', top: 10, left: 10, fontWeight: 'bold', boxShadow: 1 }}
+                              />
+                              <Chip
+                                label={item.edition}
+                                size="small"
+                                sx={{ position: 'absolute', top: 10, right: 10, bgcolor: 'rgba(0,0,0,0.75)', color: 'white', fontWeight: 'bold', fontSize: '11px' }}
+                              />
+                              <Chip
+                                label={`📄 ${item.pageCount || 90} Pages`}
+                                size="small"
+                                sx={{ position: 'absolute', bottom: 10, right: 10, bgcolor: 'rgba(255,255,255,0.9)', color: '#1b5e20', fontWeight: 'bold', fontSize: '11px' }}
+                              />
+                            </Box>
 
-                          <Typography variant="caption" color="textSecondary" sx={{ mb: 2, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', flexGrow: 1 }}>
-                            {item.summary}
-                          </Typography>
+                            <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', p: 2 }}>
+                              <Box sx={{ display: 'flex', gap: 0.5, mb: 1, flexWrap: 'wrap' }}>
+                                <Chip label={item.category || 'Civil & Infra'} size="small" variant="outlined" color="success" sx={{ fontSize: '10px', height: 20 }} />
+                                {item.issueNumber && (
+                                  <Chip label={item.issueNumber} size="small" variant="outlined" sx={{ fontSize: '10px', height: 20 }} />
+                                )}
+                              </Box>
 
-                          <Typography variant="caption" color="textSecondary" sx={{ mb: 2, display: 'block' }}>
-                            📅 {new Date(item.publishDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} | By {item.author || item.publication}
-                          </Typography>
+                              <Typography variant="h6" fontWeight="bold" sx={{ fontSize: '15px', lineHeight: 1.3, mb: 1, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                {item.title}
+                              </Typography>
 
-                          <Box sx={{ mt: 'auto', pt: 1, borderTop: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <IconButton
-                              size="small"
-                              color={bookmarkedArticles.includes(item.canonicalUrl) ? 'primary' : 'default'}
-                              onClick={() => {
-                                if (bookmarkedArticles.includes(item.canonicalUrl)) {
-                                  setBookmarkedArticles(prev => prev.filter(c => c !== item.canonicalUrl));
-                                } else {
-                                  setBookmarkedArticles(prev => [...prev, item.canonicalUrl]);
-                                }
-                              }}
-                            >
-                              <BookmarkIcon fontSize="small" />
-                            </IconButton>
+                              <Typography variant="caption" color="textSecondary" sx={{ mb: 1, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                {item.summary}
+                              </Typography>
 
-                            <IconButton
-                              size="small"
-                              color="success"
-                              onClick={() => {
-                                const text = encodeURIComponent(`*${item.title}*\nRead latest expert talk on BuildMitra: ${item.articleUrl}`);
-                                window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
-                              }}
-                            >
-                              <ShareIcon fontSize="small" />
-                            </IconButton>
+                              {/* Highlights preview */}
+                              {Array.isArray(item.highlights) && item.highlights.length > 0 && (
+                                <Box sx={{ mb: 1.5, p: 1, bgcolor: '#f9fbe7', borderRadius: 1.5 }}>
+                                  <Typography variant="caption" sx={{ display: 'block', fontWeight: 'bold', color: '#33691e', fontSize: '11px' }}>
+                                    ✨ {item.highlights[0]}
+                                  </Typography>
+                                </Box>
+                              )}
 
-                            <Button
-                              variant="contained"
-                              color="primary"
-                              size="small"
-                              onClick={() => window.open(item.articleUrl, '_blank')}
-                              sx={{ fontWeight: 'bold', fontSize: '11px' }}
-                            >
-                              Read Full Article ↗
-                            </Button>
-                          </Box>
-                        </CardContent>
-                      </Card>
+                              <Typography variant="caption" color="textSecondary" sx={{ mb: 2, display: 'block' }}>
+                                📅 {new Date(item.publishDate).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })} | Publisher: {item.publisher || item.publication}
+                              </Typography>
+
+                              <Box sx={{ mt: 'auto', pt: 1, borderTop: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Button
+                                  size="small"
+                                  color="inherit"
+                                  onClick={() => setSelectedMagazineModal(item)}
+                                  sx={{ fontSize: '11px', textTransform: 'none' }}
+                                >
+                                  Details
+                                </Button>
+
+                                <IconButton
+                                  size="small"
+                                  color="success"
+                                  onClick={() => {
+                                    const text = encodeURIComponent(`*${item.title}*\nRead this edition on BuildMitra: ${item.readUrl || item.pdfUrl}`);
+                                    window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
+                                  }}
+                                >
+                                  <ShareIcon fontSize="small" />
+                                </IconButton>
+
+                                <Button
+                                  variant="outlined"
+                                  color="success"
+                                  size="small"
+                                  startIcon={<PdfIcon />}
+                                  onClick={() => handleDownloadMagazine(item)}
+                                  sx={{ fontWeight: 'bold', fontSize: '11px' }}
+                                >
+                                  PDF
+                                </Button>
+
+                                <Button
+                                  variant="contained"
+                                  color="success"
+                                  size="small"
+                                  onClick={() => window.open(item.readUrl || item.pdfUrl, '_blank')}
+                                  sx={{ fontWeight: 'bold', fontSize: '11px' }}
+                                >
+                                  Read ↗
+                                </Button>
+                              </Box>
+                            </CardContent>
+                          </Card>
+                        </Grid>
+                      ))}
                     </Grid>
-                  ))}
-                </Grid>
+                  )}
+
+                  {/* Magazine Details Modal */}
+                  {selectedMagazineModal && (
+                    <Dialog
+                      open={Boolean(selectedMagazineModal)}
+                      onClose={() => setSelectedMagazineModal(null)}
+                      maxWidth="md"
+                      fullWidth
+                    >
+                      <DialogTitle sx={{ bgcolor: '#1b5e20', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="h6" fontWeight="bold">
+                          {selectedMagazineModal.title}
+                        </Typography>
+                        <IconButton size="small" onClick={() => setSelectedMagazineModal(null)} sx={{ color: 'white' }}>
+                          <CloseIcon />
+                        </IconButton>
+                      </DialogTitle>
+                      <DialogContent dividers sx={{ p: 3 }}>
+                        <Grid container spacing={3}>
+                          <Grid item xs={12} sm={4}>
+                            <CardMedia
+                              component="img"
+                              image={resolveMediaUrl(selectedMagazineModal.coverImageUrl)}
+                              alt={selectedMagazineModal.title}
+                              sx={{ borderRadius: 2, boxShadow: 2, height: 280, objectFit: 'cover' }}
+                            />
+                          </Grid>
+                          <Grid item xs={12} sm={8}>
+                            <Box sx={{ display: 'flex', gap: 1, mb: 1, flexWrap: 'wrap' }}>
+                              <Chip label={selectedMagazineModal.publication} color="success" size="small" />
+                              <Chip label={selectedMagazineModal.edition} color="primary" size="small" />
+                              <Chip label={`📄 ${selectedMagazineModal.pageCount || 96} Pages`} size="small" />
+                              <Chip label={`💾 ${selectedMagazineModal.fileSize || '20 MB'}`} size="small" />
+                            </Box>
+
+                            <Typography variant="body1" paragraph sx={{ mt: 1 }}>
+                              {selectedMagazineModal.summary}
+                            </Typography>
+
+                            <Divider sx={{ my: 2 }} />
+
+                            <Typography variant="subtitle2" fontWeight="bold" color="success.dark" gutterBottom>
+                              Cover Stories & Key Technical Topics:
+                            </Typography>
+                            <List dense>
+                              {(selectedMagazineModal.highlights || []).map((h: string, idx: number) => (
+                                <ListItem key={idx} disableGutters>
+                                  <ListItemText
+                                    primary={`• ${h}`}
+                                    primaryTypographyProps={{ variant: 'body2' }}
+                                  />
+                                </ListItem>
+                              ))}
+                            </List>
+                          </Grid>
+                        </Grid>
+                      </DialogContent>
+                      <DialogActions sx={{ p: 2 }}>
+                        <Button onClick={() => setSelectedMagazineModal(null)}>Close</Button>
+                        <Button
+                          variant="outlined"
+                          color="success"
+                          startIcon={<PdfIcon />}
+                          onClick={() => handleDownloadMagazine(selectedMagazineModal)}
+                        >
+                          Download PDF
+                        </Button>
+                        <Button
+                          variant="contained"
+                          color="success"
+                          onClick={() => window.open(selectedMagazineModal.readUrl || selectedMagazineModal.pdfUrl, '_blank')}
+                        >
+                          Read Online ↗
+                        </Button>
+                      </DialogActions>
+                    </Dialog>
+                  )}
+                </Box>
               )}
             </Box>
           )}

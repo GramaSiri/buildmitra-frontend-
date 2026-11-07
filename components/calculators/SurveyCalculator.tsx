@@ -1,7 +1,7 @@
-﻿// @ts-nocheck
+// @ts-nocheck
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
-import * as XLSX from "xlsx";
+import { loadXLSX } from '../../utils/lazyLibs';
 
 export type MeasurementMode = "simple_survey" | "polygon_survey" | "gps_survey" | "satellite_survey";
 export type UnitType = "feet" | "meters" | "yards";
@@ -1291,15 +1291,17 @@ export default function SurveyCalculator() {
           ])
         : [["-", "-", "-", "-"]]),
     ];
-    const ws = XLSX.utils.aoa_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Survey Report");
-
-    const villageSlug = (locationName || "survey")
-      .split(",")[0]
-      .replace(/\s+/g, "_")
-      .slice(0, 30);
-    XLSX.writeFile(wb, `Land_Survey_${villageSlug}_${Date.now()}.xlsx`);
+    loadXLSX().then((XLSX) => {
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Survey Report");
+  
+      const villageSlug = (locationName || "survey")
+        .split(",")[0]
+        .replace(/\s+/g, "_")
+        .slice(0, 30);
+      XLSX.writeFile(wb, `Land_Survey_${villageSlug}_${Date.now()}.xlsx`);
+    }).catch((e) => console.error("Excel export failed", e));
   };
 
   return (

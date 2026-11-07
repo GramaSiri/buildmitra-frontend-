@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import * as XLSX from 'xlsx';
+import { loadXLSX } from '../utils/lazyLibs';
 import Sidebar from '../components/Sidebar';
 import { getApiBase } from '../utils/apiConfig';
 import { authFetch } from '../utils/authFetch';
@@ -474,10 +474,12 @@ export default function LabourAttendancePage() {
       "Remarks": log.remarks
     }));
 
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, `${activeGridWorker.name}_30Day_Attendance`);
-    XLSX.writeFile(wb, `BuildMitra_${activeGridWorker.workerCode}_30Day_Attendance_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    loadXLSX().then((XLSX) => {
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, `${activeGridWorker.name}_30Day_Attendance`);
+      XLSX.writeFile(wb, `BuildMitra_${activeGridWorker.workerCode}_30Day_Attendance_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    }).catch((e) => console.error("Excel export failed", e));
   };
 
   const handleExportReportsExcel = () => {
@@ -510,10 +512,12 @@ export default function LabourAttendancePage() {
       };
     });
 
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Master_Labour_Reports");
-    XLSX.writeFile(wb, `BuildMitra_Master_Labour_Reports_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    loadXLSX().then((XLSX) => {
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Master_Labour_Reports");
+      XLSX.writeFile(wb, `BuildMitra_Master_Labour_Reports_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    }).catch((e) => console.error("Excel export failed", e));
   };
 
   const mainContent = (

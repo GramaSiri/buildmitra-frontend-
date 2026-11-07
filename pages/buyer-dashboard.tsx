@@ -1,3 +1,7 @@
+
+
+
+
 // @ts-nocheck
 import React, { useState, useEffect } from "react";
 import { exportProjectReport } from "../utils/reporting";
@@ -8,15 +12,22 @@ import MarketRateTrend from "../components/ui/MarketRateTrend";
 import { authFetch } from "../utils/authFetch";
 
 export default function BuyerDashboard() {
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE || "https://buildmitra-backend-beta.onrender.com";
-const isReadOnly = false;
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE || "https://buildmitra-backend-beta.onrender.com";
+  const isReadOnly = false;
   const denyContractorEdit = () => {
     alert("Buyer access is read-only. Project records can only be updated by the assigned contractor.");
   };
+
   const [activeTab, setActiveTab] = useState("dashboard");
-  const [selectedProject, setSelectedProject] = useState<any>(null);
+  const [currentWeekOffset, setCurrentWeekOffset] = useState(0);
+  const [selectedInventoryDate, setSelectedInventoryDate] = useState("");
+  const [selectedProject, setSelectedProject] = useState<any>("1");
   const [showAddProject, setShowAddProject] = useState(false);
   const [showMaterialModal, setShowMaterialModal] = useState(false);
+  const [showIssueModal, setShowIssueModal] = useState(false);
+  const [inventorySubTab, setInventorySubTab] = useState("inward");
+  const [stockSearchTerm, setStockSearchTerm] = useState("");
+  const [issueEntry, setIssueEntry] = useState({ materialId: "", date: new Date().toISOString().split("T")[0], quantity: "", purpose: "" });
   const [showMediaModal, setShowMediaModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -48,7 +59,7 @@ const isReadOnly = false;
   const [extraWork, setExtraWork] = useState({ description: "", quantity: "", rate: "", amount: "", unit: "Nos", status: "Pending" });
   const [newLabour, setNewLabour] = useState({ name: "", role: "", dailyWage: "", daysPresent: "", paymentAmount: "", status: "Present" });
   const [labourPaymentHistory, setLabourPaymentHistory] = useState([]);
-  const [sentEnquiries, setSentEnquiries] = useState<any[]>([]);
+  const [sentEnquiries, setSentEnquiries] = useState([]);
 
   const calculateBUA = (length: number, width: number, floors: number) => {
     const setback = (length + width) / 2 * 0.1;
@@ -141,7 +152,58 @@ const isReadOnly = false;
     });
   };
 
-  const [projects, setProjects] = useState<any[]>([]);
+  const [projects, setProjects] = useState<any[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const raw = localStorage.getItem("buildmitraProjects") ||
+                    localStorage.getItem("buyerProjects") ||
+                    localStorage.getItem("projects");
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch (e) {}
+    }
+    return [];
+  });
+  // storageSyncLogic_installed
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const raw = localStorage.getItem("buildmitra_buyer_projects") || localStorage.getItem("projects");
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            // If the stored project is missing inventory or milestones, merge with null
+            const merged = parsed.map((p: any) => {
+              if (String(p.id) === "1" || (p.name && p.name.includes("Villa"))) {
+                return {
+                  ...null,
+                  ...p,
+                  inventory: (p.inventory && p.inventory.length > 0) ? p.inventory : null.inventory,
+                  milestones: (p.milestones && p.milestones.length > 0) ? p.milestones : null.milestones,
+                  labourList: (p.labourList && p.labourList.length > 0) ? p.labourList : null.labourList,
+                  payments: (p.payments && p.payments.length > 0) ? p.payments : null.payments,
+                };
+              }
+              return p;
+            });
+            setProjects(merged);
+            setSelectedProject("1");
+            localStorage.setItem("projects", JSON.stringify(merged));
+            localStorage.setItem("buildmitra_buyer_projects", JSON.stringify(merged));
+            return;
+          }
+        }
+      } catch (err) {
+        console.error("Project load error:", err);
+      }
+      // Clean fallback without hardcoded mock
+      setProjects([]);
+    }
+  }, []);
+
 
   const persistBuyerUpdates = (updatedProjects: any[]) => {
     const user = getLoggedInUser();
@@ -161,8 +223,7 @@ const isReadOnly = false;
     localStorage.setItem("sharedProjects", JSON.stringify(mergedProjects.filter((p: any) => p.buyerCode)));
     localStorage.setItem("buyerProjects", JSON.stringify(updatedProjects));
 
-    // Save to MongoDB immediately
-    authFetch(`${API_BASE}/api/project-permission/save`, {
+    authFetch(API_BASE + "/api/project-permission/save", {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-user-code": buyerCode },
       body: JSON.stringify({ projects: updatedProjects, userCode: buyerCode })
@@ -171,75 +232,60 @@ const isReadOnly = false;
     window.dispatchEvent(new Event("buildmitraProjectsUpdated"));
   };
 
-  // Buyers receive projects from MongoDB backend backed by their unique code
   useEffect(() => {
-    const loadAssignedProjects = async () => {
+      const loadAssignedProjects = async () => {
+    let localData: any[] = [];
+    try {
+      const raw = localStorage.getItem("buildmitraProjects") ||
+                  localStorage.getItem("buyerProjects") ||
+                  localStorage.getItem("buildmitra_buyer_projects") ||
+                  localStorage.getItem("projects");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          localData = parsed;
+        }
+      }
+    } catch (e) {
+      console.error("Local read error:", e);
+    }
+
+    if (localData.length > 0) {
+      setProjects(localData);
+      setSelectedProject((curr: any) => {
+        if (curr && localData.some((p: any) => String(p.id || p.projectCode) === String(curr))) {
+          return curr;
+        }
+        return String(localData[0].id || localData[0].projectCode || "1");
+      });
+    }
+
+    // Try cloud sync in background
+    try {
       const user = getLoggedInUser();
-      const currentUser = getCurrentAppUser();
+      const currentUser = getLoggedInUser();
       const buyerCode = String(user?.uniqueCode || user?.userCode || currentUser.userCode || currentUser.uniqueCode || "").trim();
-
-      if (!buyerCode) {
-        setProjects([]);
-        setSelectedProject(null);
-        return;
-      }
-
-      // 1. Initial local load
-      const localAssigned = migrateLegacyProjects(user).filter(
-        (project) => String(project.buyerCode || project.ownerUserCode || "").toUpperCase() === buyerCode.toUpperCase()
-      );
-      if (localAssigned.length > 0) {
-        setProjects(localAssigned);
-        setSelectedProject((current: any) => localAssigned.some((p: any) => (p.id === current || p.projectCode === current)) ? current : localAssigned[0]?.id ?? localAssigned[0]?.projectCode ?? null);
-      }
-
-      // 2. Fetch from MongoDB database
-      try {
-        const res = await authFetch(`${API_BASE}/api/project-permission/my-projects/${encodeURIComponent(buyerCode)}`, {
+      if (buyerCode) {
+        const res = await authFetch(API_BASE + "/api/project-permission/my-projects/" + encodeURIComponent(buyerCode), {
           headers: { "x-user-code": buyerCode }
         });
         const data = await res.json();
         if (data.success && Array.isArray(data.projects) && data.projects.length > 0) {
-          const cloudProjects = data.projects;
-          setProjects(cloudProjects);
-          setSelectedProject((current: any) => cloudProjects.some((p: any) => (p.id === current || p.projectCode === current)) ? current : cloudProjects[0]?.id ?? cloudProjects[0]?.projectCode ?? null);
-
-          // Update local cache
-          const allProjects = JSON.parse(localStorage.getItem("buildmitraProjects") || "[]");
-          const cloudKeys = new Set(cloudProjects.map((p: any) => String(p.projectUniqueId || p.projectId || p.id || p.projectCode)));
-          const merged = [
-            ...allProjects.filter((p: any) => !cloudKeys.has(String(p.projectUniqueId || p.projectId || p.id || p.projectCode))),
-            ...cloudProjects
-          ];
-          localStorage.setItem("buildmitraProjects", JSON.stringify(merged));
+          setProjects(data.projects);
+          localStorage.setItem("buildmitraProjects", JSON.stringify(data.projects));
         }
-      } catch (err) {
-        console.log("Error loading buyer projects from DB:", err);
       }
-    };
-
-    loadAssignedProjects();
-    window.addEventListener("storage", loadAssignedProjects);
-    window.addEventListener("buildmitraProjectsUpdated", loadAssignedProjects);
-    return () => {
-      window.removeEventListener("storage", loadAssignedProjects);
-      window.removeEventListener("buildmitraProjectsUpdated", loadAssignedProjects);
-    };
-  }, []);
-
-  const getCurrentAppUser = () => {
-    try {
-      return JSON.parse((sessionStorage.getItem("currentUser") || sessionStorage.getItem("currentUser")) || (sessionStorage.getItem("loggedInUser") || sessionStorage.getItem("loggedInUser")) || (sessionStorage.getItem("user") || sessionStorage.getItem("user")) || "{}");
-    } catch {
-      return {};
+    } catch (err) {
+      console.log("Cloud project fetch skipped, using local data.");
     }
-  };
-
+      };
+      loadAssignedProjects();
+    }, []);
   useEffect(() => {
     const loadSentEnquiries = async () => {
       try {
         const user = getLoggedInUser();
-        const currentUser = getCurrentAppUser();
+        const currentUser = getLoggedInUser();
         const buyerUserCode = user?.uniqueCode || user?.userCode || currentUser.userCode || currentUser.uniqueCode || "";
         if (!buyerUserCode) {
           setSentEnquiries([]);
@@ -247,21 +293,13 @@ const isReadOnly = false;
         }
         let res = await authFetch(
           API_BASE + "/api/enquiry/buyer/my?buyerUserCode=" + encodeURIComponent(buyerUserCode),
-          {
-            headers: {
-              "x-user-code": buyerUserCode
-            }
-          }
+          { headers: { "x-user-code": buyerUserCode } }
         );
         let data = await res.json().catch(() => ({}));
         if (!data.success) {
           res = await authFetch(
             API_BASE + "/api/enquiry?buyerUserCode=" + encodeURIComponent(buyerUserCode),
-            {
-              headers: {
-                "x-user-code": buyerUserCode
-              }
-            }
+            { headers: { "x-user-code": buyerUserCode } }
           );
           data = await res.json().catch(() => ({}));
         }
@@ -295,12 +333,22 @@ const isReadOnly = false;
   });
   
   const [inventory, setInventory] = useState([]);
-  const [newMaterial, setNewMaterial] = useState({ material: "", unit: "bags", supplier: "", orderedQty: "", receivedQty: "", consumedQty: "", rate: "", invoiceDate: new Date().toISOString().split("T")[0], invoiceNo: "" });
+  const [newMaterial, setNewMaterial] = useState({
+    date: new Date().toISOString().split("T")[0],
+    material: "",
+    unit: "bags",
+    supplier: "",
+    orderedQty: "",
+    receivedQty: "",
+    consumedQty: "",
+    rate: "",
+    invoiceNo: ""
+  });
   const [siteMedia, setSiteMedia] = useState([]);
-  
 
-  const selectedProjectData =
-  projects.find(p => String(p.id) === String(selectedProject)) || projects[0];
+  const selectedProjectData = (projects && projects.length > 0)
+    ? (projects.find((p: any) => String(p.id || p.projectCode) === String(selectedProject)) || projects[0])
+    : null;
   const projectMilestones = selectedProjectData?.milestones || [];
   const projectPayments = [
     ...(selectedProjectData?.payments || []),
@@ -321,6 +369,7 @@ const isReadOnly = false;
         paymentRemarks: milestone.paymentRemarks
       }))
   ];
+
   const getContractorLabourForProject = (project: any) => {
     try {
       if (project && Array.isArray(project.labour) && project.labour.length > 0) {
@@ -382,51 +431,7 @@ const isReadOnly = false;
   const grandTotalAmount = totalContractAmount + totalExtraWorkAmount;
   const balanceAmount = grandTotalAmount - totalPaid;
 
-      const saveMaterial = () => {
-      if (!newMaterial.material || !newMaterial.receivedQty) {
-        alert("Please enter material name and received quantity");
-        return;
-      }
-      const rec = parseFloat(newMaterial.receivedQty) || 0;
-      const con = parseFloat(newMaterial.consumedQty) || 0;
-      const rt = parseFloat(newMaterial.rate) || 0;
-      const itemRecord = {
-        id: Date.now(),
-        material: newMaterial.material,
-        unit: newMaterial.unit || "bags",
-        supplier: newMaterial.supplier || "",
-        orderedQty: parseFloat(newMaterial.orderedQty) || rec,
-        receivedQty: rec,
-        consumedQty: con,
-        balanceQty: rec - con,
-        rate: rt,
-        amount: rec * rt,
-        invoiceDate: newMaterial.invoiceDate || new Date().toISOString().split("T")[0],
-        invoiceNo: newMaterial.invoiceNo || "",
-        grnNo: newMaterial.grnNo || ""
-      };
-      const updatedInv = [...(inventory || []), itemRecord];
-      setInventory(updatedInv);
-      if (selectedProject) {
-        const nextProjs = (projects || []).map((p: any) => {
-          const pId = String(p.projectUniqueId || p.projectId || p.id || p.projectCode);
-          if (pId === String(selectedProject)) {
-            return { ...p, inventory: updatedInv };
-          }
-          return p;
-        });
-        persistBuyerUpdates(nextProjs);
-      }
-      setNewMaterial({
-        material: "", unit: "bags", supplier: "", orderedQty: "", receivedQty: "",
-        consumedQty: "", rate: "", invoiceDate: new Date().toISOString().split("T")[0],
-        invoiceNo: "", grnNo: ""
-      });
-      if (typeof setShowMaterialModal === "function") setShowMaterialModal(false);
-      alert("Material record saved successfully!");
-    };
-
-    const addProject = () => {
+  const addProject = () => {
     if (isReadOnly) return denyContractorEdit();
     if (!newProject.name || !newProject.plotLength || !newProject.plotWidth) { 
       alert("Please fill all required fields"); 
@@ -447,13 +452,13 @@ const isReadOnly = false;
     }
     
     const user = getLoggedInUser();
-    const currentUser = getCurrentAppUser();
+    const currentUser = getLoggedInUser();
     const buyerCode = String(user?.uniqueCode || user?.userCode || currentUser.userCode || currentUser.uniqueCode || "").trim();
 
     const newProjRecord = { 
-      id: `BUY-PROJ-${Date.now()}`,
-      projectUniqueId: `BUY-PROJ-${Date.now()}`,
-      projectCode: `PRJ-${Date.now().toString().slice(-6)}`,
+      id: "BUY-PROJ-" + Date.now(),
+      projectUniqueId: "BUY-PROJ-" + Date.now(),
+      projectCode: "PRJ-" + Date.now().toString().slice(-6),
       buyerCode: buyerCode,
       ownerUserCode: buyerCode,
       buyerName: user?.name || currentUser.name || "Buyer",
@@ -514,14 +519,14 @@ const isReadOnly = false;
       const updatedProjects = projects.map(p => String(p.id) === String(selectedProject) ? {
         ...p,
         milestones: p.milestones.map((m: any) => 
-          m.id === milestone.id ? {
-            ...m,
-            ownerApproved: true,
-            ownerRejected: false,
-            ownerApprovalDate: today,
-            ownerRejectionDate: null,
-            status: "Approved",
-            remarks: ""
+          m.id === milestone.id ? { 
+            ...m, 
+            ownerApproved: true, 
+            ownerRejected: false, 
+            ownerApprovalDate: today, 
+            ownerRejectionDate: null, 
+            status: "Approved", 
+            remarks: "" 
           } : m
         )
       } : p);
@@ -536,14 +541,14 @@ const isReadOnly = false;
     const today = new Date().toISOString().split("T")[0];
     const updatedProjects = projects.map(p => String(p.id) === String(selectedProject) ? {
       ...p,
-      milestones: p.milestones.map((m: any) => m.id === milestone.id ? {
-        ...m,
-        ownerApproved: false,
-        ownerRejected: true,
-        ownerApprovalDate: null,
-        ownerRejectionDate: today,
-        status: "Completed",
-        remarks
+      milestones: p.milestones.map((m: any) => m.id === milestone.id ? { 
+        ...m, 
+        ownerApproved: false, 
+        ownerRejected: true, 
+        ownerApprovalDate: null, 
+        ownerRejectionDate: today, 
+        status: "Completed", 
+        remarks 
       } : m)
     } : p);
     persistBuyerUpdates(updatedProjects);
@@ -584,15 +589,15 @@ const isReadOnly = false;
       id: projectPayments.length + 1, 
       milestoneId: selectedMilestone?.id, 
       milestoneName: selectedMilestone?.name, 
-      amount: paymentAmountValue,
-      originalAmount: selectedMilestone?.invoiceAmount,
-      date: paymentDate,
-      status: "Paid",
-      paymentMode,
-      reference: paymentReference.trim(),
-      remarks: paymentRemarks.trim(),
-      chequeNo: paymentMode === "Cheque" ? paymentReference.trim() : "",
-      utrNo: paymentMode !== "Cheque" ? paymentReference.trim() : ""
+      amount: paymentAmountValue, 
+      originalAmount: selectedMilestone?.invoiceAmount, 
+      date: paymentDate, 
+      status: "Paid", 
+      paymentMode, 
+      reference: paymentReference.trim(), 
+      remarks: paymentRemarks.trim(), 
+      chequeNo: paymentMode === "Cheque" ? paymentReference.trim() : "", 
+      utrNo: paymentMode !== "Cheque" ? paymentReference.trim() : "" 
     };
     
     const updatedProjects = projects.map(p => String(p.id) === String(selectedProject) ? {
@@ -600,16 +605,16 @@ const isReadOnly = false;
       milestones: p.milestones.map((m: any) => 
         m.id === selectedMilestone?.id ? { 
           ...m, 
-          paymentReleased: true,
-          paidDate: paymentDate,
-          paymentMode,
-          paymentReference: paymentReference.trim(),
-          paymentRemarks: paymentRemarks.trim(),
-          chequeNo: paymentMode === "Cheque" ? paymentReference.trim() : "",
-          utrNo: paymentMode !== "Cheque" ? paymentReference.trim() : "",
-          actualPaymentAmount: paymentAmountValue,
-          remainingAmount: 0,
-          paymentStatus: "Paid"
+          paymentReleased: true, 
+          paidDate: paymentDate, 
+          paymentMode, 
+          paymentReference: paymentReference.trim(), 
+          paymentRemarks: paymentRemarks.trim(), 
+          chequeNo: paymentMode === "Cheque" ? paymentReference.trim() : "", 
+          utrNo: paymentMode !== "Cheque" ? paymentReference.trim() : "", 
+          actualPaymentAmount: paymentAmountValue, 
+          remainingAmount: 0, 
+          paymentStatus: "Paid" 
         } : m
       ),
       payments: [...(p.payments || []), payment]
@@ -618,14 +623,14 @@ const isReadOnly = false;
     
     setChequeNo(""); 
     setUtrNo(""); 
-    setActualPaymentAmount("");
-    setPaymentDate(new Date().toISOString().split("T")[0]);
-    setPaymentMode("");
-    setPaymentReference("");
-    setPaymentRemarks("");
-    setShowPaymentModal(false);
-    setShowInvoiceModal(false);
-    alert(`Payment released for ${selectedMilestone?.name}`);
+    setActualPaymentAmount(""); 
+    setPaymentDate(new Date().toISOString().split("T")[0]); 
+    setPaymentMode(""); 
+    setPaymentReference(""); 
+    setPaymentRemarks(""); 
+    setShowPaymentModal(false); 
+    setShowInvoiceModal(false); 
+    alert("Payment released for " + selectedMilestone?.name);
   };
 
   const addManualPayment = () => {
@@ -696,15 +701,144 @@ const isReadOnly = false;
   const sharePayment = (payment: any) => {
     const mobile = selectedProjectData?.contractorMobile;
     if (!mobile) return;
-    const message = `*PAYMENT DETAILS - ${selectedProjectData?.name}*%0A%0AMilestone: ${payment.milestoneName}%0AAmount: ₹${(payment.amount/1000).toFixed(0)}K%0ADate: ${payment.date}%0AReference: ${payment.chequeNo || payment.utrNo}`;
-    window.open(`https://wa.me/${mobile}?text=${message}`, "_blank");
+    const message = "*PAYMENT DETAILS - " + selectedProjectData?.name + "*%0A%0AMilestone: " + payment.milestoneName + "%0AAmount: ₹" + (payment.amount/1000).toFixed(0) + "K%0ADate: " + payment.date + "%0AReference: " + (payment.chequeNo || payment.utrNo);
+    window.open("https://wa.me/" + mobile + "?text=" + message, "_blank");
+  };
+
+  
+  const issueMaterial = () => {
+    if (!selectedProjectData) return alert("Select project first.");
+    if (!issueEntry.materialId) return alert("Please select a material from available stock.");
+    const qty = Number(issueEntry.quantity || 0);
+    if (qty <= 0) return alert("Please enter a valid issue quantity.");
+
+    const currentInventory = selectedProjectData?.inventory || [];
+    const targetItem = currentInventory.find((i: any) => String(i.id) === String(issueEntry.materialId));
+
+    if (!targetItem) return alert("Selected material not found in inventory.");
+    const currentBalance = Number(targetItem.balanceQty ?? targetItem.balance ?? (Number(targetItem.receivedQty || 0) - Number(targetItem.consumedQty || 0)));
+
+    if (qty > currentBalance) {
+      return alert(`Cannot issue ${qty} ${targetItem.unit}. Available balance stock is only ${currentBalance} ${targetItem.unit}.`);
+    }
+
+    const issueDate = issueEntry.date || new Date().toISOString().split("T")[0];
+    const newConsumed = Number(targetItem.consumedQty ?? targetItem.consumed ?? 0) + qty;
+    const newBalance = currentBalance - qty;
+
+    const issueLogRecord = {
+      id: Date.now(),
+      materialId: targetItem.id,
+      material: targetItem.material,
+      unit: targetItem.unit,
+      date: issueDate,
+      issuedQty: qty,
+      purpose: issueEntry.purpose || "Site Consumption",
+      previousBalance: currentBalance,
+      closingBalance: newBalance
+    };
+
+    const updatedInventory = currentInventory.map((item: any) => {
+      if (String(item.id) === String(targetItem.id)) {
+        return {
+          ...item,
+          consumedQty: newConsumed,
+          consumed: newConsumed,
+          balanceQty: newBalance,
+          balance: newBalance,
+          lastIssueDate: issueDate,
+          issues: [...(item.issues || []), issueLogRecord]
+        };
+      }
+      return item;
+    });
+
+    const updatedProjects = projects.map(p => String(p.id) === String(selectedProject) ? {
+      ...p,
+      inventory: updatedInventory,
+      inventoryLogs: [...(p.inventoryLogs || []), issueLogRecord]
+    } : p);
+
+    persistBuyerUpdates(updatedProjects);
+    setIssueEntry({ materialId: "", date: new Date().toISOString().split("T")[0], quantity: "", purpose: "" });
+    setShowIssueModal(false);
+    alert(`Successfully issued ${qty} ${targetItem.unit} of ${targetItem.material}! Closing balance: ${newBalance} ${targetItem.unit}.`);
+  };
+
+  
+  const issueMaterialFromStock = () => {
+    if (!selectedProjectData) return alert("Select project first.");
+    const currentInventory = selectedProjectData?.inventory || [];
+
+    const targetItem = currentInventory.find((i: any) => 
+      String(i.id) === String(issueEntry.materialId) ||
+      i.material.toLowerCase() === stockSearchTerm.trim().toLowerCase()
+    );
+
+    if (!targetItem) {
+      return alert("Please select an available stock item.");
+    }
+
+    const qtyToIssue = Number(issueEntry.quantity || 0);
+    if (qtyToIssue <= 0) {
+      return alert("Please enter a valid issue quantity greater than 0.");
+    }
+
+    const currentBal = Number(targetItem.balanceQty ?? targetItem.balance ?? (Number(targetItem.receivedQty || 0) - Number(targetItem.consumedQty || 0)));
+
+    if (qtyToIssue > currentBal) {
+      return alert(`Cannot issue ${qtyToIssue} ${targetItem.unit}. Available balance stock is only ${currentBal} ${targetItem.unit}.`);
+    }
+
+    const issueDate = issueEntry.date || new Date().toISOString().split("T")[0];
+    const newConsumed = Number(targetItem.consumedQty ?? targetItem.consumed ?? 0) + qtyToIssue;
+    const newBal = currentBal - qtyToIssue;
+
+    const issueRecord = {
+      id: Date.now(),
+      materialId: targetItem.id,
+      material: targetItem.material,
+      unit: targetItem.unit,
+      date: issueDate,
+      issuedQty: qtyToIssue,
+      purpose: issueEntry.purpose || "Site Consumption",
+      previousBalance: currentBal,
+      closingBalance: newBal
+    };
+
+    const updatedInventory = currentInventory.map((item: any) => {
+      if (String(item.id) === String(targetItem.id)) {
+        return {
+          ...item,
+          consumedQty: newConsumed,
+          consumed: newConsumed,
+          balanceQty: newBal,
+          balance: newBal,
+          lastIssueDate: issueDate,
+          issues: [issueRecord, ...(item.issues || [])]
+        };
+      }
+      return item;
+    });
+
+    const updatedProjects = projects.map(p => String(p.id) === String(selectedProject) ? {
+      ...p,
+      inventory: updatedInventory,
+      issueRegister: [issueRecord, ...(p.issueRegister || [])]
+    } : p);
+
+    persistBuyerUpdates(updatedProjects);
+    setIssueEntry({ materialId: "", date: new Date().toISOString().split("T")[0], quantity: "", purpose: "" });
+    setStockSearchTerm("");
+    setShowIssueModal(false);
+    alert(`✅ Successfully issued ${qtyToIssue} ${targetItem.unit} of ${targetItem.material}. Updated closing stock: ${newBal} ${targetItem.unit}.`);
   };
 
   const addMaterial = () => {
     if (!selectedProjectData) return alert("Select project first.");
-    // Contractor edit allowed for progress upload
-    if (!newMaterial.material || !newMaterial.receivedQty) return alert("Enter material and received quantity.");
+    if (!newMaterial.material || !newMaterial.receivedQty) return alert("Enter material name and received quantity.");
 
+    const entryDate = newMaterial.date || new Date().toISOString().split("T")[0];
     const orderedQty = Number(newMaterial.orderedQty || newMaterial.receivedQty || 0);
     const receivedQty = Number(newMaterial.receivedQty || 0);
     const consumedQty = Number(newMaterial.consumedQty || 0);
@@ -715,7 +849,8 @@ const isReadOnly = false;
     const materialEntry = {
       id: Date.now(),
       projectId: selectedProject,
-      materialCode: "MAT-" + Date.now(),
+      date: entryDate,
+      materialCode: "MAT-" + Date.now().toString().slice(-6),
       material: newMaterial.material,
       unit: newMaterial.unit,
       orderedQty,
@@ -728,19 +863,29 @@ const isReadOnly = false;
       amount,
       supplier: newMaterial.supplier,
       invoiceNo: newMaterial.invoiceNo,
-      invoiceDate: newMaterial.invoiceDate || new Date().toISOString().split("T")[0],
-      receivedDate: new Date().toISOString().split("T")[0]
+      invoiceDate: entryDate,
+      receivedDate: entryDate
     };
 
     const updatedProjects = projects.map(p => String(p.id) === String(selectedProject) ? {
       ...p,
-      inventory: [...(p.inventory || []), materialEntry]
+      inventory: [materialEntry, ...(p.inventory || [])]
     } : p);
 
     persistBuyerUpdates(updatedProjects);
-    setNewMaterial({ material: "", unit: "bags", supplier: "", orderedQty: "", receivedQty: "", consumedQty: "", rate: "", invoiceDate: new Date().toISOString().split("T")[0], invoiceNo: "" });
+    setNewMaterial({
+      date: new Date().toISOString().split("T")[0],
+      material: "",
+      unit: "bags",
+      supplier: "",
+      orderedQty: "",
+      receivedQty: "",
+      consumedQty: "",
+      rate: "",
+      invoiceNo: ""
+    });
     setShowMaterialModal(false);
-    alert("Inventory saved.");
+    alert("Material entry saved successfully!");
   };
 
   const updateConsumed = (id: number, consumed: string) => {
@@ -758,50 +903,48 @@ const isReadOnly = false;
 
   const uploadMedia = () => {
     if (!selectedProjectData) return alert("Select project first.");
-    // Contractor edit allowed for progress upload
-    if (!mediaTitle) return alert("Enter title.");
+    const title = mediaTitle || (mediaFile ? mediaFile.name.replace(/\.[^/.]+$/, "") : "Site Progress Photo");
 
-    const saveMedia = (fileDataUrl = "") => {
+    const completeSave = (dataUrl = "") => {
       const mediaEntry = {
         id: Date.now(),
         projectId: selectedProject,
-        fileName: mediaFile?.name || "",
-        fileSize: mediaFile?.size || 0,
-        fileType: mediaFile?.type || "",
+        fileName: mediaFile ? mediaFile.name : "photo.jpg",
+        fileSize: mediaFile ? mediaFile.size : 0,
+        fileType: mediaFile ? mediaFile.type : "image/jpeg",
         uploadDate: new Date().toISOString(),
-        description: mediaTitle,
-        title: mediaTitle,
-        mediaType,
-        type: mediaType,
-        category: mediaCategory,
-        url: fileDataUrl,
-        previewUrl: fileDataUrl,
-        fileDataUrl
+        description: title,
+        title: title,
+        mediaType: mediaType || "photo",
+        type: mediaType || "photo",
+        category: mediaCategory || "progress",
+        url: dataUrl,
+        previewUrl: dataUrl,
+        fileDataUrl: dataUrl
       };
 
-      const existingMedia = selectedProjectData?.siteMedia || selectedProjectData?.media || [];
-      const updatedProjects = projects.map(p => String(p.id) === String(selectedProject) ? {
+      const existing = selectedProjectData?.siteMedia || selectedProjectData?.media || [];
+      const updatedProjects = projects.map((p: any) => String(p.id) === String(selectedProject) ? {
         ...p,
-        siteMedia: [...existingMedia, mediaEntry],
-        media: [...existingMedia, mediaEntry]
+        siteMedia: [mediaEntry, ...existing],
+        media: [mediaEntry, ...existing]
       } : p);
 
       persistBuyerUpdates(updatedProjects);
       setMediaTitle("");
       setMediaFile(null);
       setMediaPreview(null);
-      setMediaType("photo");
-      setMediaCategory("progress");
       setShowMediaModal(false);
-      alert("Progress/media saved.");
+      alert("Site progress photo saved successfully!");
     };
 
     if (mediaFile) {
       const reader = new FileReader();
-      reader.onload = () => saveMedia(String(reader.result || ""));
+      reader.onload = () => completeSave(String(reader.result || ""));
+      reader.onerror = () => completeSave("");
       reader.readAsDataURL(mediaFile);
     } else {
-      saveMedia("");
+      completeSave("");
     }
   };
 
@@ -846,7 +989,6 @@ const isReadOnly = false;
 
   const addLabour = (labourData = null) => {
     if (!selectedProjectData) return alert("Select project first.");
-    // Contractor edit allowed for progress upload
 
     const source = labourData && labourData.name ? labourData : newLabour;
     if (!source.name || !source.role || !source.dailyWage) return alert("Please fill labour name, role and daily wage.");
@@ -866,7 +1008,7 @@ const isReadOnly = false;
       totalPayment: dailyWage * daysPresent,
       paidAmount: 0,
       status: source.status || "Present",
-      joinDate: source.date || new Date().toISOString().split("T")[0], date: source.date || new Date().toISOString().split("T")[0], period: source.period || "daily"
+      joinDate: new Date().toISOString().split("T")[0]
     };
 
     const attendanceEntry = {
@@ -922,11 +1064,10 @@ const isReadOnly = false;
     };
     
     setLabourPaymentHistory([...labourPaymentHistory, payment]);
-    
     setChequeNo("");
     setUtrNo("");
     setShowLabourPaymentModal(false);
-    alert(`Payment of ₹${paymentAmount} released to ${selectedLabour.name}`);
+    alert("Payment of ₹" + paymentAmount + " released to " + selectedLabour.name);
   };
 
   const generateReport = () => {
@@ -1014,44 +1155,98 @@ const isReadOnly = false;
   const shareWhatsApp = () => {
     const mobile = selectedProjectData?.contractorMobile;
     if (!mobile) return;
-    const message = `🏗️ PROJECT UPDATE - ${selectedProjectData?.name}%0A%0A📊 Progress: ${progressPercent.toFixed(0)}%%0A💰 Paid: ₹${(totalPaid/100000).toFixed(1)}L%0A📉 Balance: ₹${(balanceAmount/100000).toFixed(1)}L%0A✅ Milestones: ${completedMilestones}/${projectMilestones.length}`;
-    window.open(`https://wa.me/${mobile}?text=${message}`, "_blank");
+    const message = "*PROJECT UPDATE - " + selectedProjectData?.name + "*%0A%0AProgress: " + progressPercent.toFixed(0) + "%%0APaid: ₹" + (totalPaid/100000).toFixed(1) + "L%0ABalance: ₹" + (balanceAmount/100000).toFixed(1) + "L%0AMilestones: " + completedMilestones + "/" + projectMilestones.length;
+    window.open("https://wa.me/" + mobile + "?text=" + message, "_blank");
   };
 
   const styles = {
-    container: { padding: "20px", backgroundColor: "#f0f2f5", minHeight: "100dvh", width: "100%", maxWidth: "100%", boxSizing: "border-box", overflowX: "hidden" },
-    header: { backgroundColor: "#800020", color: "white", padding: "16px 20px", borderRadius: "12px", marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" },
-    headerTitle: { margin: 0, fontSize: "20px" },
-    headerSub: { margin: "5px 0 0", fontSize: "12px", opacity: 0.9 },
-    tabContainer: { display: "flex", gap: "8px", marginBottom: "20px", borderBottom: "1px solid #ddd", flexWrap: "wrap", backgroundColor: "white", padding: "0 16px", borderRadius: "12px 12px 0 0" },
-    tab: { padding: "12px 20px", cursor: "pointer", borderBottom: "3px solid transparent", fontSize: "14px", fontWeight: "500" },
+    container: { padding: "10px 14px", backgroundColor: "#f0f2f5", minHeight: "100dvh", width: "100%", maxWidth: "1280px", margin: "0 auto", boxSizing: "border-box", overflowX: "hidden" },
+    header: { backgroundColor: "#800020", color: "white", padding: "10px 14px", borderRadius: "8px", marginBottom: "10px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" },
+    headerTitle: { margin: 0, fontSize: "16px", fontWeight: "700" },
+    headerSub: { margin: "2px 0 0", fontSize: "11px", opacity: 0.9 },
+    tabContainer: { display: "flex", gap: "4px", marginBottom: "10px", borderBottom: "1px solid #ddd", flexWrap: "wrap", backgroundColor: "white", padding: "0 10px", borderRadius: "8px 8px 0 0" },
+    tab: { padding: "8px 14px", cursor: "pointer", borderBottom: "2px solid transparent", fontSize: "12px", fontWeight: "600", whiteSpace: "nowrap" },
     activeTab: { borderBottomColor: "#800020", color: "#800020" },
-    card: { backgroundColor: "white", borderRadius: "12px", padding: "20px", marginBottom: "20px", boxShadow: "0 2px 4px rgba(0,0,0,0.1)", overflowX: "auto" },
-    cardTitle: { fontSize: "18px", fontWeight: "bold", marginBottom: "16px", borderBottom: "2px solid #800020", paddingBottom: "10px" },
-    grid2: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(260px, 100%), 1fr))", gap: "20px", marginBottom: "20px" },
-    grid3: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(240px, 100%), 1fr))", gap: "20px", marginBottom: "20px" },
-    grid4: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))", gap: "20px", marginBottom: "20px" },
-    button: { backgroundColor: "#800020", color: "white", padding: "10px 20px", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" },
-    buttonSuccess: { backgroundColor: "#28a745", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer" },
-    buttonWarning: { backgroundColor: "#ffc107", color: "#333", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer" },
-    buttonInfo: { backgroundColor: "#17a2b8", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer" },
-    buttonDanger: { backgroundColor: "#dc3545", color: "white", padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer" },
-    table: { width: "100%", borderCollapse: "collapse", fontSize: "13px", overflowX: "auto" },
-    th: { textAlign: "left", padding: "12px", borderBottom: "1px solid #ddd", backgroundColor: "#f8f9fa" },
-    td: { padding: "12px", borderBottom: "1px solid #eee" },
-    input: { width: "100%", padding: "10px", border: "1px solid #ddd", borderRadius: "8px", marginBottom: "12px", boxSizing: "border-box" },
-    label: { display: "block", marginBottom: "6px", fontWeight: "600", fontSize: "12px", color: "#333" },
-    select: { width: "100%", padding: "10px", border: "1px solid #ddd", borderRadius: "8px", marginBottom: "12px", boxSizing: "border-box" },
-    textarea: { width: "100%", padding: "10px", border: "1px solid #ddd", borderRadius: "8px", marginBottom: "12px", boxSizing: "border-box", fontFamily: "inherit" },
-    row2: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(240px, 100%), 1fr))", gap: "16px", marginBottom: "16px" },
-    row3: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))", gap: "16px", marginBottom: "16px" },
-    progressBar: { height: "8px", backgroundColor: "#e0e0e0", borderRadius: "4px", overflow: "hidden", marginTop: "8px" },
-    progressFill: { height: "100%", backgroundColor: "#10b981", borderRadius: "4px", transition: "width 0.3s" },
-    statValue: { fontSize: "28px", fontWeight: "bold", color: "#800020" },
-    statLabel: { fontSize: "12px", color: "#666", marginTop: "4px" },
+    card: { backgroundColor: "white", borderRadius: "8px", padding: "10px 12px", marginBottom: "8px", boxShadow: "0 1px 2px rgba(0,0,0,0.05)", width: "100%", maxWidth: "100%", boxSizing: "border-box" },
+    cardTitle: { fontSize: "12px", fontWeight: "700", marginBottom: "6px", borderBottom: "1.5px solid #800020", paddingBottom: "4px", color: "#0f172a" },
+    grid2: {
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fit, minmax(min(260px, 100%), 1fr))",
+      gap: "8px",
+      marginBottom: "8px",
+      width: "100%"
+    },
+    grid3: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(160px, 100%), 1fr))", gap: "8px", marginBottom: "8px", width: "100%", boxSizing: "border-box" },
+    grid4: {
+      display: "grid",
+      gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+      gap: "8px",
+      marginBottom: "10px",
+      width: "100%",
+      boxSizing: "border-box"
+    },
+    button: { backgroundColor: "#800020", color: "white", padding: "6px 12px", border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: "700", fontSize: "12px" },
+    buttonSuccess: { backgroundColor: "#28a745", color: "white", padding: "5px 10px", border: "none", borderRadius: "5px", cursor: "pointer", fontSize: "11px", fontWeight: "600" },
+    buttonWarning: { backgroundColor: "#ffc107", color: "#333", padding: "5px 10px", border: "none", borderRadius: "5px", cursor: "pointer", fontSize: "11px" },
+    buttonInfo: { backgroundColor: "#17a2b8", color: "white", padding: "5px 10px", border: "none", borderRadius: "5px", cursor: "pointer", fontSize: "11px" },
+    buttonDanger: { backgroundColor: "#dc3545", color: "white", padding: "5px 10px", border: "none", borderRadius: "5px", cursor: "pointer", fontSize: "11px" },
+    table: {
+      width: "100%",
+      minWidth: "680px",
+      borderCollapse: "collapse",
+      fontSize: "11px"
+    },
+    th: {
+      padding: "5px 8px",
+      fontSize: "11px",
+      fontWeight: "700",
+      textAlign: "left",
+      backgroundColor: "#f8fafc",
+      borderBottom: "1px solid #cbd5e1",
+      whiteSpace: "nowrap"
+    },
+    td: {
+      padding: "5px 8px",
+      fontSize: "11px",
+      borderBottom: "1px solid #f1f5f9",
+      whiteSpace: "nowrap"
+    },
+    input: { width: "100%", padding: "6px 8px", border: "1px solid #cbd5e1", borderRadius: "6px", marginBottom: "8px", boxSizing: "border-box", fontSize: "12px" },
+    label: { display: "block", marginBottom: "3px", fontWeight: "600", fontSize: "11px", color: "#475569", whiteSpace: "normal" },
+    select: { width: "100%", padding: "6px 8px", border: "1px solid #cbd5e1", borderRadius: "6px", marginBottom: "8px", boxSizing: "border-box", fontSize: "12px" },
+    textarea: { width: "100%", padding: "6px 8px", border: "1px solid #cbd5e1", borderRadius: "6px", marginBottom: "8px", boxSizing: "border-box", fontFamily: "inherit", fontSize: "12px" },
+    row2: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))", gap: "8px", marginBottom: "6px", width: "100%", boxSizing: "border-box", fontSize: "12px" },
+    row3: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(180px, 100%), 1fr))", gap: "8px", marginBottom: "6px", width: "100%", boxSizing: "border-box", fontSize: "12px" },
+    progressBar: { height: "5px", backgroundColor: "rgba(255,255,255,0.4)", borderRadius: "3px", overflow: "hidden", marginTop: "4px" },
+    progressFill: { height: "100%", backgroundColor: "#ffd700", borderRadius: "3px", transition: "width 0.3s" },
+    statBox: {
+      padding: "8px 12px",
+      borderRadius: "8px",
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "center",
+      alignItems: "center",
+      textAlign: "center",
+      boxSizing: "border-box",
+      minHeight: "56px"
+    },
+    statValue: {
+      fontSize: "17px",
+      fontWeight: "800",
+      lineHeight: "1.2",
+      margin: "0 0 2px 0"
+    },
+    statLabel: {
+      fontSize: "10px",
+      fontWeight: "700",
+      textTransform: "uppercase",
+      letterSpacing: "0.03em",
+      opacity: 0.95,
+      margin: 0
+    },
     modal: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 },
-    modalContent: { backgroundColor: "white", borderRadius: "16px", padding: "24px", width: "min(560px, 94vw)", maxWidth: "560px", maxHeight: "85vh", overflowY: "auto", boxSizing: "border-box" },
-    statusBadge: { padding: "4px 12px", borderRadius: "20px", fontSize: "11px", fontWeight: "500", display: "inline-block" }
+    modalContent: { backgroundColor: "white", borderRadius: "10px", padding: "16px 20px", width: "min(600px, 94vw)", maxWidth: "600px", maxHeight: "88vh", overflowY: "auto", boxSizing: "border-box" },
+    statusBadge: { padding: "2px 8px", borderRadius: "12px", fontSize: "10px", fontWeight: "600", display: "inline-block" }
   };
 
   const tabs = [
@@ -1083,36 +1278,36 @@ const isReadOnly = false;
     
     return selectedProjectData ? React.createElement("div", null,
       React.createElement("div", { style: styles.grid4 },
-        React.createElement("div", { style: { ...styles.card, background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", color: "white" } },
+        React.createElement("div", { style: { ...styles.statBox, background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", color: "white" } },
           React.createElement("div", { style: { ...styles.statValue, color: "white" } }, progressPercent.toFixed(0), "%"),
           React.createElement("div", { style: styles.statLabel }, "Progress"),
-          React.createElement("div", { style: styles.progressBar }, React.createElement("div", { style: { ...styles.progressFill, width: `${progressPercent}%`, backgroundColor: "#ffd700" } }))
+          React.createElement("div", { style: styles.progressBar }, React.createElement("div", { style: { ...styles.progressFill, width: progressPercent + "%", backgroundColor: "#ffd700" } }))
         ),
-        React.createElement("div", { style: { ...styles.card, background: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)", color: "white" } },
+        React.createElement("div", { style: { ...styles.statBox, background: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)", color: "white" } },
           React.createElement("div", { style: { ...styles.statValue, color: "white" } }, completedMilestones, "/", projectMilestones.length),
           React.createElement("div", { style: styles.statLabel }, "Milestones Done")
         ),
-        React.createElement("div", { style: { ...styles.card, background: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)", color: "white" } },
+        React.createElement("div", { style: { ...styles.statBox, background: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)", color: "white" } },
           React.createElement("div", { style: { ...styles.statValue, color: "white" } }, "₹", (totalPaid/100000).toFixed(2), "L"),
           React.createElement("div", { style: styles.statLabel }, "Total Paid")
         ),
-        React.createElement("div", { style: { ...styles.card, background: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)", color: "white" } },
+        React.createElement("div", { style: { ...styles.statBox, background: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)", color: "white" } },
           React.createElement("div", { style: { ...styles.statValue, color: "white" } }, "₹", (balanceAmount/100000).toFixed(2), "L"),
           React.createElement("div", { style: styles.statLabel }, "Balance Amount")
         )
       ),
-      React.createElement("div", { style: { ...styles.card, backgroundColor: isOverdue ? "#dc3545" : (isUrgent ? "#ffc107" : "#10b981"), color: "white", textAlign: "center" } },
-        React.createElement("div", { style: { fontSize: "24px", fontWeight: "bold" } },
-          isOverdue ? "⚠️ PROJECT OVERDUE" : (isUrgent ? `🔔 ${Math.abs(daysLeft)} DAYS LEFT - URGENT` : `📅 ${daysLeft} DAYS LEFT FOR COMPLETION`)
+      React.createElement("div", { style: { ...styles.card, backgroundColor: isOverdue ? "#dc3545" : (isUrgent ? "#ffc107" : "#10b981"), color: "white", textAlign: "center", padding: "8px 12px" } },
+        React.createElement("div", { style: { fontSize: "14px", fontWeight: "800" } },
+          isOverdue ? "⚠️ PROJECT OVERDUE" : (isUrgent ? "🔔 " + Math.abs(daysLeft) + " DAYS LEFT - URGENT" : "📅 " + daysLeft + " DAYS LEFT FOR COMPLETION")
         ),
-        React.createElement("div", { style: { fontSize: "14px", marginTop: "8px" } }, "Target Completion: ", selectedProjectData.endDate)
+        React.createElement("div", { style: { fontSize: "12px", marginTop: "4px" } }, "Target Completion: ", selectedProjectData.endDate)
       ),
       React.createElement("div", { style: styles.grid2 },
         React.createElement("div", { style: { ...styles.card, background: "linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)" } },
           React.createElement("div", { style: styles.cardTitle }, "🏢 Project Details"),
           React.createElement("div", { style: styles.row2 },
             React.createElement("div", null,
-              React.createElement("div", { style: { fontSize: "24px", fontWeight: "bold", color: "#800020" } }, selectedProjectData.name),
+              React.createElement("div", { style: { fontSize: "15px", fontWeight: "800", color: "#800020" } }, selectedProjectData.name),
               React.createElement("div", null, React.createElement("strong", null, "Plot:"), " ", selectedProjectData.plotLength, "' x ", selectedProjectData.plotWidth, "'"),
               React.createElement("div", null, React.createElement("strong", null, "Plot Area:"), " ", Number(selectedProjectData.plotArea || (Number(selectedProjectData.plotLength || 0) * Number(selectedProjectData.plotWidth || 0))).toLocaleString(), " sq.ft"),
               React.createElement("div", null, React.createElement("strong", null, "Floors:"), " ", selectedProjectData.floors),
@@ -1125,12 +1320,12 @@ const isReadOnly = false;
               React.createElement("div", null, React.createElement("strong", null, "Total:"), " ₹", (selectedProjectData.totalAmount/100000).toFixed(2), "L")
             )
           ),
-          selectedProjectData.agreementUrl && React.createElement("div", { style: { marginTop: "12px", padding: "10px", backgroundColor: "rgba(255,255,255,0.7)", borderRadius: "8px" } },
+          selectedProjectData.agreementUrl && React.createElement("div", { style: { marginTop: "8px", padding: "8px", backgroundColor: "rgba(255,255,255,0.7)", borderRadius: "6px" } },
             React.createElement("strong", null, "📄 Agreement Copy:"),
             React.createElement("a", { href: selectedProjectData.agreementUrl, target: "_blank", style: { color: "#800020", marginLeft: "10px", textDecoration: "underline" } }, "View Agreement"),
-            React.createElement("button", { onClick: () => window.open(selectedProjectData.agreementUrl, "_blank"), style: { ...styles.buttonInfo, marginLeft: "10px", padding: "4px 12px", fontSize: "12px" } }, "Download")
+            React.createElement("button", { onClick: () => window.open(selectedProjectData.agreementUrl, "_blank"), style: { ...styles.buttonInfo, marginLeft: "10px", padding: "3px 8px", fontSize: "11px" } }, "Download")
           ),
-          React.createElement("div", { style: { marginTop: "12px", padding: "10px", backgroundColor: "rgba(255,255,255,0.5)", borderRadius: "8px" } },
+          React.createElement("div", { style: { marginTop: "8px", padding: "8px", backgroundColor: "rgba(255,255,255,0.5)", borderRadius: "6px" } },
             React.createElement("strong", null, "📅 Timeline:"), " ", selectedProjectData.startDate, " to ", selectedProjectData.endDate
           )
         ),
@@ -1180,24 +1375,24 @@ const isReadOnly = false;
 
   const renderProjects = () => React.createElement("div", null,
     React.createElement("div", { style: { ...styles.card, backgroundColor: "#eef7f2", color: "#2d6a4f" } }, "Assigned projects are view-only. Updates are managed by the contractor."),
-    React.createElement("div", { style: { marginTop: "20px" } },
+    React.createElement("div", { style: { marginTop: "12px" } },
       projects.map((p: any) =>
         React.createElement("div", { key: p.id, style: { ...styles.card, cursor: "pointer" }, onClick: () => { setSelectedProject(p.id); setActiveTab("dashboard"); } },
           React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" } },
             React.createElement("div", null,
-              React.createElement("h3", { style: { margin: 0 } }, p.name),
-              React.createElement("p", { style: { margin: "8px 0 0", fontSize: "13px", color: "#666" } }, p.contractorName, " | Project ID: ", p.projectId || p.projectUniqueId),
-              React.createElement("p", { style: { margin: "4px 0", fontSize: "12px", color: "#666" } },
+              React.createElement("h3", { style: { margin: 0, fontSize: "14px" } }, p.name),
+              React.createElement("p", { style: { margin: "4px 0 0", fontSize: "12px", color: "#666" } }, p.contractorName, " | Project ID: ", p.projectId || p.projectUniqueId),
+              React.createElement("p", { style: { margin: "2px 0", fontSize: "11px", color: "#666" } },
                 "Plot Area: ", Number(p.plotArea || (Number(p.plotLength || 0) * Number(p.plotWidth || 0))).toLocaleString(), " sq.ft | BUA: ", Number(p.bua || 0).toLocaleString(), " sq.ft | Floors: ", p.floors || 0
               ),
-              React.createElement("p", { style: { margin: "4px 0", fontSize: "12px", color: "#666" } }, "Rate: ₹", Number(p.ratePerSft || 0).toLocaleString(), "/sq.ft | Total: ₹", Number(p.totalAmount || 0).toLocaleString())
+              React.createElement("p", { style: { margin: "2px 0", fontSize: "11px", color: "#666" } }, "Rate: ₹", Number(p.ratePerSft || 0).toLocaleString(), "/sq.ft | Total: ₹", Number(p.totalAmount || 0).toLocaleString())
             ),
             React.createElement("div", null,
-              React.createElement("div", { style: { fontSize: "24px", fontWeight: "bold", color: "#800020" } }, p.progress, "%"),
-              React.createElement("div", null, p.status)
+              React.createElement("div", { style: { fontSize: "18px", fontWeight: "bold", color: "#800020" } }, p.progress, "%"),
+              React.createElement("div", { style: { fontSize: "11px" } }, p.status)
             )
           ),
-          React.createElement("div", { style: styles.progressBar }, React.createElement("div", { style: { ...styles.progressFill, width: `${p.progress}%` } }))
+          React.createElement("div", { style: styles.progressBar }, React.createElement("div", { style: { ...styles.progressFill, width: p.progress + "%" } }))
         )
       )
     )
@@ -1205,7 +1400,7 @@ const isReadOnly = false;
 
   const renderMilestones = () => React.createElement("div", { style: styles.card },
     React.createElement("div", { style: styles.cardTitle }, "🎯 Civil Milestone Timeline & Payment Linkage"),
-    React.createElement("div", { style: { marginBottom: "12px", color: "#666" } }, "Total payment weight: ", projectMilestones.reduce((sum: number, milestone: any) => sum + Number(milestone.paymentPercent || 0), 0), "%"),
+    React.createElement("div", { style: { marginBottom: "8px", fontSize: "12px", color: "#666" } }, "Total payment weight: ", projectMilestones.reduce((sum: number, milestone: any) => sum + Number(milestone.paymentPercent || 0), 0), "%"),
     React.createElement("div", { style: { overflowX: "auto" } },
       React.createElement("table", { style: styles.table },
         React.createElement("thead", null,
@@ -1226,19 +1421,19 @@ const isReadOnly = false;
               React.createElement("td", { style: styles.td }, m.status || "Pending"),
               React.createElement("td", { style: styles.td },
                 React.createElement("span", null, m.ownerApproved ? "✅ Approved" : m.ownerRejected ? "❌ Rejected" : "⏳ Pending"),
-                m.remarks && React.createElement("div", { style: { fontSize: "11px", color: "#666" } }, m.remarks)
+                m.remarks && React.createElement("div", { style: { fontSize: "10px", color: "#666" } }, m.remarks)
               ),
               React.createElement("td", { style: styles.td },
-                React.createElement("span", null, m.invoiceRaised ? `📄 ₹${Number(m.invoiceAmount).toLocaleString()}` : "Not raised")
+                React.createElement("span", null, m.invoiceRaised ? "📄 ₹" + Number(m.invoiceAmount).toLocaleString() : "Not raised")
               ),
-              React.createElement("td", { style: styles.td }, m.paymentStatus || "Not Due", m.paidDate && React.createElement("div", { style: { fontSize: "11px" } }, m.paidDate)),
+              React.createElement("td", { style: styles.td }, m.paymentStatus || "Not Due", m.paidDate && React.createElement("div", { style: { fontSize: "10px" } }, m.paidDate)),
               React.createElement("td", { style: styles.td },
                 m.contractorCompleted && !m.ownerApproved && !m.invoiceRaised && React.createElement(React.Fragment, null,
                   React.createElement("button", { onClick: () => approveMilestone(m), style: styles.buttonSuccess }, "Approve"),
                   React.createElement("button", { onClick: () => rejectMilestone(m), style: { ...styles.buttonDanger, marginLeft: "6px" } }, "Reject")
                 ),
                 m.ownerApproved && m.invoiceRaised && m.paymentStatus === "Due" && React.createElement("button", { onClick: () => { setSelectedMilestone(m); setActualPaymentAmount(String(m.invoiceAmount)); setShowPaymentModal(true); }, style: styles.buttonInfo }, "Mark Paid"),
-                 selectedProjectData && !selectedProjectData?.contractorId && m.status !== "Completed" && React.createElement("button", { onClick: () => updateMilestoneStatus(m.id, "Completed"), style: { ...styles.buttonSuccess, marginLeft: "6px" } }, "Mark Complete")
+                selectedProjectData && !selectedProjectData?.contractorId && m.status !== "Completed" && React.createElement("button", { onClick: () => updateMilestoneStatus(m.id, "Completed"), style: { ...styles.buttonSuccess, marginLeft: "6px" } }, "Mark Complete")
               )
             )
           )
@@ -1248,49 +1443,45 @@ const isReadOnly = false;
   );
 
   const renderPayments = () => {
-    let cumulative = 0;
     return React.createElement("div", { style: styles.card },
       React.createElement("div", { style: { ...styles.cardTitle, display: "flex", justifyContent: "space-between", alignItems: "center" } },
         React.createElement("span", null, "💰 Payment Register"),
         selectedProjectData && !selectedProjectData?.contractorId && React.createElement("button", { onClick: () => setShowPaymentEntryModal(true), style: styles.buttonSuccess }, "+ Add Payment")
       ),
       React.createElement("div", { style: styles.grid3 },
-        React.createElement("div", { style: { padding: "12px", backgroundColor: "#f8f9fa", borderRadius: "8px", textAlign: "center" } }, React.createElement("strong", null, "Total Contract"), React.createElement("br", null), "₹", (totalContractAmount/100000).toFixed(2), "L"),
-        React.createElement("div", { style: { padding: "12px", backgroundColor: "#f8f9fa", borderRadius: "8px", textAlign: "center" } }, React.createElement("strong", null, "Total Paid"), React.createElement("br", null), "₹", (totalPaid/100000).toFixed(2), "L"),
-        React.createElement("div", { style: { padding: "12px", backgroundColor: "#f8f9fa", borderRadius: "8px", textAlign: "center" } }, React.createElement("strong", null, "Balance"), React.createElement("br", null), "₹", (balanceAmount/100000).toFixed(2), "L")
+        React.createElement("div", { style: { padding: "8px", backgroundColor: "#f8f9fa", borderRadius: "6px", textAlign: "center" } }, React.createElement("strong", null, "Total Contract"), React.createElement("br", null), "₹", (totalContractAmount/100000).toFixed(2), "L"),
+        React.createElement("div", { style: { padding: "8px", backgroundColor: "#f8f9fa", borderRadius: "6px", textAlign: "center" } }, React.createElement("strong", null, "Total Paid"), React.createElement("br", null), "₹", (totalPaid/100000).toFixed(2), "L"),
+        React.createElement("div", { style: { padding: "8px", backgroundColor: "#f8f9fa", borderRadius: "6px", textAlign: "center" } }, React.createElement("strong", null, "Balance"), React.createElement("br", null), "₹", (balanceAmount/100000).toFixed(2), "L")
       ),
       React.createElement("div", { style: { overflowX: "auto", width: "100%" } },
         React.createElement("table", { style: styles.table },
-        React.createElement("thead", null,
-          React.createElement("tr", null,
-            React.createElement("th", { style: styles.th }, "Date"), React.createElement("th", { style: styles.th }, "Milestone"),
-            React.createElement("th", { style: styles.th }, "Paid Amount"), React.createElement("th", { style: styles.th }, "Mode"),
-            React.createElement("th", { style: styles.th }, "Reference"), React.createElement("th", { style: styles.th }, "Remarks"), React.createElement("th", { style: styles.th }, "Status")
+          React.createElement("thead", null,
+            React.createElement("tr", null,
+              React.createElement("th", { style: styles.th }, "Date"), React.createElement("th", { style: styles.th }, "Milestone"),
+              React.createElement("th", { style: styles.th }, "Paid Amount"), React.createElement("th", { style: styles.th }, "Mode"),
+              React.createElement("th", { style: styles.th }, "Reference"), React.createElement("th", { style: styles.th }, "Remarks"), React.createElement("th", { style: styles.th }, "Status")
+            )
+          ),
+          React.createElement("tbody", null,
+            projectPayments.map((p: any) => {
+              return React.createElement("tr", { key: p.id },
+                React.createElement("td", { style: styles.td }, p.paidDate || p.date),
+                React.createElement("td", { style: styles.td }, p.milestoneName),
+                React.createElement("td", { style: styles.td }, "₹", (p.amount/1000).toFixed(0), "K"),
+                React.createElement("td", { style: styles.td }, p.paymentMode || (p.status === "Paid" ? "Recorded" : "Not paid")),
+                React.createElement("td", { style: styles.td }, p.paymentReference || p.chequeNo || p.utrNo || "Not available"),
+                React.createElement("td", { style: styles.td }, p.paymentRemarks || (p.status === "Paid" ? "Payment recorded" : "Awaiting payment")),
+                React.createElement("td", { style: styles.td }, p.status || "Not Due")
+              );
+            }),
+            projectPayments.length === 0 && React.createElement("tr", null, React.createElement("td", { colSpan: 7, style: { textAlign: "center", padding: "20px" } }, "No payments recorded yet"))
           )
-        ),
-        React.createElement("tbody", null,
-          projectPayments.map((p: any) => {
-            if (p.status === "Paid") cumulative += p.amount;
-            const remaining = grandTotalAmount - cumulative;
-            return React.createElement("tr", { key: p.id },
-              React.createElement("td", { style: styles.td }, p.paidDate || p.date),
-              React.createElement("td", { style: styles.td }, p.milestoneName),
-              React.createElement("td", { style: styles.td }, "₹", (p.amount/1000).toFixed(0), "K"),
-              React.createElement("td", { style: styles.td }, p.paymentMode || (p.status === "Paid" ? "Recorded" : "Not paid")),
-              React.createElement("td", { style: styles.td }, p.paymentReference || p.chequeNo || p.utrNo || "Not available"),
-              React.createElement("td", { style: styles.td }, p.paymentRemarks || (p.status === "Paid" ? "Payment recorded" : "Awaiting payment")),
-              React.createElement("td", { style: styles.td }, p.status || "Not Due")
-            );
-          }),
-          projectPayments.length === 0 && React.createElement("tr", null, React.createElement("td", { colSpan: 7, style: { textAlign: "center", padding: "40px" } }, "No payments recorded yet"))
         )
       )
-    )
-      );
+    );
   };
 
   const renderInventory = () => React.createElement("div", null,
-    React.createElement("div", { style: { marginBottom: "12px", color: "#666" } }, "Inventory recorded by the contractor"),
     React.createElement("div", { style: styles.card },
       React.createElement("div", { style: { ...styles.cardTitle, display: "flex", justifyContent: "space-between", alignItems: "center" } },
         React.createElement("span", null, "📦 Material Inventory"),
@@ -1298,33 +1489,33 @@ const isReadOnly = false;
       ),
       React.createElement("div", { style: { overflowX: "auto", width: "100%" } },
         React.createElement("table", { style: styles.table },
-        React.createElement("thead", null,
-          React.createElement("tr", null,
-            React.createElement("th", { style: styles.th }, "Material"), React.createElement("th", { style: styles.th }, "Invoice Date"), React.createElement("th", { style: styles.th }, "Ordered"),
-            React.createElement("th", { style: styles.th }, "Received"), React.createElement("th", { style: styles.th }, "Consumed"), React.createElement("th", { style: styles.th }, "Balance"),
-            React.createElement("th", { style: styles.th }, "Unit"), React.createElement("th", { style: styles.th }, "Rate"), React.createElement("th", { style: styles.th }, "Amount"), React.createElement("th", { style: styles.th }, "Supplier / Invoice")
-          )
-        ),
-        React.createElement("tbody", null,
-          projectInventory.map((i: any) =>
-            React.createElement("tr", { key: i.id },
-              React.createElement("td", { style: styles.td }, i.material),
-              React.createElement("td", { style: styles.td }, i.invoiceDate || i.receivedDate || "-"),
-              React.createElement("td", { style: styles.td }, i.orderedQty ?? i.receivedQty),
-              React.createElement("td", { style: styles.td }, i.receivedQty, " ", i.unit),
-              React.createElement("td", { style: styles.td }, i.consumedQty ?? i.consumed ?? 0),
-              React.createElement("td", { style: styles.td }, i.balanceQty ?? i.balance ?? 0),
-              React.createElement("td", { style: styles.td }, i.unit || "-"),
-              React.createElement("td", { style: styles.td }, "₹", Number(i.rate || 0).toLocaleString()),
-              React.createElement("td", { style: styles.td }, "₹", Number(i.amount || 0).toLocaleString()),
-              React.createElement("td", { style: styles.td }, i.supplier || "-", i.invoiceNo ? ` / ${i.invoiceNo}` : "")
+          React.createElement("thead", null,
+            React.createElement("tr", null,
+              React.createElement("th", { style: styles.th }, "Material"), React.createElement("th", { style: styles.th }, "Invoice Date"), React.createElement("th", { style: styles.th }, "Ordered"),
+              React.createElement("th", { style: styles.th }, "Received"), React.createElement("th", { style: styles.th }, "Consumed"), React.createElement("th", { style: styles.th }, "Balance"),
+              React.createElement("th", { style: styles.th }, "Unit"), React.createElement("th", { style: styles.th }, "Rate"), React.createElement("th", { style: styles.th }, "Amount"), React.createElement("th", { style: styles.th }, "Supplier / Invoice")
+            )
+          ),
+          React.createElement("tbody", null,
+            projectInventory.map((i: any) =>
+              React.createElement("tr", { key: i.id },
+                React.createElement("td", { style: styles.td }, i.material),
+                React.createElement("td", { style: styles.td }, i.invoiceDate || i.receivedDate || "-"),
+                React.createElement("td", { style: styles.td }, i.orderedQty ?? i.receivedQty),
+                React.createElement("td", { style: styles.td }, i.receivedQty, " ", i.unit),
+                React.createElement("td", { style: styles.td }, i.consumedQty ?? i.consumed ?? 0),
+                React.createElement("td", { style: styles.td }, i.balanceQty ?? i.balance ?? 0),
+                React.createElement("td", { style: styles.td }, i.unit || "-"),
+                React.createElement("td", { style: styles.td }, "₹", Number(i.rate || 0).toLocaleString()),
+                React.createElement("td", { style: styles.td }, "₹", Number(i.amount || 0).toLocaleString()),
+                React.createElement("td", { style: styles.td }, i.supplier || "-", i.invoiceNo ? " / " + i.invoiceNo : "")
+              )
             )
           )
         )
       )
     )
-  )
-      );
+  );
 
   const renderQuotations = () => React.createElement("div", { style: styles.card },
     React.createElement("div", { style: styles.cardTitle }, "📋 Project Quotations (View only)"),
@@ -1340,29 +1531,24 @@ const isReadOnly = false;
   );
 
   const renderProgress = () => React.createElement("div", null,
-    React.createElement("div", { style: { marginBottom: "12px", color: "#666" } }, "Site photos, videos, and documents uploaded by the contractor"),
     React.createElement("div", { style: styles.card },
       React.createElement("div", { style: { ...styles.cardTitle, display: "flex", justifyContent: "space-between", alignItems: "center" } },
         React.createElement("span", null, "📸 Site Progress Gallery"),
-        isOwnerManagedProject && React.createElement("button", { onClick: () => setShowMediaModal(true), style: styles.buttonSuccess }, "+ Upload Progress")
+        React.createElement("button", { onClick: () => setShowMediaModal(true), style: styles.buttonSuccess }, "+ Upload Progress")
       ),
-      React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "16px" } },
+      React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "10px" } },
         projectMedia.map((m: any) => {
-          const titleText = m.description || m.title || m.fileName || "Construction Site Progress";
-          const fallbackSvg = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400"><rect width="600" height="400" fill="%231e3a8a"/><rect x="40" y="60" width="520" height="280" fill="%230f766e" rx="16"/><text x="300" y="180" font-family="sans-serif" font-size="32" font-weight="bold" fill="%23ffffff" text-anchor="middle">🏗️ BuildMitra Site Photo</text><text x="300" y="230" font-family="sans-serif" font-size="20" fill="%23fef08a" text-anchor="middle">${encodeURIComponent(titleText)}</text></svg>`;
+          const titleText = m.description || m.title || m.fileName || "Site Progress";
+          const fallbackSvg = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='400' viewBox='0 0 600 400'><rect width='600' height='400' fill='%231e3a8a'/><rect x='40' y='60' width='520' height='280' fill='%230f766e' rx='16'/><text x='300' y='180' font-family='sans-serif' font-size='28' font-weight='bold' fill='%23ffffff' text-anchor='middle'>🏗️ Site Photo</text><text x='300' y='230' font-family='sans-serif' font-size='18' fill='%23fef08a' text-anchor='middle'>" + encodeURIComponent(titleText) + "</text></svg>";
           const imgSrc = m.fileDataUrl || m.url || m.previewUrl || m.fileUrl || fallbackSvg;
-          return React.createElement("div", { key: m.id, style: { border: "1px solid #ddd", borderRadius: "8px", overflow: "hidden", cursor: "pointer", backgroundColor: "#fff" }, onClick: () => window.open(imgSrc, "_blank") },
+          return React.createElement("div", { key: m.id, style: { border: "1px solid #e2e8f0", borderRadius: "6px", overflow: "hidden", cursor: "pointer", backgroundColor: "#fff" }, onClick: () => window.open(imgSrc, "_blank") },
             React.createElement("img", {
               src: imgSrc,
               alt: titleText,
-              style: { width: "100%", height: "140px", objectFit: "cover" }
+              style: { width: "100%", height: "110px", objectFit: "cover" }
             }),
-            React.createElement("div", { style: { padding: "10px", fontSize: "12px", fontWeight: "bold", color: "#333" } }, titleText),
-            React.createElement("div", { style: { padding: "0 10px 4px", fontSize: "10px", color: "#666" } }, m.fileName || "Photo Record"),
-            React.createElement("div", { style: { padding: "0 10px 10px", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "10px", color: "#2563eb", fontWeight: "bold" } },
-              React.createElement("span", null, (m.uploadDate || m.date || "").split("T")[0]),
-              React.createElement("span", { style: { backgroundColor: "#eff6ff", padding: "2px 6px", borderRadius: "4px" } }, "👁️ Click to Open Photo")
-            )
+            React.createElement("div", { style: { padding: "6px", fontSize: "11px", fontWeight: "bold", color: "#333", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, titleText),
+            React.createElement("div", { style: { padding: "0 6px 6px", fontSize: "10px", color: "#2563eb", fontWeight: "bold" } }, (m.uploadDate || m.date || "").split("T")[0])
           );
         })
       )
@@ -1402,7 +1588,6 @@ const isReadOnly = false;
   );
 
   const renderExtraWorks = () => React.createElement("div", null,
-    React.createElement("div", { style: { marginBottom: "12px", color: "#666" } }, "Extra work details supplied by the contractor"),
     React.createElement("div", { style: styles.card },
       React.createElement("div", { style: { ...styles.cardTitle, display: "flex", justifyContent: "space-between", alignItems: "center" } },
         React.createElement("span", null, "🔧 Extra Works / Alterations"),
@@ -1410,102 +1595,198 @@ const isReadOnly = false;
       ),
       React.createElement("div", { style: { overflowX: "auto", width: "100%" } },
         React.createElement("table", { style: styles.table },
-        React.createElement("thead", null,
-          React.createElement("tr", null,
-            React.createElement("th", { style: styles.th }, "Date"), React.createElement("th", { style: styles.th }, "Description"),
-            React.createElement("th", { style: styles.th }, "Qty"), React.createElement("th", { style: styles.th }, "Unit"),
-            React.createElement("th", { style: styles.th }, "Rate"), React.createElement("th", { style: styles.th }, "Amount"),
-            React.createElement("th", { style: styles.th }, "Status"), React.createElement("th", { style: styles.th }, "Action")
-          )
-        ),
-        React.createElement("tbody", null,
-          projectExtraWorks.map((w: any) =>
-            React.createElement("tr", { key: w.id },
-              React.createElement("td", { style: styles.td }, w.date),
-              React.createElement("td", { style: styles.td }, w.description),
-              React.createElement("td", { style: styles.td }, w.quantity),
-              React.createElement("td", { style: styles.td }, w.unit || "Nos"),
-              React.createElement("td", { style: styles.td }, "₹", w.rate),
-              React.createElement("td", { style: styles.td }, "₹", w.amount.toLocaleString()),
-              React.createElement("td", { style: styles.td }, w.status),
-              React.createElement("td", { style: styles.td },
-                React.createElement("span", { style: { color: "#666" } }, "View only")
+          React.createElement("thead", null,
+            React.createElement("tr", null,
+              React.createElement("th", { style: styles.th }, "Date"), React.createElement("th", { style: styles.th }, "Description"),
+              React.createElement("th", { style: styles.th }, "Qty"), React.createElement("th", { style: styles.th }, "Unit"),
+              React.createElement("th", { style: styles.th }, "Rate"), React.createElement("th", { style: styles.th }, "Amount"),
+              React.createElement("th", { style: styles.th }, "Status"), React.createElement("th", { style: styles.th }, "Action")
+            )
+          ),
+          React.createElement("tbody", null,
+            projectExtraWorks.map((w: any) =>
+              React.createElement("tr", { key: w.id },
+                React.createElement("td", { style: styles.td }, w.date),
+                React.createElement("td", { style: styles.td }, w.description),
+                React.createElement("td", { style: styles.td }, w.quantity),
+                React.createElement("td", { style: styles.td }, w.unit || "Nos"),
+                React.createElement("td", { style: styles.td }, "₹", w.rate),
+                React.createElement("td", { style: styles.td }, "₹", w.amount.toLocaleString()),
+                React.createElement("td", { style: styles.td }, w.status),
+                React.createElement("td", { style: styles.td },
+                  React.createElement("span", { style: { color: "#666" } }, "View only")
+                )
               )
             )
           )
         )
       )
     )
-  )
-      );
+  );
+
+  
+    const toggleLabourDay = (labourId: any, dayIndex: number) => {
+    const updatedProjects = projects.map(p => {
+      if (String(p.id) !== String(selectedProject)) return p;
+      const currentLabourList = (p.labour && p.labour.length > 0) ? p.labour : getContractorLabourForProject(p);
+      const updatedLabour = currentLabourList.map((l: any) => {
+        if (String(l.id) === String(labourId)) {
+          const currentDays = Number(l.daysPresent || 0);
+          const currentWeek = Array.isArray(l.week) ? [...l.week] : [true, true, true, true, true, true, false];
+          currentWeek[dayIndex] = !currentWeek[dayIndex];
+          const newDaysPresent = currentWeek.filter(Boolean).length;
+          const wage = Number(l.dailyWage || l.wage || 0);
+          return {
+            ...l,
+            week: currentWeek,
+            daysPresent: newDaysPresent,
+            totalPayment: wage * newDaysPresent
+          };
+        }
+        return l;
+      });
+      return { ...p, labour: updatedLabour };
+    });
+    persistBuyerUpdates(updatedProjects);
+  };
+
+  const getWeekDays = (offsetWeeks = 0) => {
+    const curr = new Date();
+    const firstDay = new Date(curr.setDate(curr.getDate() - curr.getDay() + 1 + (offsetWeeks * 7)));
+    const days = [];
+    const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(firstDay);
+      d.setDate(firstDay.getDate() + i);
+      const dayNum = String(d.getDate()).padStart(2, '0');
+      const monthShort = d.toLocaleString('en-US', { month: 'short' });
+      days.push({
+        dayName: dayNames[i],
+        dateStr: `${dayNum} ${monthShort}`,
+        fullDate: d.toISOString().split("T")[0]
+      });
+    }
+    return days;
+  };
 
   const renderLabour = () => {
-    const today = new Date().toISOString().split("T")[0];
+    const weekDays = getWeekDays(currentWeekOffset);
+    const weekRangeText = `${weekDays[0].dateStr} - ${weekDays[6].dateStr}`;
+
     const rows = projectLabour.map((labour: any) => {
-      const daysPresent = Number(labour.daysPresent || 0);
+      const daysPresent = Number(labour.daysPresent ?? 6);
       const wage = Number(labour.dailyWage || labour.wage || 0);
-      const amount = wage * daysPresent;
+      const week = Array.isArray(labour.week) && labour.week.length === 7 
+        ? labour.week 
+        : [true, true, true, true, true, true, false];
+      const amount = wage * week.filter(Boolean).length;
       return {
         ...labour,
         role: labour.role || labour.category || "General",
         wage,
-        daysPresent,
+        daysPresent: week.filter(Boolean).length,
         amount,
-        week: ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((d, idx) => idx < daysPresent)
+        week
       };
     });
-    const weeklyCost = rows.reduce((sum: number, row: any) => sum + row.amount, 0);
-    const monthlyCost = weeklyCost * 4;
+
+    const totalDaysAllLabours = rows.reduce((sum: number, r: any) => sum + r.daysPresent, 0);
+    const grandTotalCost = rows.reduce((sum: number, r: any) => sum + r.amount, 0);
+    const dailyPresents = [0, 1, 2, 3, 4, 5, 6].map(colIdx => rows.filter(r => r.week[colIdx]).length);
 
     return React.createElement("div", null,
-      React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" } },
-        React.createElement("div", { style: { color: "#666" } }, today),
-        selectedProjectData && !selectedProjectData?.contractorId && React.createElement("button", { onClick: () => setShowLabourModal(true), style: styles.buttonSuccess }, "+ Add Labour")
-      ),
       React.createElement("div", { style: styles.card },
-        React.createElement("div", { style: styles.cardTitle }, "👷 Labour Management - ", selectedProjectData?.name || "Select Project"),
-        React.createElement("div", { style: styles.grid2 },
-          React.createElement("div", null, React.createElement("strong", null, "Total Labours: "), rows.length),
-          React.createElement("div", null, React.createElement("strong", null, "Weekly Labour Cost: ₹"), (weeklyCost/1000).toFixed(2), "K")
+        // Header with Title & Action
+        React.createElement("div", { style: { ...styles.cardTitle, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px" } },
+          React.createElement("span", null, "👷 Labour Attendance & Wage Register - ", selectedProjectData?.name || "Villa"),
+          React.createElement("button", { onClick: () => setShowLabourModal(true), style: styles.buttonSuccess }, "+ Add Labour")
         ),
+
+        // Smart Calendar Week Navigator
+        React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", backgroundColor: "#f1f5f9", padding: "6px 12px", borderRadius: "8px", marginBottom: "10px" } },
+          React.createElement("button", {
+            onClick: () => setCurrentWeekOffset(prev => prev - 1),
+            style: { ...styles.button, padding: "4px 10px", fontSize: "11px", backgroundColor: "#475569" }
+          }, "◀ Previous Week"),
+          React.createElement("div", { style: { fontWeight: "800", fontSize: "13px", color: "#1e293b" } },
+            "📅 Week: ", weekRangeText
+          ),
+          React.createElement("button", {
+            onClick: () => setCurrentWeekOffset(prev => prev + 1),
+            style: { ...styles.button, padding: "4px 10px", fontSize: "11px", backgroundColor: "#475569" }
+          }, "Next Week ▶")
+        ),
+
+        // Summary Stat Bar
+        React.createElement("div", { style: { ...styles.grid3, marginBottom: "10px" } },
+          React.createElement("div", { style: { backgroundColor: "#eff6ff", border: "1px solid #bfdbfe", padding: "6px 10px", borderRadius: "6px", textAlign: "center" } },
+            React.createElement("div", { style: { fontSize: "11px", color: "#1e40af", fontWeight: "700" } }, "TOTAL WORKERS"),
+            React.createElement("strong", { style: { fontSize: "15px", color: "#1e3a8a" } }, rows.length)
+          ),
+          React.createElement("div", { style: { backgroundColor: "#f0fdf4", border: "1px solid #bbf7d0", padding: "6px 10px", borderRadius: "6px", textAlign: "center" } },
+            React.createElement("div", { style: { fontSize: "11px", color: "#166534", fontWeight: "700" } }, "TOTAL MANDAYS"),
+            React.createElement("strong", { style: { fontSize: "15px", color: "#14532d" } }, totalDaysAllLabours, " Days")
+          ),
+          React.createElement("div", { style: { backgroundColor: "#fefce8", border: "1px solid #fef08a", padding: "6px 10px", borderRadius: "6px", textAlign: "center" } },
+            React.createElement("div", { style: { fontSize: "11px", color: "#854d0e", fontWeight: "700" } }, "WEEKLY LABOUR COST"),
+            React.createElement("strong", { style: { fontSize: "15px", color: "#713f12" } }, "₹", grandTotalCost.toLocaleString())
+          )
+        ),
+
+        // Table with Exact Dates in Headers & Summary Totals in Footer
         React.createElement("div", { style: { overflowX: "auto" } },
           React.createElement("table", { style: styles.table },
             React.createElement("thead", null,
               React.createElement("tr", null,
-                ["Name","Role","Daily Wage","Mon","Tue","Wed","Thu","Fri","Sat","Sun","Days","Payment"].map((h) =>
-                  React.createElement("th", { key: h, style: styles.th }, h)
-                )
+                React.createElement("th", { style: { ...styles.th, width: "160px" } }, "Worker Name"),
+                React.createElement("th", { style: styles.th }, "Trade"),
+                React.createElement("th", { style: { ...styles.th, textAlign: "center" } }, "Wage (₹)"),
+                ...weekDays.map(w =>
+                  React.createElement("th", { key: w.fullDate, style: { ...styles.th, textAlign: "center", padding: "4px" } },
+                    React.createElement("div", { style: { fontWeight: "800", color: "#0f172a" } }, w.dayName),
+                    React.createElement("div", { style: { fontSize: "9.5px", color: "#64748b", fontWeight: "600" } }, w.dateStr)
+                  )
+                ),
+                React.createElement("th", { style: { ...styles.th, textAlign: "center" } }, "Days"),
+                React.createElement("th", { style: { ...styles.th, textAlign: "right" } }, "Payout (₹)")
               )
             ),
             React.createElement("tbody", null,
               rows.map((l: any) => React.createElement("tr", { key: l.id },
-                React.createElement("td", { style: styles.td }, l.name),
+                React.createElement("td", { style: { ...styles.td, fontWeight: "700", color: "#0f172a" } }, l.name),
                 React.createElement("td", { style: styles.td }, l.role),
-                React.createElement("td", { style: styles.td }, "₹", l.wage.toLocaleString()),
+                React.createElement("td", { style: { ...styles.td, textAlign: "center" } }, "₹", l.wage.toLocaleString()),
                 ...l.week.map((present: boolean, idx: number) =>
-                  React.createElement("td", { key: idx, style: styles.td }, present ? "✓" : "✗")
+                  React.createElement("td", { key: idx, style: { ...styles.td, textAlign: "center" } },
+                    React.createElement("input", {
+                      type: "checkbox",
+                      checked: !!present,
+                      onChange: () => toggleLabourDay(l.id, idx),
+                      style: { cursor: "pointer", width: "16px", height: "16px", accentColor: "#059669" },
+                      title: `${weekDays[idx].dayName} (${weekDays[idx].dateStr}) - ${present ? 'Present' : 'Absent'}`
+                    })
+                  )
                 ),
-                React.createElement("td", { style: styles.td }, l.daysPresent),
-                React.createElement("td", { style: styles.td }, "₹", l.amount.toLocaleString())
+                React.createElement("td", { style: { ...styles.td, textAlign: "center", fontWeight: "800", color: "#2563eb" } }, l.daysPresent),
+                React.createElement("td", { style: { ...styles.td, textAlign: "right", fontWeight: "800", color: "#166534" } }, "₹", l.amount.toLocaleString())
               )),
               rows.length === 0 && React.createElement("tr", null,
-                React.createElement("td", { colSpan: 12, style: { ...styles.td, textAlign: "center" } }, "No labour entries yet.")
+                React.createElement("td", { colSpan: 12, style: { ...styles.td, textAlign: "center", padding: "20px" } }, "No labour entries yet. Click '+ Add Labour' above.")
+              )
+            ),
+            // Grand Total Footer Row
+            rows.length > 0 && React.createElement("tfoot", null,
+              React.createElement("tr", { style: { backgroundColor: "#f8fafc", borderTop: "2px solid #cbd5e1" } },
+                React.createElement("td", { colSpan: 3, style: { ...styles.td, fontWeight: "800", color: "#0f172a" } }, "Daily Present Count:"),
+                ...dailyPresents.map((cnt, i) =>
+                  React.createElement("td", { key: i, style: { ...styles.td, textAlign: "center", fontWeight: "800", color: cnt > 0 ? "#15803d" : "#94a3b8" } }, cnt)
+                ),
+                React.createElement("td", { style: { ...styles.td, textAlign: "center", fontWeight: "900", color: "#1e40af", fontSize: "13px" } }, totalDaysAllLabours),
+                React.createElement("td", { style: { ...styles.td, textAlign: "right", fontWeight: "900", color: "#065f46", fontSize: "14px" } }, "₹", grandTotalCost.toLocaleString())
               )
             )
           )
         )
-      ),
-      React.createElement("div", { style: styles.card },
-        React.createElement("div", { style: styles.cardTitle }, "💰 Labour Payment Summary"),
-        React.createElement("div", { style: styles.grid2 },
-          React.createElement("div", { style: { padding: "12px", backgroundColor: "#f8f9fa", borderRadius: "8px", textAlign: "center" } },
-            React.createElement("strong", null, "This Week"), React.createElement("br", null), "₹", (weeklyCost/1000).toFixed(2), "K"
-          ),
-          React.createElement("div", { style: { padding: "12px", backgroundColor: "#f8f9fa", borderRadius: "8px", textAlign: "center" } },
-            React.createElement("strong", null, "This Month"), React.createElement("br", null), "₹", (monthlyCost/1000).toFixed(2), "K"
-          )
-        ),
-        React.createElement("button", { onClick: () => alert("Payment processing will connect to backend/payment module next."), style: styles.buttonInfo }, "Process Payments")
       )
     );
   };
@@ -1513,7 +1794,7 @@ const isReadOnly = false;
   const renderReports = () => React.createElement("div", { style: styles.card },
     React.createElement("div", { style: styles.cardTitle }, "📊 Reports & Analytics"),
     React.createElement("div", { style: styles.row2 },
-      React.createElement("div", null,
+      React.createElement("div", { style: { display: "contents" } },
         React.createElement("label", { style: styles.label }, "Report Type"),
         React.createElement("select", { value: reportType, onChange: (e) => setReportType(e.target.value), style: styles.select },
           React.createElement("option", { value: "milestones" }, "Milestones Report"),
@@ -1527,52 +1808,12 @@ const isReadOnly = false;
           React.createElement("option", { value: "quotations" }, "Quotation Report")
         )
       ),
-      React.createElement("div", null,
+      React.createElement("div", { style: { display: "contents" } },
         React.createElement("label", { style: styles.label }, "Project"),
         React.createElement("select", { value: selectedProject || "", onChange: (e) => setSelectedProject(e.target.value), style: styles.select }, projects.map((project: any) => React.createElement("option", { key: project.id, value: project.id }, project.name)))
-      ),
-      React.createElement("div", null,
-        React.createElement("label", { style: styles.label }, "Start Date"),
-        React.createElement("input", { type: "date", value: reportFilters.startDate, onChange: (e) => setReportFilters({...reportFilters, startDate: e.target.value}), style: styles.input })
-      ),
-      React.createElement("div", null,
-        React.createElement("label", { style: styles.label }, "End Date"),
-        React.createElement("input", { type: "date", value: reportFilters.endDate, onChange: (e) => setReportFilters({...reportFilters, endDate: e.target.value}), style: styles.input })
       )
     ),
-    React.createElement("div", { style: styles.row3 },
-      (reportType === "inventory" || reportType === "supplier") && React.createElement(React.Fragment, null,
-        React.createElement("div", null,
-          React.createElement("label", { style: styles.label }, "Material Wise"),
-          React.createElement("input", { type: "text", placeholder: "Filter by material", value: reportFilters.material, onChange: (e) => setReportFilters({...reportFilters, material: e.target.value}), style: styles.input })
-        ),
-        React.createElement("div", null,
-          React.createElement("label", { style: styles.label }, "Supplier Wise"),
-          React.createElement("input", { type: "text", placeholder: "Filter by supplier", value: reportFilters.supplier, onChange: (e) => setReportFilters({...reportFilters, supplier: e.target.value}), style: styles.input })
-        )
-      ),
-      (reportType === "labour" || reportType === "labourpayment" || reportType === "attendance") && React.createElement(React.Fragment, null,
-        React.createElement("div", null,
-          React.createElement("label", { style: styles.label }, "Labour Name"),
-          React.createElement("input", { type: "text", placeholder: "Filter by labour", value: reportFilters.labourName, onChange: (e) => setReportFilters({...reportFilters, labourName: e.target.value}), style: styles.input })
-        ),
-        React.createElement("div", null,
-          React.createElement("label", { style: styles.label }, "Role"),
-          React.createElement("input", { type: "text", placeholder: "Filter by role", value: reportFilters.role, onChange: (e) => setReportFilters({...reportFilters, role: e.target.value}), style: styles.input })
-        )
-      ),
-      (reportType === "payments") && React.createElement("div", null,
-        React.createElement("label", { style: styles.label }, "Contractor Wise"),
-        React.createElement("input", { type: "text", placeholder: "Filter by contractor", value: reportFilters.contractor, onChange: (e) => setReportFilters({...reportFilters, contractor: e.target.value}), style: styles.input })
-      )
-    ),
-    React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: "10px" } },
-      React.createElement("input", { placeholder: "Payment status", value: reportFilters.payment, onChange: (e) => setReportFilters({...reportFilters, payment: e.target.value}), style: styles.input }),
-      React.createElement("input", { placeholder: "Milestone", value: reportFilters.milestone, onChange: (e) => setReportFilters({...reportFilters, milestone: e.target.value}), style: styles.input }),
-      React.createElement("input", { placeholder: "Quotation", value: reportFilters.quotation, onChange: (e) => setReportFilters({...reportFilters, quotation: e.target.value}), style: styles.input }),
-      React.createElement("input", { placeholder: "Extra / correction work", value: reportFilters.extraWork, onChange: (e) => setReportFilters({...reportFilters, extraWork: e.target.value}), style: styles.input })
-    ),
-    React.createElement("button", { onClick: () => setShowReportModal(true), style: { ...styles.button, marginTop: "16px" } }, "Generate Report")
+    React.createElement("button", { onClick: () => setShowReportModal(true), style: { ...styles.button, marginTop: "12px" } }, "Generate Report")
   );
 
   const renderContent = () => {
@@ -1601,7 +1842,7 @@ const isReadOnly = false;
     React.createElement(BuildMitraHeader, {
       moduleTitle: "Buyer Module",
       pageTitle: "Buyer Dashboard",
-      subtitle: `Welcome, ${getLoggedInUser()?.name || "Buyer"} · Buyer Code: ${getLoggedInUser()?.uniqueCode || "Not assigned"}`,
+      subtitle: "Welcome, " + (getLoggedInUser()?.name || "Buyer") + " · Buyer Code: " + (getLoggedInUser()?.uniqueCode || "Not assigned"),
       showBackToDashboard: false
     }),
     React.createElement("div", { style: {
@@ -1610,26 +1851,25 @@ const isReadOnly = false;
       gap: "6px",
       flexWrap: "nowrap",
       width: "100%",
-      marginBottom: "14px",
-      padding: "6px",
+      marginBottom: "10px",
+      padding: "4px 6px",
       boxSizing: "border-box",
       backgroundColor: "#fff",
       border: "1px solid #e2e8f0",
-      borderRadius: "10px"
+      borderRadius: "8px"
     }},
-
       React.createElement("button", {
         onClick: () => setActiveTab("dashboard"),
         style: {
           ...styles.button,
           flex: "1 1 0",
           minWidth: 0,
-          padding: "8px 4px",
+          padding: "6px 4px",
           fontSize: "12px",
           whiteSpace: "nowrap",
           fontWeight: 800,
           textAlign: "center",
-          borderRadius: "8px",
+          borderRadius: "6px",
           backgroundColor: activeTab === "dashboard" ? "#2563eb" : "#dbeafe",
           color: activeTab === "dashboard" ? "#ffffff" : "#1e40af",
         }
@@ -1641,12 +1881,12 @@ const isReadOnly = false;
           ...styles.button,
           flex: "1 1 0",
           minWidth: 0,
-          padding: "8px 4px",
+          padding: "6px 4px",
           fontSize: "12px",
           whiteSpace: "nowrap",
           fontWeight: 800,
           textAlign: "center",
-          borderRadius: "8px",
+          borderRadius: "6px",
           backgroundColor: activeTab === "quotations" ? "#7c3aed" : "#ede9fe",
           color: activeTab === "quotations" ? "#ffffff" : "#5b21b6",
         }
@@ -1658,54 +1898,34 @@ const isReadOnly = false;
           ...styles.button,
           flex: "1 1 0",
           minWidth: 0,
-          padding: "8px 4px",
+          padding: "6px 4px",
           fontSize: "12px",
           whiteSpace: "nowrap",
           fontWeight: 800,
           textAlign: "center",
-          borderRadius: "8px",
+          borderRadius: "6px",
           backgroundColor: activeTab === "enquiries" ? "#059669" : "#d1fae5",
           color: activeTab === "enquiries" ? "#ffffff" : "#065f46",
         }
       }, "Enquiries"),
 
       React.createElement("select", {
-        value: !["dashboard","quotations","enquiries"].includes(activeTab)
-          ? activeTab
-          : "",
+        value: !["dashboard","quotations","enquiries"].includes(activeTab) ? activeTab : "",
         onChange: (e) => {
           const value = e.target.value;
-
           if (!value) return;
-
-          if (value === "__marketplace") {
-            window.location.href = "/marketplace";
-            return;
-          }
-
-          if (value === "__share") {
-            checkAndRun(
-              "calculator_export",
-              "buyer-dashboard",
-              shareWhatsApp
-            );
-            return;
-          }
-
-          if (value === "__logout") {
-            logoutToLogin();
-            return;
-          }
-
+          if (value === "__marketplace") { window.location.href = "/marketplace"; return; }
+          if (value === "__share") { checkAndRun("calculator_export", "buyer-dashboard", shareWhatsApp); return; }
+          if (value === "__logout") { logoutToLogin(); return; }
           setActiveTab(value);
         },
         style: {
           flex: "1 1 0",
           minWidth: 0,
-          height: "34px",
-          padding: "0 3px",
+          height: "32px",
+          padding: "0 4px",
           border: "1px solid #7dd3fc",
-          borderRadius: "7px",
+          borderRadius: "6px",
           backgroundColor: "#e0f2fe",
           color: "#075985",
           fontWeight: 800,
@@ -1713,46 +1933,18 @@ const isReadOnly = false;
         },
         "aria-label": "More buyer dashboard sections"
       },
-
-        React.createElement(
-          "option",
-          { value: "" },
-          "☰ More"
-        ),
-
+        React.createElement("option", { value: "" }, "☰ More"),
         visibleTabs
-          .filter(tab =>
-            !["dashboard","quotations","enquiries"].includes(tab.id)
-          )
-          .map(tab =>
-            React.createElement(
-              "option",
-              { key: tab.id, value: tab.id },
-              tab.name
-            )
-          ),
-
-        React.createElement(
-          "option",
-          { value: "__marketplace" },
-          "Marketplace"
-        ),
-
-        React.createElement(
-          "option",
-          { value: "__share" },
-          "Share Update"
-        ),
-
-        React.createElement(
-          "option",
-          { value: "__logout" },
-          "Logout"
-        )
+          .filter(tab => !["dashboard","quotations","enquiries"].includes(tab.id))
+          .map(tab => React.createElement("option", { key: tab.id, value: tab.id }, tab.name)),
+        React.createElement("option", { value: "__marketplace" }, "Marketplace"),
+        React.createElement("option", { value: "__share" }, "Share Update"),
+        React.createElement("option", { value: "__logout" }, "Logout")
       )
     ),
+
     React.createElement("div", { style: styles.card },
-      React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" } },
+      React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" } },
         React.createElement("div", { style: { flex: 1 } },
           React.createElement("label", { style: styles.label }, "Select Project"),
           React.createElement("select", { value: selectedProject || "", onChange: (e) => setSelectedProject(e.target.value), style: styles.select },
@@ -1760,308 +1952,461 @@ const isReadOnly = false;
             projects.map((p: any) => React.createElement("option", { key: p.id, value: p.id }, p.name, " - ", p.status, " (", p.progress, "%)"))
           )
         ),
-        React.createElement("div", { style: { marginTop: "24px", display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" } },
-          React.createElement("span", { style: { color: selectedProjectData?.contractorId ? "#800020" : "#2d6a4f", fontWeight: "bold" } },
+        React.createElement("div", { style: { marginTop: "18px", display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" } },
+          React.createElement("span", { style: { color: selectedProjectData?.contractorId ? "#800020" : "#2d6a4f", fontWeight: "bold", fontSize: "12px" } },
             selectedProjectData?.contractorId ? "Shared Contractor Project - Live View" : "My Own Project - Editable"
           ),
           React.createElement("button", { onClick: () => setShowAddProject(true), style: styles.buttonSuccess }, "+ Create Own Project")
         )
       )
     ),
+
     React.createElement(MarketRateTrend, null),
     renderContent(),
-    
-    // Modals
+
+    // Add Project Modal
     showAddProject && React.createElement("div", { style: styles.modal, onClick: () => setShowAddProject(false) },
       React.createElement("div", { style: styles.modalContent, onClick: (e) => e.stopPropagation() },
-        React.createElement("h2", { style: { color: "#800020", marginTop: 0, marginBottom: "16px" } }, "Create New Project"),
-        React.createElement("div", { style: { marginBottom: "14px" } },
-          React.createElement("label", { style: styles.label }, "Project Name *"),
-          React.createElement("input", { type: "text", placeholder: "Enter project name", value: newProject.name, onChange: (e) => setNewProject({...newProject, name: e.target.value}), style: styles.input })
+        React.createElement("h3", { style: { color: "#800020", margin: "0 0 10px 0", fontSize: "15px", borderBottom: "1.5px solid #800020", paddingBottom: "4px" } }, "🏗️ Create New Project"),
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "8px 10px", marginBottom: "10px" } },
+          React.createElement("div", { style: { gridColumn: "1 / -1" } },
+            React.createElement("label", { style: styles.label }, "Project Name *"),
+            React.createElement("input", { placeholder: "Project Name", value: newProject.name, onChange: (e) => setNewProject({...newProject, name: e.target.value}), style: styles.input })
+          ),
+          React.createElement("div", { style: { display: "contents" } },
+            React.createElement("label", { style: styles.label }, "Length (ft) *"),
+            React.createElement("input", { type: "number", placeholder: "Length", value: newProject.plotLength, onChange: (e) => { const val = parseFloat(e.target.value) || 0; setNewProject(prev => { const bua = calculateBUA(val, prev.plotWidth, prev.floors); return {...prev, plotLength: val, bua, totalAmount: bua * prev.ratePerSft}; }); }, style: styles.input })
+          ),
+          React.createElement("div", { style: { display: "contents" } },
+            React.createElement("label", { style: styles.label }, "Width (ft) *"),
+            React.createElement("input", { type: "number", placeholder: "Width", value: newProject.plotWidth, onChange: (e) => { const val = parseFloat(e.target.value) || 0; setNewProject(prev => { const bua = calculateBUA(prev.plotLength, val, prev.floors); return {...prev, plotWidth: val, bua, totalAmount: bua * prev.ratePerSft}; }); }, style: styles.input })
+          ),
+          React.createElement("div", { style: { display: "contents" } },
+            React.createElement("label", { style: styles.label }, "No. of Floors"),
+            React.createElement("input", { type: "number", placeholder: "1", value: newProject.floors, onChange: (e) => { const val = parseFloat(e.target.value) || 1; setNewProject(prev => { const bua = calculateBUA(prev.plotLength, prev.plotWidth, val); return {...prev, floors: val, bua, totalAmount: bua * prev.ratePerSft}; }); }, style: styles.input })
+          ),
+          React.createElement("div", { style: { display: "contents" } },
+            React.createElement("label", { style: styles.label }, "Rate per sq.ft (₹)"),
+            React.createElement("input", { type: "number", placeholder: "1800", value: newProject.ratePerSft, onChange: (e) => { const val = parseFloat(e.target.value) || 0; setNewProject(prev => ({...prev, ratePerSft: val, totalAmount: prev.bua * val})); }, style: styles.input })
+          ),
+          React.createElement("div", { style: { display: "contents" } },
+            React.createElement("label", { style: styles.label }, "Start Date *"),
+            React.createElement("input", { type: "date", value: newProject.startDate, onChange: (e) => setNewProject({...newProject, startDate: e.target.value}), style: styles.input })
+          ),
+          React.createElement("div", { style: { display: "contents" } },
+            React.createElement("label", { style: styles.label }, "End Date *"),
+            React.createElement("input", { type: "date", value: newProject.endDate, onChange: (e) => setNewProject({...newProject, endDate: e.target.value}), style: styles.input })
+          )
         ),
-        React.createElement("div", { style: { marginBottom: "14px" } },
-          React.createElement("label", { style: styles.label }, "Length (ft) *"),
-          React.createElement("input", { type: "number", placeholder: "Plot length in feet", value: newProject.plotLength, onChange: (e) => { const val = parseFloat(e.target.value); setNewProject({...newProject, plotLength: val}); const bua = calculateBUA(val, newProject.plotWidth, newProject.floors); setNewProject(prev => ({...prev, bua, totalAmount: bua * prev.ratePerSft})); }, style: styles.input })
-        ),
-        React.createElement("div", { style: { marginBottom: "14px" } },
-          React.createElement("label", { style: styles.label }, "Width (ft) *"),
-          React.createElement("input", { type: "number", placeholder: "Plot width in feet", value: newProject.plotWidth, onChange: (e) => { const val = parseFloat(e.target.value); setNewProject({...newProject, plotWidth: val}); const bua = calculateBUA(newProject.plotLength, val, newProject.floors); setNewProject(prev => ({...prev, bua, totalAmount: bua * prev.ratePerSft})); }, style: styles.input })
-        ),
-        React.createElement("div", { style: { marginBottom: "14px" } },
-          React.createElement("label", { style: styles.label }, "No. of Floors"),
-          React.createElement("input", { type: "number", placeholder: "Number of floors", value: newProject.floors, onChange: (e) => { const val = parseFloat(e.target.value); setNewProject({...newProject, floors: val}); const bua = calculateBUA(newProject.plotLength, newProject.plotWidth, val); setNewProject(prev => ({...prev, bua, totalAmount: bua * prev.ratePerSft})); }, style: styles.input })
-        ),
-        React.createElement("div", { style: { backgroundColor: "#e8f5e9", padding: "12px", borderRadius: "8px", marginBottom: "14px" } },
-          React.createElement("div", null, "📐 Calculated BUA: ", newProject.bua, " sq.ft"),
-          React.createElement("div", null, "💰 Total Contract Value: ₹", (newProject.totalAmount/100000).toFixed(2), "L")
-        ),
-        React.createElement("div", { style: { marginBottom: "14px" } },
-          React.createElement("label", { style: styles.label }, "Rate per sq.ft (₹)"),
-          React.createElement("input", { type: "number", "data-bm-digits": "10", placeholder: "Rate per sq.ft", value: newProject.ratePerSft, onChange: (e) => { const val = parseFloat(e.target.value); setNewProject({...newProject, ratePerSft: val, totalAmount: newProject.bua * val}); }, style: styles.input })
-        ),
-        React.createElement("div", { style: { marginBottom: "14px" } },
-          React.createElement("label", { style: styles.label }, "Contractor Name"),
-          React.createElement("input", { type: "text", placeholder: "Contractor name", value: newProject.contractorName, onChange: (e) => setNewProject({...newProject, contractorName: e.target.value}), style: styles.input })
-        ),
-        React.createElement("div", { style: { marginBottom: "14px" } },
-          React.createElement("label", { style: styles.label }, "Contractor Mobile"),
-          React.createElement("input", { type: "tel", placeholder: "10-digit mobile number", value: newProject.contractorMobile, onChange: (e) => setNewProject({...newProject, contractorMobile: e.target.value}), style: styles.input })
-        ),
-        React.createElement("div", { style: { marginBottom: "14px" } },
-          React.createElement("label", { style: styles.label }, "Contractor Address"),
-          React.createElement("input", { type: "text", placeholder: "Contractor address", value: newProject.contractorAddress, onChange: (e) => setNewProject({...newProject, contractorAddress: e.target.value}), style: styles.input })
-        ),
-        React.createElement("div", { style: { marginBottom: "14px" } },
-          React.createElement("label", { style: styles.label }, "Start Date *"),
-          React.createElement("input", { type: "date", value: newProject.startDate, onChange: (e) => setNewProject({...newProject, startDate: e.target.value}), style: styles.input })
-        ),
-        React.createElement("div", { style: { marginBottom: "14px" } },
-          React.createElement("label", { style: styles.label }, "End Date *"),
-          React.createElement("input", { type: "date", value: newProject.endDate, onChange: (e) => setNewProject({...newProject, endDate: e.target.value}), style: styles.input })
-        ),
-        React.createElement("div", { style: { marginBottom: "14px" } },
-          React.createElement("label", { style: styles.label }, "Agreement Upload"),
-          React.createElement("input", { type: "file", onChange: (e) => setAgreementFile(e.target.files?.[0] || null), style: styles.input })
-        ),
-        React.createElement("button", { onClick: addProject, style: { ...styles.buttonSuccess, width: "100%", marginTop: "8px", padding: "12px", fontSize: "14px", fontWeight: "bold" } }, "Create Project")
+        React.createElement("div", { style: { display: "flex", gap: "8px", justifyContent: "flex-end", marginTop: "8px" } },
+          React.createElement("button", { onClick: () => setShowAddProject(false), style: { ...styles.buttonDanger, padding: "5px 12px" } }, "Cancel"),
+          React.createElement("button", { onClick: addProject, style: { ...styles.buttonSuccess, padding: "5px 16px", fontWeight: "bold" } }, "Create Project")
+        )
       )
     ),
 
+    // Payment Release Modal
     showPaymentModal && selectedMilestone && React.createElement("div", { style: styles.modal, onClick: () => setShowPaymentModal(false) },
-      React.createElement("div", { style: styles.modalContent, onClick: (e) => e.stopPropagation() },
-        React.createElement("h3", { style: { marginTop: 0, marginBottom: "14px" } }, "Mark Invoice Paid - ", selectedMilestone.name),
-        React.createElement("p", { style: { marginBottom: "14px" } }, React.createElement("strong", null, "Invoice Amount:"), " ₹", (Number(selectedMilestone.invoiceAmount)/1000).toFixed(0), "K"),
-        React.createElement("div", { style: { marginBottom: "14px" } },
-          React.createElement("label", { style: styles.label }, "Payment Amount (₹) * (up to 10 digits)"),
-          React.createElement("input", { type: "number", "data-bm-digits": "10", maxLength: 10, placeholder: "Enter payment amount", value: actualPaymentAmount, onChange: (e) => setActualPaymentAmount(e.target.value), style: styles.input })
-        ),
-        React.createElement("div", { style: { marginBottom: "14px" } },
-          React.createElement("label", { style: styles.label }, "Payment Date *"),
-          React.createElement("input", { type: "date", value: paymentDate, onChange: (e) => setPaymentDate(e.target.value), style: styles.input })
-        ),
-        React.createElement("div", { style: { marginBottom: "14px" } },
-          React.createElement("label", { style: styles.label }, "Payment Mode *"),
-          React.createElement("select", { value: paymentMode, onChange: (e) => setPaymentMode(e.target.value), style: styles.select },
-            React.createElement("option", { value: "" }, "Select Payment Mode"),
-            React.createElement("option", { value: "UPI" }, "UPI"),
-            React.createElement("option", { value: "NEFT/RTGS" }, "NEFT/RTGS"),
-            React.createElement("option", { value: "Cheque" }, "Cheque"),
-            React.createElement("option", { value: "Cash" }, "Cash")
+      React.createElement("div", { style: { ...styles.modalContent, width: "min(460px, 94vw)", maxWidth: "460px" }, onClick: (e) => e.stopPropagation() },
+        React.createElement("h3", { style: { marginTop: 0, marginBottom: "14px", fontSize: "16px", borderBottom: "1.5px solid #800020", paddingBottom: "6px" } }, "Mark Invoice Paid - ", selectedMilestone.name),
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "200px 1fr", columnGap: "12px", rowGap: "10px", marginBottom: "14px", alignItems: "center" } },
+          React.createElement("div", { style: { display: "contents" } },
+            React.createElement("label", { style: styles.label }, "Payment Amount (₹) * (up to 6+ digits)"),
+            React.createElement("input", { type: "number", min: 0, "data-bm-digits": "8", value: actualPaymentAmount, onChange: (e) => setActualPaymentAmount(e.target.value), style: styles.input })
+          ),
+          React.createElement("div", { style: { display: "contents" } },
+            React.createElement("label", { style: styles.label }, "Payment Date *"),
+            React.createElement("input", { type: "date", value: paymentDate, onChange: (e) => setPaymentDate(e.target.value), style: styles.input })
+          ),
+          React.createElement("div", { style: { display: "contents" } },
+            React.createElement("label", { style: styles.label }, "Payment Mode *"),
+            React.createElement("select", { value: paymentMode, onChange: (e) => setPaymentMode(e.target.value), style: styles.select },
+              React.createElement("option", { value: "" }, "Select Mode"),
+              React.createElement("option", { value: "UPI" }, "UPI"),
+              React.createElement("option", { value: "NEFT/RTGS" }, "NEFT/RTGS"),
+              React.createElement("option", { value: "Cheque" }, "Cheque"),
+              React.createElement("option", { value: "Cash" }, "Cash")
+            )
+          ),
+          React.createElement("div", { style: { display: "contents" } },
+            React.createElement("label", { style: styles.label }, "Reference / UTR *"),
+            React.createElement("input", { placeholder: "Reference / UTR", value: paymentReference, onChange: (e) => setPaymentReference(e.target.value), style: styles.input })
+          ),
+          React.createElement("div", { style: { display: "contents" } },
+            React.createElement("label", { style: styles.label }, "Payment Remarks *"),
+            React.createElement("input", { placeholder: "Remarks", value: paymentRemarks, onChange: (e) => setPaymentRemarks(e.target.value), style: styles.input })
           )
         ),
-        React.createElement("div", { style: { marginBottom: "14px" } },
-          React.createElement("label", { style: styles.label }, "Reference / UTR *"),
-          React.createElement("input", { type: "text", placeholder: "Reference / UTR", value: paymentReference, onChange: (e) => setPaymentReference(e.target.value), style: styles.input })
-        ),
-        React.createElement("div", { style: { marginBottom: "14px" } },
-          React.createElement("label", { style: styles.label }, "Payment Remarks *"),
-          React.createElement("textarea", { placeholder: "Payment remarks", value: paymentRemarks, onChange: (e) => setPaymentRemarks(e.target.value), style: { ...styles.input, minHeight: "70px" } })
-        ),
-        React.createElement("button", { onClick: releasePayment, style: { ...styles.buttonSuccess, width: "100%", padding: "12px", fontSize: "14px", fontWeight: "bold" } }, "Confirm Paid")
-      )
-    ),
-    
-    showPaymentEntryModal && React.createElement("div", { style: styles.modal, onClick: () => setShowPaymentEntryModal(false) },
-      React.createElement("div", { style: styles.modalContent, onClick: (e) => e.stopPropagation() },
-        React.createElement("h2", { style: { color: "#2d6a4f", marginTop: 0, marginBottom: "16px" } }, "Record Payment - ", selectedProjectData?.name),
-        React.createElement("div", { style: { marginBottom: "14px" } },
-          React.createElement("label", { style: styles.label }, "Milestone / Description *"),
-          React.createElement("input", { placeholder: "Milestone / Description", value: newPayment.milestoneName, onChange: (e) => setNewPayment({...newPayment, milestoneName: e.target.value}), style: styles.input })
-        ),
-        React.createElement("div", { style: { marginBottom: "14px" } },
-          React.createElement("label", { style: styles.label }, "Payment Amount (₹) * (up to 10 digits)"),
-          React.createElement("input", { type: "number", min: 0, "data-bm-digits": "10", maxLength: 10, placeholder: "Amount in ₹", value: newPayment.amount, onChange: (e) => setNewPayment({...newPayment, amount: e.target.value}), style: styles.input })
-        ),
-        React.createElement("div", { style: { marginBottom: "14px" } },
-          React.createElement("label", { style: styles.label }, "Payment Date *"),
-          React.createElement("input", { type: "date", value: newPayment.date, onChange: (e) => setNewPayment({...newPayment, date: e.target.value}), style: styles.input })
-        ),
-        React.createElement("div", { style: { marginBottom: "14px" } },
-          React.createElement("label", { style: styles.label }, "Payment Status *"),
-          React.createElement("select", { value: newPayment.status, onChange: (e) => setNewPayment({...newPayment, status: e.target.value}), style: styles.select },
-            React.createElement("option", { value: "Paid" }, "Paid"),
-            React.createElement("option", { value: "Pending" }, "Pending"),
-            React.createElement("option", { value: "Partially Paid" }, "Partially Paid")
-          )
-        ),
-        React.createElement("div", { style: { marginBottom: "14px" } },
-          React.createElement("label", { style: styles.label }, "Cheque / UTR / Reference"),
-          React.createElement("input", { placeholder: "Cheque / UTR / Reference", value: newPayment.reference, onChange: (e) => setNewPayment({...newPayment, reference: e.target.value}), style: styles.input })
-        ),
-        React.createElement("button", { onClick: saveManualPayment, style: { ...styles.buttonSuccess, width: "100%", padding: "12px", fontSize: "14px", fontWeight: "bold" } }, "Save Payment")
+        React.createElement("div", { style: { display: "flex", gap: "10px", justifyContent: "flex-end" } },
+          React.createElement("button", { onClick: () => setShowPaymentModal(false), style: { ...styles.buttonDanger, padding: "6px 14px" } }, "Cancel"),
+          React.createElement("button", { onClick: releasePayment, style: { ...styles.buttonSuccess, padding: "6px 20px", fontWeight: "bold" } }, "Confirm Paid")
+        )
       )
     ),
 
-    showMaterialModal && React.createElement("div", { style: styles.modal, onClick: () => setShowMaterialModal(false) },
-      React.createElement("div", { style: styles.modalContent, onClick: (e) => e.stopPropagation() },
-        React.createElement("h2", { style: { color: "#2d6a4f", marginTop: 0, marginBottom: "16px" } }, "Record Inventory - ", selectedProjectData?.name),
-        React.createElement("div", { style: { marginBottom: "14px" } },
-          React.createElement("label", { style: styles.label }, "Material Name *"),
-          React.createElement("input", { placeholder: "Material name e.g. Cement, Steel, Sand", value: newMaterial.material, onChange: (e) => setNewMaterial({...newMaterial, material: e.target.value}), style: styles.input })
-        ),
-        React.createElement("div", { style: { marginBottom: "14px" } },
-          React.createElement("label", { style: styles.label }, "Unit *"),
-          React.createElement("select", { value: newMaterial.unit, onChange: (e) => setNewMaterial({...newMaterial, unit: e.target.value}), style: styles.select },
-            React.createElement("option", { value: "bags" }, "Bags"),
-            React.createElement("option", { value: "kg" }, "Kg"),
-            React.createElement("option", { value: "nos" }, "Nos"),
-            React.createElement("option", { value: "cft" }, "Cft"),
-            React.createElement("option", { value: "litres" }, "Litres")
+    // Payment Entry Modal
+    showPaymentEntryModal && React.createElement("div", { style: styles.modal, onClick: () => setShowPaymentEntryModal(false) },
+      React.createElement("div", { style: { ...styles.modalContent, width: "min(460px, 94vw)", maxWidth: "460px" }, onClick: (e) => e.stopPropagation() },
+        React.createElement("h3", { style: { color: "#2d6a4f", margin: "0 0 14px 0", fontSize: "16px", borderBottom: "1.5px solid #2d6a4f", paddingBottom: "6px" } }, "💰 Record Payment - ", selectedProjectData?.name),
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "200px 1fr", columnGap: "12px", rowGap: "10px", marginBottom: "14px", alignItems: "center" } },
+          React.createElement("div", { style: { display: "contents" } },
+            React.createElement("label", { style: styles.label }, "Milestone / Work Description *"),
+            React.createElement("input", { placeholder: "e.g. Foundation, Advance, Plinth", value: newPayment.milestoneName, onChange: (e) => setNewPayment({...newPayment, milestoneName: e.target.value}), style: styles.input })
+          ),
+          React.createElement("div", { style: { display: "contents" } },
+            React.createElement("label", { style: styles.label }, "Payment Amount (₹) * (up to 6+ digits)"),
+            React.createElement("input", { type: "number", min: 0, "data-bm-digits": "8", placeholder: "e.g. 250000", value: newPayment.amount, onChange: (e) => setNewPayment({...newPayment, amount: e.target.value}), style: styles.input })
+          ),
+          React.createElement("div", { style: { display: "contents" } },
+            React.createElement("label", { style: styles.label }, "Payment Date *"),
+            React.createElement("input", { type: "date", value: newPayment.date, onChange: (e) => setNewPayment({...newPayment, date: e.target.value}), style: styles.input })
+          ),
+          React.createElement("div", { style: { display: "contents" } },
+            React.createElement("label", { style: styles.label }, "Payment Status *"),
+            React.createElement("select", { value: newPayment.status, onChange: (e) => setNewPayment({...newPayment, status: e.target.value}), style: styles.select },
+              React.createElement("option", { value: "Paid" }, "Paid"),
+              React.createElement("option", { value: "Pending" }, "Pending"),
+              React.createElement("option", { value: "Partially Paid" }, "Partially Paid")
+            )
+          ),
+          React.createElement("div", { style: { display: "contents" } },
+            React.createElement("label", { style: styles.label }, "Cheque / UTR / Reference"),
+            React.createElement("input", { placeholder: "UTR or Cheque No", value: newPayment.reference, onChange: (e) => setNewPayment({...newPayment, reference: e.target.value}), style: styles.input })
           )
         ),
-        React.createElement("div", { style: { marginBottom: "14px" } },
-          React.createElement("label", { style: styles.label }, "Ordered Quantity"),
-          React.createElement("input", { type: "number", min: 0, placeholder: "Ordered Quantity", value: newMaterial.orderedQty, onChange: (e) => setNewMaterial({...newMaterial, orderedQty: e.target.value}), style: styles.input })
+        React.createElement("div", { style: { display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "12px" } },
+          React.createElement("button", { onClick: () => setShowPaymentEntryModal(false), style: { ...styles.buttonDanger, padding: "6px 14px" } }, "Cancel"),
+          React.createElement("button", { onClick: saveManualPayment, style: { ...styles.buttonSuccess, padding: "6px 20px", fontWeight: "bold" } }, "Save Payment")
+        )
+      )
+    ),
+
+    // Material Modal
+    showMaterialModal && React.createElement("div", { style: styles.modal, onClick: () => setShowMaterialModal(false) },
+      React.createElement("div", { style: { ...styles.modalContent, width: "min(460px, 94vw)", maxWidth: "460px" }, onClick: (e) => e.stopPropagation() },
+        React.createElement("h3", { style: { color: "#2d6a4f", margin: "0 0 14px 0", fontSize: "16px", borderBottom: "1.5px solid #2d6a4f", paddingBottom: "6px" } }, "📦 Material Inventory Entry"),
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "200px 1fr", columnGap: "12px", rowGap: "10px", marginBottom: "14px", alignItems: "center" } },
+          React.createElement("div", { style: { display: "contents" } },
+            React.createElement("label", { style: styles.label }, "Receipt Date *"),
+            React.createElement("input", {
+              type: "date",
+              value: newMaterial.date || new Date().toISOString().split("T")[0],
+              onChange: (e) => setNewMaterial({...newMaterial, date: e.target.value}),
+              style: styles.input
+            })
+          ),
+          React.createElement("div", { style: { display: "contents" } },
+            React.createElement("label", { style: styles.label }, "Material Name *"),
+            React.createElement("input", {
+              placeholder: "e.g. UltraTech Cement, Tata Tiscon Steel, M-Sand",
+              value: newMaterial.material,
+              onChange: (e) => setNewMaterial({...newMaterial, material: e.target.value}),
+              style: styles.input
+            })
+          ),
+          React.createElement("div", { style: { display: "contents" } },
+            React.createElement("label", { style: styles.label }, "Unit of Measure *"),
+            React.createElement("select", {
+              value: newMaterial.unit,
+              onChange: (e) => setNewMaterial({...newMaterial, unit: e.target.value}),
+              style: styles.select
+            },
+              React.createElement("option", { value: "bags" }, "Bags (Cement)"),
+              React.createElement("option", { value: "kg" }, "Kg (Steel/Iron)"),
+              React.createElement("option", { value: "cft" }, "CFT (Sand/Aggregate)"),
+              React.createElement("option", { value: "nos" }, "Nos (Blocks/Bricks)"),
+              React.createElement("option", { value: "litres" }, "Litres (Paint/Chemicals)"),
+              React.createElement("option", { value: "cu.m" }, "Cu.m (RMC Concrete)")
+            )
+          ),
+          React.createElement("div", { style: { display: "contents" } },
+            React.createElement("label", { style: styles.label }, "Ordered Quantity"),
+            React.createElement("input", {
+              type: "number",
+              min: 0,
+              placeholder: "e.g. 100",
+              value: newMaterial.orderedQty,
+              onChange: (e) => setNewMaterial({...newMaterial, orderedQty: e.target.value}),
+              style: styles.input
+            })
+          ),
+          React.createElement("div", { style: { display: "contents" } },
+            React.createElement("label", { style: styles.label }, "Received Quantity * (up to 6+ digits)"),
+            React.createElement("input", {
+              type: "number",
+              min: 0,
+              placeholder: "e.g. 100",
+              value: newMaterial.receivedQty,
+              onChange: (e) => setNewMaterial({...newMaterial, receivedQty: e.target.value}),
+              style: styles.input
+            })
+          ),
+          React.createElement("div", { style: { display: "contents" } },
+            React.createElement("label", { style: styles.label }, "Consumed Quantity"),
+            React.createElement("input", {
+              type: "number",
+              min: 0,
+              placeholder: "e.g. 20 (leave blank or 0 if stored)",
+              value: newMaterial.consumedQty,
+              onChange: (e) => setNewMaterial({...newMaterial, consumedQty: e.target.value}),
+              style: styles.input
+            })
+          ),
+          React.createElement("div", { style: { display: "contents" } },
+            React.createElement("label", { style: styles.label }, "Rate per Unit (₹) *"),
+            React.createElement("input", {
+              type: "number",
+              min: 0,
+              placeholder: "e.g. 365",
+              value: newMaterial.rate,
+              onChange: (e) => setNewMaterial({...newMaterial, rate: e.target.value}),
+              style: styles.input
+            })
+          ),
+          React.createElement("div", { style: { display: "contents" } },
+            React.createElement("label", { style: styles.label }, "Supplier / Vendor Name"),
+            React.createElement("input", {
+              placeholder: "e.g. Sri Balaji Traders",
+              value: newMaterial.supplier,
+              onChange: (e) => setNewMaterial({...newMaterial, supplier: e.target.value}),
+              style: styles.input
+            })
+          ),
+          React.createElement("div", { style: { display: "contents" } },
+            React.createElement("label", { style: styles.label }, "Invoice / Delivery Challan No."),
+            React.createElement("input", {
+              placeholder: "e.g. INV-2026-089",
+              value: newMaterial.invoiceNo,
+              onChange: (e) => setNewMaterial({...newMaterial, invoiceNo: e.target.value}),
+              style: styles.input
+            })
+          )
         ),
-        React.createElement("div", { style: { marginBottom: "14px" } },
-          React.createElement("label", { style: styles.label }, "Received Quantity"),
-          React.createElement("input", { type: "number", min: 0, placeholder: "Received Quantity", value: newMaterial.receivedQty, onChange: (e) => setNewMaterial({...newMaterial, receivedQty: e.target.value}), style: styles.input })
+        React.createElement("div", { style: { display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "12px" } },
+          React.createElement("button", { onClick: () => setShowMaterialModal(false), style: { ...styles.buttonDanger, padding: "6px 14px" } }, "Cancel"),
+          React.createElement("button", { onClick: addMaterial, style: { ...styles.buttonSuccess, padding: "6px 20px", fontWeight: "bold" } }, "Save Material Entry")
+        )
+      )
+    ),
+
+    // Extra Work Modal
+    
+    // Issue / Consume Stock Modal (Single-Column Vertical Excel Sheet)
+    showIssueModal && React.createElement("div", { style: styles.modal, onClick: () => setShowIssueModal(false) },
+      React.createElement("div", { style: { ...styles.modalContent, width: "min(460px, 94vw)", maxWidth: "460px" }, onClick: (e) => e.stopPropagation() },
+        React.createElement("h3", { style: { color: "#b45309", margin: "0 0 14px 0", fontSize: "16px", borderBottom: "1.5px solid #b45309", paddingBottom: "6px" } }, "📤 Issue / Consume Material from Stock"),
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "200px 1fr", columnGap: "12px", rowGap: "10px", marginBottom: "14px", alignItems: "center" } },
+          React.createElement("div", { style: { display: "contents" } },
+            React.createElement("label", { style: styles.label }, "Select Stock Material *"),
+            React.createElement("select", {
+              value: issueEntry.materialId,
+              onChange: (e) => setIssueEntry({ ...issueEntry, materialId: e.target.value }),
+              style: styles.select
+            },
+              React.createElement("option", { value: "" }, "-- Choose from Available Stock --"),
+              (projectInventory || []).filter((i: any) => {
+                const bal = Number(i.balanceQty ?? i.balance ?? (Number(i.receivedQty || 0) - Number(i.consumedQty || 0)));
+                return bal > 0;
+              }).map((i: any) => {
+                const bal = Number(i.balanceQty ?? i.balance ?? (Number(i.receivedQty || 0) - Number(i.consumedQty || 0)));
+                return React.createElement("option", { key: i.id, value: String(i.id) },
+                  `${i.material} (Available: ${bal.toLocaleString()} ${i.unit})`
+                );
+              })
+            )
+          ),
+          React.createElement("div", { style: { display: "contents" } },
+            React.createElement("label", { style: styles.label }, "Issue / Consumption Date *"),
+            React.createElement("input", {
+              type: "date",
+              value: issueEntry.date,
+              onChange: (e) => setIssueEntry({ ...issueEntry, date: e.target.value }),
+              style: styles.input
+            })
+          ),
+          React.createElement("div", { style: { display: "contents" } },
+            React.createElement("label", { style: styles.label }, "Quantity to Issue *"),
+            React.createElement("input", {
+              type: "number",
+              min: 1,
+              placeholder: "e.g. 200",
+              value: issueEntry.quantity,
+              onChange: (e) => setIssueEntry({ ...issueEntry, quantity: e.target.value }),
+              style: styles.input
+            })
+          ),
+          React.createElement("div", { style: { display: "contents" } },
+            React.createElement("label", { style: styles.label }, "Work Purpose / Site Location *"),
+            React.createElement("input", {
+              placeholder: "e.g. Ground floor column reinforcement / Plinth bed",
+              value: issueEntry.purpose,
+              onChange: (e) => setIssueEntry({ ...issueEntry, purpose: e.target.value }),
+              style: styles.input
+            })
+          )
         ),
-        React.createElement("div", { style: { marginBottom: "14px" } },
-          React.createElement("label", { style: styles.label }, "Consumed Quantity"),
-          React.createElement("input", { type: "number", min: 0, placeholder: "Consumed Quantity", value: newMaterial.consumedQty, onChange: (e) => setNewMaterial({...newMaterial, consumedQty: e.target.value}), style: styles.input })
-        ),
-        React.createElement("div", { style: { marginBottom: "14px" } },
-          React.createElement("label", { style: styles.label }, "Rate (₹)"),
-          React.createElement("input", { type: "number", min: 0, placeholder: "Rate per unit in ₹", value: newMaterial.rate, onChange: (e) => setNewMaterial({...newMaterial, rate: e.target.value}), style: styles.input })
-        ),
-        React.createElement("div", { style: { marginBottom: "14px" } },
-          React.createElement("label", { style: styles.label }, "Supplier Name"),
-          React.createElement("input", { placeholder: "Supplier Name", value: newMaterial.supplier, onChange: (e) => setNewMaterial({...newMaterial, supplier: e.target.value}), style: styles.input })
-        ),
-        React.createElement("div", { style: { marginBottom: "14px" } },
-          React.createElement("label", { style: styles.label }, "Invoice Number"),
-          React.createElement("input", { placeholder: "Invoice Number", value: newMaterial.invoiceNo, onChange: (e) => setNewMaterial({...newMaterial, invoiceNo: e.target.value}), style: styles.input })
-        ),
-        React.createElement("div", { style: { marginBottom: "14px" } },
-          React.createElement("label", { style: styles.label }, "Vehicle Number"),
-          React.createElement("input", { placeholder: "Vehicle Number", value: newMaterial.vehicleNo, onChange: (e) => setNewMaterial({...newMaterial, vehicleNo: e.target.value}), style: styles.input })
-        ),
-        React.createElement("div", { style: { marginBottom: "14px" } },
-          React.createElement("label", { style: styles.label }, "Security Out Date"),
-          React.createElement("input", { type: "date", value: newMaterial.securityOutDate, onChange: (e) => setNewMaterial({...newMaterial, securityOutDate: e.target.value}), style: styles.input })
-        ),
-        React.createElement("div", { style: { marginBottom: "14px" } },
-          React.createElement("label", { style: styles.label }, "DC Delivery Date"),
-          React.createElement("input", { type: "date", value: newMaterial.dcDeliveryDate, onChange: (e) => setNewMaterial({...newMaterial, dcDeliveryDate: e.target.value}), style: styles.input })
-        ),
-        React.createElement("div", { style: { marginBottom: "14px" } },
-          React.createElement("label", { style: styles.label }, "GRN Number"),
-          React.createElement("input", { placeholder: "GRN Number", value: newMaterial.grnNo, onChange: (e) => setNewMaterial({...newMaterial, grnNo: e.target.value}), style: styles.input })
-        ),
-        React.createElement("button", { onClick: saveMaterial, style: { ...styles.buttonSuccess, width: "100%", padding: "12px", fontSize: "14px", fontWeight: "bold" } }, "Save Material")
+        React.createElement("div", { style: { display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "12px" } },
+          React.createElement("button", { onClick: () => setShowIssueModal(false), style: { ...styles.buttonDanger, padding: "6px 14px" } }, "Cancel"),
+          React.createElement("button", { onClick: issueMaterial, style: { ...styles.button, backgroundColor: "#d97706", padding: "6px 20px", fontWeight: "bold" } }, "Confirm Issue")
+        )
       )
     ),
 
     showExtraWorkModal && React.createElement("div", { style: styles.modal, onClick: () => setShowExtraWorkModal(false) },
       React.createElement("div", { style: styles.modalContent, onClick: (e) => e.stopPropagation() },
-        React.createElement("h3", { style: { marginTop: 0, marginBottom: "16px" } }, "Add Extra Work / Alteration"),
-        React.createElement("div", { style: { marginBottom: "14px" } },
-          React.createElement("label", { style: styles.label }, "Description *"),
-          React.createElement("input", { type: "text", placeholder: "Description of extra work", value: extraWork.description, onChange: (e) => setExtraWork({...extraWork, description: e.target.value}), style: styles.input })
-        ),
-        React.createElement("div", { style: { marginBottom: "14px" } },
-          React.createElement("label", { style: styles.label }, "Quantity *"),
-          React.createElement("input", { type: "number", placeholder: "Quantity", value: extraWork.quantity, onChange: (e) => setExtraWork({...extraWork, quantity: e.target.value}), style: styles.input })
-        ),
-        React.createElement("div", { style: { marginBottom: "14px" } },
-          React.createElement("label", { style: styles.label }, "Unit *"),
-          React.createElement("input", { type: "text", placeholder: "Unit (sqft/m/kg/Nos)", value: extraWork.unit, onChange: (e) => setExtraWork({...extraWork, unit: e.target.value}), style: styles.input })
-        ),
-        React.createElement("div", { style: { marginBottom: "14px" } },
-          React.createElement("label", { style: styles.label }, "Rate (₹) *"),
-          React.createElement("input", { type: "number", "data-bm-digits": "10", placeholder: "Rate in ₹", value: extraWork.rate, onChange: (e) => setExtraWork({...extraWork, rate: e.target.value}), style: styles.input })
-        ),
-        React.createElement("button", { onClick: addExtraWork, style: { ...styles.buttonSuccess, width: "100%", padding: "12px", fontSize: "14px", fontWeight: "bold" } }, "Submit Extra Work")
-      )
-    ),
-    
-    showLabourModal && React.createElement("div", { style: styles.modal, onClick: () => setShowLabourModal(false) },
-      React.createElement("div", { style: styles.modalContent, onClick: (e) => e.stopPropagation() },
-        React.createElement("h2", { style: { color: "#2d6a4f", marginTop: 0, marginBottom: "16px" } }, "Add Labour"),
-        React.createElement("div", { style: { marginBottom: "14px" } },
-          React.createElement("label", { style: styles.label }, "Labour Name *"),
-          React.createElement("input", { type: "text", placeholder: "Labour Name", value: newLabour.name, onChange: (e) => setNewLabour({...newLabour, name: e.target.value}), style: styles.input })
-        ),
-        React.createElement("div", { style: { marginBottom: "14px" } },
-          React.createElement("label", { style: styles.label }, "Role *"),
-          React.createElement("select", { value: newLabour.role, onChange: (e) => setNewLabour({...newLabour, role: e.target.value}), style: styles.select },
-            React.createElement("option", { value: "" }, "Select Role"),
-            React.createElement("option", { value: "Mason" }, "Mason"),
-            React.createElement("option", { value: "Carpenter" }, "Carpenter"),
-            React.createElement("option", { value: "Helper" }, "Helper"),
-            React.createElement("option", { value: "Electrician" }, "Electrician"),
-            React.createElement("option", { value: "Plumber" }, "Plumber"),
-            React.createElement("option", { value: "Painter" }, "Painter")
+        React.createElement("h3", { style: { marginTop: 0, marginBottom: "10px", fontSize: "15px", borderBottom: "1.5px solid #800020", paddingBottom: "4px" } }, "Add Extra Work / Alteration"),
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "8px 10px", marginBottom: "10px" } },
+          React.createElement("div", { style: { gridColumn: "1 / -1" } },
+            React.createElement("label", { style: styles.label }, "Description *"),
+            React.createElement("input", { placeholder: "Description", value: extraWork.description, onChange: (e) => setExtraWork({...extraWork, description: e.target.value}), style: styles.input })
+          ),
+          React.createElement("div", { style: { display: "contents" } },
+            React.createElement("label", { style: styles.label }, "Quantity *"),
+            React.createElement("input", { type: "number", placeholder: "0", value: extraWork.quantity, onChange: (e) => setExtraWork({...extraWork, quantity: e.target.value}), style: styles.input })
+          ),
+          React.createElement("div", { style: { display: "contents" } },
+            React.createElement("label", { style: styles.label }, "Unit *"),
+            React.createElement("input", { placeholder: "Nos/sqft", value: extraWork.unit, onChange: (e) => setExtraWork({...extraWork, unit: e.target.value}), style: styles.input })
+          ),
+          React.createElement("div", { style: { gridColumn: "1 / -1" } },
+            React.createElement("label", { style: styles.label }, "Rate (₹) *"),
+            React.createElement("input", { type: "number", placeholder: "0.00", value: extraWork.rate, onChange: (e) => setExtraWork({...extraWork, rate: e.target.value}), style: styles.input })
           )
         ),
-        React.createElement("div", { style: { marginBottom: "14px" } },
-          React.createElement("label", { style: styles.label }, "Daily Wage (₹) * (up to 10 digits)"),
-          React.createElement("input", { type: "number", "data-bm-digits": "10", maxLength: 10, placeholder: "Daily Wage in ₹", value: newLabour.dailyWage, onChange: (e) => setNewLabour({...newLabour, dailyWage: e.target.value}), style: styles.input })
-        ),
-        React.createElement("div", { style: { marginBottom: "14px" } },
-          React.createElement("label", { style: styles.label }, "Days Present *"),
-          React.createElement("input", { type: "number", placeholder: "Days Present", value: newLabour.daysPresent, onChange: (e) => setNewLabour({...newLabour, daysPresent: e.target.value}), style: styles.input })
-        ),
-        React.createElement("button", { onClick: addLabour, style: { ...styles.buttonSuccess, width: "100%", padding: "12px", fontSize: "14px", fontWeight: "bold" } }, "Add Labour")
+        React.createElement("div", { style: { display: "flex", gap: "8px", justifyContent: "flex-end" } },
+          React.createElement("button", { onClick: () => setShowExtraWorkModal(false), style: { ...styles.buttonDanger, padding: "5px 12px" } }, "Cancel"),
+          React.createElement("button", { onClick: addExtraWork, style: { ...styles.buttonSuccess, padding: "5px 16px", fontWeight: "bold" } }, "Submit Extra Work")
+        )
       )
     ),
 
-    showLabourPaymentModal && selectedLabour && React.createElement("div", { style: styles.modal, onClick: () => setShowLabourPaymentModal(false) },
-      React.createElement("div", { style: styles.modalContent, onClick: (e) => e.stopPropagation() },
-        React.createElement("h3", { style: { marginTop: 0, marginBottom: "14px" } }, "Release Labour Payment"),
-        React.createElement("p", null, React.createElement("strong", null, "Labour:"), " ", selectedLabour.name),
-        React.createElement("p", null, React.createElement("strong", null, "Total Due:"), " ₹", selectedLabour.totalPayment?.toLocaleString()),
-        React.createElement("div", { style: { marginBottom: "14px" } },
-          React.createElement("label", { style: styles.label }, "Cheque Number"),
-          React.createElement("input", { type: "text", placeholder: "Cheque Number", value: chequeNo, onChange: (e) => setChequeNo(e.target.value), style: styles.input })
+    // Labour Modal
+    showLabourModal && React.createElement("div", { style: styles.modal, onClick: () => setShowLabourModal(false) },
+      React.createElement("div", { style: { ...styles.modalContent, width: "min(460px, 94vw)", maxWidth: "460px" }, onClick: (e) => e.stopPropagation() },
+        React.createElement("h3", { style: { color: "#2d6a4f", margin: "0 0 14px 0", fontSize: "16px", borderBottom: "1.5px solid #2d6a4f", paddingBottom: "6px" } }, "👷 Add Labour Worker"),
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "200px 1fr", columnGap: "12px", rowGap: "10px", marginBottom: "14px", alignItems: "center" } },
+          React.createElement("div", { style: { display: "contents" } },
+            React.createElement("label", { style: styles.label }, "Labour Full Name *"),
+            React.createElement("input", { placeholder: "e.g. Ramesh Kumar", value: newLabour.name, onChange: (e) => setNewLabour({...newLabour, name: e.target.value}), style: styles.input })
+          ),
+          React.createElement("div", { style: { display: "contents" } },
+            React.createElement("label", { style: styles.label }, "Trade / Role *"),
+            React.createElement("select", { value: newLabour.role, onChange: (e) => setNewLabour({...newLabour, role: e.target.value}), style: styles.select },
+              React.createElement("option", { value: "" }, "-- Select Role --"),
+              React.createElement("option", { value: "Civil Mason" }, "Civil Mason"),
+              React.createElement("option", { value: "Barbender Steel" }, "Barbender Steel"),
+              React.createElement("option", { value: "Carpenter" }, "Carpenter"),
+              React.createElement("option", { value: "Helper" }, "Helper / Labour"),
+              React.createElement("option", { value: "Electrician" }, "Electrician"),
+              React.createElement("option", { value: "Plumber" }, "Plumber"),
+              React.createElement("option", { value: "Painter" }, "Painter")
+            )
+          ),
+          React.createElement("div", { style: { display: "contents" } },
+            React.createElement("label", { style: styles.label }, "Daily Wage (₹) * (up to 6 digits)"),
+            React.createElement("input", { type: "number", min: 0, placeholder: "e.g. 950", value: newLabour.dailyWage, onChange: (e) => setNewLabour({...newLabour, dailyWage: e.target.value}), style: styles.input })
+          ),
+          React.createElement("div", { style: { display: "contents" } },
+            React.createElement("label", { style: styles.label }, "Initial Days Present this Week (0 to 7)"),
+            React.createElement("input", { type: "number", min: 0, max: 7, placeholder: "6", value: newLabour.daysPresent, onChange: (e) => setNewLabour({...newLabour, daysPresent: e.target.value}), style: styles.input })
+          )
         ),
-        React.createElement("div", { style: { marginBottom: "14px" } },
-          React.createElement("label", { style: styles.label }, "UTR Number"),
-          React.createElement("input", { type: "text", placeholder: "UTR Number", value: utrNo, onChange: (e) => setUtrNo(e.target.value), style: styles.input })
-        ),
-        React.createElement("button", { onClick: makeLabourPayment, style: { ...styles.buttonSuccess, width: "100%", padding: "12px", fontSize: "14px", fontWeight: "bold" } }, "Release Payment")
+        React.createElement("div", { style: { display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "12px" } },
+          React.createElement("button", { onClick: () => setShowLabourModal(false), style: { ...styles.buttonDanger, padding: "6px 14px" } }, "Cancel"),
+          React.createElement("button", { onClick: addLabour, style: { ...styles.buttonSuccess, padding: "6px 20px", fontWeight: "bold" } }, "Save Worker")
+        )
       )
     ),
+
+    // Labour Payment Modal
+    showLabourPaymentModal && selectedLabour && React.createElement("div", { style: styles.modal, onClick: () => setShowLabourPaymentModal(false) },
+      React.createElement("div", { style: styles.modalContent, onClick: (e) => e.stopPropagation() },
+        React.createElement("h3", { style: { marginTop: 0, marginBottom: "10px", fontSize: "15px", borderBottom: "1.5px solid #800020", paddingBottom: "4px" } }, "Release Labour Payment"),
+        React.createElement("p", { style: { margin: "0 0 8px 0", fontSize: "12px" } }, "Labour: ", React.createElement("strong", null, selectedLabour.name), " | Total Due: ", React.createElement("strong", null, "₹", selectedLabour.totalPayment?.toLocaleString())),
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "8px 10px", marginBottom: "10px" } },
+          React.createElement("div", { style: { display: "contents" } },
+            React.createElement("label", { style: styles.label }, "Cheque Number"),
+            React.createElement("input", { placeholder: "Cheque No", value: chequeNo, onChange: (e) => setChequeNo(e.target.value), style: styles.input })
+          ),
+          React.createElement("div", { style: { display: "contents" } },
+            React.createElement("label", { style: styles.label }, "UTR Number"),
+            React.createElement("input", { placeholder: "UTR No", value: utrNo, onChange: (e) => setUtrNo(e.target.value), style: styles.input })
+          )
+        ),
+        React.createElement("div", { style: { display: "flex", gap: "8px", justifyContent: "flex-end" } },
+          React.createElement("button", { onClick: () => setShowLabourPaymentModal(false), style: { ...styles.buttonDanger, padding: "5px 12px" } }, "Cancel"),
+          React.createElement("button", { onClick: makeLabourPayment, style: { ...styles.buttonSuccess, padding: "5px 16px", fontWeight: "bold" } }, "Release Payment")
+        )
+      )
+    ),
+
+    // Progress Media Upload Modal
+    showMediaModal && React.createElement("div", { style: styles.modal, onClick: () => setShowMediaModal(false) },
+      React.createElement("div", { style: styles.modalContent, onClick: (e) => e.stopPropagation() },
+        React.createElement("h3", { style: { color: "#1e3a8a", margin: "0 0 10px 0", fontSize: "15px", borderBottom: "1.5px solid #1e3a8a", paddingBottom: "4px" } }, "📸 Upload Site Progress Photo"),
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "8px 10px", marginBottom: "10px" } },
+          React.createElement("div", { style: { gridColumn: "1 / -1" } },
+            React.createElement("label", { style: styles.label }, "Photo Title / Work Description *"),
+            React.createElement("input", { placeholder: "e.g. Ground Floor Slab Concreting", value: mediaTitle, onChange: (e) => setMediaTitle(e.target.value), style: styles.input })
+          ),
+          React.createElement("div", { style: { display: "contents" } },
+            React.createElement("label", { style: styles.label }, "Category"),
+            React.createElement("select", { value: mediaCategory, onChange: (e) => setMediaCategory(e.target.value), style: styles.select },
+              React.createElement("option", { value: "progress" }, "Work Progress"),
+              React.createElement("option", { value: "quality" }, "Quality Inspection"),
+              React.createElement("option", { value: "material" }, "Material Delivery"),
+              React.createElement("option", { value: "snag" }, "Issue / Snag")
+            )
+          ),
+          React.createElement("div", { style: { display: "contents" } },
+            React.createElement("label", { style: styles.label }, "Media Type"),
+            React.createElement("select", { value: mediaType, onChange: (e) => setMediaType(e.target.value), style: styles.select },
+              React.createElement("option", { value: "photo" }, "Photo"),
+              React.createElement("option", { value: "drawing" }, "Drawing / Plan"),
+              React.createElement("option", { value: "document" }, "Test Certificate")
+            )
+          ),
+          React.createElement("div", { style: { gridColumn: "1 / -1" } },
+            React.createElement("label", { style: styles.label }, "Select Image from Device *"),
+            React.createElement("input", {
+              type: "file",
+              accept: "image/*,application/pdf",
+              onChange: (e) => {
+                const file = e.target.files && e.target.files[0];
+                if (file) {
+                  setMediaFile(file);
+                  if (!mediaTitle) setMediaTitle(file.name.replace(/\.[^/.]+$/, ""));
+                }
+              },
+              style: { ...styles.input, height: "auto", padding: "5px" }
+            })
+          )
+        ),
+        React.createElement("div", { style: { display: "flex", gap: "8px", justifyContent: "flex-end", marginTop: "8px" } },
+          React.createElement("button", { onClick: () => setShowMediaModal(false), style: { ...styles.buttonDanger, padding: "5px 12px" } }, "Cancel"),
+          React.createElement("button", { onClick: uploadMedia, style: { ...styles.buttonSuccess, padding: "5px 16px", fontWeight: "bold" } }, "Upload Photo")
+        )
+      )
+    ),
+
+    // Report Modal
     showReportModal && React.createElement("div", { style: styles.modal, onClick: () => setShowReportModal(false) },
       React.createElement("div", { style: styles.modalContent, onClick: (e) => e.stopPropagation() },
-        React.createElement("h3", null, "Generate Report"),
+        React.createElement("h3", { style: { marginTop: 0, marginBottom: "10px", fontSize: "15px" } }, "Generate Report"),
         React.createElement("button", { onClick: generateReport, style: styles.buttonSuccess }, "Download Excel Report")
       )
     ),
-    
+
+    // Media Viewer Lightbox
     showMediaViewer && selectedMedia && React.createElement("div", { style: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.9)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000 }, onClick: () => setShowMediaViewer(false) },
       React.createElement("div", { style: { color: "white", textAlign: "center" } },
         React.createElement("div", null,
-          React.createElement("div", { style: { fontSize: "72px" } }, (selectedMedia.mediaType || selectedMedia.type) === "photo" ? "📷" : (selectedMedia.mediaType || selectedMedia.type) === "video" ? "🎥" : "📄"),
+          React.createElement("div", { style: { fontSize: "64px" } }, (selectedMedia.mediaType || selectedMedia.type) === "photo" ? "📷" : (selectedMedia.mediaType || selectedMedia.type) === "video" ? "🎥" : "📄"),
           React.createElement("h3", null, selectedMedia.description || selectedMedia.title || selectedMedia.fileName),
-          React.createElement("p", null, selectedMedia.fileName || "Metadata record"),
-          React.createElement("p", null, selectedMedia.fileType || "File type unavailable", selectedMedia.fileSize ? ` • ${Math.ceil(selectedMedia.fileSize / 1024)} KB` : ""),
-          React.createElement("p", null, "Full cloud upload will be enabled after backend storage integration.")
+          React.createElement("p", null, selectedMedia.fileName || "Metadata record")
         ),
         React.createElement("button", { onClick: () => setShowMediaViewer(false), style: { position: "absolute", top: 20, right: 30, color: "white", fontSize: 30, background: "none", border: "none", cursor: "pointer" } }, "×")
       )
     )
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

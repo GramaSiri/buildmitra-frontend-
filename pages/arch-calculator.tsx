@@ -1,7 +1,7 @@
-﻿// @ts-nocheck
+// @ts-nocheck
 import { syncApprovedRatesFromBackend } from "../utils/masterRates";
 import React, { useState } from 'react';
-import * as XLSX from 'xlsx';
+import { loadXLSX } from '../utils/lazyLibs';
 import { usePaymentBarrier } from '../hooks/usePaymentBarrier';
 import { useRouter } from 'next/router';
 import { useRates } from '../contexts/RateContext';
@@ -228,10 +228,12 @@ const router = useRouter();
       { Item: 'Labour', Quantity: results.concrete.volumeCum, Unit: 'CUM', Cost: `₹${results.costs.labour}` },
       { Item: 'Grand Total (₹)', Quantity: '', Unit: '', Cost: `₹${results.costs.grandTotal}` }
     ];
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Arch');
-    XLSX.writeFile(wb, `Arch_${new Date().toISOString().split('T')[0]}.xlsx`);
+    loadXLSX().then((XLSX) => {
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Arch');
+      XLSX.writeFile(wb, `Arch_${new Date().toISOString().split('T')[0]}.xlsx`);
+    }).catch((e) => console.error("Excel export failed", e));
   };
 
   const handleWhatsApp = () => {

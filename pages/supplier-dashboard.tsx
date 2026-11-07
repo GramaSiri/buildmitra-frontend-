@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import * as XLSX from "xlsx";
+import { loadXLSX } from '../utils/lazyLibs';
 import { logoutToLogin } from "../utils/session";
 import { BuildMitraHeader } from "../components/ui/DesignSystem";
 import { getApiBase } from "../utils/apiConfig";
@@ -907,10 +907,12 @@ BuildMitra`;
       filename = `Supplier_Statement_${userCode}.xlsx`;
     }
 
-    const ws = XLSX.utils.json_to_sheet(exportRows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Report");
-    XLSX.writeFile(wb, filename);
+    loadXLSX().then((XLSX) => {
+      const ws = XLSX.utils.json_to_sheet(exportRows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Report");
+      XLSX.writeFile(wb, filename);
+    }).catch((e) => console.error("Excel export failed", e));
   };
 
   // Action: Save Statement Snapshot to MongoDB

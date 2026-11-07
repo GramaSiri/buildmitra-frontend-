@@ -1,7 +1,7 @@
-﻿// @ts-nocheck
+// @ts-nocheck
 import React, { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import * as XLSX from 'xlsx';
+import { loadXLSX } from '../utils/lazyLibs';
 import { usePaymentBarrier } from '../hooks/usePaymentBarrier';
 import { getMasterRate, syncApprovedRatesFromBackend } from '../utils/masterRates';
 import MarketRateTrend from '../components/ui/MarketRateTrend';
@@ -286,10 +286,12 @@ export default function InteriorBOQPage() {
         'Cost (₹)': formatCurrency(m.amount)
       }));
 
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(itemsData), "Interior_Items");
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(materialsData), "Material_BOQ");
-      XLSX.writeFile(wb, `BuildMitra_Interior_BOQ_${new Date().toISOString().split("T")[0]}.xlsx`);
+      loadXLSX().then((XLSX) => {
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(itemsData), "Interior_Items");
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(materialsData), "Material_BOQ");
+        XLSX.writeFile(wb, `BuildMitra_Interior_BOQ_${new Date().toISOString().split("T")[0]}.xlsx`);
+      }).catch((e) => console.error("Excel export failed", e));
     });
   };
 

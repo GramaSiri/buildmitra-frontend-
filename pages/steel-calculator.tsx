@@ -1,7 +1,7 @@
-﻿// @ts-nocheck
+// @ts-nocheck
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
-import * as XLSX from 'xlsx';
+import { loadXLSX } from '../utils/lazyLibs';
 import { useRouter } from 'next/router';
 import { usePaymentBarrier } from '../hooks/usePaymentBarrier';
 import MarketRateTrend from '../components/ui/MarketRateTrend';
@@ -897,21 +897,23 @@ export default function SteelCalculatorPage() {
   const handleExportExcel = () => {
     if (!results) return;
     checkAndRun('calculator_export', 'steel-calculator', () => {
-      const wb = XLSX.utils.book_new();
-      const bbsSheetData = results.bbsRows.map((r: any) => ({
-        "Mark": r.barMark,
-        "Description": r.description,
-        "Diameter (mm)": r.dia,
-        "Shape Code": r.shape,
-        "Bars / Member": r.barsPerMember,
-        "Total Bars": r.totalBars,
-        "Cut Length (m)": formatNumber(r.cuttingLengthM),
-        "Total Length (m)": formatNumber(r.totalLengthM),
-        "Weight (kg)": formatNumber(r.weightKg),
-        "Remarks / Laps": r.remarks
-      }));
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(bbsSheetData), "BBS Schedule");
-      XLSX.writeFile(wb, `BBS_${item}_${new Date().toISOString().split('T')[0]}.xlsx`);
+      loadXLSX().then((XLSX) => {
+        const wb = XLSX.utils.book_new();
+        const bbsSheetData = results.bbsRows.map((r: any) => ({
+          "Mark": r.barMark,
+          "Description": r.description,
+          "Diameter (mm)": r.dia,
+          "Shape Code": r.shape,
+          "Bars / Member": r.barsPerMember,
+          "Total Bars": r.totalBars,
+          "Cut Length (m)": formatNumber(r.cuttingLengthM),
+          "Total Length (m)": formatNumber(r.totalLengthM),
+          "Weight (kg)": formatNumber(r.weightKg),
+          "Remarks / Laps": r.remarks
+        }));
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(bbsSheetData), "BBS Schedule");
+        XLSX.writeFile(wb, `BBS_${item}_${new Date().toISOString().split('T')[0]}.xlsx`);
+      }).catch((e) => console.error("Excel export failed", e));
     });
   };
 

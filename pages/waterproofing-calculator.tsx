@@ -1,8 +1,8 @@
-﻿// @ts-nocheck
+// @ts-nocheck
 import React, { useEffect, useMemo, useState } from "react";
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import * as XLSX from 'xlsx';
+import { loadXLSX } from '../utils/lazyLibs';
 import { usePaymentBarrier } from '../hooks/usePaymentBarrier';
 import MarketRateTrend from '../components/ui/MarketRateTrend';
 import { getMasterRate, syncApprovedRatesFromBackend, MasterRateResult } from "../utils/masterRates";
@@ -318,10 +318,12 @@ export default function WaterproofingCalculatorPage() {
         ])
       ];
 
-      const ws = XLSX.utils.aoa_to_sheet(data);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Waterproofing_BOQ");
-      XLSX.writeFile(wb, `BuildMitra_Waterproofing_BOQ_${Date.now()}.xlsx`);
+      loadXLSX().then((XLSX) => {
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Waterproofing_BOQ");
+        XLSX.writeFile(wb, `BuildMitra_Waterproofing_BOQ_${Date.now()}.xlsx`);
+      }).catch((e) => console.error("Excel export failed", e));
     });
   };
 

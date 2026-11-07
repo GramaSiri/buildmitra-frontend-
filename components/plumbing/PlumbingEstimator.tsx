@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { generatePlumbingPdfReport } from "../../utils/pdfExport";
-import * as XLSX from "xlsx";
+import { loadXLSX } from '../../utils/lazyLibs';
 import { useRates } from "../../contexts/RateContext";
 
 export default function PlumbingEstimator() {
@@ -92,10 +92,12 @@ export default function PlumbingEstimator() {
       "Total Amount (Rs)": item.totalAmount
     }));
 
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Plumbing_BOQ");
-    XLSX.writeFile(wb, `BuildMitra_Plumbing_BOQ_${Date.now()}.xlsx`);
+    loadXLSX().then((XLSX) => {
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Plumbing_BOQ");
+      XLSX.writeFile(wb, `BuildMitra_Plumbing_BOQ_${Date.now()}.xlsx`);
+    }).catch((e) => console.error("Excel export failed", e));
   };
 
   const handleShareWhatsApp = () => {

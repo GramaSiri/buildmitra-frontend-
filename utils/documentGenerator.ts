@@ -1,5 +1,4 @@
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import { loadPDF } from "./lazyLibs";
 
 export type BuildMitraDocumentType =
   | "ENQUIRY"
@@ -66,9 +65,10 @@ const money = (value: any) => {
 
 const safe = (value: any) => String(value ?? "").trim() || "-";
 
-export const generateBuildMitraDocument = (
+export const generateBuildMitraDocument = async (
   data: BuildMitraDocumentData
 ) => {
+  const { jsPDF, autoTable } = await loadPDF();
   const doc = new jsPDF({
     orientation: "portrait",
     unit: "mm",

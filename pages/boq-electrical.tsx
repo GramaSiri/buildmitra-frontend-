@@ -1,8 +1,8 @@
-﻿// @ts-nocheck
+// @ts-nocheck
 import React, { useState, useMemo, useEffect } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import * as XLSX from 'xlsx';
+import { loadXLSX } from '../utils/lazyLibs';
 import { usePaymentBarrier } from '../hooks/usePaymentBarrier';
 import { downloadBuildMitraPDF } from '../utils/pdfExport';
 import { getMasterRate, syncApprovedRatesFromBackend } from '../utils/masterRates';
@@ -349,10 +349,12 @@ export default function ElectricalBOQPage() {
         ])
       ];
 
-      const ws = XLSX.utils.aoa_to_sheet(data);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Electrical_BOQ");
-      XLSX.writeFile(wb, `BuildMitra_Electrical_BOQ_${Date.now()}.xlsx`);
+      loadXLSX().then((XLSX) => {
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Electrical_BOQ");
+        XLSX.writeFile(wb, `BuildMitra_Electrical_BOQ_${Date.now()}.xlsx`);
+      }).catch((e) => console.error("Excel export failed", e));
     });
   };
 

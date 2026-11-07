@@ -1,7 +1,7 @@
-﻿// @ts-nocheck
+// @ts-nocheck
 import React, { useState, useEffect, useMemo } from 'react';
 import Head from 'next/head';
-import * as XLSX from 'xlsx';
+import { loadXLSX } from '../utils/lazyLibs';
 import { useRouter } from 'next/router';
 import { usePaymentBarrier } from '../hooks/usePaymentBarrier';
 import MarketRateTrend from '../components/ui/MarketRateTrend';
@@ -374,10 +374,12 @@ export default function FullBuildingCalculator() {
         ])
       ];
 
-      const ws = XLSX.utils.aoa_to_sheet(data);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Composite_BOQ");
-      XLSX.writeFile(wb, `BuildMitra_Composite_Building_BOQ_${Date.now()}.xlsx`);
+      loadXLSX().then((XLSX) => {
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Composite_BOQ");
+        XLSX.writeFile(wb, `BuildMitra_Composite_Building_BOQ_${Date.now()}.xlsx`);
+      }).catch((e) => console.error("Excel export failed", e));
     });
   };
 

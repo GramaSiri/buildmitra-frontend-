@@ -51,6 +51,17 @@ export interface DBEnquiry {
 const LOCAL_PROPERTIES_KEY = 'realestate_properties';
 const LOCAL_ENQUIRIES_KEY = 'bm_realestate_enquiries';
 
+export function formatImageUrl(src: string): string {
+  if (!src) return '/images/bda_plot_bsk_stage_6.jpeg';
+  const clean = String(src).trim();
+  if (clean.startsWith('http://') || clean.startsWith('https://') || clean.startsWith('data:')) {
+    return clean;
+  }
+  const apiBase = getApiBase();
+  const cleanPath = clean.startsWith('/') ? clean : `/${clean}`;
+  return `${apiBase}${cleanPath}`;
+}
+
 export async function fetchAllProperties(sellerCode: string = "REA-000003"): Promise<DBProperty[]> {
   try {
     const apiBase = getApiBase();
@@ -59,34 +70,38 @@ export async function fetchAllProperties(sellerCode: string = "REA-000003"): Pro
     });
     const data = await res.json();
     if (data.success && Array.isArray(data.properties) && data.properties.length > 0) {
-      const mapped: DBProperty[] = data.properties.map((p: any) => ({
-        id: p.propertyCode || p._id || p.id,
-        propertyId: p.propertyCode || p._id || p.id,
-        title: p.title || "Property",
-        location: p.locality || p.city || p.location || "Bengaluru",
-        lat: Number(p.lat) || 12.8718,
-        lng: Number(p.lng) || 77.5753,
-        type: p.listingType || "Sale",
-        listingType: p.listingType || "Sale",
-        propertyType: p.propertyType || "Plot",
-        price: typeof p.price === "number" ? `₹${(p.price / 10000000).toFixed(2)} Cr` : String(p.price || "₹1.50 Cr"),
-        priceNum: Number(p.price) || 150,
-        rate: p.rate || `₹${p.pricePerSqft || 12500} / Sq.ft`,
-        ratePerSqFt: String(p.pricePerSqft || p.ratePerSqFt || "12500"),
-        bhk: p.propertyType?.includes("plot") ? "Plot" : "3 BHK",
-        dimensions: p.dimensions || "30′ × 40′ (1,200 Sq.ft)",
-        approach: p.approachRoad || p.approach || "40 Ft Road",
-        roadFacing: p.facing || p.roadFacing || "East",
-        zoning: p.approvalType || p.zoning || "BDA Approved",
-        sroOffice: p.sroOffice || "SRO JP Nagar",
-        guidanceValue: Number(p.guidanceValue) || 6800,
-        image: Array.isArray(p.images) && p.images[0] ? p.images[0] : (p.coverImage || '/images/bda-plot-bsk6.jpeg'),
-        tag: '✓ Live Verified Listing',
-        status: p.status === 'Sold' ? 'Sold / Closed' : p.status === 'Pending' ? 'Under Pipeline' : 'Available',
-        companyName: p.providerName || "Garden Greens",
-        sellerCode: p.providerUserCode || sellerCode,
-        phone: p.providerPhone || "9845012345"
-      }));
+      const mapped: DBProperty[] = data.properties.map((p: any) => {
+        const rawImg = p.coverImage || (Array.isArray(p.images) && p.images[0]) || p.imageUrl || p.image || '';
+        return {
+          id: p.propertyCode || p._id || p.id,
+          propertyId: p.propertyCode || p._id || p.id,
+          title: p.title || "Property",
+          location: p.locality || p.city || p.location || "Bengaluru",
+          lat: Number(p.lat || p.latitude) || (p.intelligence?.coordinates?.lat) || 12.8718,
+          lng: Number(p.lng || p.longitude) || (p.intelligence?.coordinates?.lng) || 77.5753,
+          type: p.listingType || "Sale",
+          listingType: p.listingType || "Sale",
+          propertyType: p.propertyType || "Plot",
+          price: p.price || (typeof p.totalAmount === "number" ? `₹${(p.totalAmount / 10000000).toFixed(2)} Cr` : "₹1.50 Cr"),
+          priceNum: Number(p.priceNum) || (p.totalAmount ? Math.round(p.totalAmount / 100000) : 150),
+          rate: p.displayFormattedRate || p.rate || `₹${p.pricePerSqft || 12500} / Sq.ft`,
+          ratePerSqFt: String(p.ratePerSqFt || p.pricePerSqft || "12500"),
+          bhk: p.propertyType?.includes("plot") ? "Plot" : "3 BHK",
+          dimensions: p.dimensions || "30′ × 40′ (1,200 Sq.ft)",
+          approach: p.approachRoad || p.approach || "40 Ft Asphalt",
+          approachRoad: p.approachRoad || p.approach || "40 Ft Asphalt",
+          roadFacing: p.roadFacing || p.facing || "East Facing Main Road",
+          zoning: p.zoning || p.approvalType || "BDA Approved",
+          sroOffice: p.sroOffice || (p.intelligence?.jurisdiction?.defaultSro) || "SRO JP Nagar",
+          guidanceValue: Number(p.guidanceValue) || (p.intelligence?.guidelineValuation?.guidanceRatePerSqFt) || 6800,
+          image: formatImageUrl(rawImg),
+          tag: '✓ Live Verified Listing',
+          status: p.status === 'Sold' ? 'Sold / Closed' : p.status === 'Pending' ? 'Under Pipeline' : 'Available',
+          companyName: p.providerName || "Garden Greens",
+          sellerCode: p.providerUserCode || sellerCode,
+          phone: p.providerPhone || "9845012345"
+        };
+      });
 
       if (typeof window !== 'undefined') {
         localStorage.setItem(LOCAL_PROPERTIES_KEY, JSON.stringify(mapped));
@@ -112,6 +127,7 @@ export async function fetchAllProperties(sellerCode: string = "REA-000003"): Pro
 export async function savePropertyToCloud(propData: DBProperty): Promise<DBProperty> {
   const propertyWithMeta = {
     ...propData,
+    image: formatImageUrl(propData.image),
     status: propData.status || 'Available',
     createdAt: new Date().toISOString()
   };
@@ -131,7 +147,11 @@ export async function savePropertyToCloud(propData: DBProperty): Promise<DBPrope
         providerPhone: propData.phone || "9845012345",
         askingPrice: propData.priceNum ? propData.priceNum * 10000000 : 15000000,
         price: propData.priceNum ? propData.priceNum * 10000000 : 15000000,
-        totalAmount: propData.priceNum ? propData.priceNum * 10000000 : 15000000
+        totalAmount: propData.priceNum ? propData.priceNum * 10000000 : 15000000,
+        coverImage: propData.image,
+        image: propData.image,
+        images: propData.image ? [propData.image] : [],
+        imageUrls: propData.image ? [propData.image] : []
       })
     });
   } catch (err) {
@@ -143,6 +163,8 @@ export async function savePropertyToCloud(propData: DBProperty): Promise<DBPrope
     const list: DBProperty[] = cached ? JSON.parse(cached) : [];
     const updated = [propertyWithMeta, ...list.filter((p) => p.id !== propertyWithMeta.id)];
     localStorage.setItem(LOCAL_PROPERTIES_KEY, JSON.stringify(updated));
+    // Trigger broadcast for live synchronizing Real Estate Hub
+    window.dispatchEvent(new CustomEvent('bm_property_saved', { detail: propertyWithMeta }));
   }
 
   return propertyWithMeta;

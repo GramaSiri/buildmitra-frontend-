@@ -10,6 +10,7 @@ import {
   updatePropertyStatusInCloud, 
   fetchAllEnquiries, 
   logNewEnquiryToCloud,
+  formatImageUrl,
   DBProperty, 
   DBEnquiry 
 } from '../services/propertyService';
@@ -74,42 +75,69 @@ export const RealEstateDashboard: React.FC = () => {
 
   const loadData = async () => {
     const code = sellerCode || "REA-000003";
-    const props = await fetchAllProperties(code);
-    setProperties(props);
 
-    const enqs = await fetchAllEnquiries(code);
-    setEnquiries(enqs);
-
-    // Fetch closed deals from MongoDB
     try {
-      const res = await authFetch(`${getApiBase()}/api/realestate/deals/${encodeURIComponent(code)}`, {
-        headers: { "x-user-code": code }
-      });
-      const data = await res.json();
-      if (data.success && Array.isArray(data.deals) && data.deals.length > 0) {
-        setClosedDeals(data.deals.map((d: any) => ({ ...d, id: d.dealId || d._id || d.id })));
-        localStorage.setItem('bm_realestate_deals', JSON.stringify(data.deals));
-        return;
+      const [propsResult, enqsResult, dealsRes] = await Promise.allSettled([
+        fetchAllProperties(code),
+        fetchAllEnquiries(code),
+        authFetch(`${getApiBase()}/api/realestate/deals/${encodeURIComponent(code)}`, {
+          headers: { "x-user-code": code }
+        }).then(r => r.json())
+      ]);
+
+      if (propsResult.status === 'fulfilled' && Array.isArray(propsResult.value)) {
+        setProperties(propsResult.value);
+      }
+
+      if (enqsResult.status === 'fulfilled' && Array.isArray(enqsResult.value)) {
+        setEnquiries(enqsResult.value);
+      }
+
+      if (dealsRes.status === 'fulfilled' && dealsRes.value?.success && Array.isArray(dealsRes.value?.deals) && dealsRes.value.deals.length > 0) {
+        const dList = dealsRes.value.deals.map((d: any) => ({ ...d, id: d.dealId || d._id || d.id }));
+        setClosedDeals(dList);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('bm_realestate_deals', JSON.stringify(dList));
+        }
+      } else {
+        const storedDeals = typeof window !== 'undefined' ? localStorage.getItem('bm_realestate_deals') : null;
+        if (storedDeals) {
+          try { setClosedDeals(JSON.parse(storedDeals)); } catch (e) {}
+        } else {
+          const initDeals: ClosedDealItem[] = [
+            { id: 'DEAL-101', propertyId: 'REP-MEDIA-064401', propertyTitle: 'LBS Nagar Residential Villa Plot', buyerName: 'Anand Kumar', finalPriceCr: 1.57, commissionEarnedLakhs: 3.14, closedDate: '2026-08-15', sroOffice: 'SRO JP Nagar / Jayanagar' }
+          ];
+          setClosedDeals(initDeals);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('bm_realestate_deals', JSON.stringify(initDeals));
+          }
+        }
       }
     } catch (err) {
-      console.log("Deals load from cloud error:", err);
-    }
-
-    const storedDeals = localStorage.getItem('bm_realestate_deals');
-    if (storedDeals) {
-      try { setClosedDeals(JSON.parse(storedDeals)); } catch (e) {}
-    } else {
-      const initDeals: ClosedDealItem[] = [
-        { id: 'DEAL-101', propertyId: 'REP-MEDIA-064401', propertyTitle: 'LBS Nagar Residential Villa Plot', buyerName: 'Anand Kumar', finalPriceCr: 1.57, commissionEarnedLakhs: 3.14, closedDate: '2026-08-15', sroOffice: 'SRO JP Nagar / Jayanagar' }
-      ];
-      setClosedDeals(initDeals);
-      localStorage.setItem('bm_realestate_deals', JSON.stringify(initDeals));
+      console.log("Error loading dashboard data:", err);
     }
   };
 
   useEffect(() => {
     setIsClient(true);
     loadData();
+
+    const handleSync = () => {
+      loadData();
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('bm_property_saved', handleSync);
+      window.addEventListener('storage', handleSync);
+      window.addEventListener('focus', handleSync);
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('bm_property_saved', handleSync);
+        window.removeEventListener('storage', handleSync);
+        window.removeEventListener('focus', handleSync);
+      }
+    };
   }, []);
 
   const handleCreateProperty = async (e: React.FormEvent) => {
@@ -117,6 +145,7 @@ export const RealEstateDashboard: React.FC = () => {
     setIsSubmitting(true);
 
     const newId = `REP-${Math.floor(100000 + Math.random() * 900000)}`;
+    const finalImage = uploadedImage || '/images/bda_plot_bsk_stage_6.jpeg';
     const newProp: DBProperty = {
       id: newId,
       propertyId: newId,
@@ -124,14 +153,14 @@ export const RealEstateDashboard: React.FC = () => {
       location,
       lat,
       lng,
-      type: propertyType.includes('Plot') || propertyType.includes('Land') || propertyType.includes('Site') ? 'Plot' : 'Buy',
+      type: listingType.includes('Requirement') ? 'Buy Requirement' : propertyType.includes('Plot') || propertyType.includes('Land') || propertyType.includes('Site') ? 'Plot' : 'Buy',
       listingType,
       propertyType,
       price: `₹${price} ${priceUnit}`,
       priceNum: priceUnit === 'Cr' ? parseFloat(price) * 100 : parseFloat(price) || 50,
       rate: `₹${ratePerSqFt} / Sq.ft`,
       ratePerSqFt,
-      bhk: propertyType.includes('Plot') ? 'Plot' : propertyType.includes('Land') ? 'Land' : '3 BHK',
+      bhk: propertyType.toLowerCase().includes('plot') ? 'Plot' : propertyType.toLowerCase().includes('land') ? 'Land' : '3 BHK',
       dimensions,
       approach: approachRoad,
       approachRoad,
@@ -142,19 +171,28 @@ export const RealEstateDashboard: React.FC = () => {
       companyName,
       sellerCode,
       phone,
-      image: uploadedImage || '/images/bda-plot-bsk6.jpeg',
-      tag: '✓ Live Verified Listing',
+      image: formatImageUrl(finalImage),
+      tag: listingType.includes('Requirement') ? '📋 Verified Requirement' : '✓ Live Verified Listing',
       status: 'Available',
       seller: { companyName, sellerCode, phone }
     };
 
-    await savePropertyToCloud(newProp);
-    await loadData();
-
+    // Optimistically update properties in UI for instant responsiveness
+    setProperties(prev => [newProp, ...prev]);
     setTitle('');
     setUploadedImage('');
     setIsSubmitting(false);
     setActiveTab('listings');
+
+    try {
+      await savePropertyToCloud(newProp);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('bm_property_saved', { detail: newProp }));
+      }
+      await loadData();
+    } catch (saveErr) {
+      console.log('Background save error:', saveErr);
+    }
   };
 
   const handleStatusChange = async (propId: string, newStatus: 'Available' | 'Under Pipeline' | 'Sold / Closed') => {
@@ -321,7 +359,7 @@ export const RealEstateDashboard: React.FC = () => {
                 properties.map((prop) => (
                   <div key={prop.id} style={{ backgroundColor: '#ffffff', borderRadius: 8, border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', marginBottom: 8, width: '100%', boxSizing: 'border-box' }}>
                     <div style={{ height: '200px', backgroundColor: '#0f172a', position: 'relative' }}>
-                      <img src={prop.image} alt={prop.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e: any) => { e.target.src = '/images/bda-plot-bsk6.jpeg'; }} />
+                      <img src={formatImageUrl(prop.image)} alt={prop.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e: any) => { e.target.src = '/images/bda_plot_bsk_stage_6.jpeg'; }} />
                       <span style={{ position: 'absolute', top: '10px', left: '10px', backgroundColor: 'rgba(15,23,42,0.85)', color: '#ffffff', fontSize: '11px', fontWeight: 800, padding: '4px 8px', borderRadius: '6px' }}>
                         {prop.propertyType} • {prop.listingType}
                       </span>
@@ -570,6 +608,20 @@ export const RealEstateDashboard: React.FC = () => {
                     onChange={(e) => setTitle(e.target.value)}
                     style={{ width: '100%', boxSizing: 'border-box', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none' }}
                   />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: 800, color: '#334155', display: 'block', marginBottom: '6px' }}>Listing / Requirement Purpose *</label>
+                  <select
+                    value={listingType}
+                    onChange={(e) => setListingType(e.target.value)}
+                    style={{ width: '100%', boxSizing: 'border-box', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none', backgroundColor: '#ffffff', fontWeight: 700 }}
+                  >
+                    <option value="Sale">🏷️ For Sale (Sell Property)</option>
+                    <option value="Rent">🔑 For Rent (Lease Out)</option>
+                    <option value="Buy Requirement">📋 Buy Requirement (Looking to Purchase)</option>
+                    <option value="Rent Requirement">📋 Rent Requirement (Looking to Rent)</option>
+                  </select>
                 </div>
 
                 <div>
