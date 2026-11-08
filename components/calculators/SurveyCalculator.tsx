@@ -36,15 +36,15 @@ export default function SurveyCalculator() {
       hobli: hobli || 'Target Hobli',
       subRegistrarLimit: 'District Sub-Registrar Jurisdiction',
       revenueExtent: '2 Acres 00 Guntas',
-      physicalExtent: \\ Acres (\ Sq.Ft / \ Sq.M)\,
+      physicalExtent: `${(areaFt / 43560).toFixed(2)} Acres (${areaFt} Sq.Ft / ${areaMeters} Sq.M)`,
       extentDifference: 'Exact alignment with revenue records within permissible land survey tolerance limits.',
       perimeterFt: 2 * (dimensions.length + dimensions.width),
       perimeterMeters: (2 * (dimensions.length + dimensions.width) * 0.3048).toFixed(2),
       boundaryDistances: {
-        north: \\ ft (\ m)\,
-        south: \\ ft (\ m)\,
-        east: \\ ft (\ m)\,
-        west: \\ ft (\ m)\
+        north: `${dimensions.length} ft (${(dimensions.length * 0.3048).toFixed(2)} m)`,
+        south: `${dimensions.length} ft (${(dimensions.length * 0.3048).toFixed(2)} m)`,
+        east: `${dimensions.width} ft (${(dimensions.width * 0.3048).toFixed(2)} m)`,
+        west: `${dimensions.width} ft (${(dimensions.width * 0.3048).toFixed(2)} m)`
       }
     });
     setLoading(false);
@@ -60,13 +60,13 @@ export default function SurveyCalculator() {
         <div className="flex gap-2">
           <button 
             onClick={() => setViewMode('2d')} 
-            className={\px-4 py-2 rounded font-medium text-sm transition \\}
+            className={`px-4 py-2 rounded font-medium text-sm transition ${viewMode === '2d' ? 'bg-emerald-600 text-white shadow-lg' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
           >
             2D Cadastral Map
           </button>
           <button 
             onClick={() => setViewMode('3d')} 
-            className={\px-4 py-2 rounded font-medium text-sm transition \\}
+            className={`px-4 py-2 rounded font-medium text-sm transition ${viewMode === '3d' ? 'bg-emerald-600 text-white shadow-lg' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
           >
             3D Terrain View
           </button>
