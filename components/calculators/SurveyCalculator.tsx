@@ -6,7 +6,7 @@ export default function SurveyCalculator() {
   const [village, setVillage] = useState('Kalkondapalli');
   const [hobli, setHobli] = useState('Hosur Rural');
   const [dimensions, setDimensions] = useState({ length: 120, width: 80 });
-  const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
+  const [viewMode, setViewMode] = useState('2d');
   const [loading, setLoading] = useState(false);
   const [surveyData, setSurveyData] = useState({
     syNo: 'Sy. No. 5, 6/1, 240',
@@ -15,7 +15,7 @@ export default function SurveyCalculator() {
     subRegistrarLimit: 'Hosur Joint Sub-Registrar Office',
     revenueExtent: '3 Acres 20 Guntas',
     physicalExtent: '3 Acres 12 Guntas (1,45,200 Sq.Ft)',
-    extentDifference: '-8 Guntas (-0.08 Acres discrepancy noted near eastern buffer zone / drainage line)',
+    extentDifference: '-8 Guntas (-0.08 Acres discrepancy noted near eastern buffer zone)',
     perimeterFt: 400,
     perimeterMeters: '121.92 m',
     boundaryDistances: { 
